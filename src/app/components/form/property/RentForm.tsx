@@ -8,11 +8,17 @@ import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField"
 
 export default function RentPropertyForm() {
   const setField = usePostFormStore((s) => s.setField);
+  // ✅ pull sellerInfo from the store
+  const sellerInfo = usePostFormStore((s) => s.sellerInfo) || {
+    name: "",
+    email: "",
+    phone: "",
+  };
 
   // If you want to auto-set category/subcategory, do it here (optional):
   // useEffect(() => {
   //   setField("category", "Property");
-  //   setField("subcategory", "For Rent");
+  //   setField("subcategory", "To Rent");
   // }, [setField]);
 
   const amenityOptions = [
@@ -101,11 +107,7 @@ export default function RentPropertyForm() {
           type="number"
           placeholder="11"
         />
-        <FormField
-          label="Available From"
-          field="available_from"
-          type="date"
-        />
+        <FormField label="Available From" field="available_from" type="date" />
       </div>
 
       {/* (Optional) Occupancy / Gender Preference */}
@@ -123,11 +125,7 @@ export default function RentPropertyForm() {
         <SelectField
           label="Gender Preference"
           field="gender_pref"
-          options={[
-            { value: "Any" },
-            { value: "Male" },
-            { value: "Female" },
-          ]}
+          options={[{ value: "Any" }, { value: "Male" }, { value: "Female" }]}
         />
       </div>
 
@@ -139,40 +137,57 @@ export default function RentPropertyForm() {
         cols={3}
       />
 
-      {/* Contact Details (writes to sellerInfo.* expected by server & preview/details) */}
+      {/* ✅ Contact Details (writes a single sellerInfo object in the store) */}
       <div className="space-y-2 border-t pt-4">
         <h3 className="text-lg font-semibold">Contact Details</h3>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="sellerInfo.name"
-            placeholder="Owner / Agent Name"
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="sellerInfo.email"
-            type="email"
-            placeholder="email@example.com"
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="sellerInfo.phone"
-            placeholder="+91 9XXXXXXXXX"
-            required
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Contact Name</label>
+            <input
+              className="w-full border rounded px-3 py-2"
+              placeholder="Host/Owner Name"
+              value={sellerInfo.name || ""}
+              onChange={(e) =>
+                setField("sellerInfo", { ...sellerInfo, name: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Email</label>
+            <input
+              className="w-full border rounded px-3 py-2"
+              type="email"
+              placeholder="Email address"
+              value={sellerInfo.email || ""}
+              onChange={(e) =>
+                setField("sellerInfo", { ...sellerInfo, email: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Phone</label>
+            <input
+              className="w-full border rounded px-3 py-2"
+              type="tel"
+              placeholder="Phone number"
+              value={sellerInfo.phone || ""}
+              onChange={(e) =>
+                setField("sellerInfo", { ...sellerInfo, phone: e.target.value })
+              }
+              required
+            />
+          </div>
         </div>
       </div>
 
-      {/* Location: rely on your global location picker (writes to location.address/lat/lng)
-          If you want a simple fallback input, uncomment below and map it to location.address:
-
-      <FormField
-        label="Address"
-        field="location.address"
-        placeholder="City, Area, Pincode"
-      />
+      {/* Location input is handled globally via your picker (location.address/lat/lng).
+          If you want a simple manual address field, you can add:
+      <FormField label="Address" field="location.address" placeholder="City, Area, Pincode" />
       */}
     </div>
   );

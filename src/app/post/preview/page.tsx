@@ -27,6 +27,7 @@ function fmtDate(v: unknown) {
   return d.toLocaleDateString();
 }
 
+// Currency-ish keys (incl. jobs)
 const CURRENCY_KEYS = new Set([
   "rentPrice",
   "salePrice",
@@ -44,22 +45,28 @@ const CURRENCY_KEYS = new Set([
 ]);
 
 function renderValue(key: string, value: any): string {
-  if (CURRENCY_KEYS.has(key)) {
-    return fmtCurrency(value) ?? "—";
-  }
-  if (key === "available_from") {
+  if (CURRENCY_KEYS.has(key)) return fmtCurrency(value) ?? "—";
+  if (key === "available_from" || key === "deadline" || key === "startDate")
     return fmtDate(value) ?? "—";
-  }
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
   if (value === null || value === undefined || value === "") return "—";
   return String(value);
 }
 
-// helper to display preferred_locations as string or array
-function renderPreferredLocations(v: any) {
-  if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
-  if (typeof v === "string") return v.trim() || "—";
-  return "—";
+// tiny helper for links
+function renderMaybeLink(value: any) {
+  const s = String(value ?? "");
+  if (!s) return "—";
+  try {
+    const u = new URL(s);
+    return (
+      <a href={u.toString()} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+        {u.hostname}
+      </a>
+    );
+  } catch {
+    return s;
+  }
 }
 
 export default function PreviewPage() {
@@ -69,17 +76,16 @@ export default function PreviewPage() {
   const [clientError, setClientError] = useState<string | null>(null);
 
   const has = (k: string) =>
-    data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== "";
+    data[k] !== undefined &&
+    data[k] !== null &&
+    String(data[k]).trim() !== "";
 
   const row = (label: string, value: any, keyHint?: string) => (
     <p>
       <b>{label}:</b>{" "}
-      {keyHint
-        ? renderValue(keyHint, value)
+      {keyHint ? renderValue(keyHint, value)
         : Array.isArray(value)
-        ? value.length
-          ? value.join(", ")
-          : "—"
+        ? value.length ? value.join(", ") : "—"
         : String(value ?? "—")}
     </p>
   );
@@ -115,32 +121,18 @@ export default function PreviewPage() {
     setLoading(true);
     const fd = buildPostFormData(data);
 
-    try {
-      const res = await addPost(fd); // supports return-or-redirect
-      setLoading(false);
+    const res = await addPost(fd); // returns { ok, id } shape
+    setLoading(false);
 
-      // If your server action returns a result object
-      if (res && (res as any).ok && (res as any).id) {
-        router.push(`/post-details/${(res as any).id}`);
-        return;
-      }
-
-      // If it returned a falsy/failed object
-      if (res && (res as any).ok === false) {
-        setClientError((res as any).error || "Submit failed. Please try again.");
-        return;
-      }
-
-      // If it redirected, Next will have navigated already; no action needed.
-    } catch (err: any) {
-      // If the server action throws a non-redirect error
-      console.error("❌ submit error", err);
-      setClientError(
-        err?.message ||
-          "Submit failed. Please check required fields and try again."
-      );
-      setLoading(false);
+    if (!res || (res as any).ok === false) {
+      const msg =
+        (res as any)?.error ||
+        "Submit failed. Please check required fields and try again.";
+      setClientError(msg);
+      return;
     }
+
+    router.push(`/post-details/${(res as any).id}`);
   };
 
   return (
@@ -170,7 +162,7 @@ export default function PreviewPage() {
         <section className="space-y-1 border-b pb-4">
           <h3 className="text-lg font-semibold">Details</h3>
 
-          {/* Common property fields */}
+          {/* Property-type (if any present) */}
           {has("propertyType") && row("Type", data.propertyType)}
           {has("beds") && row("Beds", data.beds)}
           {has("baths") && row("Baths", data.baths)}
@@ -191,8 +183,7 @@ export default function PreviewPage() {
           {has("pantry") && row("Pantry", data.pantry)}
           {has("parkingSpaces") && row("Parking Spaces", data.parkingSpaces)}
           {has("maintenance") && row("Maintenance", data.maintenance, "maintenance")}
-          {has("available_from") &&
-            row("Available From", data.available_from, "available_from")}
+          {has("available_from") && row("Available From", data.available_from, "available_from")}
           {has("leaseTerm") && row("Lease Term (months)", data.leaseTerm)}
           {has("powerBackup") && row("Power Backup", data.powerBackup)}
 
@@ -217,28 +208,23 @@ export default function PreviewPage() {
           {has("ownership") && row("Ownership Type", data.ownership)}
           {has("age") && row("Age of Property", data.age)}
 
-          {/* Jobs → Full Time / Part Time / etc. */}
+          {/* Jobs – common */}
+          {has("employmentType") && row("Employment Type", data.employmentType)}
           {has("jobType") && row("Job Type", data.jobType)}
           {has("company") && row("Company", data.company)}
           {has("salary") && row("Salary", data.salary, "salary")}
           {has("hourlyRate") && row("Hourly Rate", data.hourlyRate, "hourlyRate")}
-          {has("stipendAmount") && row("Stipend Amount", data.stipendAmount, "stipendAmount")}
-          {has("budgetAmount") && row("Budget Amount", data.budgetAmount, "budgetAmount")}
+          {has("deadline") && row("Application Deadline", data.deadline, "deadline")}
+          {has("applyLink") && (
+            <p>
+              <b>Apply Link:</b> {renderMaybeLink(data.applyLink)}
+            </p>
+          )}
+          {Array.isArray(data.shifts) && row("Shifts", data.shifts)}
           {has("experience") && row("Experience", data.experience)}
           {Array.isArray(data.skills) && row("Skills", data.skills)}
           {Array.isArray(data.benefits) && row("Benefits", data.benefits)}
           {has("workMode") && row("Work Mode", data.workMode)}
-
-          {/* ✅ Jobs → Wanted specific */}
-          {has("candidateName") && row("Candidate Name", data.candidateName)}
-          {has("employmentType") && row("Employment Type", data.employmentType)}
-          {(has("preferred_locations") || Array.isArray(data.preferred_locations)) && (
-            <p>
-              <b>Preferred Locations:</b> {renderPreferredLocations(data.preferred_locations)}
-            </p>
-          )}
-          {has("available_from") &&
-            row("Available From", data.available_from, "available_from")}
         </section>
 
         {/* Contact Details */}
@@ -260,22 +246,17 @@ export default function PreviewPage() {
           <section className="space-y-2 border-b pb-4">
             <h3 className="text-lg font-semibold">Images</h3>
             <div className="flex flex-wrap gap-3">
-              {data.images
-                .filter(
-                  (img: any) => img instanceof File || typeof img === "string"
-                )
-                .map((img: any, i: number) => {
-                  const url =
-                    img instanceof File ? URL.createObjectURL(img) : (img as string);
-                  return (
-                    <img
-                      key={i}
-                      src={url}
-                      alt={`preview-${i}`}
-                      className="w-28 h-28 object-cover rounded"
-                    />
-                  );
-                })}
+              {data.images.map((img, i) => {
+                const url = img instanceof File ? URL.createObjectURL(img) : (img as string);
+                return (
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`preview-${i}`}
+                    className="w-28 h-28 object-cover rounded"
+                  />
+                );
+              })}
             </div>
           </section>
         )}
@@ -283,10 +264,8 @@ export default function PreviewPage() {
         {/* Debug JSON */}
         <section>
           <details className="group">
-            <summary className="cursor-pointer text-sm text-gray-600">
-              Debug JSON
-            </summary>
-          <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
+            <summary className="cursor-pointer text-sm text-gray-600">Debug JSON</summary>
+            <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
               {debugJson}
             </pre>
           </details>
