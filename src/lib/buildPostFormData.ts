@@ -47,6 +47,9 @@ export function normalizeSubcategory(sub: string) {
     'to buy': 'to buy',
     'to rent': 'to rent',
     'commercial': 'commercial',
+    "for sale": "for sale",
+    "to wanted": "to wanted",
+    "holiday rental": "holiday rental",
     'land for sale/lease': 'land for sale/lease',
     'full time': 'full time',
     'part time': 'part time',
@@ -101,20 +104,113 @@ export const CATEGORY_CONFIG: CategoryConfig = {
       { key: 'facilities', type: 'array' },
       { key: 'amenities', type: 'array' }, // include if you collect them
     ],
+    "holiday rental": [
+      { key: "holidayType", type: "string" },
+      { key: "guests", type: "number" },
+      { key: "beds", type: "number" },
+      { key: "baths", type: "number" },
+      { key: "amenities", type: "array" },
+      { key: "house_rules", type: "array" },
+      { key: "rateNightly", type: "number" },
+      { key: "rateWeekly", type: "number" },
+      { key: "rateMonthly", type: "number" },
+    ],
+
+     'for sale': [
+      { key: 'propertyType', type: 'string' },
+      { key: 'salePrice', type: 'number' },
+      { key: 'negotiable', type: 'string' },
+      { key: 'builtup_area', type: 'number' },
+      { key: 'carpet_area', type: 'number' },
+      { key: 'plot_area', type: 'number' },
+      { key: 'beds', type: 'number' },
+      { key: 'baths', type: 'number' },
+      { key: 'ownership', type: 'string' },
+      { key: 'age', type: 'string' },
+      { key: 'amenities', type: 'array' },
+    ],
+
+    
+  'to wanted': [
+    { key: 'propertyType', type: 'string' },
+    // if you prefer one number, keep { key: 'budget', type: 'number' } instead
+    { key: 'minBudget', type: 'number' },
+    { key: 'maxBudget', type: 'number' },
+
+    { key: 'minArea', type: 'number' },
+    { key: 'beds', type: 'number' },
+    { key: 'baths', type: 'number' },
+
+    { key: 'preferred_locations', type: 'array' },
+    { key: 'amenities', type: 'array' },
+  ],
   },
 
   job: {
-    'full time': [
-      { key: 'company', type: 'string' },
-      { key: 'salary', type: 'number' },
-      { key: 'experience', type: 'string' },
-      { key: 'skills', type: 'array' },
+     "full time": [
+      { key: "jobType", type: "string" },   // "Full Time"
+      { key: "company", type: "string" },
+      { key: "salary", type: "number" },
+      { key: "experience", type: "string" },
+      { key: "skills", type: "array" },
+      { key: "benefits", type: "array" },
+      { key: "workMode", type: "string" },  // Onsite/Hybrid/Remote
     ],
     'part time': [
       { key: 'company', type: 'string' },
       { key: 'hourlyRate', type: 'number' },
       { key: 'shifts', type: 'array' },
+      { key: 'workMode', type: 'string' },
+      // optional:
+      { key: 'employmentType', type: 'string' },
+      { key: 'applyLink', type: 'string' },
+      { key: 'deadline', type: 'string' },
     ],
+    'internship': [
+      { key: 'company', type: 'string' },
+      { key: 'workMode', type: 'string' },
+      { key: 'duration', type: 'string' },
+      { key: 'startDate', type: 'string' },
+      { key: 'stipendType', type: 'string' }, // unpaid | stipend | salary
+      { key: 'stipend', type: 'number' },     // amount if stipend/salary
+      { key: 'skills', type: 'array' },
+      { key: 'employmentType', type: 'string' }, // "Internship"
+      { key: 'applyLink', type: 'string' },
+    ],
+
+    'freelance': [
+      { key: 'company', type: 'string' },
+      { key: 'workMode', type: 'string' },
+      { key: 'projectType', type: 'string' },
+      { key: 'duration', type: 'string' },
+      { key: 'budgetType', type: 'string' },   // fixed | hourly
+      { key: 'budgetAmount', type: 'number' }, // amount / hourly rate
+      { key: 'skills', type: 'array' },
+      { key: 'employmentType', type: 'string' }, // "Freelance"
+      { key: 'applyLink', type: 'string' },
+    ],
+
+     'temporary': [
+      { key: 'company', type: 'string' },
+      { key: 'workMode', type: 'string' },
+      { key: 'workingHours', type: 'string' },
+      { key: 'startDate', type: 'string' },
+      { key: 'endDate', type: 'string' },
+      { key: 'salary', type: 'number' },
+      { key: 'skills', type: 'array' },
+      { key: 'employmentType', type: 'string' }, // preset "Temporary"
+      // add "applyLink" here if you add that field to the UI later
+    ],
+
+     "wanted": [
+    { key: "candidateName", type: "string" },
+    { key: "employmentType", type: "string" },
+    { key: "preferred_locations", type: "string" },
+    { key: "available_from", type: "string" },
+    { key: "salary", type: "number" },
+    { key: "skills", type: "array" },
+    { key: "experience", type: "string" },
+  ],
   },
 
   vehicles: {

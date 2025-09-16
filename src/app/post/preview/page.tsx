@@ -9,6 +9,34 @@ import AppFooter from "@/app/components/AppFooter/appFooter";
 import { addPost } from "@/app/actions/addPost";
 import { buildPostFormData } from "@/lib/buildPostFormData";
 
+function fmtCurrency(v: unknown) {
+  if (v === null || v === undefined || v === "") return undefined;
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+function fmtDate(v: unknown) {
+  if (!v) return undefined;
+  const d = new Date(String(v));
+  if (isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString();
+}
+function renderValue(key: string, value: any): string {
+  if (["rentPrice","salePrice","deposit","maintenance","price","rent","rateNightly","rateWeekly","rateMonthly","salary"].includes(key)) {
+    return fmtCurrency(value) ?? "—";
+  }
+  if (["available_from"].includes(key)) {
+    return fmtDate(value) ?? "—";
+  }
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
+}
+
 export default function PreviewPage() {
   const data = usePostFormStore();
   const [loading, setLoading] = useState(false);
@@ -18,14 +46,12 @@ export default function PreviewPage() {
   const has = (k: string) =>
     data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== "";
 
-  const show = (label: string, value: any) => (
+  const row = (label: string, value: any, keyHint?: string) => (
     <p>
       <b>{label}:</b>{" "}
-      {Array.isArray(value)
-        ? value.length
-          ? value.join(", ")
-          : "—"
-        : value ?? "—"}
+      {keyHint ? renderValue(keyHint, value) : Array.isArray(value)
+        ? value.length ? value.join(", ") : "—"
+        : String(value ?? "—")}
     </p>
   );
 
@@ -43,7 +69,7 @@ export default function PreviewPage() {
     return m;
   }, [data]);
 
-  // ✅ add this (so <details> has content even without images)
+  // Debug JSON
   const debugJson = useMemo(() => {
     try {
       return JSON.stringify(data, null, 2);
@@ -89,63 +115,86 @@ export default function PreviewPage() {
         {/* Basic Info */}
         <section className="space-y-1 border-b pb-4">
           <h3 className="text-lg font-semibold">Basic Info</h3>
-          {show(
+          {row(
             "Category",
             `${data.category || "—"}${data.subcategory ? ` → ${data.subcategory}` : ""}`
           )}
-          {show("Title", data.name || "—")}
-          {show("Description", data.description || "—")}
+          {row("Title", data.name || "—")}
+          {row("Description", data.description || "—")}
         </section>
 
-        {/* Property / Commercial Details (render only if present) */}
+        {/* Details */}
         <section className="space-y-1 border-b pb-4">
           <h3 className="text-lg font-semibold">Details</h3>
 
           {/* Common property fields */}
-          {has("propertyType") && show("Type", data.propertyType)}
-          {has("beds") && show("Beds", data.beds)}
-          {has("baths") && show("Baths", data.baths)}
-          {has("rentPrice") && show("Rent", data.rentPrice)}
-          {has("salePrice") && show("Sale Price", data.salePrice)}
-          {has("deposit") && show("Deposit", data.deposit)}
-          {has("occupancy") && show("Occupancy", data.occupancy)}
-          {has("gender_pref") && show("Gender Preference", data.gender_pref)}
-          {Array.isArray(data.facilities) && show("Facilities", data.facilities)}
+          {has("propertyType") && row("Type", data.propertyType)}
+          {has("beds") && row("Beds", data.beds)}
+          {has("baths") && row("Baths", data.baths)}
+          {has("rentPrice") && row("Rent", data.rentPrice, "rentPrice")}
+          {has("salePrice") && row("Sale Price", data.salePrice, "salePrice")}
+          {has("deposit") && row("Deposit", data.deposit, "deposit")}
+          {has("occupancy") && row("Occupancy", data.occupancy)}
+          {has("gender_pref") && row("Gender Preference", data.gender_pref)}
+          {Array.isArray(data.facilities) && row("Facilities", data.facilities)}
 
           {/* Commercial extras */}
-          {has("builtup_area") && show("Built-up Area (sq ft)", data.builtup_area)}
-          {has("carpet_area") && show("Carpet Area (sq ft)", data.carpet_area)}
-          {has("floor") && show("Floor", data.floor)}
-          {has("totalFloors") && show("Total Floors", data.totalFloors)}
-          {has("furnishing") && show("Furnishing", data.furnishing)}
-          {has("washrooms") && show("Washrooms", data.washrooms)}
-          {has("pantry") && show("Pantry", data.pantry)}
-          {has("parkingSpaces") && show("Parking Spaces", data.parkingSpaces)}
-          {has("maintenance") && show("Maintenance", data.maintenance)}
-          {has("available_from") && show("Available From", data.available_from)}
-          {has("leaseTerm") && show("Lease Term (months)", data.leaseTerm)}
-          {has("powerBackup") && show("Power Backup", data.powerBackup)}
+          {has("builtup_area") && row("Built-up Area (sq ft)", data.builtup_area)}
+          {has("carpet_area") && row("Carpet Area (sq ft)", data.carpet_area)}
+          {has("floor") && row("Floor", data.floor)}
+          {has("totalFloors") && row("Total Floors", data.totalFloors)}
+          {has("furnishing") && row("Furnishing", data.furnishing)}
+          {has("washrooms") && row("Washrooms", data.washrooms)}
+          {has("pantry") && row("Pantry", data.pantry)}
+          {has("parkingSpaces") && row("Parking Spaces", data.parkingSpaces)}
+          {has("maintenance") && row("Maintenance", data.maintenance, "maintenance")}
+          {has("available_from") && row("Available From", data.available_from, "available_from")}
+          {has("leaseTerm") && row("Lease Term (months)", data.leaseTerm)}
+          {has("powerBackup") && row("Power Backup", data.powerBackup)}
 
-          {/* Room Rental / other examples */}
-          {has("type") && show("Room Type", data.type)}
-          {has("rent") && show("Monthly Rent", data.rent)}
-          {has("preferred_tenants") && show("Preferred Tenants", data.preferred_tenants)}
-          {Array.isArray(data.amenities) && show("Amenities", data.amenities)}
-          {Array.isArray(data.rules) && show("Rules", data.rules)}
+          {/* Room Rental */}
+          {has("type") && row("Room Type", data.type)}
+          {has("rent") && row("Monthly Rent", data.rent, "rent")}
+          {has("preferred_tenants") && row("Preferred Tenants", data.preferred_tenants)}
+          {Array.isArray(data.amenities) && row("Amenities", data.amenities)}
+          {Array.isArray(data.rules) && row("Rules", data.rules)}
+
+          {/* Holiday Rental */}
+          {has("holidayType") && row("Holiday Property Type", data.holidayType)}
+          {has("guests") && row("Guests", data.guests)}
+          {Array.isArray(data.house_rules) && row("House Rules", data.house_rules)}
+          {has("rateNightly") && row("Nightly Rate", data.rateNightly, "rateNightly")}
+          {has("rateWeekly") && row("Weekly Rate", data.rateWeekly, "rateWeekly")}
+          {has("rateMonthly") && row("Monthly Rate", data.rateMonthly, "rateMonthly")}
+
+          {/* Property Sale extras */}
+          {has("plot_area") && row("Plot Area (sq.ft.)", data.plot_area)}
+          {has("negotiable") && row("Price Negotiable", data.negotiable)}
+          {has("ownership") && row("Ownership Type", data.ownership)}
+          {has("age") && row("Age of Property", data.age)}
+
+          {/* Jobs → Full Time (or other job subcats) */}
+          {has("jobType") && row("Job Type", data.jobType)}
+          {has("company") && row("Company", data.company)}
+          {has("salary") && row("Salary", data.salary, "salary")}
+          {has("experience") && row("Experience", data.experience)}
+          {Array.isArray(data.skills) && row("Skills", data.skills)}
+          {Array.isArray(data.benefits) && row("Benefits", data.benefits)}
+          {has("workMode") && row("Work Mode", data.workMode)}
         </section>
 
         {/* Contact Details */}
         <section className="space-y-1 border-b pb-4">
           <h3 className="text-lg font-semibold">Contact Details</h3>
-          {show("Name", data.sellerInfo?.name || "—")}
-          {show("Email", data.sellerInfo?.email || "—")}
-          {show("Phone", data.sellerInfo?.phone || "—")}
+          {row("Name", data.sellerInfo?.name || "—")}
+          {row("Email", data.sellerInfo?.email || "—")}
+          {row("Phone", data.sellerInfo?.phone || "—")}
         </section>
 
         {/* Location */}
         <section className="space-y-1 border-b pb-4">
           <h3 className="text-lg font-semibold">Location</h3>
-          {show("Address", data.location?.address || "—")}
+          {row("Address", data.location?.address || "—")}
         </section>
 
         {/* Images */}
@@ -158,7 +207,7 @@ export default function PreviewPage() {
                 return (
                   <img
                     key={i}
-                    src={url}
+                    src={url as string}
                     alt={`preview-${i}`}
                     className="w-28 h-28 object-cover rounded"
                   />
@@ -168,15 +217,17 @@ export default function PreviewPage() {
           </section>
         )}
 
-        {/* Debug JSON (always available) */}
-        {/* <section>
+        {/* Debug JSON */}
+        <section>
           <details className="group">
-            <summary className="cursor-pointer text-sm text-gray-600">Debug JSON</summary>
+            <summary className="cursor-pointer text-sm text-gray-600">
+              Debug JSON
+            </summary>
             <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
               {debugJson}
             </pre>
           </details>
-        </section> */}
+        </section>
 
         <Button onClick={handleSubmit} disabled={loading} className="w-full">
           {loading ? "Submitting..." : "Submit Post"}

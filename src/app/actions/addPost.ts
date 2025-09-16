@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import cloudinary from "@/config/cloudinary";
 
-// ✅ add a type for location
+// Typed location so TS knows about "address"
 type LocationData = {
   address?: string;
   lat?: number;
@@ -25,7 +25,6 @@ export async function addPost(formData: FormData) {
 
   // locationData is expected to be a JSON string
   const locationRaw = (formData.get("locationData") as string) || "";
-  // ✅ parse with a typed fallback so TS knows about `address`
   const location: LocationData = locationRaw
     ? safeParse<LocationData>(locationRaw, {})
     : {};
@@ -56,44 +55,101 @@ export async function addPost(formData: FormData) {
     }
   }
 
-  // --- Optional fields (mostly strings/numbers/arrays) ---
+  // --- Optional fields (strings/numbers/arrays) ---
   const facilities = pullArray(formData.get("facilities"));
-  const amenities = pullArray(formData.get("amenities"));
+  const amenities  = pullArray(formData.get("amenities"));
+  const house_rules = pullArray(formData.get("house_rules")); // room/holiday
 
   const postData = {
+    // required core
     category,
     subcategory,
     name,
     description,
-    location,          // ✅ typed LocationData
+    location,
     seller_info,
     images,
 
     // common property
-    propertyType: pullString(formData.get("propertyType")),
-    beds: pullNumber(formData.get("beds")),
-    baths: pullNumber(formData.get("baths")),
-    rentPrice: pullNumber(formData.get("rentPrice")),
-    salePrice: pullNumber(formData.get("salePrice")),
-    deposit: pullNumber(formData.get("deposit")),
-    occupancy: pullString(formData.get("occupancy")),
-    gender_pref: pullString(formData.get("gender_pref")),
+    propertyType:  pullString(formData.get("propertyType")),
+    beds:          pullNumber(formData.get("beds")),
+    baths:         pullNumber(formData.get("baths")),
+    rentPrice:     pullNumber(formData.get("rentPrice")),
+    salePrice:     pullNumber(formData.get("salePrice")),
+    deposit:       pullNumber(formData.get("deposit")),
+    occupancy:     pullString(formData.get("occupancy")),
+    gender_pref:   pullString(formData.get("gender_pref")),
     facilities,
     amenities,
 
     // commercial extras
-    builtup_area: pullNumber(formData.get("builtup_area")),
-    carpet_area: pullNumber(formData.get("carpet_area")),
-    floor: pullNumber(formData.get("floor")),
-    totalFloors: pullNumber(formData.get("totalFloors")),
-    furnishing: pullString(formData.get("furnishing")),
-    washrooms: pullNumber(formData.get("washrooms")),
-    pantry: pullString(formData.get("pantry")),
+    builtup_area:  pullNumber(formData.get("builtup_area")),
+    carpet_area:   pullNumber(formData.get("carpet_area")),
+    floor:         pullNumber(formData.get("floor")),
+    totalFloors:   pullNumber(formData.get("totalFloors")),
+    furnishing:    pullString(formData.get("furnishing")),
+    washrooms:     pullNumber(formData.get("washrooms")),
+    pantry:        pullString(formData.get("pantry")),
     parkingSpaces: pullNumber(formData.get("parkingSpaces")),
-    maintenance: pullNumber(formData.get("maintenance")),
-    available_from: pullString(formData.get("available_from")),
-    leaseTerm: pullNumber(formData.get("leaseTerm")),
-    powerBackup: pullString(formData.get("powerBackup")),
+    maintenance:   pullNumber(formData.get("maintenance")),
+    available_from: pullString(formData.get("available_from")), // keep as string unless you switch to Date
+    leaseTerm:     pullNumber(formData.get("leaseTerm")),
+    powerBackup:   pullString(formData.get("powerBackup")),
+
+    // holiday rental extras (match your form/config)
+    holidayType:   pullString(formData.get("holidayType")),
+    guests:        pullNumber(formData.get("guests")),
+    rateNightly:   pullNumber(formData.get("rateNightly")),
+    rateWeekly:    pullNumber(formData.get("rateWeekly")),
+    rateMonthly:   pullNumber(formData.get("rateMonthly")),
+    house_rules,
+
+    minBudget: pullNumber(formData.get("minBudget")),
+maxBudget: pullNumber(formData.get("maxBudget")),
+minArea:   pullNumber(formData.get("minArea")),
+preferred_locations: pullArray(formData.get("preferred_locations")),
+
+    // for sale extras
+    plot_area:     pullNumber(formData.get("plot_area")),
+    negotiable:    pullString(formData.get("negotiable")),   // "Yes"/"No"
+    ownership:     pullString(formData.get("ownership")),
+    age:           pullString(formData.get("age")),
+
+    // --- Job (Full Time) fields ---
+jobType:    pullString(formData.get("jobType")),
+company:    pullString(formData.get("company")),
+salary:     pullNumber(formData.get("salary")),
+experience: pullString(formData.get("experience")),
+skills:     pullArray(formData.get("skills")),
+benefits:   pullArray(formData.get("benefits")),
+workMode:   pullString(formData.get("workMode")),
+
+// --- Job (part-time & common) ---
+hourlyRate: pullNumber(formData.get("hourlyRate")),
+shifts:     pullArray(formData.get("shifts")),
+employmentType: pullString(formData.get("employmentType")), // "Part Time"
+applyLink:  pullString(formData.get("applyLink")),
+deadline:   pullString(formData.get("deadline")),
+
+// --- Job (internship & common) ---
+duration:       pullString(formData.get("duration")),
+startDate:      pullString(formData.get("startDate")),
+stipendType:    pullString(formData.get("stipendType")),
+stipend:        pullNumber(formData.get("stipend")),
+
+// --- Job (freelance & common) ---
+projectType:    pullString(formData.get("projectType")),
+budgetType:     pullString(formData.get("budgetType")),   // "fixed" | "hourly"
+budgetAmount:   pullNumber(formData.get("budgetAmount")), 
+
+// --- Job (temporary) ---
+workingHours:   pullString(formData.get("workingHours")),
+endDate:        pullString(formData.get("endDate")), // "Temporary"
+
+// --- Job Wanted ---
+candidateName:     pullString(formData.get("candidateName")),
+
+
   };
 
   // --- Validate required fields ---
@@ -102,7 +158,6 @@ export async function addPost(formData: FormData) {
   if (!postData.description) errors.push("Description is required");
   if (!postData.category) errors.push("Category is required");
   if (!postData.subcategory) errors.push("Subcategory is required");
-  // ✅ validate against the typed `location` (or keep `postData.location as LocationData`)
   if (!location.address) errors.push("Location address is required");
   if (!postData.seller_info?.name) errors.push("Contact name is required");
   if (!postData.seller_info?.email) errors.push("Contact email is required");
@@ -122,7 +177,7 @@ export async function addPost(formData: FormData) {
   redirect(`/post-details/${newPost._id}`);
 }
 
-// ------- helpers -------
+/* ---------------- helpers ---------------- */
 function safeParse<T = any>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;

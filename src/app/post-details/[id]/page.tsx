@@ -8,9 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import AppHeader from "@/app/components/AppHeader/appHeader";
 import AppFooter from "@/app/components/AppFooter/appFooter";
-import { CATEGORY_CONFIG, normalizeCategory, normalizeSubcategory } from "@/lib/buildPostFormData";
+import {
+  CATEGORY_CONFIG,
+  normalizeCategory,
+  normalizeSubcategory,
+} from "@/lib/buildPostFormData";
 
-// ---- Labels used in both Preview & Details ----
+// ---- Labels (shared with Preview) ----
 const LABELS: Record<string, string> = {
   // core
   name: "Title",
@@ -44,19 +48,39 @@ const LABELS: Record<string, string> = {
   leaseTerm: "Lease Term (months)",
   powerBackup: "Power Backup",
 
-  // room rental example
+  // room rental
   type: "Room Type",
   rent: "Monthly Rent",
   preferred_tenants: "Preferred Tenants",
   rules: "Rules",
 
-  // vehicles/jobs examples—add as needed
-  budget: "Budget",
-  preferred_locations: "Preferred Locations",
+  // holiday rental
+  holidayType: "Holiday Property Type",
+  guests: "Guests",
+  house_rules: "House Rules",
+  rateNightly: "Nightly Rate",
+  rateWeekly: "Weekly Rate",
+  rateMonthly: "Monthly Rate",
+
+  // property sale extras
+  plot_area: "Plot Area (sq.ft.)",
+  negotiable: "Price Negotiable",
+  ownership: "Ownership Type",
+  age: "Age of Property",
+
+  // jobs
+  jobType: "Job Type",
+  company: "Company",
   salary: "Salary",
-  hourlyRate: "Hourly Rate",
   experience: "Experience",
   skills: "Skills",
+  benefits: "Benefits",
+  workMode: "Work Mode",
+
+  // misc examples
+  budget: "Budget",
+  preferred_locations: "Preferred Locations",
+  hourlyRate: "Hourly Rate",
   shifts: "Shifts",
   make: "Make",
   model: "Model",
@@ -76,16 +100,27 @@ function fmtCurrency(v: unknown) {
     maximumFractionDigits: 0,
   }).format(n);
 }
-
 function fmtDate(v: unknown) {
   if (!v) return undefined;
   const d = new Date(String(v));
   if (isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString();
 }
-
 function renderValue(key: string, value: any): string {
-  if (["rentPrice", "salePrice", "deposit", "maintenance", "price", "rent"].includes(key)) {
+  if (
+    [
+      "rentPrice",
+      "salePrice",
+      "deposit",
+      "maintenance",
+      "price",
+      "rent",
+      "rateNightly",
+      "rateWeekly",
+      "rateMonthly",
+      "salary",
+    ].includes(key)
+  ) {
     return fmtCurrency(value) ?? "—";
   }
   if (["available_from"].includes(key)) {
@@ -108,8 +143,8 @@ type Post = {
   [k: string]: any;
 };
 
-// Fields we show in the "Property Details" section to match the Preview
-const PREVIEW_PROPERTY_KEYS: string[] = [
+// Base keys shown for “property-ish” posts (same as Preview)
+const BASE_PREVIEW_KEYS: string[] = [
   "propertyType",
   "beds",
   "baths",
@@ -118,6 +153,61 @@ const PREVIEW_PROPERTY_KEYS: string[] = [
   "occupancy",
   "gender_pref",
   "facilities",
+];
+
+// Commercial adds:
+const COMMERCIAL_PREVIEW_KEYS: string[] = [
+  "builtup_area",
+  "carpet_area",
+  "floor",
+  "totalFloors",
+  "furnishing",
+  "washrooms",
+  "pantry",
+  "parkingSpaces",
+  "maintenance",
+  "available_from",
+  "leaseTerm",
+  "powerBackup",
+];
+
+// Holiday Rental adds:
+const HOLIDAY_PREVIEW_KEYS: string[] = [
+  "holidayType",
+  "guests",
+  "house_rules",
+  "rateNightly",
+  "rateWeekly",
+  "rateMonthly",
+];
+
+// Room Rental adds:
+const ROOM_RENTAL_PREVIEW_KEYS: string[] = [
+  "type",
+  "rent",
+  "preferred_tenants",
+  "amenities",
+  "rules",
+];
+
+// Property Sale adds:
+const PROPERTY_SALE_PREVIEW_KEYS: string[] = [
+  "salePrice",
+  "plot_area",
+  "negotiable",
+  "ownership",
+  "age",
+];
+
+// Jobs → Full Time (and similar) adds:
+const JOB_FULLTIME_PREVIEW_KEYS: string[] = [
+  "jobType",
+  "company",
+  "salary",
+  "experience",
+  "skills",
+  "benefits",
+  "workMode",
 ];
 
 export default function PostDetailPageClient() {
@@ -147,7 +237,36 @@ export default function PostDetailPageClient() {
     fetchPost();
   }, [id]);
 
-  // Use normalized category + subcategory when reading CATEGORY_CONFIG
+  // Keys for the Details section (mirror Preview) based on category/subcategory
+  const previewKeys = useMemo(() => {
+    if (!post) return [] as string[];
+    const keys = new Set(BASE_PREVIEW_KEYS);
+
+    const normCat = normalizeCategory(post.category || "");
+    const normSub = normalizeSubcategory(post.subcategory || "");
+
+    if (normCat === "property") {
+      if (normSub === "commercial") COMMERCIAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      if (normSub === "holiday rental") HOLIDAY_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      if (normSub === "room rental") ROOM_RENTAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      if (normSub === "for students") {
+        // BASE covers students set
+      }
+      // property sale
+      if (normSub === "property sale" || normSub === "to buy") {
+        PROPERTY_SALE_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      }
+    }
+
+    if (normCat === "job") {
+      JOB_FULLTIME_PREVIEW_KEYS.forEach((k) => keys.add(k));
+    }
+
+    // Only keep keys that actually exist on the post to avoid lots of “—”
+    return Array.from(keys).filter((k) => post[k] !== undefined);
+  }, [post]);
+
+  // Use normalized category + subcategory for CATEGORY_CONFIG
   const configuredKeys = useMemo(() => {
     if (!post?.category || !post?.subcategory) return [] as string[];
     const normCat = normalizeCategory(post.category);
@@ -156,19 +275,27 @@ export default function PostDetailPageClient() {
     return Array.isArray(spec) ? spec.map((f) => f.key) : [];
   }, [post]);
 
-  // Anything present on the document that isn't core, and not in preview keys,
-  // but is part of the spec (to show under "More Details")
+  // Extra fields present on the doc that are part of spec but not in the preview list
   const extraConfiguredKeys = useMemo(() => {
     if (!post) return [] as string[];
     const core = new Set([
-      "_id", "name", "description", "images", "category", "subcategory", "location", "seller_info",
-      "createdAt", "updatedAt", "__v",
+      "_id",
+      "name",
+      "description",
+      "images",
+      "category",
+      "subcategory",
+      "location",
+      "seller_info",
+      "createdAt",
+      "updatedAt",
+      "__v",
     ]);
-    const previewSet = new Set(PREVIEW_PROPERTY_KEYS);
+    const previewSet = new Set(previewKeys);
     return configuredKeys
       .filter((k) => !core.has(k) && !previewSet.has(k))
       .filter((k) => post[k] !== null && post[k] !== undefined && post[k] !== "");
-  }, [post, configuredKeys]);
+  }, [post, configuredKeys, previewKeys]);
 
   const debugJson = useMemo(() => {
     try {
@@ -197,25 +324,30 @@ export default function PostDetailPageClient() {
           <Separator />
 
           <CardContent className="space-y-6 mt-4">
-            {/* --- Basic Info (matches Preview) --- */}
+            {/* Basic Info */}
             <section className="space-y-1 border-b pb-4">
               <h3 className="text-lg font-semibold">Basic Info</h3>
-              <p><b>Category:</b> {post.category} {post.subcategory ? `→ ${post.subcategory}` : ""}</p>
+              <p>
+                <b>Category:</b> {post.category}
+                {post.subcategory ? ` → ${post.subcategory}` : ""}
+              </p>
               <p><b>Title:</b> {post.name || "—"}</p>
               {post.description ? <p><b>Description:</b> {post.description}</p> : null}
             </section>
 
-            {/* --- Property Details (matches Preview list) --- */}
-            <section className="space-y-1 border-b pb-4">
-              <h3 className="text-lg font-semibold">Property Details</h3>
-              {PREVIEW_PROPERTY_KEYS.map((key) => (
-                <p key={key}>
-                  <b>{LABELS[key] ?? key}:</b> {renderValue(key, post[key])}
-                </p>
-              ))}
-            </section>
+            {/* Details (mirrors Preview) */}
+            {previewKeys.length > 0 && (
+              <section className="space-y-1 border-b pb-4">
+                <h3 className="text-lg font-semibold">Details</h3>
+                {previewKeys.map((key) => (
+                  <p key={key}>
+                    <b>{LABELS[key] ?? key}:</b> {renderValue(key, post[key])}
+                  </p>
+                ))}
+              </section>
+            )}
 
-            {/* --- More Details (anything extra from CATEGORY_CONFIG that you saved) --- */}
+            {/* More Details (spec extras not shown above) */}
             {extraConfiguredKeys.length > 0 && (
               <section className="space-y-1 border-b pb-4">
                 <h3 className="text-lg font-semibold">More Details</h3>
@@ -227,8 +359,10 @@ export default function PostDetailPageClient() {
               </section>
             )}
 
-            {/* --- Contact Details (matches Preview) --- */}
-            {(post.seller_info?.name || post.seller_info?.email || post.seller_info?.phone) && (
+            {/* Contact Details */}
+            {(post.seller_info?.name ||
+              post.seller_info?.email ||
+              post.seller_info?.phone) && (
               <section className="space-y-1 border-b pb-4">
                 <h3 className="text-lg font-semibold">Contact Details</h3>
                 <p><b>Name:</b> {post.seller_info?.name || "—"}</p>
@@ -237,13 +371,13 @@ export default function PostDetailPageClient() {
               </section>
             )}
 
-            {/* --- Location (matches Preview) --- */}
+            {/* Location */}
             <section className="space-y-1 border-b pb-4">
               <h3 className="text-lg font-semibold">Location</h3>
               <p><b>Address:</b> {post.location?.address || "—"}</p>
             </section>
 
-            {/* --- Images (matches Preview) --- */}
+            {/* Images */}
             {Array.isArray(post.images) && post.images.length > 0 && (
               <section className="space-y-2 border-b pb-4">
                 <h3 className="text-lg font-semibold">Images</h3>
@@ -260,8 +394,8 @@ export default function PostDetailPageClient() {
               </section>
             )}
 
-            {/* --- Debug JSON (collapsible) --- */}
-            {/* <section>
+            {/* Debug JSON */}
+            <section>
               <details className="group">
                 <summary className="cursor-pointer text-sm text-gray-600">
                   Debug JSON
@@ -270,7 +404,7 @@ export default function PostDetailPageClient() {
                   {debugJson}
                 </pre>
               </details>
-            </section> */}
+            </section>
           </CardContent>
         </Card>
       </div>
