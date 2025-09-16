@@ -5,23 +5,16 @@ import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
 import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
-// If you use a shared contact section elsewhere, keep using it there.
 
 export default function JobPartTimeForm() {
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default employmentType to "Part Time" once
+  // Default employmentType to "Part Time"
   useEffect(() => {
     setField("employmentType", "Part Time");
   }, [setField]);
 
-  const shiftOptions = [
-    "Morning",
-    "Evening",
-    "Night",
-    "Weekend",
-    "Rotational",
-  ];
+  const shiftOptions = ["Morning", "Evening", "Night", "Weekend", "Rotational"];
 
   return (
     <div className="space-y-6">
@@ -63,20 +56,11 @@ export default function JobPartTimeForm() {
           type="number"
           placeholder="e.g. 250"
         />
-        <FormField
-          label="Application Deadline"
-          field="deadline"
-          type="date"
-        />
+        <FormField label="Application Deadline" field="deadline" type="date" />
       </div>
 
       {/* Shifts (array) */}
-      <CheckboxGroupField
-        label="Shifts"
-        field="shifts"
-        options={shiftOptions}
-        cols={3}
-      />
+      <CheckboxGroupField label="Shifts" field="shifts" options={shiftOptions} cols={3} />
 
       {/* Optional apply link */}
       <FormField
@@ -85,8 +69,31 @@ export default function JobPartTimeForm() {
         placeholder="https://company.com/careers/job-id"
       />
 
-      {/* Hidden preset for employmentType just in case you need it in preview/details */}
-      {/* If you prefer to show it, replace this with a SelectField. */}
+      {/* Contact Details */}
+      <div className="space-y-2 border-t pt-4">
+        <h3 className="text-lg font-semibold">Contact Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="sellerInfo.name"
+            placeholder="Contact Person"
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="sellerInfo.email"
+            type="email"
+            placeholder="contact@email.com"
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="sellerInfo.phone"
+            placeholder="+91 9XXXXXXXXX"
+            required
+          />
+        </div>
+      </div>
     </div>
   );
 }

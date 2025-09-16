@@ -98,6 +98,32 @@ export default function JobTemporaryForm() {
         type="textarea"
         placeholder="Temporary job responsibilities and details"
       />
+
+      {/* Contact Details */}
+      <div className="space-y-2 border-t pt-4">
+        <h3 className="text-lg font-semibold">Contact Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="sellerInfo.name"
+            placeholder="Contact Person"
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="sellerInfo.email"
+            type="email"
+            placeholder="contact@email.com"
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="sellerInfo.phone"
+            placeholder="+91 9XXXXXXXXX"
+            required
+          />
+        </div>
+      </div>
     </div>
   );
 }

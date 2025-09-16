@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { usePostFormStore } from "../store/postFormStore";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/app/components/AppHeader/appHeader";
@@ -25,11 +26,28 @@ function fmtDate(v: unknown) {
   if (isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString();
 }
+
+const CURRENCY_KEYS = new Set([
+  "rentPrice",
+  "salePrice",
+  "deposit",
+  "maintenance",
+  "price",
+  "rent",
+  "rateNightly",
+  "rateWeekly",
+  "rateMonthly",
+  "salary",
+  "hourlyRate",
+  "stipendAmount",
+  "budgetAmount",
+]);
+
 function renderValue(key: string, value: any): string {
-  if (["rentPrice","salePrice","deposit","maintenance","price","rent","rateNightly","rateWeekly","rateMonthly","salary"].includes(key)) {
+  if (CURRENCY_KEYS.has(key)) {
     return fmtCurrency(value) ?? "—";
   }
-  if (["available_from"].includes(key)) {
+  if (key === "available_from") {
     return fmtDate(value) ?? "—";
   }
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
@@ -37,25 +55,35 @@ function renderValue(key: string, value: any): string {
   return String(value);
 }
 
+// helper to display preferred_locations as string or array
+function renderPreferredLocations(v: any) {
+  if (Array.isArray(v)) return v.length ? v.join(", ") : "—";
+  if (typeof v === "string") return v.trim() || "—";
+  return "—";
+}
+
 export default function PreviewPage() {
   const data = usePostFormStore();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
 
-  // ---- small helpers ----
   const has = (k: string) =>
     data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== "";
 
   const row = (label: string, value: any, keyHint?: string) => (
     <p>
       <b>{label}:</b>{" "}
-      {keyHint ? renderValue(keyHint, value) : Array.isArray(value)
-        ? value.length ? value.join(", ") : "—"
+      {keyHint
+        ? renderValue(keyHint, value)
+        : Array.isArray(value)
+        ? value.length
+          ? value.join(", ")
+          : "—"
         : String(value ?? "—")}
     </p>
   );
 
-  // mirror server-side requireds
   const missing = useMemo(() => {
     const m: string[] = [];
     if (!data.name) m.push("Title");
@@ -69,7 +97,6 @@ export default function PreviewPage() {
     return m;
   }, [data]);
 
-  // Debug JSON
   const debugJson = useMemo(() => {
     try {
       return JSON.stringify(data, null, 2);
@@ -89,13 +116,29 @@ export default function PreviewPage() {
     const fd = buildPostFormData(data);
 
     try {
-      await addPost(fd); // redirects on success
+      const res = await addPost(fd); // supports return-or-redirect
+      setLoading(false);
+
+      // If your server action returns a result object
+      if (res && (res as any).ok && (res as any).id) {
+        router.push(`/post-details/${(res as any).id}`);
+        return;
+      }
+
+      // If it returned a falsy/failed object
+      if (res && (res as any).ok === false) {
+        setClientError((res as any).error || "Submit failed. Please try again.");
+        return;
+      }
+
+      // If it redirected, Next will have navigated already; no action needed.
     } catch (err: any) {
+      // If the server action throws a non-redirect error
       console.error("❌ submit error", err);
       setClientError(
-        err?.message || "Submit failed. Please check required fields and try again."
+        err?.message ||
+          "Submit failed. Please check required fields and try again."
       );
-    } finally {
       setLoading(false);
     }
   };
@@ -148,7 +191,8 @@ export default function PreviewPage() {
           {has("pantry") && row("Pantry", data.pantry)}
           {has("parkingSpaces") && row("Parking Spaces", data.parkingSpaces)}
           {has("maintenance") && row("Maintenance", data.maintenance, "maintenance")}
-          {has("available_from") && row("Available From", data.available_from, "available_from")}
+          {has("available_from") &&
+            row("Available From", data.available_from, "available_from")}
           {has("leaseTerm") && row("Lease Term (months)", data.leaseTerm)}
           {has("powerBackup") && row("Power Backup", data.powerBackup)}
 
@@ -173,14 +217,28 @@ export default function PreviewPage() {
           {has("ownership") && row("Ownership Type", data.ownership)}
           {has("age") && row("Age of Property", data.age)}
 
-          {/* Jobs → Full Time (or other job subcats) */}
+          {/* Jobs → Full Time / Part Time / etc. */}
           {has("jobType") && row("Job Type", data.jobType)}
           {has("company") && row("Company", data.company)}
           {has("salary") && row("Salary", data.salary, "salary")}
+          {has("hourlyRate") && row("Hourly Rate", data.hourlyRate, "hourlyRate")}
+          {has("stipendAmount") && row("Stipend Amount", data.stipendAmount, "stipendAmount")}
+          {has("budgetAmount") && row("Budget Amount", data.budgetAmount, "budgetAmount")}
           {has("experience") && row("Experience", data.experience)}
           {Array.isArray(data.skills) && row("Skills", data.skills)}
           {Array.isArray(data.benefits) && row("Benefits", data.benefits)}
           {has("workMode") && row("Work Mode", data.workMode)}
+
+          {/* ✅ Jobs → Wanted specific */}
+          {has("candidateName") && row("Candidate Name", data.candidateName)}
+          {has("employmentType") && row("Employment Type", data.employmentType)}
+          {(has("preferred_locations") || Array.isArray(data.preferred_locations)) && (
+            <p>
+              <b>Preferred Locations:</b> {renderPreferredLocations(data.preferred_locations)}
+            </p>
+          )}
+          {has("available_from") &&
+            row("Available From", data.available_from, "available_from")}
         </section>
 
         {/* Contact Details */}
@@ -202,17 +260,22 @@ export default function PreviewPage() {
           <section className="space-y-2 border-b pb-4">
             <h3 className="text-lg font-semibold">Images</h3>
             <div className="flex flex-wrap gap-3">
-              {data.images.map((img, i) => {
-                const url = img instanceof File ? URL.createObjectURL(img) : img;
-                return (
-                  <img
-                    key={i}
-                    src={url as string}
-                    alt={`preview-${i}`}
-                    className="w-28 h-28 object-cover rounded"
-                  />
-                );
-              })}
+              {data.images
+                .filter(
+                  (img: any) => img instanceof File || typeof img === "string"
+                )
+                .map((img: any, i: number) => {
+                  const url =
+                    img instanceof File ? URL.createObjectURL(img) : (img as string);
+                  return (
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`preview-${i}`}
+                      className="w-28 h-28 object-cover rounded"
+                    />
+                  );
+                })}
             </div>
           </section>
         )}
@@ -223,7 +286,7 @@ export default function PreviewPage() {
             <summary className="cursor-pointer text-sm text-gray-600">
               Debug JSON
             </summary>
-            <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
+          <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
               {debugJson}
             </pre>
           </details>

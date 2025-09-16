@@ -8,6 +8,7 @@ import SelectField from "@/app/components/form/fields/SelectField";
 export default function JobWantedForm() {
   const setField = usePostFormStore((s) => s.setField);
   const skills = usePostFormStore((s) => s.skills);
+  const sellerInfo = usePostFormStore((s) => s.sellerInfo);
 
   // Controlled comma-input for skills
   const [skillsText, setSkillsText] = useState(
@@ -22,9 +23,15 @@ export default function JobWantedForm() {
   };
 
   useEffect(() => {
-    // category and subcategory auto-set if needed
+    // set an empty value so UI can pick one; category/subcategory handled elsewhere
     setField("employmentType", "");
   }, [setField]);
+
+  // --- Contact helpers (update nested sellerInfo safely) ---
+  const updateSeller = (k: "name" | "email" | "phone", v: string) => {
+    const current = sellerInfo || { name: "", email: "", phone: "" };
+    setField("sellerInfo", { ...current, [k]: v });
+  };
 
   return (
     <div className="space-y-6">
@@ -99,6 +106,50 @@ export default function JobWantedForm() {
         type="textarea"
         placeholder="Share your goals, strengths, or career objectives"
       />
+
+      {/* ===================== Contact Details ===================== */}
+      <div className="space-y-3 border-t pt-5">
+        <h3 className="text-lg font-semibold">Contact Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Name</label>
+            <input
+              className="border rounded w-full py-2 px-3"
+              placeholder="Your Name"
+              value={sellerInfo?.name ?? ""}
+              onChange={(e) => updateSeller("name", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Email</label>
+            <input
+              type="email"
+              className="border rounded w-full py-2 px-3"
+              placeholder="you@email.com"
+              value={sellerInfo?.email ?? ""}
+              onChange={(e) => updateSeller("email", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Phone</label>
+            <input
+              className="border rounded w-full py-2 px-3"
+              placeholder="+1 555 555 5555"
+              value={sellerInfo?.phone ?? ""}
+              onChange={(e) => updateSeller("phone", e.target.value)}
+              required
+            />
+          </div>
+        </div>
+        <p className="text-xs text-gray-500">
+          These details populate <code>seller_info</code> and are required to post.
+        </p>
+      </div>
+      {/* =========================================================== */}
     </div>
   );
 }

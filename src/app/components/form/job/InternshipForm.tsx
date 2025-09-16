@@ -10,17 +10,15 @@ export default function JobInternshipForm() {
   const skillsValue = usePostFormStore((s) => s.skills);
   const stipendType = usePostFormStore((s) => s.stipendType);
 
-  // Ensure category/subcategory are set by the parent route/page.
-  // We only preset employmentType here:
+  // Preset employmentType
   useEffect(() => {
     setField("employmentType", "Internship");
   }, [setField]);
 
-  // Local controlled text that we split into an array for store
+  // Local controlled text → array in store
   const [skillsText, setSkillsText] = useState(
     Array.isArray(skillsValue) ? skillsValue.join(", ") : ""
   );
-
   const onSkillsBlur = () => {
     const arr = skillsText
       .split(",")
@@ -118,6 +116,32 @@ export default function JobInternshipForm() {
         field="applyLink"
         placeholder="https://company.com/careers/job-id"
       />
+
+      {/* Contact Details */}
+      <div className="space-y-2 border-t pt-4">
+        <h3 className="text-lg font-semibold">Contact Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="sellerInfo.name"
+            placeholder="Contact Person"
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="sellerInfo.email"
+            type="email"
+            placeholder="contact@email.com"
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="sellerInfo.phone"
+            placeholder="+91 9XXXXXXXXX"
+            required
+          />
+        </div>
+      </div>
     </div>
   );
 }

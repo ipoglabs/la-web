@@ -1,141 +1,179 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card } from "@/components/ui/card";
+import { useEffect } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
 
 export default function RentPropertyForm() {
-  const [formData, setFormData] = useState({
-    title: "",
-    propertyType: "",
-    rent: "",
-    deposit: "",
-    bedrooms: "",
-    bathrooms: "",
-    furnishing: "",
-    availableFrom: "",
-    leaseTerm: "",
-    location: "",
-    amenities: [] as string[],
-    description: "",
-    contactName: "",
-    contactPhone: "",
-    contactEmail: "",
-  });
+  const setField = usePostFormStore((s) => s.setField);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // If you want to auto-set category/subcategory, do it here (optional):
+  // useEffect(() => {
+  //   setField("category", "Property");
+  //   setField("subcategory", "For Rent");
+  // }, [setField]);
 
-  const handleAmenityChange = (amenity: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter((a) => a !== amenity)
-        : [...prev.amenities, amenity],
-    }));
-  };
+  const amenityOptions = [
+    "Parking",
+    "Lift",
+    "Power Backup",
+    "Gym",
+    "Swimming Pool",
+    "Garden",
+    "Security",
+    "Water Supply",
+    "Club House",
+    "Balcony",
+  ];
 
   return (
-    <Card className="max-w-3xl mx-auto p-6">
-      <h2 className="text-xl font-semibold mb-4">Post a Rental Property</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold text-center">Post a Rental Property</h2>
 
-      {/* 🚫 Removed <form> wrapper */}
+      {/* Property Type */}
+      <SelectField
+        label="Property Type"
+        field="propertyType"
+        options={[
+          { value: "Apartment" },
+          { value: "IndependentHouse", label: "Independent House" },
+          { value: "Villa" },
+          { value: "House" },
+          { value: "Studio" },
+          { value: "Other" },
+        ]}
+        required
+      />
 
-      {/* Basic Info */}
-      <div className="col-span-2">
-        <Label>Title</Label>
-        <Input name="title" onChange={handleChange} placeholder="Spacious 2BHK for rent" />
+      {/* Title & Description */}
+      <FormField
+        label="Listing Title"
+        field="name"
+        placeholder="e.g. Spacious 2BHK for rent in Anna Nagar"
+        required
+      />
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        placeholder="Describe the property, highlights, nearby amenities…"
+      />
+
+      {/* Rent / Deposit */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField
+          label="Monthly Rent (₹)"
+          field="rentPrice"
+          type="number"
+          placeholder="15000"
+          required
+        />
+        <FormField
+          label="Deposit / Advance (₹)"
+          field="deposit"
+          type="number"
+          placeholder="50000"
+        />
       </div>
 
-      <div>
-        <Label>Property Type</Label>
-        <Input name="propertyType" onChange={handleChange} placeholder="Apartment / Villa / House" />
+      {/* Beds / Baths */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <FormField label="Bedrooms" field="beds" type="number" placeholder="2" />
+        <FormField label="Bathrooms" field="baths" type="number" placeholder="2" />
       </div>
 
-      <div>
-        <Label>Monthly Rent (₹)</Label>
-        <Input name="rent" type="number" onChange={handleChange} placeholder="15000" />
+      {/* Furnishing / Lease Term / Available From */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SelectField
+          label="Furnishing"
+          field="furnishing"
+          options={[
+            { value: "Furnished" },
+            { value: "Semi-furnished", label: "Semi-furnished" },
+            { value: "Unfurnished" },
+          ]}
+        />
+        <FormField
+          label="Lease Term (months)"
+          field="leaseTerm"
+          type="number"
+          placeholder="11"
+        />
+        <FormField
+          label="Available From"
+          field="available_from"
+          type="date"
+        />
       </div>
 
-      <div>
-        <Label>Deposit (₹)</Label>
-        <Input name="deposit" type="number" onChange={handleChange} placeholder="50000" />
+      {/* (Optional) Occupancy / Gender Preference */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <SelectField
+          label="Occupancy"
+          field="occupancy"
+          options={[
+            { value: "Any" },
+            { value: "Family" },
+            { value: "Bachelors" },
+            { value: "Company Lease" },
+          ]}
+        />
+        <SelectField
+          label="Gender Preference"
+          field="gender_pref"
+          options={[
+            { value: "Any" },
+            { value: "Male" },
+            { value: "Female" },
+          ]}
+        />
       </div>
 
-      <div>
-        <Label>Bedrooms</Label>
-        <Input name="bedrooms" type="number" onChange={handleChange} placeholder="2" />
-      </div>
+      {/* Amenities (array) */}
+      <CheckboxGroupField
+        label="Amenities"
+        field="amenities"
+        options={amenityOptions}
+        cols={3}
+      />
 
-      <div>
-        <Label>Bathrooms</Label>
-        <Input name="bathrooms" type="number" onChange={handleChange} placeholder="2" />
-      </div>
-
-      <div>
-        <Label>Furnishing</Label>
-        <Input name="furnishing" onChange={handleChange} placeholder="Furnished / Semi-furnished / Unfurnished" />
-      </div>
-
-      <div>
-        <Label>Available From</Label>
-        <Input name="availableFrom" type="date" onChange={handleChange} />
-      </div>
-
-      <div>
-        <Label>Lease Term</Label>
-        <Input name="leaseTerm" onChange={handleChange} placeholder="11 months / 1 year" />
-      </div>
-
-      <div className="col-span-2">
-        <Label>Location</Label>
-        <Input name="location" onChange={handleChange} placeholder="City, Area, Pincode" />
-      </div>
-
-      {/* Amenities */}
-      <div className="col-span-2">
-        <Label>Amenities</Label>
-        <div className="flex gap-4 flex-wrap mt-2">
-          {["Parking", "Lift", "Power Backup", "Gym", "Swimming Pool"].map((amenity) => (
-            <div key={amenity} className="flex items-center space-x-2">
-              <Checkbox
-                checked={formData.amenities.includes(amenity)}
-                onCheckedChange={() => handleAmenityChange(amenity)}
-              />
-              <span>{amenity}</span>
-            </div>
-          ))}
+      {/* Contact Details (writes to sellerInfo.* expected by server & preview/details) */}
+      <div className="space-y-2 border-t pt-4">
+        <h3 className="text-lg font-semibold">Contact Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="sellerInfo.name"
+            placeholder="Owner / Agent Name"
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="sellerInfo.email"
+            type="email"
+            placeholder="email@example.com"
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="sellerInfo.phone"
+            placeholder="+91 9XXXXXXXXX"
+            required
+          />
         </div>
       </div>
 
-      {/* Description */}
-      <div className="col-span-2">
-        <Label>Description</Label>
-        <Textarea name="description" onChange={handleChange} placeholder="Describe your property" />
-      </div>
+      {/* Location: rely on your global location picker (writes to location.address/lat/lng)
+          If you want a simple fallback input, uncomment below and map it to location.address:
 
-      {/* Contact Details */}
-      <div>
-        <Label>Contact Name</Label>
-        <Input name="contactName" onChange={handleChange} />
-      </div>
-
-      <div>
-        <Label>Contact Phone</Label>
-        <Input name="contactPhone" onChange={handleChange} />
-      </div>
-
-      <div>
-        <Label>Contact Email</Label>
-        <Input name="contactEmail" onChange={handleChange} />
-      </div>
-
-      {/* 🚫 Removed submit button here – parent form will handle submission */}
-    </Card>
+      <FormField
+        label="Address"
+        field="location.address"
+        placeholder="City, Area, Pincode"
+      />
+      */}
+    </div>
   );
 }

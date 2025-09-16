@@ -68,7 +68,7 @@ const LABELS: Record<string, string> = {
   ownership: "Ownership Type",
   age: "Age of Property",
 
-  // jobs
+  // jobs (employer posts)
   jobType: "Job Type",
   company: "Company",
   salary: "Salary",
@@ -77,9 +77,13 @@ const LABELS: Record<string, string> = {
   benefits: "Benefits",
   workMode: "Work Mode",
 
+  // jobs → wanted (candidate posts)
+  candidateName: "Candidate Name",
+  employmentType: "Employment Type",
+  preferred_locations: "Preferred Locations",
+
   // misc examples
   budget: "Budget",
-  preferred_locations: "Preferred Locations",
   hourlyRate: "Hourly Rate",
   shifts: "Shifts",
   make: "Make",
@@ -123,7 +127,7 @@ function renderValue(key: string, value: any): string {
   ) {
     return fmtCurrency(value) ?? "—";
   }
-  if (["available_from"].includes(key)) {
+  if (key === "available_from") {
     return fmtDate(value) ?? "—";
   }
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
@@ -199,7 +203,7 @@ const PROPERTY_SALE_PREVIEW_KEYS: string[] = [
   "age",
 ];
 
-// Jobs → Full Time (and similar) adds:
+// Jobs → Full Time (and similar employer posts)
 const JOB_FULLTIME_PREVIEW_KEYS: string[] = [
   "jobType",
   "company",
@@ -208,6 +212,17 @@ const JOB_FULLTIME_PREVIEW_KEYS: string[] = [
   "skills",
   "benefits",
   "workMode",
+];
+
+// Jobs → Wanted (candidate posts)
+const JOB_WANTED_PREVIEW_KEYS: string[] = [
+  "candidateName",
+  "employmentType",
+  "preferred_locations",
+  "available_from",
+  "salary",      // expected salary (optional)
+  "skills",
+  "experience",
 ];
 
 export default function PostDetailPageClient() {
@@ -250,16 +265,20 @@ export default function PostDetailPageClient() {
       if (normSub === "holiday rental") HOLIDAY_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "room rental") ROOM_RENTAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "for students") {
-        // BASE covers students set
+        // BASE covers typical student-rental fields
       }
-      // property sale
       if (normSub === "property sale" || normSub === "to buy") {
         PROPERTY_SALE_PREVIEW_KEYS.forEach((k) => keys.add(k));
       }
     }
 
     if (normCat === "job") {
-      JOB_FULLTIME_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      if (normSub === "wanted") {
+        JOB_WANTED_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      } else {
+        // employer-type posts (full-time/part-time/etc.)
+        JOB_FULLTIME_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      }
     }
 
     // Only keep keys that actually exist on the post to avoid lots of “—”
