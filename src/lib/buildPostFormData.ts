@@ -53,6 +53,12 @@ export function normalizeSubcategory(sub: string) {
     'land for sale/lease': 'land for sale/lease',
     'full time': 'full time',
     'part time': 'part time',
+    'internship': 'internship',
+    'freelance': 'freelance',
+    'temporary': 'temporary', 
+    'wanted': 'wanted',
+    'car': 'car',
+
   };
   return aliases[raw] || raw;
 }
@@ -214,15 +220,100 @@ export const CATEGORY_CONFIG: CategoryConfig = {
   },
 
   vehicles: {
-    'car': [
-      { key: 'make', type: 'string' },
-      { key: 'model', type: 'string' },
-      { key: 'year', type: 'number' },
-      { key: 'kms', type: 'number' },
-      { key: 'features', type: 'array' },
-      { key: 'price', type: 'number' },
-    ],
-  },
+  car: [
+    { key: 'make', type: 'string' },
+    { key: 'model', type: 'string' },
+    { key: 'year', type: 'number' },
+    { key: 'kms', type: 'number' },               // kilometers driven
+    { key: 'fuelType', type: 'string' },
+    { key: 'transmission', type: 'string' },
+    { key: 'bodyType', type: 'string' },          // SUV, Sedan, Hatchback
+    { key: 'color', type: 'string' },
+    { key: 'ownerType', type: 'string' },
+    { key: 'registrationNumber', type: 'string' },
+    { key: 'insuranceValidTill', type: 'date' },
+    { key: 'serviceHistory', type: 'string' },
+    { key: 'features', type: 'array' },           // e.g. Sunroof, ABS
+    { key: 'salePrice', type: 'number' },
+  ],
+
+  motorcycle: [
+    { key: 'make', type: 'string' },
+    { key: 'model', type: 'string' },
+    { key: 'year', type: 'number' },
+    { key: 'kms', type: 'number' },               // mileage in km
+    { key: 'engineCapacity', type: 'number' },    // cc
+    { key: 'fuelType', type: 'string' },          // Petrol / Electric
+    { key: 'transmission', type: 'string' },      // Manual / Automatic
+    { key: 'condition', type: 'string' },         // New / Used
+    { key: 'ownerType', type: 'string' },
+    { key: 'registrationNumber', type: 'string' },
+    { key: 'insuranceValidTill', type: 'date' },
+    { key: 'serviceHistory', type: 'string' },
+    { key: 'color', type: 'string' },
+    { key: 'features', type: 'array' },           // e.g. ABS, LED Headlamps
+    { key: 'salePrice', type: 'number' },
+  ],
+
+  truck: [
+    { key: 'make', type: 'string' },
+    { key: 'model', type: 'string' },
+    { key: 'year', type: 'number' },
+    { key: 'mileage', type: 'number' },
+    { key: 'fuelType', type: 'string' },
+    { key: 'transmission', type: 'string' },
+    { key: 'condition', type: 'string' },
+    { key: 'color', type: 'string' },
+    { key: 'ownerType', type: 'string' },
+    { key: 'registrationNumber', type: 'string' },
+    { key: 'insuranceValidTill', type: 'date' },
+    { key: 'serviceHistory', type: 'string' },
+    { key: 'features', type: 'array' },
+    { key: 'salePrice', type: 'number' },
+  ],
+
+  van: [
+    { key: 'make', type: 'string' },
+    { key: 'model', type: 'string' },
+    { key: 'year', type: 'number' },
+    { key: 'mileage', type: 'number' },
+    { key: 'fuelType', type: 'string' },
+    { key: 'transmission', type: 'string' },
+    { key: 'seatingCapacity', type: 'number' },
+    { key: 'color', type: 'string' },
+    { key: 'condition', type: 'string' },
+    { key: 'negotiable', type: 'boolean' },
+    { key: 'ownerType', type: 'string' },
+    { key: 'registrationNumber', type: 'string' },
+    { key: 'insuranceValidTill', type: 'date' },
+    { key: 'serviceHistory', type: 'string' },
+    { key: 'features', type: 'array' },
+    { key: 'salePrice', type: 'number' },
+  ],
+
+  parts: [
+    { key: 'name', type: 'string' },              // Part name
+    { key: 'description', type: 'string' },
+    { key: 'partsCategory', type: 'string' },     // Engine, Electrical, Interior, etc.
+    { key: 'brand', type: 'string' },
+    { key: 'condition', type: 'string' },         // New / Used / Refurbished
+    { key: 'compatibility', type: 'array' },      // e.g. Maruti Swift, Hero Splendor
+    { key: 'salePrice', type: 'number' },
+  ],
+
+  wanted: [
+    { key: 'vehicleType', type: 'string' },       // Car / Bike / Van / Truck / Parts
+    { key: 'make', type: 'string' },
+    { key: 'model', type: 'string' },
+    { key: 'year', type: 'number' },              // minimum year preferred
+    { key: 'fuelType', type: 'string' },
+    { key: 'transmission', type: 'string' },
+    { key: 'maxBudget', type: 'number' },
+    { key: 'preferred_locations', type: 'array' },
+    { key: 'description', type: 'string' },       // additional requirements
+  ],
+}
+
 };
 
 /** ---- FALLBACK OPTIONAL FIELDS ---- **/

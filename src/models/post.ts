@@ -17,7 +17,7 @@ export interface IPost extends Document {
     email: string;
   };
 
-  // ===== Optional fields (Property / Commercial / etc.) =====
+  // Property / Rental / Commercial
   propertyType?: string;
   beds?: number;
   baths?: number;
@@ -29,7 +29,6 @@ export interface IPost extends Document {
   occupancy?: string;
   gender_pref?: string;
 
-  // Commercial extras
   builtup_area?: number;
   carpet_area?: number;
   floor?: number;
@@ -39,66 +38,79 @@ export interface IPost extends Document {
   pantry?: string;
   parkingSpaces?: number;
   maintenance?: number;
-  available_from?: string; // or Date if preferred
+  available_from?: string;
   leaseTerm?: number;
   powerBackup?: string;
 
-  // src/models/post.ts (optional additions)
-holidayType?: string;
-guests?: number;
-house_rules?: string[];
-rateNightly?: number;
-rateWeekly?: number;
-rateMonthly?: number;
+  holidayType?: string;
+  guests?: number;
+  house_rules?: string[];
+  rateNightly?: number;
+  rateWeekly?: number;
+  rateMonthly?: number;
 
-// Room Rental
-  type?: string;                     // ← NEW
-  rent?: number;                     // ← NEW
-  preferred_tenants?: string;        // ← NEW
-  rules?: string[]; 
-
-  // in models/post.ts, under optional fields
-minBudget: { type: Number },
-maxBudget: { type: Number },
-minArea: { type: Number },
-preferred_locations: { type: [String], default: [] },
+  type?: string;
+  rent?: number;
+  preferred_tenants?: string;
+  rules?: string[];
 
   plot_area?: number;
   negotiable?: string;
   ownership?: string;
   age?: string;
 
-  // ===== Job category fields (covering all subcategories) =====
-  company?: string;            // Company / Employer
-  clientName?: string;         // For freelance posts if different than company
-  jobType?: string;            // Employment type (Full Time, Part Time, Internship, Freelance, Temporary, Contract)
-  workMode?: string;           // On-site / Remote / Hybrid
-  salary?: number;             // Monthly / annual or expected for Job Wanted
-  hourlyRate?: number;         // For hourly roles or freelance
-  stipendType?: string;        // internship: "unpaid" | "stipend" | "salary"
-  stipendAmount?: number;      // numeric stipend/salary (optional)
-  startDate?: string;          // start date
-  endDate?: string;            // end date (temporary/contract)
-  duration?: string;           // general duration text (internship/freelance)
-  contractDuration?: string;   // explicit contract duration (part-time/temporary)
-  workingHours?: string;       // shift/hours description
-  deadline?: string;           // application deadline (YYYY-MM-DD string)
-  applyLink?: string;          // external apply URL
-  projectType?: string;        // freelance: web-dev, design, etc.
-  budgetType?: string;         // freelance: fixed | hourly
-  budgetAmount?: number;       // freelance budget number
-  experience?: string;         // "2-4 years", "Fresher", etc.
-  skills?: string[];           // normalized as array
-  benefits?: string[];         // perks, benefits
-  shifts?: string[];           // optional: morning/evening/weekend
+  // Search constraints (Wanted posts)
+  minBudget?: number;
+  maxBudget?: number;
+  minArea?: number;
+  preferred_locations?: string[];
 
-  // Job Wanted extras
+  // Jobs
+  company?: string;
+  clientName?: string;
+  jobType?: string;
+  workMode?: string;
+  salary?: number;
+  hourlyRate?: number;
+  stipendType?: string;
+  stipendAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  duration?: string;
+  contractDuration?: string;
+  workingHours?: string;
+  deadline?: string;
+  applyLink?: string;
+  projectType?: string;
+  budgetType?: string;
+  budgetAmount?: number;
+  experience?: string;
+  skills?: string[];
+  benefits?: string[];
+  shifts?: string[];
+
   candidateName?: string;
 
+  // Vehicles
+  make?: string;
+  model?: string;
+  year?: number;
+  kms?: number;
+  fuelType?: string;
+  transmission?: string;
+  bodyType?: string;
+  color?: string;
+  condition?: string;
+  ownerType?: string;
+  registrationNumber?: string;
+  insuranceValidTill?: string;
+  serviceHistory?: string;
+  features?: string[];
 
   createdAt: Date;
   updatedAt: Date;
 }
+
 
 const PostSchema = new Schema<IPost>(
   {
@@ -120,81 +132,102 @@ const PostSchema = new Schema<IPost>(
       email: { type: String, required: true },
     },
 
-    // ===== Optional fields =====
-    propertyType: { type: String },
-    beds: { type: Number },
-    baths: { type: Number },
-    rentPrice: { type: Number },
-    salePrice: { type: Number },
-    deposit: { type: Number },
+    // Property
+    propertyType: String,
+    beds: Number,
+    baths: Number,
+    rentPrice: Number,
+    salePrice: Number,
+    deposit: Number,
     facilities: { type: [String], default: [] },
     amenities: { type: [String], default: [] },
-    occupancy: { type: String },
-    gender_pref: { type: String },
+    occupancy: String,
+    gender_pref: String,
 
-    // Commercial extras
-    builtup_area: { type: Number },
-    carpet_area: { type: Number },
-    floor: { type: Number },
-    totalFloors: { type: Number },
-    furnishing: { type: String },
-    washrooms: { type: Number },
-    pantry: { type: String },
-    parkingSpaces: { type: Number },
-    maintenance: { type: Number },
-    available_from: { type: String }, // or Date
-    leaseTerm: { type: Number },
-    powerBackup: { type: String },
+    // Commercial
+    builtup_area: Number,
+    carpet_area: Number,
+    floor: Number,
+    totalFloors: Number,
+    furnishing: String,
+    washrooms: Number,
+    pantry: String,
+    parkingSpaces: Number,
+    maintenance: Number,
+    available_from: String,
+    leaseTerm: Number,
+    powerBackup: String,
 
-    holidayType: { type: String },
-guests: { type: Number },
-house_rules: { type: [String], default: [] },
-rateNightly: { type: Number },
-rateWeekly: { type: Number },
-rateMonthly: { type: Number },
+    // Holiday
+    holidayType: String,
+    guests: Number,
+    house_rules: { type: [String], default: [] },
+    rateNightly: Number,
+    rateWeekly: Number,
+    rateMonthly: Number,
 
-// Room Rental
-    type: String,                     // ← NEW
-    rent: Number,                     // ← NEW
-    preferred_tenants: String,        // ← NEW
-    rules: { type: [String], default: [] }, // ← NEW
+    // Room Rental
+    type: String,
+    rent: Number,
+    preferred_tenants: String,
+    rules: { type: [String], default: [] },
 
-    plot_area: { type: Number },
-negotiable: { type: String },
-ownership: { type: String },
-age: { type: String },     
+    plot_area: Number,
+    negotiable: String,
+    ownership: String,
+    age: String,
 
-// ===== Job category fields =====
-    company: { type: String },
-    clientName: { type: String },
-    jobType: { type: String },
-    workMode: { type: String },
-    salary: { type: Number },
-    hourlyRate: { type: Number },
-    stipendType: { type: String },
-    stipendAmount: { type: Number },
-    startDate: { type: String },
-    endDate: { type: String },
-    duration: { type: String },
-    contractDuration: { type: String },
-    workingHours: { type: String },
-    deadline: { type: String },
-    applyLink: { type: String },
-    projectType: { type: String },
-    budgetType: { type: String },
-    budgetAmount: { type: Number },
-    experience: { type: String },
+    // Search constraints
+    minBudget: Number,
+    maxBudget: Number,
+    minArea: Number,
+    preferred_locations: { type: [String], default: [] },
+
+    // Jobs
+    company: String,
+    clientName: String,
+    jobType: String,
+    workMode: String,
+    salary: Number,
+    hourlyRate: Number,
+    stipendType: String,
+    stipendAmount: Number,
+    startDate: String,
+    endDate: String,
+    duration: String,
+    contractDuration: String,
+    workingHours: String,
+    deadline: String,
+    applyLink: String,
+    projectType: String,
+    budgetType: String,
+    budgetAmount: Number,
+    experience: String,
     skills: { type: [String], default: [] },
     benefits: { type: [String], default: [] },
     shifts: { type: [String], default: [] },
 
-    // Job Wanted
-    candidateName: { type: String },
-    preferred_locations: { type: [String], default: [] },
+    candidateName: String,
 
+    // Vehicles
+    make: String,
+    model: String,
+    year: Number,
+    kms: Number,
+    fuelType: String,
+    transmission: String,
+    bodyType: String,
+    color: String,
+    condition: String,
+    ownerType: String,
+    registrationNumber: String,
+    insuranceValidTill: String,
+    serviceHistory: String,
+    features: { type: [String], default: [] },
   },
   { timestamps: true }
 );
+
 
 const Post =
   mongoose.models.Post || mongoose.model<IPost>("Post", PostSchema);

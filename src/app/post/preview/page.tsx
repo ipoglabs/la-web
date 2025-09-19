@@ -20,6 +20,7 @@ function fmtCurrency(v: unknown) {
     maximumFractionDigits: 0,
   }).format(n);
 }
+
 function fmtDate(v: unknown) {
   if (!v) return undefined;
   const d = new Date(String(v));
@@ -27,7 +28,7 @@ function fmtDate(v: unknown) {
   return d.toLocaleDateString();
 }
 
-// Currency-ish keys (incl. jobs)
+// Currency-ish keys (incl. jobs/vehicles/parts/wanted)
 const CURRENCY_KEYS = new Set([
   "rentPrice",
   "salePrice",
@@ -42,25 +43,52 @@ const CURRENCY_KEYS = new Set([
   "hourlyRate",
   "stipendAmount",
   "budgetAmount",
+  "maxBudget",
 ]);
 
 function renderValue(key: string, value: any): string {
   if (CURRENCY_KEYS.has(key)) return fmtCurrency(value) ?? "—";
-  if (key === "available_from" || key === "deadline" || key === "startDate")
+
+  // date-ish
+  if (
+    key === "available_from" ||
+    key === "deadline" ||
+    key === "startDate" ||
+    key === "insuranceValidTill"
+  ) {
     return fmtDate(value) ?? "—";
+  }
+
+  // vehicle niceties
+  if (key === "kms" && value !== undefined && value !== null && value !== "") {
+    return `${value} km`;
+  }
+  if (
+    key === "engineCapacity" &&
+    value !== undefined &&
+    value !== null &&
+    value !== ""
+  ) {
+    return `${value} cc`;
+  }
+
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
   if (value === null || value === undefined || value === "") return "—";
   return String(value);
 }
 
-// tiny helper for links
 function renderMaybeLink(value: any) {
   const s = String(value ?? "");
   if (!s) return "—";
   try {
     const u = new URL(s);
     return (
-      <a href={u.toString()} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+      <a
+        href={u.toString()}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline"
+      >
         {u.hostname}
       </a>
     );
@@ -76,16 +104,17 @@ export default function PreviewPage() {
   const [clientError, setClientError] = useState<string | null>(null);
 
   const has = (k: string) =>
-    data[k] !== undefined &&
-    data[k] !== null &&
-    String(data[k]).trim() !== "";
+    data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== "";
 
   const row = (label: string, value: any, keyHint?: string) => (
     <p>
       <b>{label}:</b>{" "}
-      {keyHint ? renderValue(keyHint, value)
+      {keyHint
+        ? renderValue(keyHint, value)
         : Array.isArray(value)
-        ? value.length ? value.join(", ") : "—"
+        ? value.length
+          ? value.join(", ")
+          : "—"
         : String(value ?? "—")}
     </p>
   );
@@ -120,8 +149,7 @@ export default function PreviewPage() {
 
     setLoading(true);
     const fd = buildPostFormData(data);
-
-    const res = await addPost(fd); // returns { ok, id } shape
+    const res = await addPost(fd); // returns { ok, id } on success
     setLoading(false);
 
     if (!res || (res as any).ok === false) {
@@ -134,6 +162,20 @@ export default function PreviewPage() {
 
     router.push(`/post-details/${(res as any).id}`);
   };
+
+  // quick booleans for sectioning
+  const cat = String(data.category || "").toLowerCase();
+  const sub = String(data.subcategory || "").toLowerCase();
+  const isVehicle = cat === "vehicles" || has("make") || has("model");
+  const isParts =
+    (cat === "vehicles" && sub.includes("parts")) ||
+    has("partsCategory") ||
+    has("compatibility");
+  const isVehicleWanted =
+    (cat === "vehicles" && sub.includes("wanted")) ||
+    has("vehicleType") ||
+    has("maxBudget") ||
+    has("preferred_locations");
 
   return (
     <>
@@ -152,7 +194,9 @@ export default function PreviewPage() {
           <h3 className="text-lg font-semibold">Basic Info</h3>
           {row(
             "Category",
-            `${data.category || "—"}${data.subcategory ? ` → ${data.subcategory}` : ""}`
+            `${data.category || "—"}${
+              data.subcategory ? ` → ${data.subcategory}` : ""
+            }`
           )}
           {row("Title", data.name || "—")}
           {row("Description", data.description || "—")}
@@ -162,45 +206,121 @@ export default function PreviewPage() {
         <section className="space-y-1 border-b pb-4">
           <h3 className="text-lg font-semibold">Details</h3>
 
+          {/* Vehicles — show a friendly Price even though it's salePrice */}
+          {isVehicle && !isParts && !isVehicleWanted && (
+            <>
+              {has("salePrice") && row("Price", data.salePrice, "salePrice")}
+              {has("make") && row("Make", data.make)}
+              {has("model") && row("Model", data.model)}
+              {has("year") && row("Year", data.year)}
+              {has("kms") && row("Mileage", data.kms, "kms")}
+              {has("engineCapacity") &&
+                row("Engine Capacity", data.engineCapacity, "engineCapacity")}
+              {has("fuelType") && row("Fuel Type", data.fuelType)}
+              {has("transmission") && row("Transmission", data.transmission)}
+              {has("bodyType") && row("Body Type", data.bodyType)}
+              {has("color") && row("Color", data.color)}
+              {has("condition") && row("Condition", data.condition)}
+              {has("ownerType") && row("Owner Type", data.ownerType)}
+              {has("registrationNumber") &&
+                row("Registration Number", data.registrationNumber)}
+              {has("insuranceValidTill") &&
+                row(
+                  "Insurance Valid Till",
+                  data.insuranceValidTill,
+                  "insuranceValidTill"
+                )}
+              {has("serviceHistory") &&
+                row("Service History", data.serviceHistory)}
+              {Array.isArray(data.features) && row("Features", data.features)}
+            </>
+          )}
+
+          {/* Vehicles → Parts & Accessories */}
+          {isParts && (
+            <>
+              {has("salePrice") && row("Price", data.salePrice, "salePrice")}
+              {has("partsCategory") &&
+                row("Parts Category", data.partsCategory)}
+              {has("brand") && row("Brand", data.brand)}
+              {has("condition") && row("Condition", data.condition)}
+              {Array.isArray(data.compatibility) ||
+              typeof data.compatibility === "string"
+                ? row("Compatibility", data.compatibility)
+                : null}
+            </>
+          )}
+
+          {/* Vehicles → Wanted */}
+          {isVehicleWanted && (
+            <>
+              {has("vehicleType") && row("Vehicle Type", data.vehicleType)}
+              {has("make") && row("Preferred Make", data.make)}
+              {has("model") && row("Preferred Model", data.model)}
+              {has("year") && row("Preferred Year (min.)", data.year)}
+              {has("fuelType") && row("Fuel Type", data.fuelType)}
+              {has("transmission") && row("Transmission", data.transmission)}
+              {has("maxBudget") && row("Max Budget", data.maxBudget, "maxBudget")}
+              {Array.isArray(data.preferred_locations) ||
+              typeof data.preferred_locations === "string"
+                ? row("Preferred Locations", data.preferred_locations)
+                : null}
+            </>
+          )}
+
           {/* Property-type (if any present) */}
           {has("propertyType") && row("Type", data.propertyType)}
           {has("beds") && row("Beds", data.beds)}
           {has("baths") && row("Baths", data.baths)}
           {has("rentPrice") && row("Rent", data.rentPrice, "rentPrice")}
-          {has("salePrice") && row("Sale Price", data.salePrice, "salePrice")}
+          {has("salePrice") &&
+            !isVehicle &&
+            !isParts &&
+            row("Sale Price", data.salePrice, "salePrice")}
           {has("deposit") && row("Deposit", data.deposit, "deposit")}
           {has("occupancy") && row("Occupancy", data.occupancy)}
           {has("gender_pref") && row("Gender Preference", data.gender_pref)}
           {Array.isArray(data.facilities) && row("Facilities", data.facilities)}
 
           {/* Commercial extras */}
-          {has("builtup_area") && row("Built-up Area (sq ft)", data.builtup_area)}
-          {has("carpet_area") && row("Carpet Area (sq ft)", data.carpet_area)}
+          {has("builtup_area") &&
+            row("Built-up Area (sq ft)", data.builtup_area)}
+          {has("carpet_area") &&
+            row("Carpet Area (sq ft)", data.carpet_area)}
           {has("floor") && row("Floor", data.floor)}
           {has("totalFloors") && row("Total Floors", data.totalFloors)}
           {has("furnishing") && row("Furnishing", data.furnishing)}
           {has("washrooms") && row("Washrooms", data.washrooms)}
           {has("pantry") && row("Pantry", data.pantry)}
-          {has("parkingSpaces") && row("Parking Spaces", data.parkingSpaces)}
-          {has("maintenance") && row("Maintenance", data.maintenance, "maintenance")}
-          {has("available_from") && row("Available From", data.available_from, "available_from")}
+          {has("parkingSpaces") &&
+            row("Parking Spaces", data.parkingSpaces)}
+          {has("maintenance") &&
+            row("Maintenance", data.maintenance, "maintenance")}
+          {has("available_from") &&
+            row("Available From", data.available_from, "available_from")}
           {has("leaseTerm") && row("Lease Term (months)", data.leaseTerm)}
           {has("powerBackup") && row("Power Backup", data.powerBackup)}
 
           {/* Room Rental */}
           {has("type") && row("Room Type", data.type)}
           {has("rent") && row("Monthly Rent", data.rent, "rent")}
-          {has("preferred_tenants") && row("Preferred Tenants", data.preferred_tenants)}
+          {has("preferred_tenants") &&
+            row("Preferred Tenants", data.preferred_tenants)}
           {Array.isArray(data.amenities) && row("Amenities", data.amenities)}
           {Array.isArray(data.rules) && row("Rules", data.rules)}
 
           {/* Holiday Rental */}
-          {has("holidayType") && row("Holiday Property Type", data.holidayType)}
+          {has("holidayType") &&
+            row("Holiday Property Type", data.holidayType)}
           {has("guests") && row("Guests", data.guests)}
-          {Array.isArray(data.house_rules) && row("House Rules", data.house_rules)}
-          {has("rateNightly") && row("Nightly Rate", data.rateNightly, "rateNightly")}
-          {has("rateWeekly") && row("Weekly Rate", data.rateWeekly, "rateWeekly")}
-          {has("rateMonthly") && row("Monthly Rate", data.rateMonthly, "rateMonthly")}
+          {Array.isArray(data.house_rules) &&
+            row("House Rules", data.house_rules)}
+          {has("rateNightly") &&
+            row("Nightly Rate", data.rateNightly, "rateNightly")}
+          {has("rateWeekly") &&
+            row("Weekly Rate", data.rateWeekly, "rateWeekly")}
+          {has("rateMonthly") &&
+            row("Monthly Rate", data.rateMonthly, "rateMonthly")}
 
           {/* Property Sale extras */}
           {has("plot_area") && row("Plot Area (sq.ft.)", data.plot_area)}
@@ -213,8 +333,10 @@ export default function PreviewPage() {
           {has("jobType") && row("Job Type", data.jobType)}
           {has("company") && row("Company", data.company)}
           {has("salary") && row("Salary", data.salary, "salary")}
-          {has("hourlyRate") && row("Hourly Rate", data.hourlyRate, "hourlyRate")}
-          {has("deadline") && row("Application Deadline", data.deadline, "deadline")}
+          {has("hourlyRate") &&
+            row("Hourly Rate", data.hourlyRate, "hourlyRate")}
+          {has("deadline") &&
+            row("Application Deadline", data.deadline, "deadline")}
           {has("applyLink") && (
             <p>
               <b>Apply Link:</b> {renderMaybeLink(data.applyLink)}
@@ -247,7 +369,8 @@ export default function PreviewPage() {
             <h3 className="text-lg font-semibold">Images</h3>
             <div className="flex flex-wrap gap-3">
               {data.images.map((img, i) => {
-                const url = img instanceof File ? URL.createObjectURL(img) : (img as string);
+                const url =
+                  img instanceof File ? URL.createObjectURL(img) : (img as string);
                 return (
                   <img
                     key={i}
@@ -264,7 +387,9 @@ export default function PreviewPage() {
         {/* Debug JSON */}
         <section>
           <details className="group">
-            <summary className="cursor-pointer text-sm text-gray-600">Debug JSON</summary>
+            <summary className="cursor-pointer text-sm text-gray-600">
+              Debug JSON
+            </summary>
             <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
               {debugJson}
             </pre>

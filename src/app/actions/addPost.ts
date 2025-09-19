@@ -14,26 +14,33 @@ export async function addPost(formData: FormData): Promise<
   try {
     await connectDB();
 
-    // --- Parse core fields (add fallbacks for job forms) ---
+    // --- Parse core fields (with fallbacks used by some job/vehicle forms) ---
     const name =
       ((formData.get("name") as string) ?? "").trim() ||
       ((formData.get("jobTitle") as string) ?? "").trim() ||
       ((formData.get("projectTitle") as string) ?? "").trim();
 
-    const description =
-      ((formData.get("description") as string) ?? "").trim();
-
+    const description = ((formData.get("description") as string) ?? "").trim();
     const category = ((formData.get("category") as string) ?? "").trim();
     const subcategory = ((formData.get("subcategory") as string) ?? "").trim();
 
-    // locationData must be JSON string in the client
+    // locationData must be JSON string from client
     const locationRaw = (formData.get("locationData") as string) || "";
-    const location: LocationData = locationRaw ? safeParse<LocationData>(locationRaw, {}) : {};
+    const location: LocationData = locationRaw
+      ? safeParse<LocationData>(locationRaw, {})
+      : {};
 
+    // Accept both snake and camel case (older/newer clients)
     const seller_info = {
-      name: ((formData.get("seller_info.name") as string) || "").trim(),
-      email: ((formData.get("seller_info.email") as string) || "").trim(),
-      phone: ((formData.get("seller_info.phone") as string) || "").trim(),
+      name:
+        ((formData.get("seller_info.name") as string) || "").trim() ||
+        ((formData.get("sellerInfo.name") as string) || "").trim(),
+      email:
+        ((formData.get("seller_info.email") as string) || "").trim() ||
+        ((formData.get("sellerInfo.email") as string) || "").trim(),
+      phone:
+        ((formData.get("seller_info.phone") as string) || "").trim() ||
+        ((formData.get("sellerInfo.phone") as string) || "").trim(),
     };
 
     // --- Images: URLs + Files ---
@@ -72,14 +79,19 @@ export async function addPost(formData: FormData): Promise<
       const s = pullString(v);
       if (!s) return [];
       const parsed = safeParse<any>(s, []);
-      return Array.isArray(parsed) ? parsed : [];
+      if (Array.isArray(parsed)) return parsed;
+      // also accept comma-separated text
+      return String(s)
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
     };
 
-    // --- Property fields (kept as before) ---
+    // --- Arrays used in multiple categories ---
     const facilities = pullArray(formData.get("facilities"));
     const amenities = pullArray(formData.get("amenities"));
 
-    // --- Build postData (property + job superset) ---
+    // --- Build postData (property + jobs + vehicles + parts + wanted) ---
     const postData: Record<string, any> = {
       // core
       category,
@@ -130,20 +142,20 @@ export async function addPost(formData: FormData): Promise<
       preferred_tenants: pullString(formData.get("preferred_tenants")),
       rules: pullArray(formData.get("rules")),
 
-      // for sale extras
+      // sale extras
       plot_area: pullNumber(formData.get("plot_area")),
       negotiable: pullString(formData.get("negotiable")),
       ownership: pullString(formData.get("ownership")),
       age: pullString(formData.get("age")),
 
-      // ===== Job fields =====
+      // ===== Jobs =====
       company: pullString(formData.get("company")),
       clientName: pullString(formData.get("clientName")),
-      jobType: pullString(formData.get("jobType")),           // "Full Time" etc.
-      workMode: pullString(formData.get("workMode")),         // onsite/remote/hybrid
+      jobType: pullString(formData.get("jobType")), // Full Time/Part Time/Internship/etc.
+      workMode: pullString(formData.get("workMode")), // onsite/remote/hybrid
       salary: pullNumber(formData.get("salary")),
       hourlyRate: pullNumber(formData.get("hourlyRate")),
-      stipendType: pullString(formData.get("stipendType")),   // internship
+      stipendType: pullString(formData.get("stipendType")),
       stipendAmount: pullNumber(formData.get("stipendAmount")),
       startDate: pullString(formData.get("startDate")),
       endDate: pullString(formData.get("endDate")),
@@ -152,7 +164,7 @@ export async function addPost(formData: FormData): Promise<
       workingHours: pullString(formData.get("workingHours")),
       deadline: pullString(formData.get("deadline")),
       applyLink: pullString(formData.get("applyLink")),
-      projectType: pullString(formData.get("projectType")),   // freelance
+      projectType: pullString(formData.get("projectType")),
       budgetType: pullString(formData.get("budgetType")),
       budgetAmount: pullNumber(formData.get("budgetAmount")),
       experience: pullString(formData.get("experience")),
@@ -161,9 +173,41 @@ export async function addPost(formData: FormData): Promise<
       shifts: pullArray(formData.get("shifts")),
       candidateName: pullString(formData.get("candidateName")),
       preferred_locations: pullArray(formData.get("preferred_locations")),
+      minBudget: pullNumber(formData.get("minBudget")),
+      maxBudget: pullNumber(formData.get("maxBudget")),
+      minArea: pullNumber(formData.get("minArea")),
+
+      // ===== Vehicles (common + car/van/truck + motorcycle) =====
+      make: pullString(formData.get("make")),
+      model: pullString(formData.get("model")),
+      year: pullNumber(formData.get("year")),
+      kms: pullNumber(formData.get("kms")), // mileage in km
+      fuelType: pullString(formData.get("fuelType")),
+      transmission: pullString(formData.get("transmission")),
+      bodyType: pullString(formData.get("bodyType")),
+      color: pullString(formData.get("color")),
+      condition: pullString(formData.get("condition")), // new/used/etc.
+      ownerType: pullString(formData.get("ownerType")),
+      registrationNumber: pullString(formData.get("registrationNumber")),
+      insuranceValidTill: pullString(formData.get("insuranceValidTill")),
+      serviceHistory: pullString(formData.get("serviceHistory")),
+      features: pullArray(formData.get("features")),
+
+      // motorcycle-specific
+      engineCapacity: pullNumber(formData.get("engineCapacity")),
+
+      // van-specific
+      seatingCapacity: pullNumber(formData.get("seatingCapacity")),
+
+      // ===== Parts & Accessories =====
+      partsCategory: pullString(formData.get("partsCategory")),
+      brand: pullString(formData.get("brand")),
+      compatibility: pullArray(formData.get("compatibility")), // array of models/vehicles
+      // price for parts uses salePrice for consistency
+      // (already covered above via salePrice)
     };
 
-    // --- Required checks (don’t throw; return message) ---
+    // --- Required checks (don’t throw; return a message) ---
     const errors: string[] = [];
     if (!postData.name) errors.push("Title (name/jobTitle/projectTitle) is required");
     if (!postData.description) errors.push("Description is required");
@@ -187,7 +231,6 @@ export async function addPost(formData: FormData): Promise<
     return { ok: true, id: String(newPost._id) };
   } catch (e: any) {
     console.error("addPost fatal error:", e);
-    // include e.message if present; fall back to generic
     return { ok: false, error: e?.message || "Unknown server error in addPost" };
   }
 }

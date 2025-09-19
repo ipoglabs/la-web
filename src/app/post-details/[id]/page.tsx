@@ -76,21 +76,45 @@ const LABELS: Record<string, string> = {
   skills: "Skills",
   benefits: "Benefits",
   workMode: "Work Mode",
+  hourlyRate: "Hourly Rate",
+  deadline: "Application Deadline",
+  startDate: "Start Date",
+  endDate: "End Date",
 
   // jobs → wanted (candidate posts)
   candidateName: "Candidate Name",
   employmentType: "Employment Type",
   preferred_locations: "Preferred Locations",
 
-  // misc examples
-  budget: "Budget",
-  hourlyRate: "Hourly Rate",
-  shifts: "Shifts",
+  // vehicles (common)
   make: "Make",
   model: "Model",
   year: "Year",
   kms: "Kilometers",
+  fuelType: "Fuel Type",
+  transmission: "Transmission",
+  bodyType: "Body Type",
+  color: "Color",
+  condition: "Condition",
+  ownerType: "Owner Type",
+  registrationNumber: "Registration Number",
+  insuranceValidTill: "Insurance Valid Till",
+  serviceHistory: "Service History",
   features: "Features",
+
+  // motorcycle extras
+  engineCapacity: "Engine Capacity (cc)",
+
+  // van/truck extras
+  seatingCapacity: "Seating Capacity",
+
+  // parts & accessories
+  partsCategory: "Parts Category",
+  brand: "Brand",
+  compatibility: "Compatibility",
+
+  // misc examples
+  budget: "Budget",
   price: "Price",
 };
 
@@ -111,6 +135,7 @@ function fmtDate(v: unknown) {
   return d.toLocaleDateString();
 }
 function renderValue(key: string, value: any): string {
+  // currency-ish
   if (
     [
       "rentPrice",
@@ -123,13 +148,27 @@ function renderValue(key: string, value: any): string {
       "rateWeekly",
       "rateMonthly",
       "salary",
+      "hourlyRate",
+      "budgetAmount",
+      "stipendAmount",
     ].includes(key)
   ) {
     return fmtCurrency(value) ?? "—";
   }
-  if (key === "available_from") {
+
+  // date-ish
+  if (["available_from", "deadline", "startDate", "endDate", "insuranceValidTill"].includes(key)) {
     return fmtDate(value) ?? "—";
   }
+
+  // vehicles niceties
+  if (key === "kms" && value !== undefined && value !== null && value !== "") {
+    return `${value} km`;
+  }
+  if (key === "engineCapacity" && value !== undefined && value !== null && value !== "") {
+    return `${value} cc`;
+  }
+
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
   if (value === null || value === undefined || value === "") return "—";
   return String(value);
@@ -146,6 +185,8 @@ type Post = {
   seller_info?: { name?: string; email?: string; phone?: string };
   [k: string]: any;
 };
+
+// ---------- Preview key sets ----------
 
 // Base keys shown for “property-ish” posts (same as Preview)
 const BASE_PREVIEW_KEYS: string[] = [
@@ -212,6 +253,10 @@ const JOB_FULLTIME_PREVIEW_KEYS: string[] = [
   "skills",
   "benefits",
   "workMode",
+  "hourlyRate",
+  "deadline",
+  "startDate",
+  "endDate",
 ];
 
 // Jobs → Wanted (candidate posts)
@@ -220,9 +265,43 @@ const JOB_WANTED_PREVIEW_KEYS: string[] = [
   "employmentType",
   "preferred_locations",
   "available_from",
-  "salary",      // expected salary (optional)
+  "salary",
   "skills",
   "experience",
+];
+
+// Vehicles → common (car/van/truck + many work for motorcycle too)
+const VEHICLE_COMMON_KEYS: string[] = [
+  "salePrice",
+  "make",
+  "model",
+  "year",
+  "kms",
+  "fuelType",
+  "transmission",
+  "bodyType",
+  "color",
+  "condition",
+  "ownerType",
+  "registrationNumber",
+  "insuranceValidTill",
+  "serviceHistory",
+  "features",
+];
+
+// Vehicles → motorcycle extras
+const MOTORCYCLE_PREVIEW_KEYS: string[] = ["engineCapacity"];
+
+// Vehicles → van/truck extras
+const VAN_TRUCK_PREVIEW_KEYS: string[] = ["seatingCapacity"];
+
+// Parts & Accessories
+const PARTS_PREVIEW_KEYS: string[] = [
+  "partsCategory",
+  "brand",
+  "condition",
+  "compatibility",
+  "salePrice",
 ];
 
 export default function PostDetailPageClient() {
@@ -255,12 +334,13 @@ export default function PostDetailPageClient() {
   // Keys for the Details section (mirror Preview) based on category/subcategory
   const previewKeys = useMemo(() => {
     if (!post) return [] as string[];
-    const keys = new Set(BASE_PREVIEW_KEYS);
+    const keys = new Set<string>();
 
     const normCat = normalizeCategory(post.category || "");
     const normSub = normalizeSubcategory(post.subcategory || "");
 
     if (normCat === "property") {
+      BASE_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "commercial") COMMERCIAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "holiday rental") HOLIDAY_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "room rental") ROOM_RENTAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
@@ -270,14 +350,24 @@ export default function PostDetailPageClient() {
       if (normSub === "property sale" || normSub === "to buy") {
         PROPERTY_SALE_PREVIEW_KEYS.forEach((k) => keys.add(k));
       }
-    }
-
-    if (normCat === "job") {
+    } else if (normCat === "job") {
       if (normSub === "wanted") {
         JOB_WANTED_PREVIEW_KEYS.forEach((k) => keys.add(k));
       } else {
-        // employer-type posts (full-time/part-time/etc.)
         JOB_FULLTIME_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      }
+    } else if (normCat === "vehicles") {
+      // parts vs vehicles
+      if (normSub === "parts & accessories" || normSub === "parts" || normSub === "accessories") {
+        PARTS_PREVIEW_KEYS.forEach((k) => keys.add(k));
+      } else {
+        VEHICLE_COMMON_KEYS.forEach((k) => keys.add(k));
+        if (normSub === "motorcycle" || normSub === "bike") {
+          MOTORCYCLE_PREVIEW_KEYS.forEach((k) => keys.add(k));
+        }
+        if (normSub === "van" || normSub === "truck") {
+          VAN_TRUCK_PREVIEW_KEYS.forEach((k) => keys.add(k));
+        }
       }
     }
 
