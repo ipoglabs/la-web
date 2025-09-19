@@ -1,6 +1,13 @@
-import mongoose, { Schema, Document } from "mongoose";
+// src/models/post.ts
+import mongoose, {
+  Schema,
+  models,
+  model,
+  type HydratedDocument,
+  type Model,
+} from "mongoose";
 
-export interface IPost extends Document {
+export interface IPost {
   name: string;
   description: string;
   images: string[];
@@ -92,7 +99,7 @@ export interface IPost extends Document {
 
   // ===== Vehicles =====
   make?: string;
-  model?: string;
+  model?: string; // safe now (no clash with Document.model)
   year?: number;
   kms?: number;
   fuelType?: string;
@@ -110,11 +117,11 @@ export interface IPost extends Document {
   petName?: string;
   petType?: string;          // dog | cat | bird | rabbit | other
   breed?: string;
-  ageText?: string;          // keep free text like "2 years", "6 months"
+  ageText?: string;          // free text: "2 years", "6 months"
   gender?: string;           // male | female
   vaccination?: string;      // vaccinated | not_vaccinated | partially_vaccinated
   size?: string;             // small | medium | large
-  // adoption fee uses salePrice already
+  // adoption fee uses salePrice
 
   // ===== Pets: Wanted =====
   wantedPetType?: string;
@@ -122,26 +129,29 @@ export interface IPost extends Document {
   agePreference?: string;
   genderPreference?: string;
   sizePreference?: string;
-  budget?: number;           // explicit budget for wanted
+  budget?: number;
 
   // ===== Pets: Accessories =====
   accessoryName?: string;
-  partsCategory?: string;    // reuse key for category (Food/Toys/etc.)
-  // brand, condition, salePrice, description already exist/reused
+  partsCategory?: string;    // Food/Toys/Bedding/Grooming/Cage etc.
+  // brand, condition, salePrice, description already covered
 
   // ===== Pets: Lost & Found =====
   reportType?: string;       // lost | found
   lastSeenLocation?: string;
-  lfDate?: string;           // store as string (YYYY-MM-DD) for consistency
+  lfDate?: string;           // YYYY-MM-DD
 
   // ===== Pets: Services =====
   serviceType?: string;          // Grooming / Training / etc.
   serviceProviderName?: string;
   availability?: string;
 
-  createdAt: Date;
-  updatedAt: Date;
+  // timestamps (added by Mongoose)
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
+export type IPostDoc = HydratedDocument<IPost>;
 
 const PostSchema = new Schema<IPost>(
   {
@@ -290,6 +300,7 @@ const PostSchema = new Schema<IPost>(
   { timestamps: true }
 );
 
-const Post =
-  mongoose.models.Post || mongoose.model<IPost>("Post", PostSchema);
+const Post: Model<IPost> =
+  (models.Post as Model<IPost>) || model<IPost>("Post", PostSchema);
+
 export default Post;
