@@ -17,7 +17,7 @@ export interface IPost extends Document {
     email: string;
   };
 
-  // Property / Rental / Commercial
+  // ===== Property / Rental / Commercial =====
   propertyType?: string;
   beds?: number;
   baths?: number;
@@ -65,7 +65,7 @@ export interface IPost extends Document {
   minArea?: number;
   preferred_locations?: string[];
 
-  // Jobs
+  // ===== Jobs =====
   company?: string;
   clientName?: string;
   jobType?: string;
@@ -88,10 +88,9 @@ export interface IPost extends Document {
   skills?: string[];
   benefits?: string[];
   shifts?: string[];
-
   candidateName?: string;
 
-  // Vehicles
+  // ===== Vehicles =====
   make?: string;
   model?: string;
   year?: number;
@@ -107,10 +106,42 @@ export interface IPost extends Document {
   serviceHistory?: string;
   features?: string[];
 
+  // ===== Pets: Adoption =====
+  petName?: string;
+  petType?: string;          // dog | cat | bird | rabbit | other
+  breed?: string;
+  ageText?: string;          // keep free text like "2 years", "6 months"
+  gender?: string;           // male | female
+  vaccination?: string;      // vaccinated | not_vaccinated | partially_vaccinated
+  size?: string;             // small | medium | large
+  // adoption fee uses salePrice already
+
+  // ===== Pets: Wanted =====
+  wantedPetType?: string;
+  breedPreference?: string;
+  agePreference?: string;
+  genderPreference?: string;
+  sizePreference?: string;
+  budget?: number;           // explicit budget for wanted
+
+  // ===== Pets: Accessories =====
+  accessoryName?: string;
+  partsCategory?: string;    // reuse key for category (Food/Toys/etc.)
+  // brand, condition, salePrice, description already exist/reused
+
+  // ===== Pets: Lost & Found =====
+  reportType?: string;       // lost | found
+  lastSeenLocation?: string;
+  lfDate?: string;           // store as string (YYYY-MM-DD) for consistency
+
+  // ===== Pets: Services =====
+  serviceType?: string;          // Grooming / Training / etc.
+  serviceProviderName?: string;
+  availability?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 const PostSchema = new Schema<IPost>(
   {
@@ -132,7 +163,7 @@ const PostSchema = new Schema<IPost>(
       email: { type: String, required: true },
     },
 
-    // Property
+    // ===== Property =====
     propertyType: String,
     beds: Number,
     baths: Number,
@@ -183,7 +214,7 @@ const PostSchema = new Schema<IPost>(
     minArea: Number,
     preferred_locations: { type: [String], default: [] },
 
-    // Jobs
+    // ===== Jobs =====
     company: String,
     clientName: String,
     jobType: String,
@@ -209,7 +240,7 @@ const PostSchema = new Schema<IPost>(
 
     candidateName: String,
 
-    // Vehicles
+    // ===== Vehicles =====
     make: String,
     model: String,
     year: Number,
@@ -224,10 +255,40 @@ const PostSchema = new Schema<IPost>(
     insuranceValidTill: String,
     serviceHistory: String,
     features: { type: [String], default: [] },
+
+    // ===== Pets: Adoption =====
+    petName: String,
+    petType: String,
+    breed: String,
+    ageText: String,
+    gender: String,
+    vaccination: String,
+    size: String,
+
+    // ===== Pets: Wanted =====
+    wantedPetType: String,
+    breedPreference: String,
+    agePreference: String,
+    genderPreference: String,
+    sizePreference: String,
+    budget: Number,
+
+    // ===== Pets: Accessories =====
+    accessoryName: String,
+    partsCategory: String,
+
+    // ===== Pets: Lost & Found =====
+    reportType: String,
+    lastSeenLocation: String,
+    lfDate: String,
+
+    // ===== Pets: Services =====
+    serviceType: String,
+    serviceProviderName: String,
+    availability: String,
   },
   { timestamps: true }
 );
-
 
 const Post =
   mongoose.models.Post || mongoose.model<IPost>("Post", PostSchema);

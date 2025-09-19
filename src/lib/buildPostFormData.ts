@@ -312,7 +312,63 @@ export const CATEGORY_CONFIG: CategoryConfig = {
     { key: 'preferred_locations', type: 'array' },
     { key: 'description', type: 'string' },       // additional requirements
   ],
-}
+},
+
+pet: {
+  adoption: [
+    { key: 'petName', type: 'string' },
+    { key: 'petType', type: 'string' },          // Dog, Cat, Bird, Rabbit, Other
+    { key: 'breed', type: 'string' },
+    { key: 'age', type: 'string' },              // keep as string for "2 years", "6 months"
+    { key: 'gender', type: 'string' },           // Male / Female
+    { key: 'vaccination', type: 'string' },      // Vaccinated / Not / Partial
+    { key: 'size', type: 'string' },             // Small / Medium / Large
+    { key: 'price', type: 'number' },            // Adoption fee (if any)
+    { key: 'description', type: 'string' },
+  ],
+
+  wanted: [
+    { key: 'wantedPetType', type: 'string' },    // Dog / Cat / Bird / Rabbit / Others
+    { key: 'breedPreference', type: 'string' },
+    { key: 'agePreference', type: 'string' },
+    { key: 'genderPreference', type: 'string' },
+    { key: 'sizePreference', type: 'string' },
+    { key: 'budget', type: 'number' },
+    { key: 'description', type: 'string' },      // additional requirements
+  ],
+
+  accessories: [
+    { key: 'accessoryName', type: 'string' },
+    { key: 'partsCategory', type: 'string' },    // Food, Toys, Bedding, Grooming, Cage
+    { key: 'brand', type: 'string' },
+    { key: 'condition', type: 'string' },        // New / Used
+    { key: 'salePrice', type: 'number' },
+    { key: 'description', type: 'string' },
+  ],
+
+  lostfound: [
+    { key: 'reportType', type: 'string' },       // Lost / Found
+    { key: 'petType', type: 'string' },
+    { key: 'breed', type: 'string' },
+    { key: 'color', type: 'string' },
+    { key: 'age', type: 'string' },
+    { key: 'lastSeenLocation', type: 'string' },
+    { key: 'date', type: 'date' },               // date lost/found
+    { key: 'description', type: 'string' },
+  ],
+
+  services: [
+    { key: 'serviceType', type: 'string' },      // Grooming / Training / Boarding / Walking / Vet / Other
+    { key: 'petType', type: 'string' },
+    { key: 'serviceProviderName', type: 'string' },
+    { key: 'experience', type: 'number' },       // years
+    { key: 'location', type: 'string' },
+    { key: 'availability', type: 'string' },
+    { key: 'price', type: 'number' },
+    { key: 'description', type: 'string' },
+  ],
+},
+
 
 };
 

@@ -113,9 +113,41 @@ const LABELS: Record<string, string> = {
   brand: "Brand",
   compatibility: "Compatibility",
 
-  // misc examples
+  // pets → adoption
+  petName: "Pet Name",
+  petType: "Pet Type",
+  breed: "Breed",
+  ageText: "Age",
+  gender: "Gender",
+  vaccination: "Vaccination",
+  size: "Size",
+
+  // pets → wanted
+  wantedPetType: "Wanted Pet Type",
+  breedPreference: "Breed Preference",
+  agePreference: "Age Preference",
+  genderPreference: "Gender Preference",
+  sizePreference: "Size Preference",
   budget: "Budget",
+
+  // pets → accessories
+  accessoryName: "Accessory Name",
+
+  // pets → lost & found
+  reportType: "Report Type",
+  lastSeenLocation: "Last Seen / Found Location",
+  lfDate: "Date",
+
+  // pets → services
+  serviceType: "Service Type",
+  serviceProviderName: "Provider Name",
+  availability: "Availability",
+
+  // misc
   price: "Price",
+  maxBudget: "Max Budget",
+  budgetAmount: "Budget",
+  stipendAmount: "Stipend",
 };
 
 function fmtCurrency(v: unknown) {
@@ -151,13 +183,19 @@ function renderValue(key: string, value: any): string {
       "hourlyRate",
       "budgetAmount",
       "stipendAmount",
+      "budget",
+      "maxBudget",
     ].includes(key)
   ) {
     return fmtCurrency(value) ?? "—";
   }
 
   // date-ish
-  if (["available_from", "deadline", "startDate", "endDate", "insuranceValidTill"].includes(key)) {
+  if (
+    ["available_from", "deadline", "startDate", "endDate", "insuranceValidTill", "lfDate"].includes(
+      key
+    )
+  ) {
     return fmtDate(value) ?? "—";
   }
 
@@ -304,6 +342,53 @@ const PARTS_PREVIEW_KEYS: string[] = [
   "salePrice",
 ];
 
+// ---------- PETS preview key sets ----------
+const PETS_ADOPTION_KEYS: string[] = [
+  "petName",
+  "petType",
+  "breed",
+  "ageText",
+  "gender",
+  "vaccination",
+  "size",
+  "salePrice", // adoption fee (if any)
+];
+
+const PETS_WANTED_KEYS: string[] = [
+  "wantedPetType",
+  "breedPreference",
+  "agePreference",
+  "genderPreference",
+  "sizePreference",
+  "budget",
+];
+
+const PETS_ACCESSORIES_KEYS: string[] = [
+  "accessoryName",
+  "partsCategory", // reuse as category for accessories
+  "brand",
+  "condition",
+  "salePrice",
+];
+
+const PETS_LOST_FOUND_KEYS: string[] = [
+  "reportType",
+  "petType",
+  "breed",
+  "color",
+  "ageText",
+  "lastSeenLocation",
+  "lfDate",
+];
+
+const PETS_SERVICES_KEYS: string[] = [
+  "serviceType",
+  "serviceProviderName",
+  "experience",
+  "availability",
+  "salePrice",
+];
+
 export default function PostDetailPageClient() {
   const params = useParams();
   const id = useMemo(() => {
@@ -338,15 +423,13 @@ export default function PostDetailPageClient() {
 
     const normCat = normalizeCategory(post.category || "");
     const normSub = normalizeSubcategory(post.subcategory || "");
+    const subRaw = (post.subcategory || "").toLowerCase();
 
     if (normCat === "property") {
       BASE_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "commercial") COMMERCIAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "holiday rental") HOLIDAY_PREVIEW_KEYS.forEach((k) => keys.add(k));
       if (normSub === "room rental") ROOM_RENTAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      if (normSub === "for students") {
-        // BASE covers typical student-rental fields
-      }
       if (normSub === "property sale" || normSub === "to buy") {
         PROPERTY_SALE_PREVIEW_KEYS.forEach((k) => keys.add(k));
       }
@@ -357,7 +440,6 @@ export default function PostDetailPageClient() {
         JOB_FULLTIME_PREVIEW_KEYS.forEach((k) => keys.add(k));
       }
     } else if (normCat === "vehicles") {
-      // parts vs vehicles
       if (normSub === "parts & accessories" || normSub === "parts" || normSub === "accessories") {
         PARTS_PREVIEW_KEYS.forEach((k) => keys.add(k));
       } else {
@@ -369,6 +451,14 @@ export default function PostDetailPageClient() {
           VAN_TRUCK_PREVIEW_KEYS.forEach((k) => keys.add(k));
         }
       }
+    } else if (normCat === "pet") {
+      // adopt/wanted/accessories/lost & found/services
+      if (subRaw.includes("adoption")) PETS_ADOPTION_KEYS.forEach((k) => keys.add(k));
+      if (subRaw.includes("wanted")) PETS_WANTED_KEYS.forEach((k) => keys.add(k));
+      if (subRaw.includes("accessor")) PETS_ACCESSORIES_KEYS.forEach((k) => keys.add(k));
+      if (subRaw.includes("lost") || subRaw.includes("found"))
+        PETS_LOST_FOUND_KEYS.forEach((k) => keys.add(k));
+      if (subRaw.includes("service")) PETS_SERVICES_KEYS.forEach((k) => keys.add(k));
     }
 
     // Only keep keys that actually exist on the post to avoid lots of “—”

@@ -1,4 +1,3 @@
-// src/app/actions/addPost.ts
 "use server";
 
 import connectDB from "../../config/database";
@@ -91,7 +90,7 @@ export async function addPost(formData: FormData): Promise<
     const facilities = pullArray(formData.get("facilities"));
     const amenities = pullArray(formData.get("amenities"));
 
-    // --- Build postData (property + jobs + vehicles + parts + wanted) ---
+    // --- Build postData (property + jobs + vehicles + parts + pets) ---
     const postData: Record<string, any> = {
       // core
       category,
@@ -102,7 +101,7 @@ export async function addPost(formData: FormData): Promise<
       seller_info,
       images,
 
-      // property common
+      // ===== Property =====
       propertyType: pullString(formData.get("propertyType")),
       beds: pullNumber(formData.get("beds")),
       baths: pullNumber(formData.get("baths")),
@@ -151,8 +150,8 @@ export async function addPost(formData: FormData): Promise<
       // ===== Jobs =====
       company: pullString(formData.get("company")),
       clientName: pullString(formData.get("clientName")),
-      jobType: pullString(formData.get("jobType")), // Full Time/Part Time/Internship/etc.
-      workMode: pullString(formData.get("workMode")), // onsite/remote/hybrid
+      jobType: pullString(formData.get("jobType")),
+      workMode: pullString(formData.get("workMode")),
       salary: pullNumber(formData.get("salary")),
       hourlyRate: pullNumber(formData.get("hourlyRate")),
       stipendType: pullString(formData.get("stipendType")),
@@ -181,33 +180,68 @@ export async function addPost(formData: FormData): Promise<
       make: pullString(formData.get("make")),
       model: pullString(formData.get("model")),
       year: pullNumber(formData.get("year")),
-      kms: pullNumber(formData.get("kms")), // mileage in km
+      kms: pullNumber(formData.get("kms")),
       fuelType: pullString(formData.get("fuelType")),
       transmission: pullString(formData.get("transmission")),
       bodyType: pullString(formData.get("bodyType")),
       color: pullString(formData.get("color")),
-      condition: pullString(formData.get("condition")), // new/used/etc.
+      condition: pullString(formData.get("condition")),
       ownerType: pullString(formData.get("ownerType")),
       registrationNumber: pullString(formData.get("registrationNumber")),
       insuranceValidTill: pullString(formData.get("insuranceValidTill")),
       serviceHistory: pullString(formData.get("serviceHistory")),
       features: pullArray(formData.get("features")),
-
-      // motorcycle-specific
       engineCapacity: pullNumber(formData.get("engineCapacity")),
-
-      // van-specific
       seatingCapacity: pullNumber(formData.get("seatingCapacity")),
 
-      // ===== Parts & Accessories =====
+      // ===== Parts (Vehicles) =====
       partsCategory: pullString(formData.get("partsCategory")),
       brand: pullString(formData.get("brand")),
-      compatibility: pullArray(formData.get("compatibility")), // array of models/vehicles
-      // price for parts uses salePrice for consistency
-      // (already covered above via salePrice)
+      compatibility: pullArray(formData.get("compatibility")),
+
+      // ===== Pets: Adoption =====
+      petName: pullString(formData.get("petName")),
+      petType: pullString(formData.get("petType")),
+      breed: pullString(formData.get("breed")),
+      ageText: pullString(formData.get("age")) || pullString(formData.get("ageText")),
+      gender: pullString(formData.get("gender")),
+      vaccination: pullString(formData.get("vaccination")),
+      size: pullString(formData.get("size")),
+      // adoption fee uses salePrice above
+
+      // ===== Pets: Wanted =====
+      wantedPetType: pullString(formData.get("wantedPetType")),
+      breedPreference: pullString(formData.get("breedPreference")),
+      agePreference: pullString(formData.get("agePreference")),
+      genderPreference: pullString(formData.get("genderPreference")),
+      sizePreference: pullString(formData.get("sizePreference")),
+      budget: pullNumber(formData.get("budget")),
+
+      // ===== Pets: Accessories =====
+      accessoryName: pullString(formData.get("accessoryName")),
+      // partsCategory reused, brand/condition/salePrice/description reused above
+
+      // ===== Pets: Lost & Found =====
+      reportType: pullString(formData.get("reportType")),
+      lastSeenLocation: pullString(formData.get("lastSeenLocation")),
+      lfDate: pullString(formData.get("date")), // store date as string
+
+      // ===== Pets: Services =====
+      serviceType: pullString(formData.get("serviceType")),
+      serviceProviderName: pullString(formData.get("serviceProviderName")),
+      availability: pullString(formData.get("availability")),
+      // price (service) reuses "price" → we store in salePrice already if UI maps it there;
+      // if your form uses "price" explicitly, also map it:
+      // salePrice: salePrice ?? pullNumber(formData.get("price"))
     };
 
-    // --- Required checks (don’t throw; return a message) ---
+    // If services form uses "price" field instead of salePrice, merge it safely:
+    if (postData.salePrice === undefined) {
+      const svcPrice = pullNumber(formData.get("price"));
+      if (svcPrice !== undefined) postData.salePrice = svcPrice;
+    }
+
+    // --- Required checks ---
     const errors: string[] = [];
     if (!postData.name) errors.push("Title (name/jobTitle/projectTitle) is required");
     if (!postData.description) errors.push("Description is required");
