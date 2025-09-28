@@ -13,7 +13,7 @@ export async function addPost(formData: FormData): Promise<
   try {
     await connectDB();
 
-    // --- Parse core fields (with fallbacks used by some job/vehicle forms) ---
+    // --- Core fields (with fallbacks some older forms used) ---
     const name =
       ((formData.get("name") as string) ?? "").trim() ||
       ((formData.get("jobTitle") as string) ?? "").trim() ||
@@ -23,23 +23,54 @@ export async function addPost(formData: FormData): Promise<
     const category = ((formData.get("category") as string) ?? "").trim();
     const subcategory = ((formData.get("subcategory") as string) ?? "").trim();
 
-    // locationData must be JSON string from client
+    // locationData is a JSON string from client; may be empty for some services
     const locationRaw = (formData.get("locationData") as string) || "";
     const location: LocationData = locationRaw
       ? safeParse<LocationData>(locationRaw, {})
       : {};
 
-    // Accept both snake and camel case (older/newer clients)
+    // Helpers
+    const pullString = (v: FormDataEntryValue | null | undefined) => {
+      const s = (v as string | null) ?? "";
+      const t = s?.trim?.() ?? s;
+      return t || undefined;
+    };
+    const pullNumber = (v: FormDataEntryValue | null | undefined) => {
+      const s = pullString(v);
+      if (!s) return undefined;
+      const n = Number(s);
+      return Number.isNaN(n) ? undefined : n;
+    };
+    const pullArray = (v: FormDataEntryValue | null | undefined) => {
+      const s = pullString(v);
+      if (!s) return [];
+      const parsed = safeParse<any>(s, []);
+      if (Array.isArray(parsed)) return parsed;
+      return String(s)
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+    };
+
+    // Seller info (accept both snake/camel + legacy contact* fields)
     const seller_info = {
       name:
-        ((formData.get("seller_info.name") as string) || "").trim() ||
-        ((formData.get("sellerInfo.name") as string) || "").trim(),
+        pullString(formData.get("seller_info.name")) ||
+        pullString(formData.get("sellerInfo.name")) ||
+        pullString(formData.get("contactName")) ||
+        "",
       email:
-        ((formData.get("seller_info.email") as string) || "").trim() ||
-        ((formData.get("sellerInfo.email") as string) || "").trim(),
+        pullString(formData.get("seller_info.email")) ||
+        pullString(formData.get("sellerInfo.email")) ||
+        pullString(formData.get("contactEmail")) ||
+        pullString(formData.get("email")) || // some older forms used `email`
+        "",
       phone:
-        ((formData.get("seller_info.phone") as string) || "").trim() ||
-        ((formData.get("sellerInfo.phone") as string) || "").trim(),
+        pullString(formData.get("seller_info.phone")) ||
+        pullString(formData.get("sellerInfo.phone")) ||
+        pullString(formData.get("contactPhone")) ||
+        pullString(formData.get("contactNumber")) || // legacy
+        "",
     };
 
     // --- Images: URLs + Files ---
@@ -62,35 +93,11 @@ export async function addPost(formData: FormData): Promise<
       }
     }
 
-    // --- Helpers: read typed primitives/arrays ---
-    const pullString = (v: FormDataEntryValue | null | undefined) => {
-      const s = (v as string | null) ?? "";
-      const t = s?.trim?.() ?? s;
-      return t || undefined;
-    };
-    const pullNumber = (v: FormDataEntryValue | null | undefined) => {
-      const s = pullString(v);
-      if (!s) return undefined;
-      const n = Number(s);
-      return Number.isNaN(n) ? undefined : n;
-    };
-    const pullArray = (v: FormDataEntryValue | null | undefined) => {
-      const s = pullString(v);
-      if (!s) return [];
-      const parsed = safeParse<any>(s, []);
-      if (Array.isArray(parsed)) return parsed;
-      // also accept comma-separated text
-      return String(s)
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-    };
-
-    // --- Arrays used in multiple categories ---
+    // Reusable arrays
     const facilities = pullArray(formData.get("facilities"));
     const amenities = pullArray(formData.get("amenities"));
 
-    // --- Build postData (property + jobs + vehicles + parts + pets) ---
+    // ===== Build postData (property + jobs + vehicles + parts + pets + services) =====
     const postData: Record<string, any> = {
       // core
       category,
@@ -176,7 +183,7 @@ export async function addPost(formData: FormData): Promise<
       maxBudget: pullNumber(formData.get("maxBudget")),
       minArea: pullNumber(formData.get("minArea")),
 
-      // ===== Vehicles (common + car/van/truck + motorcycle) =====
+      // ===== Vehicles =====
       make: pullString(formData.get("make")),
       model: pullString(formData.get("model")),
       year: pullNumber(formData.get("year")),
@@ -207,7 +214,6 @@ export async function addPost(formData: FormData): Promise<
       gender: pullString(formData.get("gender")),
       vaccination: pullString(formData.get("vaccination")),
       size: pullString(formData.get("size")),
-      // adoption fee uses salePrice above
 
       // ===== Pets: Wanted =====
       wantedPetType: pullString(formData.get("wantedPetType")),
@@ -219,35 +225,56 @@ export async function addPost(formData: FormData): Promise<
 
       // ===== Pets: Accessories =====
       accessoryName: pullString(formData.get("accessoryName")),
-      // partsCategory reused, brand/condition/salePrice/description reused above
+      // partsCategory/brand/condition/salePrice/description reused
 
       // ===== Pets: Lost & Found =====
       reportType: pullString(formData.get("reportType")),
       lastSeenLocation: pullString(formData.get("lastSeenLocation")),
-      lfDate: pullString(formData.get("date")), // store date as string
+      lfDate: pullString(formData.get("date")), // normalize to string
 
       // ===== Pets: Services =====
       serviceType: pullString(formData.get("serviceType")),
       serviceProviderName: pullString(formData.get("serviceProviderName")),
       availability: pullString(formData.get("availability")),
-      // price (service) reuses "price" → we store in salePrice already if UI maps it there;
-      // if your form uses "price" explicitly, also map it:
-      // salePrice: salePrice ?? pullNumber(formData.get("price"))
+
+      // ===== Services (new categories) =====
+      // Education
+      educationType: pullString(formData.get("educationType")),
+      subject: pullString(formData.get("subject")),
+      mode: pullString(formData.get("mode")),
+      qualification: pullString(formData.get("qualification")),
+      // Food
+      cuisineType: pullString(formData.get("cuisineType")),
+      dietaryOptions: pullArray(formData.get("dietaryOptions")),
+      deliveryAvailable: pullString(formData.get("deliveryAvailable")),
+      // Health
+      providerName: pullString(formData.get("providerName")),
+      consultationMode: pullString(formData.get("consultationMode")),
+      // Technology
+      rateType: pullString(formData.get("rateType")),
+      // Travel
+      destination: pullString(formData.get("destination")),
+      packageDetails: pullString(formData.get("packageDetails")),
+      agencyName: pullString(formData.get("agencyName")),
+      durationText: pullString(formData.get("duration")) || pullString(formData.get("durationText")),
+      // Tutoring
+      level: pullString(formData.get("level")),
+      // Service Wanted
+      urgency: pullString(formData.get("urgency")),
     };
 
-    // If services form uses "price" field instead of salePrice, merge it safely:
+    // If a services form used "price" instead of salePrice, map it in
     if (postData.salePrice === undefined) {
       const svcPrice = pullNumber(formData.get("price"));
       if (svcPrice !== undefined) postData.salePrice = svcPrice;
     }
 
-    // --- Required checks ---
+    // --- Required checks (relaxed: location.address is optional now) ---
     const errors: string[] = [];
-    if (!postData.name) errors.push("Title (name/jobTitle/projectTitle) is required");
+    if (!postData.name) errors.push("Title is required");
     if (!postData.description) errors.push("Description is required");
     if (!postData.category) errors.push("Category is required");
     if (!postData.subcategory) errors.push("Subcategory is required");
-    if (!location?.address) errors.push("Location address is required");
     if (!postData.seller_info?.name) errors.push("Contact name is required");
     if (!postData.seller_info?.email) errors.push("Contact email is required");
     if (!postData.seller_info?.phone) errors.push("Contact phone is required");
@@ -256,8 +283,6 @@ export async function addPost(formData: FormData): Promise<
       console.error("Validation errors:", errors, { postData });
       return { ok: false, error: errors.join(" • ") };
     }
-
-    console.log("Saving Post with data:", postData);
 
     const newPost = new Post(postData);
     await newPost.save();

@@ -43,7 +43,7 @@ const CURRENCY_KEYS = new Set([
   "stipendAmount",
   "budgetAmount",
   "maxBudget",
-  "budget", // pets wanted budget
+  "budget",
 ]);
 
 function renderValue(key: string, value: any): string {
@@ -53,8 +53,10 @@ function renderValue(key: string, value: any): string {
     key === "available_from" ||
     key === "deadline" ||
     key === "startDate" ||
+    key === "endDate" ||
     key === "insuranceValidTill" ||
-    key === "lfDate"
+    key === "lfDate" ||
+    key === "date"
   ) {
     return fmtDate(value) ?? "—";
   }
@@ -109,13 +111,13 @@ export default function PreviewPage() {
     </p>
   );
 
+  // Location is now OPTIONAL to avoid blocking forms that don't collect it
   const missing = useMemo(() => {
     const m: string[] = [];
     if (!data.name) m.push("Title");
     if (!data.description) m.push("Description");
     if (!data.category) m.push("Category");
     if (!data.subcategory) m.push("Subcategory");
-    if (!data.location?.address) m.push("Location");
     if (!data.sellerInfo?.name) m.push("Contact Name");
     if (!data.sellerInfo?.email) m.push("Contact Email");
     if (!data.sellerInfo?.phone) m.push("Contact Phone");
@@ -151,8 +153,10 @@ export default function PreviewPage() {
     router.push(`/post-details/${(res as any).id}`);
   };
 
+  // quick booleans for sectioning
   const cat = String(data.category || "").toLowerCase();
   const sub = String(data.subcategory || "").toLowerCase();
+
   const isVehicle = cat === "vehicles" || has("make") || has("model");
   const isParts =
     (cat === "vehicles" && sub.includes("parts")) ||
@@ -168,8 +172,22 @@ export default function PreviewPage() {
   const isPetAdoption = isPets && sub.includes("adoption");
   const isPetWanted = isPets && sub.includes("wanted");
   const isPetAccessories = isPets && sub.includes("accessories");
-  const isPetLostFound = isPets && (sub.includes("lost") || sub.includes("found"));
+  const isPetLostFound =
+    isPets && (sub.includes("lost") || sub.includes("found"));
   const isPetServices = isPets && sub.includes("service");
+
+  const isServices =
+    cat === "services" || ["education", "food", "health", "home", "other", "technology", "travel", "tutoring", "wanted"].some(s => sub.includes(s));
+
+  const isEdu = isServices && sub.includes("education");
+  const isFood = isServices && sub.includes("food");
+  const isHealth = isServices && sub.includes("health");
+  const isHome = isServices && sub.includes("home");
+  const isOther = isServices && sub.includes("other");
+  const isTech = isServices && (sub.includes("tech") || sub.includes("technology"));
+  const isTravel = isServices && sub.includes("travel");
+  const isTutoring = isServices && sub.includes("tutoring");
+  const isSvcWanted = isServices && sub.includes("wanted");
 
   return (
     <>
@@ -207,10 +225,12 @@ export default function PreviewPage() {
               {has("petType") && row("Pet Type", data.petType)}
               {has("breed") && row("Breed", data.breed)}
               {has("ageText") && row("Age", data.ageText)}
+              {has("age") && !has("ageText") && row("Age", data.age)}
               {has("gender") && row("Gender", data.gender)}
               {has("vaccination") && row("Vaccination", data.vaccination)}
               {has("size") && row("Size", data.size)}
-              {has("salePrice") &&
+              {has("price") && row("Adoption Fee", data.price, "price")}
+              {!has("price") && has("salePrice") &&
                 row("Adoption Fee", data.salePrice, "salePrice")}
             </>
           )}
@@ -218,7 +238,8 @@ export default function PreviewPage() {
           {/* ===== Pets: Wanted ===== */}
           {isPetWanted && (
             <>
-              {has("wantedPetType") && row("Wanted Pet Type", data.wantedPetType)}
+              {has("wantedPetType") &&
+                row("Wanted Pet Type", data.wantedPetType)}
               {has("breedPreference") &&
                 row("Breed Preference", data.breedPreference)}
               {has("agePreference") &&
@@ -234,13 +255,12 @@ export default function PreviewPage() {
           {/* ===== Pets: Accessories ===== */}
           {isPetAccessories && (
             <>
-              {has("accessoryName") &&
-                row("Accessory Name", data.accessoryName)}
-              {has("partsCategory") &&
-                row("Category", data.partsCategory)}
+              {has("accessoryName") && row("Accessory Name", data.accessoryName)}
+              {has("partsCategory") && row("Category", data.partsCategory)}
               {has("brand") && row("Brand", data.brand)}
               {has("condition") && row("Condition", data.condition)}
-              {has("salePrice") &&
+              {has("price") && row("Price", data.price, "price")}
+              {!has("price") && has("salePrice") &&
                 row("Price", data.salePrice, "salePrice")}
             </>
           )}
@@ -248,15 +268,16 @@ export default function PreviewPage() {
           {/* ===== Pets: Lost & Found ===== */}
           {isPetLostFound && (
             <>
-              {has("reportType") &&
-                row("Report Type", data.reportType)}
+              {has("reportType") && row("Report Type", data.reportType)}
               {has("petType") && row("Pet Type", data.petType)}
               {has("breed") && row("Breed", data.breed)}
               {has("color") && row("Color", data.color)}
               {has("ageText") && row("Age", data.ageText)}
+              {has("age") && !has("ageText") && row("Age", data.age)}
               {has("lastSeenLocation") &&
                 row("Last Seen Location", data.lastSeenLocation)}
               {has("lfDate") && row("Date", data.lfDate, "lfDate")}
+              {has("date") && !has("lfDate") && row("Date", data.date, "date")}
             </>
           )}
 
@@ -267,16 +288,126 @@ export default function PreviewPage() {
               {has("serviceProviderName") &&
                 row("Provider Name", data.serviceProviderName)}
               {has("experience") && row("Experience", data.experience)}
-              {has("availability") &&
-                row("Availability", data.availability)}
-              {has("salePrice") &&
+              {has("availability") && row("Availability", data.availability)}
+              {has("price") && row("Price", data.price, "price")}
+              {!has("price") && has("salePrice") &&
                 row("Price", data.salePrice, "salePrice")}
             </>
           )}
 
-          {/* ===== Vehicles / Property / Jobs blocks remain unchanged below ===== */}
-          {/* ... existing Vehicle / Parts / Wanted / Property / Jobs rendering ... */}
-          {/* (keep your existing code here) */}
+          {/* ===== Services: Education ===== */}
+          {isEdu && (
+            <>
+              {has("educationType") && row("Education Type", data.educationType)}
+              {has("subject") && row("Subject / Course", data.subject)}
+              {has("mode") && row("Mode of Study", data.mode)}
+              {has("qualification") &&
+                row("Required Qualification", data.qualification)}
+              {has("experience") && row("Experience (years)", data.experience)}
+              {has("availability") &&
+                row("Availability / Schedule", data.availability)}
+              {has("price") && row("Fees / Price", data.price, "price")}
+            </>
+          )}
+
+          {/* ===== Services: Food ===== */}
+          {isFood && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {has("cuisineType") && row("Cuisine Type", data.cuisineType)}
+              {Array.isArray(data.dietaryOptions) &&
+                row("Dietary Options", data.dietaryOptions)}
+              {has("price") && row("Price", data.price, "price")}
+              {has("deliveryAvailable") &&
+                row("Delivery Available", data.deliveryAvailable)}
+            </>
+          )}
+
+          {/* ===== Services: Health ===== */}
+          {isHealth && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {has("providerName") && row("Provider Name", data.providerName)}
+              {has("qualification") && row("Qualification", data.qualification)}
+              {has("experience") && row("Experience", data.experience)}
+              {has("consultationMode") &&
+                row("Consultation Mode", data.consultationMode)}
+              {has("price") && row("Consultation Fee", data.price, "price")}
+              {has("availability") && row("Availability", data.availability)}
+            </>
+          )}
+
+          {/* ===== Services: Home ===== */}
+          {isHome && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {has("experience") && row("Experience", data.experience)}
+              {has("availability") && row("Availability", data.availability)}
+              {has("price") && row("Service Charge", data.price, "price")}
+            </>
+          )}
+
+          {/* ===== Services: Other ===== */}
+          {isOther && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {has("availability") && row("Availability", data.availability)}
+              {has("price") && row("Price", data.price, "price")}
+            </>
+          )}
+
+          {/* ===== Services: Technology ===== */}
+          {isTech && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {Array.isArray(data.skills) && row("Skills", data.skills)}
+              {has("experience") && row("Experience", data.experience)}
+              {has("availability") && row("Availability", data.availability)}
+              {has("rateType") && row("Rate Type", data.rateType)}
+              {has("price") && row("Rate", data.price, "price")}
+            </>
+          )}
+
+          {/* ===== Services: Travel ===== */}
+          {isTravel && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {has("destination") && row("Destination", data.destination)}
+              {has("packageDetails") &&
+                row("Package Details", data.packageDetails)}
+              {has("duration") && row("Duration", data.duration)}
+              {has("price") && row("Price", data.price, "price")}
+              {has("availability") && row("Availability", data.availability)}
+              {has("agencyName") && row("Agency Name", data.agencyName)}
+            </>
+          )}
+
+          {/* ===== Services: Tutoring ===== */}
+          {isTutoring && (
+            <>
+              {has("subject") && row("Subject", data.subject)}
+              {has("level") && row("Level", data.level)}
+              {has("mode") && row("Mode", data.mode)}
+              {has("qualification") && row("Qualification", data.qualification)}
+              {has("experience") && row("Experience (years)", data.experience)}
+              {has("availability") &&
+                row("Availability / Schedule", data.availability)}
+              {has("price") && row("Hourly Rate", data.price, "price")}
+            </>
+          )}
+
+          {/* ===== Services: Wanted ===== */}
+          {isSvcWanted && (
+            <>
+              {has("serviceType") && row("Service Type", data.serviceType)}
+              {has("budgetAmount") &&
+                row("Budget", data.budgetAmount, "budgetAmount")}
+              {has("urgency") && row("Urgency", data.urgency)}
+            </>
+          )}
+
+          {/* ===== Vehicles / Property / Jobs blocks remain in your existing codebase.
+               Keep them below if you already had them, or integrate them similarly. ===== */}
         </section>
 
         {/* Contact Details */}
@@ -287,11 +418,13 @@ export default function PreviewPage() {
           {row("Phone", data.sellerInfo?.phone || "—")}
         </section>
 
-        {/* Location */}
-        <section className="space-y-1 border-b pb-4">
-          <h3 className="text-lg font-semibold">Location</h3>
-          {row("Address", data.location?.address || "—")}
-        </section>
+        {/* Location (optional) */}
+        {(data.location?.address || "").trim() ? (
+          <section className="space-y-1 border-b pb-4">
+            <h3 className="text-lg font-semibold">Location</h3>
+            {row("Address", data.location?.address || "—")}
+          </section>
+        ) : null}
 
         {/* Images */}
         {Array.isArray(data.images) && data.images.length > 0 && (

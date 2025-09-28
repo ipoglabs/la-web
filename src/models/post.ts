@@ -13,18 +13,20 @@ export interface IPost {
   images: string[];
   category: string;
   subcategory: string;
-  location: {
-    address: string;
+
+  location?: {
+    address?: string;
     lat?: number;
     lng?: number;
   };
+
   seller_info: {
     name: string;
     phone: string;
     email: string;
   };
 
-  // ===== Property / Rental / Commercial =====
+  /** ===== Property / Rental / Commercial ===== */
   propertyType?: string;
   beds?: number;
   baths?: number;
@@ -66,13 +68,13 @@ export interface IPost {
   ownership?: string;
   age?: string;
 
-  // Search constraints (Wanted posts)
+  /** Search constraints (Wanted posts) */
   minBudget?: number;
   maxBudget?: number;
   minArea?: number;
   preferred_locations?: string[];
 
-  // ===== Jobs =====
+  /** ===== Jobs ===== */
   company?: string;
   clientName?: string;
   jobType?: string;
@@ -97,9 +99,9 @@ export interface IPost {
   shifts?: string[];
   candidateName?: string;
 
-  // ===== Vehicles =====
+  /** ===== Vehicles ===== */
   make?: string;
-  model?: string; // safe now (no clash with Document.model)
+  model?: string;
   year?: number;
   kms?: number;
   fuelType?: string;
@@ -113,40 +115,73 @@ export interface IPost {
   serviceHistory?: string;
   features?: string[];
 
-  // ===== Pets: Adoption =====
+  /** ===== Pets ===== */
+  // Adoption
   petName?: string;
-  petType?: string;          // dog | cat | bird | rabbit | other
+  petType?: string;
   breed?: string;
-  ageText?: string;          // free text: "2 years", "6 months"
-  gender?: string;           // male | female
-  vaccination?: string;      // vaccinated | not_vaccinated | partially_vaccinated
-  size?: string;             // small | medium | large
-  // adoption fee uses salePrice
-
-  // ===== Pets: Wanted =====
+  ageText?: string;
+  gender?: string;
+  vaccination?: string;
+  size?: string;
+  // Wanted
   wantedPetType?: string;
   breedPreference?: string;
   agePreference?: string;
   genderPreference?: string;
   sizePreference?: string;
   budget?: number;
-
-  // ===== Pets: Accessories =====
+  // Accessories
   accessoryName?: string;
-  partsCategory?: string;    // Food/Toys/Bedding/Grooming/Cage etc.
-  // brand, condition, salePrice, description already covered
-
-  // ===== Pets: Lost & Found =====
-  reportType?: string;       // lost | found
+  partsCategory?: string;
+  // Lost & Found
+  reportType?: string;
   lastSeenLocation?: string;
-  lfDate?: string;           // YYYY-MM-DD
-
-  // ===== Pets: Services =====
-  serviceType?: string;          // Grooming / Training / etc.
+  lfDate?: string;
+  // Services
+  serviceType?: string;
   serviceProviderName?: string;
   availability?: string;
 
-  // timestamps (added by Mongoose)
+  /** ===== Services (new blocks) ===== */
+  // Education
+  educationType?: string;   // tutoring | coaching | online | school | language | professional
+  subject?: string;
+  mode?: string;            // online | offline | both
+  qualification?: string;
+  price?: number;           // generalized numeric price/fee
+
+  // Food
+  cuisineType?: string;
+  dietaryOptions?: string[];    // Vegetarian, Vegan, Gluten-Free…
+  deliveryAvailable?: string;   // yes | no
+
+  // Health
+  providerName?: string;
+  consultationMode?: string;    // online | in-person | both
+
+  // Home
+  // reuse: serviceType | experience | availability | price
+
+  // Other
+  // reuse: serviceType | availability | price
+
+  // Technology
+  rateType?: string;            // hourly | daily | monthly | project | negotiable
+
+  // Travel
+  destination?: string;
+  packageDetails?: string;
+  agencyName?: string;
+  durationText?: string;        // keep free text like "5D/4N" if you prefer
+
+  // Tutoring
+  level?: string;               // primary | secondary | higher-secondary | college | competitive
+
+  // Service → Wanted
+  urgency?: string;
+
+  /** timestamps (added by Mongoose) */
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -161,8 +196,9 @@ const PostSchema = new Schema<IPost>(
     category: { type: String, required: true, index: true },
     subcategory: { type: String, required: true, index: true },
 
+    // location is now optional to match forms that omit it
     location: {
-      address: { type: String, required: true },
+      address: { type: String }, // removed `required: true`
       lat: Number,
       lng: Number,
     },
@@ -173,7 +209,7 @@ const PostSchema = new Schema<IPost>(
       email: { type: String, required: true },
     },
 
-    // ===== Property =====
+    /** ===== Property ===== */
     propertyType: String,
     beds: Number,
     baths: Number,
@@ -224,7 +260,7 @@ const PostSchema = new Schema<IPost>(
     minArea: Number,
     preferred_locations: { type: [String], default: [] },
 
-    // ===== Jobs =====
+    /** ===== Jobs ===== */
     company: String,
     clientName: String,
     jobType: String,
@@ -250,7 +286,7 @@ const PostSchema = new Schema<IPost>(
 
     candidateName: String,
 
-    // ===== Vehicles =====
+    /** ===== Vehicles ===== */
     make: String,
     model: String,
     year: Number,
@@ -266,7 +302,8 @@ const PostSchema = new Schema<IPost>(
     serviceHistory: String,
     features: { type: [String], default: [] },
 
-    // ===== Pets: Adoption =====
+    /** ===== Pets ===== */
+    // Adoption
     petName: String,
     petType: String,
     breed: String,
@@ -274,28 +311,56 @@ const PostSchema = new Schema<IPost>(
     gender: String,
     vaccination: String,
     size: String,
-
-    // ===== Pets: Wanted =====
+    // Wanted
     wantedPetType: String,
     breedPreference: String,
     agePreference: String,
     genderPreference: String,
     sizePreference: String,
     budget: Number,
-
-    // ===== Pets: Accessories =====
+    // Accessories
     accessoryName: String,
     partsCategory: String,
-
-    // ===== Pets: Lost & Found =====
+    // Lost & Found
     reportType: String,
     lastSeenLocation: String,
     lfDate: String,
-
-    // ===== Pets: Services =====
+    // Services
     serviceType: String,
     serviceProviderName: String,
     availability: String,
+
+    /** ===== Services (new blocks) ===== */
+    // Education
+    educationType: String,
+    subject: String,
+    mode: String,
+    qualification: String,
+    price: Number,
+
+    // Food
+    cuisineType: String,
+    dietaryOptions: { type: [String], default: [] },
+    deliveryAvailable: String,
+
+    // Health
+    providerName: String,
+    consultationMode: String,
+
+    // Technology
+    rateType: String,
+
+    // Travel
+    destination: String,
+    packageDetails: String,
+    agencyName: String,
+    durationText: String,
+
+    // Tutoring
+    level: String,
+
+    // Service wanted
+    urgency: String,
   },
   { timestamps: true }
 );
@@ -303,4 +368,6 @@ const PostSchema = new Schema<IPost>(
 const Post: Model<IPost> =
   (models.Post as Model<IPost>) || model<IPost>("Post", PostSchema);
 
+export type PostModel = typeof Post;
+export type { IPost as PostDTO };
 export default Post;

@@ -17,11 +17,8 @@ type FieldSpec =
   | { key: string; type: "array" };
 
 type CategoryConfig = Record<
-  string,   // normalized category, e.g. "property"
-  Record<
-    string, // normalized subcategory (lowercase), e.g. "commercial"
-    FieldSpec[]
-  >
+  string,
+  Record<string, FieldSpec[]>
 >;
 
 /** ---- NORMALIZERS ---- **/
@@ -70,7 +67,7 @@ export function normalizeSubcategory(sub: string) {
     van: "van",
     truck: "truck",
     parts: "parts",
-    accessories: "parts", // treat “accessories” same as parts
+    accessories: "parts",
     "parts & accessories": "parts",
     "vehicle wanted": "wanted",
 
@@ -83,6 +80,16 @@ export function normalizeSubcategory(sub: string) {
     "pet services": "services",
     "pet accessories": "accessories",
     "pet wanted": "wanted",
+
+    // services (explicit)
+    education: "education",
+    food: "food",
+    health: "health",
+    home: "home",
+    other: "other",
+    technology: "technology",
+    travel: "travel",
+    tutoring: "tutoring",
   };
   return aliases[raw] || raw;
 }
@@ -195,7 +202,7 @@ export const CATEGORY_CONFIG: CategoryConfig = {
       { key: "duration", type: "string" },
       { key: "startDate", type: "string" },
       { key: "stipendType", type: "string" },
-      { key: "stipend", type: "number" }, // note: if you use stipendAmount elsewhere, align names
+      { key: "stipend", type: "number" },
       { key: "skills", type: "array" },
       { key: "employmentType", type: "string" },
       { key: "applyLink", type: "string" },
@@ -326,13 +333,13 @@ export const CATEGORY_CONFIG: CategoryConfig = {
   pet: {
     adoption: [
       { key: "petName", type: "string" },
-      { key: "petType", type: "string" }, // Dog, Cat, Bird, Rabbit, Other
+      { key: "petType", type: "string" },
       { key: "breed", type: "string" },
-      { key: "age", type: "string" },     // "2 years", "6 months"
-      { key: "gender", type: "string" },  // Male/Female
-      { key: "vaccination", type: "string" }, // Vaccinated/Not/Partial
-      { key: "size", type: "string" },    // Small/Medium/Large
-      { key: "price", type: "number" },   // adoption fee (if any)
+      { key: "age", type: "string" },
+      { key: "gender", type: "string" },
+      { key: "vaccination", type: "string" },
+      { key: "size", type: "string" },
+      { key: "price", type: "number" },
       { key: "description", type: "string" },
     ],
     wanted: [
@@ -346,28 +353,119 @@ export const CATEGORY_CONFIG: CategoryConfig = {
     ],
     accessories: [
       { key: "accessoryName", type: "string" },
-      { key: "partsCategory", type: "string" }, // Food, Toys, Bedding, Grooming, Cage
+      { key: "partsCategory", type: "string" },
       { key: "brand", type: "string" },
-      { key: "condition", type: "string" },     // New / Used
+      { key: "condition", type: "string" },
       { key: "salePrice", type: "number" },
       { key: "description", type: "string" },
     ],
     lostfound: [
-      { key: "reportType", type: "string" }, // Lost/Found
+      { key: "reportType", type: "string" },
       { key: "petType", type: "string" },
       { key: "breed", type: "string" },
       { key: "color", type: "string" },
       { key: "age", type: "string" },
       { key: "lastSeenLocation", type: "string" },
-      { key: "date", type: "date" }, // date lost/found
+      { key: "date", type: "date" },
       { key: "description", type: "string" },
     ],
     services: [
-      { key: "serviceType", type: "string" }, // Grooming/Training/Boarding/Walking/Vet/Other
+      { key: "serviceType", type: "string" },
       { key: "petType", type: "string" },
       { key: "serviceProviderName", type: "string" },
-      { key: "experience", type: "number" }, // years
+      { key: "experience", type: "number" },
       { key: "location", type: "string" },
+      { key: "availability", type: "string" },
+      { key: "price", type: "number" },
+      { key: "description", type: "string" },
+    ],
+  },
+
+  /** SERVICES CATEGORY **/
+  services: {
+    education: [
+      { key: "educationType", type: "string" },
+      { key: "subject", type: "string" },
+      { key: "mode", type: "string" },           // online/offline/both
+      { key: "qualification", type: "string" },
+      { key: "experience", type: "number" },
+      { key: "availability", type: "string" },
+      { key: "price", type: "number" },
+      { key: "description", type: "string" },
+    ],
+    food: [
+      { key: "serviceType", type: "string" },    // home-cooked/tiffin/etc.
+      { key: "cuisineType", type: "string" },
+      { key: "dietaryOptions", type: "array" },  // Vegetarian, Vegan, etc.
+      { key: "price", type: "number" },
+      { key: "deliveryAvailable", type: "string" }, // yes/no (or use boolean if you prefer)
+      { key: "description", type: "string" },
+    ],
+    health: [
+      { key: "serviceType", type: "string" },
+      { key: "providerName", type: "string" },
+      { key: "qualification", type: "string" },
+      { key: "experience", type: "number" },
+      { key: "consultationMode", type: "string" }, // Online/In-person/Both
+      { key: "price", type: "number" },            // from consultationFee
+      { key: "availability", type: "string" },
+      { key: "description", type: "string" },
+    ],
+    home: [
+      { key: "serviceType", type: "string" },   // cleaning/plumbing/etc.
+      { key: "experience", type: "number" },
+      { key: "availability", type: "string" },
+      { key: "price", type: "number" },         // from serviceCharge
+      { key: "description", type: "string" },
+    ],
+    other: [
+      { key: "serviceType", type: "string" },
+      { key: "price", type: "number" },
+      { key: "availability", type: "string" },
+      { key: "description", type: "string" },
+    ],
+    technology: [
+      { key: "serviceType", type: "string" },
+      { key: "skills", type: "array" },         // split CSV in UI/store
+      { key: "experience", type: "number" },
+      { key: "availability", type: "string" },  // full-time/part-time/etc.
+      { key: "rateType", type: "string" },      // hourly/daily/monthly/project
+      { key: "price", type: "number" },         // numeric rate
+      { key: "description", type: "string" },
+    ],
+    travel: [
+      { key: "serviceType", type: "string" },   // tour/package/guide/transport
+      { key: "destination", type: "string" },
+      { key: "packageDetails", type: "string" },
+      { key: "duration", type: "string" },
+      { key: "price", type: "number" },
+      { key: "availability", type: "string" },
+      { key: "agencyName", type: "string" },
+      { key: "description", type: "string" },
+    ],
+    tutoring: [
+      { key: "subject", type: "string" },
+      { key: "level", type: "string" },         // primary/secondary/etc.
+      { key: "mode", type: "string" },
+      { key: "qualification", type: "string" },
+      { key: "experience", type: "number" },
+      { key: "availability", type: "string" },
+      { key: "price", type: "number" },         // map hourlyRate to price in UI
+      { key: "description", type: "string" },
+    ],
+    wanted: [
+      { key: "serviceType", type: "string" },
+      { key: "budgetAmount", type: "number" },  // numeric budget
+      { key: "urgency", type: "string" },       // immediate/within-a-week/flexible
+      { key: "description", type: "string" },
+    ],
+  },
+
+  /** BUSINESS CATEGORY (for Business → Services form) **/
+  business: {
+    services: [
+      { key: "businessType", type: "string" },
+      { key: "experience", type: "number" },
       { key: "availability", type: "string" },
       { key: "price", type: "number" },
       { key: "description", type: "string" },
@@ -386,6 +484,9 @@ const FALLBACK_OPTIONAL_FIELDS: FieldSpec[] = [
   { key: "gender_pref", type: "string" },
   { key: "facilities", type: "array" },
   { key: "amenities", type: "array" },
+  // common service fallbacks, just in case
+  { key: "availability", type: "string" },
+  { key: "price", type: "number" },
 ];
 
 export function buildPostFormData(data: StoreState) {
