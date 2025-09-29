@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
-type FieldType = "text" | "number" | "email" | "tel" | "date" | "textarea";
+// ✅ Add "time" to supported types
+type FieldType = "text" | "number" | "email" | "tel" | "date" | "time" | "textarea";
 
 type CommonProps = {
   label: string;
@@ -26,6 +27,9 @@ type CommonProps = {
   onChangeRaw?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
+
+  /** textarea rows (only used when type === "textarea") */
+  rows?: number;
 };
 
 type NumberishExtras =
@@ -54,6 +58,7 @@ export default function FormField(props: Props) {
     value,
     onChange,
     onChangeRaw,
+    rows,
   } = props;
 
   // Narrow number-only extras safely
@@ -80,7 +85,8 @@ export default function FormField(props: Props) {
       const n = Number(raw);
       return Number.isNaN(n) ? undefined : n;
     }
-    if (type === "date") return raw || undefined;
+    // ✅ keep date/time as strings
+    if (type === "date" || type === "time") return raw || undefined;
     return raw;
   };
 
@@ -94,8 +100,9 @@ export default function FormField(props: Props) {
   };
 
   const id = React.useId();
-  const FieldCmp = type === "textarea" ? Textarea : Input;
-  const inputType = type === "textarea" ? undefined : type;
+  const isTextarea = type === "textarea";
+  const FieldCmp = isTextarea ? Textarea : Input;
+  const inputType = isTextarea ? undefined : type;
 
   const uiValue =
     v === undefined || v === null
@@ -112,13 +119,15 @@ export default function FormField(props: Props) {
 
       <FieldCmp
         id={id}
-        name={name ?? field}              
+        name={name ?? field}
+        // shadcn Input accepts string; "time" is a valid HTML input type
         type={inputType as any}
         value={uiValue as any}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
         onChange={handleChange}
+        {...(isTextarea ? { rows } : {})}
         {...numberExtras}
       />
 
