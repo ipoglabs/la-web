@@ -1,327 +1,192 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function TravelTourismForm() {
-  const [formData, setFormData] = useState({
-    tourTitle: "",
-    tourType: "",
-    description: "",
-    location: "",
-    startDate: "",
-    endDate: "",
-    duration: "",
-    itinerary: "",
-    inclusions: "",
-    exclusions: "",
-    accommodation: "",
-    transport: "",
-    groupSize: "",
-    bookingDeadline: "",
-    price: "",
-    specialOffers: "",
-    cancellationPolicy: "",
-    mediaUrl: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-  });
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // Default main category/subcategory
+  React.useEffect(() => {
+    if (!store.category) setField("category", "For Sale");
+    if (!store.subcategory) setField("subcategory", "Travel & Tourism");
+  }, [store.category, store.subcategory, setField]);
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Travel & Tourism Form Submitted:", formData);
-    // Add API call logic here
+  // Helpers for nested objects
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
 
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Travel & Tourism Form</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Tour Title */}
-          <div>
-            <Label>Tour / Package Title</Label>
-            <Input
-              name="tourTitle"
-              value={formData.tourTitle}
-              onChange={handleChange}
-              placeholder="Title of the tour or package"
-              required
-            />
-          </div>
+      <CardContent className="space-y-6">
+        <h2 className="text-2xl font-bold">Travel & Tourism</h2>
 
-          {/* Tour Type */}
-          <div>
-            <Label>Tour Type</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("tourType", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Tour Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="domestic">Domestic</SelectItem>
-                <SelectItem value="international">International</SelectItem>
-                <SelectItem value="adventure">Adventure</SelectItem>
-                <SelectItem value="cruise">Cruise</SelectItem>
-                <SelectItem value="honeymoon">Honeymoon</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Category / Subcategory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Category" field="category" placeholder="For Sale" required />
+          <FormField
+            label="Subcategory"
+            field="subcategory"
+            placeholder="Travel & Tourism"
+            required
+          />
+        </div>
 
-          {/* Description */}
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Details about the tour or package"
-              required
-            />
-          </div>
+        {/* Tour Title */}
+        <FormField
+          label="Tour / Package Title"
+          field="tourTitle"
+          placeholder="Title of the tour or package"
+          required
+        />
 
-          {/* Location */}
-          <div>
-            <Label>Location / Destination</Label>
-            <Input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City / Destination"
-            />
-          </div>
+        {/* Tour Type */}
+        <SelectField
+          label="Tour Type"
+          field="tourType"
+          placeholder="Select Tour Type"
+          options={[
+            { value: "domestic", label: "Domestic" },
+            { value: "international", label: "International" },
+            { value: "adventure", label: "Adventure" },
+            { value: "cruise", label: "Cruise" },
+            { value: "honeymoon", label: "Honeymoon" },
+            { value: "other", label: "Other" },
+          ]}
+        />
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Start Date</Label>
-              <Input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label>End Date</Label>
-              <Input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Details about the tour or package"
+        />
 
-          {/* Duration */}
-          <div>
-            <Label>Duration</Label>
-            <Input
-              name="duration"
-              value={formData.duration}
-              onChange={handleChange}
-              placeholder="e.g. 5 Days / 4 Nights"
-            />
-          </div>
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-4">
+          <FormField label="Start Date" field="startDate" type="date" />
+          <FormField label="End Date" field="endDate" type="date" />
+        </div>
 
-          {/* Itinerary */}
-          <div>
-            <Label>Itinerary / Highlights</Label>
-            <Textarea
-              name="itinerary"
-              value={formData.itinerary}
-              onChange={handleChange}
-              placeholder="Key attractions / day-wise plan"
-            />
-          </div>
+        {/* Duration */}
+        <FormField label="Duration" field="duration" placeholder="e.g. 5 Days / 4 Nights" />
 
-          {/* Inclusions */}
-          <div>
-            <Label>Inclusions</Label>
-            <Textarea
-              name="inclusions"
-              value={formData.inclusions}
-              onChange={handleChange}
-              placeholder="Meals, Hotel, Transport, Guide, etc."
-            />
-          </div>
+        {/* Itinerary */}
+        <FormField
+          label="Itinerary / Highlights"
+          field="itinerary"
+          type="textarea"
+          placeholder="Key attractions / day-wise plan"
+        />
 
-          {/* Exclusions */}
-          <div>
-            <Label>Exclusions</Label>
-            <Textarea
-              name="exclusions"
-              value={formData.exclusions}
-              onChange={handleChange}
-              placeholder="Not included in the package"
-            />
-          </div>
+        {/* Inclusions */}
+        <FormField
+          label="Inclusions"
+          field="inclusions"
+          type="textarea"
+          placeholder="Meals, Hotel, Transport, Guide, etc."
+        />
 
-          {/* Accommodation */}
-          <div>
-            <Label>Accommodation Type</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("accommodation", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Accommodation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hotel">Hotel</SelectItem>
-                <SelectItem value="resort">Resort</SelectItem>
-                <SelectItem value="hostel">Hostel</SelectItem>
-                <SelectItem value="camp">Camp</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Exclusions */}
+        <FormField
+          label="Exclusions"
+          field="exclusions"
+          type="textarea"
+          placeholder="Not included in the package"
+        />
 
-          {/* Transport */}
-          <div>
-            <Label>Transport Mode</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("transport", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Transport" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="flight">Flight</SelectItem>
-                <SelectItem value="train">Train</SelectItem>
-                <SelectItem value="bus">Bus</SelectItem>
-                <SelectItem value="cruise">Cruise</SelectItem>
-                <SelectItem value="own">Own Transport</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Accommodation */}
+        <SelectField
+          label="Accommodation Type"
+          field="accommodation"
+          placeholder="Select Accommodation"
+          options={[
+            { value: "hotel", label: "Hotel" },
+            { value: "resort", label: "Resort" },
+            { value: "hostel", label: "Hostel" },
+            { value: "camp", label: "Camp" },
+            { value: "other", label: "Other" },
+          ]}
+        />
 
-          {/* Group Size */}
-          <div>
-            <Label>Group Size / Capacity</Label>
-            <Input
-              name="groupSize"
-              value={formData.groupSize}
-              onChange={handleChange}
-              placeholder="e.g. Max 20 people"
-            />
-          </div>
+        {/* Transport */}
+        <SelectField
+          label="Transport Mode"
+          field="transport"
+          placeholder="Select Transport"
+          options={[
+            { value: "flight", label: "Flight" },
+            { value: "train", label: "Train" },
+            { value: "bus", label: "Bus" },
+            { value: "cruise", label: "Cruise" },
+            { value: "own", label: "Own Transport" },
+          ]}
+        />
 
-          {/* Booking Deadline */}
-          <div>
-            <Label>Booking Deadline</Label>
-            <Input
-              type="date"
-              name="bookingDeadline"
-              value={formData.bookingDeadline}
-              onChange={handleChange}
-            />
-          </div>
+        {/* Group Size */}
+        <FormField
+          label="Group Size / Capacity"
+          field="groupSize"
+          placeholder="e.g. Max 20 people"
+        />
 
-          {/* Price */}
-          <div>
-            <Label>Price / Package Cost</Label>
-            <Input
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="Cost of the tour/package"
-            />
-          </div>
+        {/* Booking Deadline */}
+        <FormField label="Booking Deadline" field="bookingDeadline" type="date" />
 
-          {/* Special Offers */}
-          <div>
-            <Label>Special Offers / Discounts</Label>
-            <Input
-              name="specialOffers"
-              value={formData.specialOffers}
-              onChange={handleChange}
-              placeholder="e.g. Early bird discount"
-            />
-          </div>
+        {/* Price */}
+        <FormField label="Price / Package Cost" field="price" placeholder="Cost of the tour/package" />
 
-          {/* Cancellation Policy */}
-          <div>
-            <Label>Cancellation Policy</Label>
-            <Textarea
-              name="cancellationPolicy"
-              value={formData.cancellationPolicy}
-              onChange={handleChange}
-              placeholder="e.g. 50% refund before 7 days"
-            />
-          </div>
+        {/* Special Offers */}
+        <FormField
+          label="Special Offers / Discounts"
+          field="specialOffers"
+          placeholder="e.g. Early bird discount"
+        />
 
-          {/* Media */}
-          <div>
-            <Label>Image / Media URL</Label>
-            <Input
-              type="url"
-              name="mediaUrl"
-              value={formData.mediaUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/package.jpg"
-            />
-          </div>
+        {/* Cancellation Policy */}
+        <FormField
+          label="Cancellation Policy"
+          field="cancellationPolicy"
+          type="textarea"
+          placeholder="e.g. 50% refund before 7 days"
+        />
 
-          {/* Contact Info */}
-          <div>
-            <Label>Contact Name</Label>
-            <Input
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleChange}
-              placeholder="Contact Person"
-            />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input
-              type="email"
-              name="contactEmail"
-              value={formData.contactEmail}
-              onChange={handleChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input
-              type="tel"
-              name="contactPhone"
-              value={formData.contactPhone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
-          </div>
-
-          {/* Submit */}
-          <Button type="submit" className="w-full">
-            Submit Travel / Tourism Package
-          </Button>
-        </form>
+        {/* Contact Info */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            placeholder="Contact Person"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) => setSeller("name", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="__ignore_seller_email__"
+            type="email"
+            placeholder="Email Address"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) => setSeller("email", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            placeholder="Phone Number"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) => setSeller("phone", (v as string) || "")}
+            required
+          />
+        </div>
       </CardContent>
     </Card>
   );

@@ -6,17 +6,17 @@ import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
-export default function EducationLearningForm() {
+export default function ChildFamilyActivitiesForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default the main category/subcategory for this form
+  // Ensure category/subcategory (Community & Events → Child & Family Activities)
   React.useEffect(() => {
-    if (!store.category) setField("category", "Services");
-    if (!store.subcategory) setField("subcategory", "Education & Learning");
+    if (!store.category) setField("category", "Community & Events");
+    if (!store.subcategory) setField("subcategory", "Child & Family Activities");
   }, [store.category, store.subcategory, setField]);
 
-  // Helpers for nested objects
+  // Nested helpers
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
     const cur = store.sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
@@ -29,73 +29,38 @@ export default function EducationLearningForm() {
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
       <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Education & Learning</h2>
+        <h2 className="text-2xl font-bold">Child & Family Activities</h2>
 
-        {/* Category / Subcategory (read-only-ish fields, still editable if needed) */}
+        {/* Category / Subcategory */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Services" required />
+          <FormField label="Category" field="category" placeholder="Community & Events" required />
           <FormField
             label="Subcategory"
             field="subcategory"
-            placeholder="Education & Learning"
+            placeholder="Child & Family Activities"
             required
           />
         </div>
 
-        {/* Course / Program Title → map to shared "name" */}
+        {/* Title → name */}
         <FormField
-          label="Course / Program Title"
+          label="Activity Title"
           field="name"
-          placeholder="e.g., Data Science Bootcamp"
+          placeholder="e.g., Weekend Art Workshop for Kids"
           required
         />
 
-        {/* Institution / Provider */}
-        <FormField
-          label="Institution / Provider"
-          field="institutionName"
-          placeholder="Organization or Institution Name"
-        />
-
-        {/* Internal education category (avoid clashing with main 'category') */}
+        {/* Activity Category */}
         <SelectField
-          label="Education Category"
-          field="educationCategory"
+          label="Activity Category"
+          field="activityCategory"
           placeholder="Select Category"
           options={[
-            { value: "school", label: "School / Academic" },
-            { value: "college", label: "College / University" },
-            { value: "vocational", label: "Vocational / Skill-based" },
-            { value: "online-course", label: "Online Course" },
+            { value: "sports", label: "Sports" },
+            { value: "arts", label: "Arts & Crafts" },
+            { value: "education", label: "Educational" },
             { value: "other", label: "Other" },
           ]}
-        />
-
-        {/* Mode */}
-        <SelectField
-          label="Mode"
-          field="mode"
-          placeholder="Select Mode"
-          options={[
-            { value: "online", label: "Online" },
-            { value: "offline", label: "Offline" },
-            { value: "hybrid", label: "Hybrid" },
-          ]}
-        />
-
-        {/* Duration */}
-        <FormField
-          label="Duration"
-          field="duration"
-          placeholder="e.g., 3 months, 6 weeks, 1 year"
-        />
-
-        {/* Fees → store as numeric 'price' for currency formatting in preview */}
-        <FormField
-          label="Fees / Tuition (INR)"
-          field="price"
-          type="number"
-          placeholder="e.g., 20000"
         />
 
         {/* Description */}
@@ -103,47 +68,72 @@ export default function EducationLearningForm() {
           label="Description"
           field="description"
           type="textarea"
-          placeholder="Provide details about the course or program"
+          placeholder="Describe the activity, schedule, and special instructions"
+          required
         />
 
-        {/* Location (stored under location.address) */}
+        {/* Age Group */}
+        <SelectField
+          label="Age Group"
+          field="ageGroup"
+          placeholder="Select Age Group"
+          options={[
+            { value: "0-3", label: "0–3 years" },
+            { value: "4-7", label: "4–7 years" },
+            { value: "8-12", label: "8–12 years" },
+            { value: "13+", label: "13+ years" },
+          ]}
+        />
+
+        {/* Date */}
+        <FormField label="Event Date" field="eventDate" type="date" />
+
+        {/* Location (nested) */}
         <FormField
           label="Location"
           field="__ignore_location__"
-          placeholder="City, State or Online"
+          placeholder="City / Venue / Online"
           value={store.location?.address ?? ""}
           onChange={(v) => setLoc((v as string) || "")}
         />
 
-        {/* Contact Info (sellerInfo) */}
+        {/* Website / Link */}
+        <FormField
+          label="Related Link"
+          field="website"
+          type="text"
+          placeholder="Website / Activity link (https://...)"
+          hint="Optional"
+        />
+
+        {/* Contact Info (nested seller_info) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
-            label="Contact Name"
+            label="Contact Person"
             field="__ignore_seller_name__"
-            placeholder="Contact Person"
+            placeholder="Name of contact person"
             value={store.sellerInfo?.name ?? ""}
             onChange={(v) => setSeller("name", (v as string) || "")}
-            required
           />
           <FormField
             label="Contact Email"
             field="__ignore_seller_email__"
             type="email"
-            placeholder="Email Address"
+            placeholder="Email address"
             value={store.sellerInfo?.email ?? ""}
             onChange={(v) => setSeller("email", (v as string) || "")}
-            required
           />
           <FormField
             label="Contact Phone"
             field="__ignore_seller_phone__"
             type="tel"
-            placeholder="Phone Number"
+            placeholder="Phone number"
             value={store.sellerInfo?.phone ?? ""}
             onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
           />
         </div>
+
+        {/* No submit here — your Preview page handles submission */}
       </CardContent>
     </Card>
   );

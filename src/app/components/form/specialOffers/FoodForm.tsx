@@ -1,229 +1,170 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function FoodDiningForm() {
-  const [formData, setFormData] = useState({
-    serviceName: "",
-    category: "",
-    description: "",
-    location: "",
-    priceRange: "",
-    cuisineType: "",
-    openingHours: "",
-    deliveryOption: "",
-    website: "",
-    menuLink: "",
-    averageRating: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-  });
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Default category/subcategory for this form
+  React.useEffect(() => {
+    if (!store.category) setField("category", "Community & Events");
+    if (!store.subcategory) setField("subcategory", "Food & Dining");
+  }, [store.category, store.subcategory, setField]);
+
+  // Helpers for nested objects
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
+  const setLoc = (address?: string) => {
+    const cur = store.location || {};
+    setField("location", { ...cur, address: address ?? "" });
   };
 
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Food & Dining Service</h2>
+      <CardContent className="space-y-6">
+        <h2 className="text-2xl font-bold">Food & Dining Service</h2>
 
-        <div className="space-y-4">
-          {/* Service Name */}
-          <div>
-            <Label>Service / Restaurant Name</Label>
-            <Input
-              name="serviceName"
-              value={formData.serviceName}
-              onChange={handleChange}
-              placeholder="Name of the restaurant or food service"
-              required
-            />
-          </div>
+        {/* Category / Subcategory (kept visible & editable for consistency) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Category" field="category" placeholder="Community & Events" required />
+          <FormField label="Subcategory" field="subcategory" placeholder="Food & Dining" required />
+        </div>
 
-          {/* Category */}
-          <div>
-            <Label>Category</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("category", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="restaurant">Restaurant</SelectItem>
-                <SelectItem value="cafe">Cafe</SelectItem>
-                <SelectItem value="delivery">Food Delivery</SelectItem>
-                <SelectItem value="catering">Catering</SelectItem>
-                <SelectItem value="streetfood">Street Food</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Service / Restaurant Name → shared "name" */}
+        <FormField
+          label="Service / Restaurant Name"
+          field="name"
+          placeholder="Name of the restaurant or food service"
+          required
+        />
 
-          {/* Description */}
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Details about the food, service, or ambiance"
-            />
-          </div>
+        {/* Internal Category */}
+        <SelectField
+          label="Category"
+          field="foodCategory"
+          placeholder="Select Category"
+          options={[
+            { value: "restaurant", label: "Restaurant" },
+            { value: "cafe", label: "Cafe" },
+            { value: "delivery", label: "Food Delivery" },
+            { value: "catering", label: "Catering" },
+            { value: "streetfood", label: "Street Food" },
+            { value: "other", label: "Other" },
+          ]}
+        />
 
-          {/* Location */}
-          <div>
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City, Area, or Address"
-            />
-          </div>
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Details about the food, service, or ambiance"
+        />
 
-          {/* Price Range */}
-          <div>
-            <Label>Price Range</Label>
-            <Input
-              name="priceRange"
-              value={formData.priceRange}
-              onChange={handleChange}
-              placeholder="e.g. ₹200 - ₹500 per person"
-            />
-          </div>
+        {/* Location (stored at location.address) */}
+        <FormField
+          label="Location"
+          field="__ignore_location__"
+          placeholder="City, Area, or Address"
+          value={store.location?.address ?? ""}
+          onChange={(v) => setLoc((v as string) || "")}
+        />
 
-          {/* Cuisine Type */}
-          <div>
-            <Label>Cuisine Type</Label>
-            <Input
-              name="cuisineType"
-              value={formData.cuisineType}
-              onChange={handleChange}
-              placeholder="e.g. Italian, Chinese, Indian"
-            />
-          </div>
+        {/* Price Range */}
+        <FormField
+          label="Price Range"
+          field="priceRange"
+          placeholder="e.g. ₹200 - ₹500 per person"
+        />
 
-          {/* Opening Hours */}
-          <div>
-            <Label>Opening Hours</Label>
-            <Input
-              name="openingHours"
-              value={formData.openingHours}
-              onChange={handleChange}
-              placeholder="e.g. 10 AM - 11 PM"
-            />
-          </div>
+        {/* Cuisine Type */}
+        <FormField
+          label="Cuisine Type"
+          field="cuisineType"
+          placeholder="e.g. Italian, Chinese, Indian"
+        />
 
-          {/* Delivery Option */}
-          <div>
-            <Label>Delivery Option</Label>
-            <Select
-              onValueChange={(value) =>
-                handleSelectChange("deliveryOption", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No</SelectItem>
-                <SelectItem value="thirdparty">
-                  Available via Swiggy / Zomato
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Opening Hours */}
+        <FormField
+          label="Opening Hours"
+          field="openingHours"
+          placeholder="e.g. 10 AM - 11 PM"
+        />
 
-          {/* Website */}
-          <div>
-            <Label>Website</Label>
-            <Input
-              type="url"
-              name="website"
-              value={formData.website}
-              onChange={handleChange}
-              placeholder="https://restaurant.com"
-            />
-          </div>
+        {/* Delivery Option */}
+        <SelectField
+          label="Delivery Option"
+          field="deliveryOption"
+          placeholder="Select Option"
+          options={[
+            { value: "yes", label: "Yes" },
+            { value: "no", label: "No" },
+            { value: "thirdparty", label: "Available via Swiggy / Zomato" },
+          ]}
+        />
 
-          {/* Menu Link */}
-          <div>
-            <Label>Menu Link (optional)</Label>
-            <Input
-              type="url"
-              name="menuLink"
-              value={formData.menuLink}
-              onChange={handleChange}
-              placeholder="https://restaurant.com/menu"
-            />
-          </div>
+        {/* Website */}
+        <FormField
+          label="Website"
+          field="website"
+          type="url"
+          placeholder="https://restaurant.com"
+        />
 
-          {/* Average Rating */}
-          <div>
-            <Label>Average Rating</Label>
-            <Input
-              type="number"
-              step="0.1"
-              min="0"
-              max="5"
-              name="averageRating"
-              value={formData.averageRating}
-              onChange={handleChange}
-              placeholder="e.g. 4.5"
-            />
-          </div>
+        {/* Menu Link */}
+        <FormField
+          label="Menu Link (optional)"
+          field="menuLink"
+          type="url"
+          placeholder="https://restaurant.com/menu"
+        />
 
-          {/* Contact Info */}
-          <div>
-            <Label>Contact Name</Label>
-            <Input
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleChange}
-              placeholder="Contact Person"
-            />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input
-              type="email"
-              name="contactEmail"
-              value={formData.contactEmail}
-              onChange={handleChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input
-              type="tel"
-              name="contactPhone"
-              value={formData.contactPhone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
-          </div>
+        {/* Average Rating */}
+        <FormField
+          label="Average Rating"
+          field="averageRating"
+          type="number"
+          step="0.1"
+          min="0"
+          max="5"
+          placeholder="e.g. 4.5"
+        />
+
+        {/* Contact Info (sellerInfo) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            placeholder="Contact Person"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) => setSeller("name", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="__ignore_seller_email__"
+            type="email"
+            placeholder="Email Address"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) => setSeller("email", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            placeholder="Phone Number"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) => setSeller("phone", (v as string) || "")}
+            required
+          />
         </div>
       </CardContent>
     </Card>

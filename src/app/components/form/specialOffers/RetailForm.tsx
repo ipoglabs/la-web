@@ -1,311 +1,146 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function RetailShoppingForm() {
-  const [formData, setFormData] = useState({
-    productName: "",
-    category: "",
-    brand: "",
-    model: "",
-    size: "",
-    color: "",
-    material: "",
-    warranty: "",
-    returnPolicy: "",
-    offers: "",
-    description: "",
-    location: "",
-    price: "",
-    quantity: "",
-    condition: "",
-    deliveryOption: "",
-    mediaUrl: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-  });
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // Default the main category/subcategory for this form
+  React.useEffect(() => {
+    if (!store.category) setField("category", "For Sale");
+    if (!store.subcategory) setField("subcategory", "Retail & Shopping");
+  }, [store.category, store.subcategory, setField]);
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Retail & Shopping Form Submitted:", formData);
-    // Add API call here
+  // Helpers for nested objects
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
 
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Retail & Shopping Form</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Product Name */}
-          <div>
-            <Label>Product Name</Label>
-            <Input
-              name="productName"
-              value={formData.productName}
-              onChange={handleChange}
-              placeholder="Name of the product"
-              required
-            />
-          </div>
+      <CardContent className="space-y-6">
+        <h2 className="text-2xl font-bold">Retail & Shopping</h2>
 
-          {/* Category */}
-          <div>
-            <Label>Category</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("category", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="fashion">Fashion & Accessories</SelectItem>
-                <SelectItem value="electronics">Electronics</SelectItem>
-                <SelectItem value="home">Home & Furniture</SelectItem>
-                <SelectItem value="sports">Sports & Fitness</SelectItem>
-                <SelectItem value="beauty">Health & Beauty</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Category / Subcategory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Category" field="category" placeholder="For Sale" required />
+          <FormField
+            label="Subcategory"
+            field="subcategory"
+            placeholder="Retail & Shopping"
+            required
+          />
+        </div>
 
-          {/* Brand */}
-          <div>
-            <Label>Brand</Label>
-            <Input
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              placeholder="e.g. Nike, Samsung"
-            />
-          </div>
+        {/* Product Name */}
+        <FormField
+          label="Product Name"
+          field="name"
+          placeholder="e.g., T-shirt, Sofa, Shoes"
+          required
+        />
 
-          {/* Model */}
-          <div>
-            <Label>Model</Label>
-            <Input
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              placeholder="Model name or number"
-            />
-          </div>
+        {/* Brand */}
+        <FormField label="Brand" field="brand" placeholder="e.g., Nike, Samsung" />
 
-          {/* Size / Dimensions */}
-          <div>
-            <Label>Size / Dimensions</Label>
-            <Input
-              name="size"
-              value={formData.size}
-              onChange={handleChange}
-              placeholder="e.g. M, 42-inch, 6ft x 4ft"
-            />
-          </div>
+        {/* Model */}
+        <FormField label="Model" field="model" placeholder="Model name or number" />
 
-          {/* Color */}
-          <div>
-            <Label>Color</Label>
-            <Input
-              name="color"
-              value={formData.color}
-              onChange={handleChange}
-              placeholder="e.g. Red, Black"
-            />
-          </div>
+        {/* Size */}
+        <FormField label="Size / Dimensions" field="size" placeholder="e.g., M, 42-inch" />
 
-          {/* Material */}
-          <div>
-            <Label>Material</Label>
-            <Input
-              name="material"
-              value={formData.material}
-              onChange={handleChange}
-              placeholder="e.g. Cotton, Leather, Wood"
-            />
-          </div>
+        {/* Color */}
+        <FormField label="Color" field="color" placeholder="e.g., Red, Black" />
 
-          {/* Warranty */}
-          <div>
-            <Label>Warranty / Guarantee</Label>
-            <Input
-              name="warranty"
-              value={formData.warranty}
-              onChange={handleChange}
-              placeholder="e.g. 1 year warranty"
-            />
-          </div>
+        {/* Material */}
+        <FormField label="Material" field="material" placeholder="e.g., Cotton, Leather" />
 
-          {/* Return Policy */}
-          <div>
-            <Label>Return Policy</Label>
-            <Input
-              name="returnPolicy"
-              value={formData.returnPolicy}
-              onChange={handleChange}
-              placeholder="e.g. 7 days return"
-            />
-          </div>
+        {/* Warranty */}
+        <FormField label="Warranty / Guarantee" field="warranty" placeholder="e.g., 1 year" />
 
-          {/* Offers */}
-          <div>
-            <Label>Available Offers</Label>
-            <Input
-              name="offers"
-              value={formData.offers}
-              onChange={handleChange}
-              placeholder="e.g. 10% off, Buy 1 Get 1"
-            />
-          </div>
+        {/* Return Policy */}
+        <FormField label="Return Policy" field="returnPolicy" placeholder="e.g., 7 days return" />
 
-          {/* Description */}
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Details about the product"
-            />
-          </div>
+        {/* Offers */}
+        <FormField label="Available Offers" field="offers" placeholder="e.g., 10% off" />
 
-          {/* Location */}
-          <div>
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City, State"
-            />
-          </div>
+        {/* Condition */}
+        <SelectField
+          label="Condition"
+          field="condition"
+          placeholder="Select Condition"
+          options={[
+            { value: "new", label: "New" },
+            { value: "used", label: "Used" },
+          ]}
+        />
 
-          {/* Price */}
-          <div>
-            <Label>Price</Label>
-            <Input
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="Selling price"
-            />
-          </div>
+        {/* Delivery Option */}
+        <SelectField
+          label="Delivery / Pickup Option"
+          field="deliveryOption"
+          placeholder="Select Option"
+          options={[
+            { value: "pickup", label: "Pickup Only" },
+            { value: "delivery", label: "Delivery Available" },
+            { value: "both", label: "Pickup & Delivery" },
+          ]}
+        />
 
-          {/* Quantity */}
-          <div>
-            <Label>Quantity</Label>
-            <Input
-              name="quantity"
-              value={formData.quantity}
-              onChange={handleChange}
-              placeholder="Available quantity"
-            />
-          </div>
+        {/* Price */}
+        <FormField
+          label="Price (INR)"
+          field="salePrice"
+          type="number"
+          placeholder="e.g., 1500"
+        />
 
-          {/* Condition */}
-          <div>
-            <Label>Condition</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("condition", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Condition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="used">Used</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Quantity */}
+        <FormField label="Quantity" field="quantity" type="number" placeholder="Available stock" />
 
-          {/* Delivery Option */}
-          <div>
-            <Label>Delivery / Pickup Option</Label>
-            <Select
-              onValueChange={(value) =>
-                handleSelectChange("deliveryOption", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pickup">Pickup Only</SelectItem>
-                <SelectItem value="delivery">Delivery Available</SelectItem>
-                <SelectItem value="both">Pickup & Delivery</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Details about the product"
+        />
 
-          {/* Image / Media */}
-          <div>
-            <Label>Image / Media URL</Label>
-            <Input
-              type="url"
-              name="mediaUrl"
-              value={formData.mediaUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/product.jpg"
-            />
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <Label>Contact Name</Label>
-            <Input
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleChange}
-              placeholder="Contact Person"
-            />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input
-              type="email"
-              name="contactEmail"
-              value={formData.contactEmail}
-              onChange={handleChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input
-              type="tel"
-              name="contactPhone"
-              value={formData.contactPhone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
-          </div>
-
-          {/* Submit */}
-          <Button type="submit" className="w-full">
-            Post Product
-          </Button>
-        </form>
+        {/* Contact Info (sellerInfo) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            placeholder="Contact Person"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) => setSeller("name", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="__ignore_seller_email__"
+            type="email"
+            placeholder="Email Address"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) => setSeller("email", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            placeholder="Phone Number"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) => setSeller("phone", (v as string) || "")}
+            required
+          />
+        </div>
       </CardContent>
     </Card>
   );

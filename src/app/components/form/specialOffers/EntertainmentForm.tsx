@@ -1,233 +1,160 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function EntertainmentForm() {
-  const [formData, setFormData] = useState({
-    eventTitle: "",
-    organizerName: "",
-    category: "",
-    eventDate: "",
-    startTime: "",
-    endTime: "",
-    location: "",
-    ticketPrice: "",
-    ageRestriction: "",
-    website: "",
-    socialMedia: "",
-    description: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-  });
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Default the main category/subcategory for this form
+  React.useEffect(() => {
+    if (!store.category) setField("category", "Community & Events");
+    if (!store.subcategory) setField("subcategory", "Entertainment");
+  }, [store.category, store.subcategory, setField]);
+
+  // Helpers for nested objects
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
+  const setLoc = (address?: string) => {
+    const cur = store.location || {};
+    setField("location", { ...cur, address: address ?? "" });
   };
 
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Entertainment Event</h2>
+      <CardContent className="space-y-6">
+        <h2 className="text-2xl font-bold">Entertainment Event</h2>
 
-        <div className="space-y-4">
-          {/* Event Title */}
-          <div>
-            <Label>Event / Entertainment Title</Label>
-            <Input
-              name="eventTitle"
-              value={formData.eventTitle}
-              onChange={handleChange}
-              placeholder="e.g. Live Concert, Movie Premiere"
-              required
-            />
-          </div>
+        {/* Category / Subcategory (kept visible & editable for consistency) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Category" field="category" placeholder="Community & Events" required />
+          <FormField label="Subcategory" field="subcategory" placeholder="Entertainment" required />
+        </div>
 
-          {/* Organizer */}
-          <div>
-            <Label>Organizer / Company Name</Label>
-            <Input
-              name="organizerName"
-              value={formData.organizerName}
-              onChange={handleChange}
-              placeholder="Organizer Name"
-            />
-          </div>
+        {/* Event Title → shared "name" */}
+        <FormField
+          label="Event / Entertainment Title"
+          field="name"
+          placeholder="e.g., Live Concert, Movie Premiere"
+          required
+        />
 
-          {/* Category */}
-          <div>
-            <Label>Category</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("category", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="concert">Concert</SelectItem>
-                <SelectItem value="movie">Movie / Premiere</SelectItem>
-                <SelectItem value="theater">Theater / Play</SelectItem>
-                <SelectItem value="festival">Festival</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Organizer */}
+        <FormField
+          label="Organizer / Company Name"
+          field="organizerName"
+          placeholder="Organizer Name"
+        />
 
-          {/* Date & Time */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label>Event Date</Label>
-              <Input
-                type="date"
-                name="eventDate"
-                value={formData.eventDate}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label>Start Time</Label>
-              <Input
-                type="time"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label>End Time</Label>
-              <Input
-                type="time"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+        {/* Internal event type */}
+        <SelectField
+          label="Event Type"
+          field="eventType"
+          placeholder="Select Event Type"
+          options={[
+            { value: "concert", label: "Concert" },
+            { value: "movie", label: "Movie / Premiere" },
+            { value: "theater", label: "Theater / Play" },
+            { value: "festival", label: "Festival" },
+            { value: "other", label: "Other" },
+          ]}
+        />
 
-          {/* Location */}
-          <div>
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City, Venue, or Online"
-            />
-          </div>
+        {/* Date & Time */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField label="Event Date" field="eventDate" type="date" />
+          <FormField label="Start Time" field="startTime" type="time" />
+          <FormField label="End Time" field="endTime" type="time" />
+        </div>
 
-          {/* Ticket Price */}
-          <div>
-            <Label>Ticket Price / Entry Fee</Label>
-            <Input
-              name="ticketPrice"
-              value={formData.ticketPrice}
-              onChange={handleChange}
-              placeholder="e.g. ₹500, Free Entry"
-            />
-          </div>
+        {/* Location (stored at location.address) */}
+        <FormField
+          label="Location"
+          field="__ignore_location__"
+          placeholder="City, Venue, or Online"
+          value={store.location?.address ?? ""}
+          onChange={(v) => setLoc((v as string) || "")}
+        />
 
-          {/* Age Restriction */}
-          <div>
-            <Label>Age Restriction</Label>
-            <Select
-              onValueChange={(value) =>
-                handleSelectChange("ageRestriction", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Age Limit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Ages</SelectItem>
-                <SelectItem value="13+">13+</SelectItem>
-                <SelectItem value="18+">18+</SelectItem>
-                <SelectItem value="21+">21+</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Ticket Price → store as numeric salePrice */}
+        <FormField
+          label="Ticket Price / Entry Fee (INR)"
+          field="salePrice"
+          type="number"
+          placeholder="e.g., 500"
+        />
 
-          {/* Website */}
-          <div>
-            <Label>Event Website (optional)</Label>
-            <Input
-              type="url"
-              name="website"
-              value={formData.website}
-              onChange={handleChange}
-              placeholder="https://example.com"
-            />
-          </div>
+        {/* Age Restriction */}
+        <SelectField
+          label="Age Restriction"
+          field="ageRestriction"
+          placeholder="Select Age Limit"
+          options={[
+            { value: "all", label: "All Ages" },
+            { value: "13+", label: "13+" },
+            { value: "18+", label: "18+" },
+            { value: "21+", label: "21+" },
+          ]}
+        />
 
-          {/* Social Media */}
-          <div>
-            <Label>Social Media Link</Label>
-            <Input
-              type="url"
-              name="socialMedia"
-              value={formData.socialMedia}
-              onChange={handleChange}
-              placeholder="Facebook / Instagram Event Link"
-            />
-          </div>
+        {/* Website */}
+        <FormField
+          label="Event Website (optional)"
+          field="website"
+          type="url"
+          placeholder="https://example.com"
+        />
 
-          {/* Description */}
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Provide event details, highlights, and special guests"
-            />
-          </div>
+        {/* Social Media */}
+        <FormField
+          label="Social Media Link"
+          field="socialMedia"
+          type="url"
+          placeholder="Facebook / Instagram Event Link"
+        />
 
-          {/* Contact Info */}
-          <div>
-            <Label>Contact Name</Label>
-            <Input
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleChange}
-              placeholder="Contact Person"
-            />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input
-              type="email"
-              name="contactEmail"
-              value={formData.contactEmail}
-              onChange={handleChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input
-              type="tel"
-              name="contactPhone"
-              value={formData.contactPhone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
-          </div>
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Provide event details, highlights, and special guests"
+        />
+
+        {/* Contact Info (sellerInfo) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            placeholder="Contact Person"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) => setSeller("name", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="__ignore_seller_email__"
+            type="email"
+            placeholder="Email Address"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) => setSeller("email", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            placeholder="Phone Number"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) => setSeller("phone", (v as string) || "")}
+            required
+          />
         </div>
       </CardContent>
     </Card>

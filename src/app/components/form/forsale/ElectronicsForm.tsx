@@ -6,32 +6,28 @@ import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
-export default function ElectronicsGadgetsForm() {
+export default function ElectronicsSaleForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default the main category/subcategory for this form
+  // Default category/subcategory
   React.useEffect(() => {
     if (!store.category) setField("category", "For Sale");
     if (!store.subcategory) setField("subcategory", "Electronics & Gadgets");
   }, [store.category, store.subcategory, setField]);
 
-  // Helpers for nested objects
+  // Helper for seller info
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
     const cur = store.sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
-  };
-  const setLoc = (address?: string) => {
-    const cur = store.location || {};
-    setField("location", { ...cur, address: address ?? "" });
   };
 
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
       <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Electronics & Gadgets</h2>
+        <h2 className="text-2xl font-bold">Sell Electronics</h2>
 
-        {/* Category / Subcategory (kept visible & editable for consistency) */}
+        {/* Category / Subcategory */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField label="Category" field="category" placeholder="For Sale" required />
           <FormField
@@ -42,31 +38,26 @@ export default function ElectronicsGadgetsForm() {
           />
         </div>
 
-        {/* Product Name → shared "name" */}
+        {/* Title */}
         <FormField
-          label="Product Name"
-          field="name"
-          placeholder="e.g., iPhone 14, Samsung TV"
+          label="Ad Title"
+          field="title"
+          placeholder="e.g., iPhone 14 Pro Max for Sale"
           required
         />
 
         {/* Brand */}
-        <FormField label="Brand" field="brand" placeholder="Brand name" />
+        <FormField
+          label="Brand"
+          field="brand"
+          placeholder="e.g., Apple, Samsung, Sony"
+        />
 
-        {/* Internal product category (avoid clashing with main 'category') */}
-        <SelectField
-          label="Product Type"
-          field="electronicsCategory"
-          placeholder="Select Category"
-          options={[
-            { value: "mobile", label: "Mobile Phones" },
-            { value: "laptop", label: "Laptops" },
-            { value: "tv", label: "Televisions" },
-            { value: "camera", label: "Cameras" },
-            { value: "audio", label: "Audio Devices" },
-            { value: "accessories", label: "Accessories" },
-            { value: "other", label: "Other" },
-          ]}
+        {/* Model */}
+        <FormField
+          label="Model"
+          field="model"
+          placeholder="e.g., Galaxy S23, PlayStation 5"
         />
 
         {/* Condition */}
@@ -76,17 +67,30 @@ export default function ElectronicsGadgetsForm() {
           placeholder="Select Condition"
           options={[
             { value: "new", label: "New" },
+            { value: "like-new", label: "Like New" },
             { value: "used", label: "Used" },
-            { value: "refurbished", label: "Refurbished" },
+            { value: "for-parts", label: "For Parts" },
           ]}
         />
 
-        {/* Price → store as numeric salePrice for INR formatting in preview */}
+        {/* Price */}
         <FormField
           label="Price (INR)"
-          field="salePrice"
+          field="price"
           type="number"
-          placeholder="e.g., 20000"
+          placeholder="Enter price"
+        />
+
+        {/* Warranty */}
+        <SelectField
+          label="Warranty"
+          field="warranty"
+          placeholder="Select Warranty"
+          options={[
+            { value: "no", label: "No Warranty" },
+            { value: "under-warranty", label: "Under Warranty" },
+            { value: "extended", label: "Extended Warranty" },
+          ]}
         />
 
         {/* Description */}
@@ -94,35 +98,17 @@ export default function ElectronicsGadgetsForm() {
           label="Description"
           field="description"
           type="textarea"
-          placeholder="Details about the product"
+          placeholder="Provide details about the item..."
         />
 
-        {/* Location (stored at location.address) */}
-        <FormField
-          label="Location"
-          field="__ignore_location__"
-          placeholder="City, State"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
-        />
-
-        {/* Contact Info (sellerInfo) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Contact Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             label="Contact Name"
             field="__ignore_seller_name__"
-            placeholder="Contact Person"
+            placeholder="Your Name"
             value={store.sellerInfo?.name ?? ""}
             onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="Email Address"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
             required
           />
           <FormField

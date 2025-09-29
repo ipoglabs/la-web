@@ -1,239 +1,164 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import * as React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function BankingFinancialForm() {
-  const [formData, setFormData] = useState({
-    dealTitle: "",
-    dealType: "",
-    description: "",
-    institutionName: "",
-    location: "",
-    interestRate: "",
-    minAmount: "",
-    maxAmount: "",
-    tenure: "",
-    eligibility: "",
-    documents: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-    validUntil: "",
-  })
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
+  // Default the category/subcategory for this form
+  React.useEffect(() => {
+    if (!store.category) setField("category", "Business");
+    if (!store.subcategory) setField("subcategory", "Banking & Finance");
+  }, [store.category, store.subcategory, setField]);
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value })
-  }
+  // Helpers for nested values
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+  const setLoc = (address?: string) => {
+    const cur = store.location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
 
   return (
     <Card className="max-w-3xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Banking & Financial Deals Form</h2>
+      <CardContent className="space-y-6">
+        <h2 className="text-2xl font-bold">Banking & Financial Deals</h2>
 
-        <div className="space-y-6">
-          {/* Deal Title */}
-          <div className="space-y-2">
-            <Label htmlFor="dealTitle">Deal / Offer Title</Label>
-            <Input
-              id="dealTitle"
-              name="dealTitle"
-              value={formData.dealTitle}
-              onChange={handleChange}
-              placeholder="Title of the banking or financial deal"
-              required
-            />
-          </div>
+        {/* Category / Subcategory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField label="Category" field="category" placeholder="Business" required />
+          <FormField
+            label="Subcategory"
+            field="subcategory"
+            placeholder="Banking & Finance"
+            required
+          />
+        </div>
 
-          {/* Deal Type */}
-          <div className="space-y-2">
-            <Label>Deal Type</Label>
-            <Select onValueChange={(value) => handleSelectChange("dealType", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Deal Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="loan">Loan</SelectItem>
-                <SelectItem value="credit-card">Credit Card</SelectItem>
-                <SelectItem value="investment">Investment</SelectItem>
-                <SelectItem value="insurance">Insurance</SelectItem>
-                <SelectItem value="savings">Savings / Deposit</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Deal / Offer Title → use shared name */}
+        <FormField
+          label="Deal / Offer Title"
+          field="name"
+          placeholder="Title of the banking or financial deal"
+          required
+        />
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Details about the deal or offer"
-              rows={4}
-              required
-            />
-          </div>
+        {/* Deal Type */}
+        <SelectField
+          label="Deal Type"
+          field="dealType"
+          placeholder="Select deal type"
+          options={[
+            { value: "loan", label: "Loan" },
+            { value: "credit-card", label: "Credit Card" },
+            { value: "investment", label: "Investment" },
+            { value: "insurance", label: "Insurance" },
+            { value: "savings", label: "Savings / Deposit" },
+            { value: "other", label: "Other" },
+          ]}
+        />
 
-          {/* Institution */}
-          <div className="space-y-2">
-            <Label htmlFor="institutionName">Bank / Financial Institution</Label>
-            <Input
-              id="institutionName"
-              name="institutionName"
-              value={formData.institutionName}
-              onChange={handleChange}
-              placeholder="Name of the bank or financial institution"
-              required
-            />
-          </div>
+        {/* Bank / Institution */}
+        <FormField
+          label="Bank / Financial Institution"
+          field="institutionName"
+          placeholder="Name of the bank or financial institution"
+        />
 
-          {/* Location */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City / Branch Location"
-            />
-          </div>
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Details about the deal or offer"
+          required
+        />
 
-          {/* Financial Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="interestRate">Interest Rate / Returns</Label>
-              <Input
-                id="interestRate"
-                name="interestRate"
-                placeholder="e.g. 8% p.a."
-                value={formData.interestRate}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tenure">Tenure / Duration</Label>
-              <Input
-                id="tenure"
-                name="tenure"
-                placeholder="e.g. 5 years"
-                value={formData.tenure}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+        {/* Financial Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Interest Rate / Returns"
+            field="interestRate"
+            placeholder="e.g., 8% p.a."
+          />
+          <FormField
+            label="Tenure / Duration"
+            field="tenure"
+            placeholder="e.g., 5 years"
+          />
+        </div>
 
-          {/* Amount Range */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="minAmount">Minimum Amount</Label>
-              <Input
-                id="minAmount"
-                name="minAmount"
-                placeholder="e.g. ₹50,000"
-                value={formData.minAmount}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="maxAmount">Maximum Amount</Label>
-              <Input
-                id="maxAmount"
-                name="maxAmount"
-                placeholder="e.g. ₹10,00,000"
-                value={formData.maxAmount}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+        {/* Amount Range (store numeric if possible) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Minimum Amount (INR)"
+            field="minAmount"
+            type="number"
+            placeholder="e.g., 50000"
+          />
+          <FormField
+            label="Maximum Amount (INR)"
+            field="maxAmount"
+            type="number"
+            placeholder="e.g., 1000000"
+          />
+        </div>
 
-          {/* Eligibility */}
-          <div className="space-y-2">
-            <Label htmlFor="eligibility">Eligibility Criteria</Label>
-            <Textarea
-              id="eligibility"
-              name="eligibility"
-              value={formData.eligibility}
-              onChange={handleChange}
-              placeholder="e.g. Minimum salary ₹25,000/month, Age 21-60 years"
-              rows={3}
-            />
-          </div>
+        {/* Eligibility & Documents */}
+        <FormField
+          label="Eligibility Criteria"
+          field="eligibility"
+          type="textarea"
+          placeholder="e.g., Minimum salary ₹25,000/month, Age 21–60 years"
+        />
+        <FormField
+          label="Required Documents"
+          field="documents"
+          type="textarea"
+          placeholder="e.g., PAN Card, Aadhaar, Salary Slip"
+        />
 
-          {/* Documents */}
-          <div className="space-y-2">
-            <Label htmlFor="documents">Required Documents</Label>
-            <Textarea
-              id="documents"
-              name="documents"
-              value={formData.documents}
-              onChange={handleChange}
-              placeholder="e.g. PAN Card, Aadhaar, Salary Slip"
-              rows={3}
-            />
-          </div>
+        {/* Valid Until */}
+        <FormField label="Valid Until" field="validUntil" type="date" />
 
-          {/* Valid Until */}
-          <div className="space-y-2">
-            <Label htmlFor="validUntil">Valid Until</Label>
-            <Input
-              id="validUntil"
-              type="date"
-              name="validUntil"
-              value={formData.validUntil}
-              onChange={handleChange}
-            />
-          </div>
 
-          {/* Contact Info */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="contactName">Contact Name</Label>
-              <Input
-                id="contactName"
-                name="contactName"
-                value={formData.contactName}
-                onChange={handleChange}
-                placeholder="Contact Person"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                name="contactEmail"
-                value={formData.contactEmail}
-                onChange={handleChange}
-                placeholder="Email Address"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contactPhone">Contact Phone</Label>
-              <Input
-                id="contactPhone"
-                type="tel"
-                name="contactPhone"
-                value={formData.contactPhone}
-                onChange={handleChange}
-                placeholder="Phone Number"
-              />
-            </div>
-          </div>
+        {/* Contact Info (maps to sellerInfo) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            placeholder="Contact person"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) => setSeller("name", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Email"
+            field="__ignore_seller_email__"
+            type="email"
+            placeholder="Email address"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) => setSeller("email", (v as string) || "")}
+            required
+          />
+          <FormField
+            label="Contact Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            placeholder="Phone number"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) => setSeller("phone", (v as string) || "")}
+            required
+          />
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

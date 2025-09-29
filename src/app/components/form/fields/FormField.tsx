@@ -11,20 +11,18 @@ type FieldType = "text" | "number" | "email" | "tel" | "date" | "textarea";
 
 type CommonProps = {
   label: string;
-  field: string; // key in the store (flat or dot path if your setField supports it)
+  field: string;               // store key
+  name?: string;               // optional DOM name
   type?: FieldType;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
   className?: string;
-  /** Small helper text under the field */
   hint?: string;
 
-  /** Optional controlled mode props */
+  /** Controlled mode */
   value?: string | number | undefined;
   onChange?: (value: string | number | undefined) => void;
-
-  /** Optional raw event hook (e.g. for masked/price handlers) */
   onChangeRaw?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
@@ -46,6 +44,7 @@ export default function FormField(props: Props) {
   const {
     label,
     field,
+    name,
     type = "text",
     placeholder,
     required,
@@ -57,14 +56,14 @@ export default function FormField(props: Props) {
     onChangeRaw,
   } = props;
 
-  // number-specific extras
+  // Narrow number-only extras safely
   const numberExtras =
     type === "number"
       ? {
-          min: (props as any).min,
-          max: (props as any).max,
-          step: (props as any).step,
-          inputMode: (props as any).inputMode,
+          min: (props as Extract<Props, { type: "number" }>).min,
+          max: (props as Extract<Props, { type: "number" }>).max,
+          step: (props as Extract<Props, { type: "number" }>).step,
+          inputMode: (props as Extract<Props, { type: "number" }>).inputMode,
         }
       : {};
 
@@ -77,15 +76,11 @@ export default function FormField(props: Props) {
 
   const parseByType = (raw: string) => {
     if (type === "number") {
-      // keep empty as undefined so it doesn't coerce to 0
       if (raw === "" || raw === null) return undefined;
       const n = Number(raw);
       return Number.isNaN(n) ? undefined : n;
     }
-    if (type === "date") {
-      // keep as string; server/preview already formats
-      return raw || undefined;
-    }
+    if (type === "date") return raw || undefined;
     return raw;
   };
 
@@ -94,18 +89,14 @@ export default function FormField(props: Props) {
   ) => {
     onChangeRaw?.(e);
     const parsed = parseByType(e.target.value);
-    if (isControlled) {
-      onChange?.(parsed);
-    } else {
-      setField(field, parsed);
-    }
+    if (isControlled) onChange?.(parsed);
+    else setField(field, parsed);
   };
 
   const id = React.useId();
   const FieldCmp = type === "textarea" ? Textarea : Input;
   const inputType = type === "textarea" ? undefined : type;
 
-  // Ensure we always pass a string to the input/textarea (React controlled input requirement)
   const uiValue =
     v === undefined || v === null
       ? ""
@@ -121,7 +112,8 @@ export default function FormField(props: Props) {
 
       <FieldCmp
         id={id}
-        type={inputType}
+        name={name ?? field}              
+        type={inputType as any}
         value={uiValue as any}
         placeholder={placeholder}
         required={required}

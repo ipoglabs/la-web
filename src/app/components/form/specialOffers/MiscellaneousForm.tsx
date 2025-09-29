@@ -1,47 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function MiscellaneousForm() {
-  const [formData, setFormData] = useState({
-    title: "",
-    category: "",
-    subcategory: "",
-    condition: "",
-    brand: "",
-    model: "",
-    usageDuration: "",
-    age: "",
-    exchangeOption: "",
-    price: "",
-    location: "",
-    deliveryOption: "",
-    mediaUrl: "",
-    description: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-  });
+  const { formData, updateFormData } = usePostFormStore();
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Set default category & subcategory
+  useEffect(() => {
+    if (!formData.category) {
+      updateFormData("category", "For Sale");
+    }
+    if (!formData.subcategory) {
+      updateFormData("subcategory", "Miscellaneous");
+    }
+  }, [formData, updateFormData]);
+
+  // Handle nested seller info
+  const handleSellerInfoChange = (field: string, value: string) => {
+    updateFormData("sellerInfo", {
+      ...formData.sellerInfo,
+      [field]: value,
+    });
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
+  // Handle nested location
+  const handleLocationChange = (field: string, value: string) => {
+    updateFormData("location", {
+      ...formData.location,
+      [field]: value,
+    });
   };
 
   return (
@@ -50,223 +41,160 @@ export default function MiscellaneousForm() {
         <h2 className="text-2xl font-bold mb-6">Miscellaneous</h2>
 
         <div className="space-y-4">
+          {/* Category (readonly) */}
+          <FormField
+            label="Category"
+            name="category"
+            value="For Sale"
+            disabled
+          />
+
+          {/* Subcategory (readonly) */}
+          <FormField
+            label="Subcategory"
+            name="subcategory"
+            value="Miscellaneous"
+            disabled
+          />
+
           {/* Title */}
-          <div>
-            <Label>Title</Label>
-            <Input
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Listing Title"
-              required
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <Label>Category</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("category", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="electronics">Electronics</SelectItem>
-                <SelectItem value="fashion">Fashion</SelectItem>
-                <SelectItem value="home-furniture">Home & Furniture</SelectItem>
-                <SelectItem value="books-media">Books & Media</SelectItem>
-                <SelectItem value="services">Services</SelectItem>
-                <SelectItem value="collectibles">Collectibles</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Subcategory */}
-          <div>
-            <Label>Subcategory</Label>
-            <Input
-              name="subcategory"
-              value={formData.subcategory}
-              onChange={handleChange}
-              placeholder="e.g. Tools, Art, Musical Instruments"
-            />
-          </div>
+          <FormField
+            label="Title"
+            name="title"
+            placeholder="Listing Title"
+          />
 
           {/* Condition */}
-          <div>
-            <Label>Condition</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("condition", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Condition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="used">Used</SelectItem>
-                <SelectItem value="refurbished">Refurbished</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <SelectField
+            label="Condition"
+            name="condition"
+            options={[
+              { value: "new", label: "New" },
+              { value: "used", label: "Used" },
+              { value: "refurbished", label: "Refurbished" },
+            ]}
+          />
 
           {/* Brand */}
-          <div>
-            <Label>Brand (if applicable)</Label>
-            <Input
-              name="brand"
-              value={formData.brand}
-              onChange={handleChange}
-              placeholder="e.g. Philips, Sony"
-            />
-          </div>
+          <FormField
+            label="Brand (if applicable)"
+            name="brand"
+            placeholder="e.g. Philips, Sony"
+          />
 
           {/* Model */}
-          <div>
-            <Label>Model</Label>
-            <Input
-              name="model"
-              value={formData.model}
-              onChange={handleChange}
-              placeholder="Model name or number"
-            />
-          </div>
+          <FormField
+            label="Model"
+            name="model"
+            placeholder="Model name or number"
+          />
 
           {/* Usage Duration */}
-          <div>
-            <Label>Usage Duration (if used)</Label>
-            <Input
-              name="usageDuration"
-              value={formData.usageDuration}
-              onChange={handleChange}
-              placeholder="e.g. 6 months, 2 years"
-            />
-          </div>
+          <FormField
+            label="Usage Duration (if used)"
+            name="usageDuration"
+            placeholder="e.g. 6 months, 2 years"
+          />
 
           {/* Age of Item */}
-          <div>
-            <Label>Age of Item</Label>
-            <Input
-              name="age"
-              value={formData.age}
-              onChange={handleChange}
-              placeholder="e.g. 1 year old"
-            />
-          </div>
+          <FormField
+            label="Age of Item"
+            name="age"
+            placeholder="e.g. 1 year old"
+          />
 
           {/* Exchange Option */}
-          <div>
-            <Label>Exchange/Trade Option</Label>
-            <Select
-              onValueChange={(value) =>
-                handleSelectChange("exchangeOption", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <SelectField
+            label="Exchange/Trade Option"
+            name="exchangeOption"
+            options={[
+              { value: "yes", label: "Yes" },
+              { value: "no", label: "No" },
+            ]}
+          />
 
           {/* Price */}
-          <div>
-            <Label>Price</Label>
-            <Input
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="e.g. ₹5,000"
-            />
-          </div>
-
-          {/* Location */}
-          <div>
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City, State"
-            />
-          </div>
+          <FormField
+            label="Price"
+            name="price"
+            placeholder="e.g. ₹5,000"
+          />
 
           {/* Delivery Option */}
-          <div>
-            <Label>Delivery / Pickup Option</Label>
-            <Select
-              onValueChange={(value) =>
-                handleSelectChange("deliveryOption", value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pickup">Pickup Only</SelectItem>
-                <SelectItem value="delivery">Delivery Available</SelectItem>
-                <SelectItem value="both">Pickup & Delivery</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <SelectField
+            label="Delivery / Pickup Option"
+            name="deliveryOption"
+            options={[
+              { value: "pickup", label: "Pickup Only" },
+              { value: "delivery", label: "Delivery Available" },
+              { value: "both", label: "Pickup & Delivery" },
+            ]}
+          />
 
-          {/* Image / Media */}
-          <div>
-            <Label>Image / Media URL</Label>
-            <Input
-              type="url"
-              name="mediaUrl"
-              value={formData.mediaUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/item-image.jpg"
-            />
-          </div>
+          {/* Media */}
+          <FormField
+            label="Image / Media URL"
+            name="mediaUrl"
+            placeholder="https://example.com/item-image.jpg"
+          />
 
           {/* Description */}
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Provide details about the item or service"
-            />
-          </div>
+          <FormField
+            label="Description"
+            name="description"
+            placeholder="Provide details about the item or service"
+            type="textarea"
+          />
 
-          {/* Contact Info */}
-          <div>
-            <Label>Contact Name</Label>
-            <Input
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleChange}
-              placeholder="Contact Person"
-            />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input
-              type="email"
-              name="contactEmail"
-              value={formData.contactEmail}
-              onChange={handleChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input
-              type="tel"
-              name="contactPhone"
-              value={formData.contactPhone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
-          </div>
+          {/* Location */}
+          <h3 className="text-lg font-semibold mt-6 mb-2">Location</h3>
+          <FormField
+            label="City"
+            name="__ignore_city"
+            placeholder="Enter City"
+            value={formData.location?.city || ""}
+            onChange={(e) => handleLocationChange("city", e.target.value)}
+          />
+          <FormField
+            label="State"
+            name="__ignore_state"
+            placeholder="Enter State"
+            value={formData.location?.state || ""}
+            onChange={(e) => handleLocationChange("state", e.target.value)}
+          />
+          <FormField
+            label="Zipcode"
+            name="__ignore_zipcode"
+            placeholder="Enter Zipcode"
+            value={formData.location?.zipcode || ""}
+            onChange={(e) => handleLocationChange("zipcode", e.target.value)}
+          />
+
+          {/* Seller Info */}
+          <h3 className="text-lg font-semibold mt-6 mb-2">Seller Information</h3>
+          <FormField
+            label="Name"
+            name="__ignore_name"
+            placeholder="Contact Person"
+            value={formData.sellerInfo?.name || ""}
+            onChange={(e) => handleSellerInfoChange("name", e.target.value)}
+          />
+          <FormField
+            label="Email"
+            name="__ignore_email"
+            type="email"
+            placeholder="Email Address"
+            value={formData.sellerInfo?.email || ""}
+            onChange={(e) => handleSellerInfoChange("email", e.target.value)}
+          />
+          <FormField
+            label="Phone"
+            name="__ignore_phone"
+            type="tel"
+            placeholder="Phone Number"
+            value={formData.sellerInfo?.phone || ""}
+            onChange={(e) => handleSellerInfoChange("phone", e.target.value)}
+          />
         </div>
       </CardContent>
     </Card>
