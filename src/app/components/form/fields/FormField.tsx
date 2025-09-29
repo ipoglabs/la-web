@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 // ✅ Add "time" to supported types
-type FieldType = "text" | "number" | "email" | "tel" | "date" | "time" | "textarea";
+type FieldType = "text" | "number" | "email" | "tel" | "date" | "time" | "textarea"| "password"| "url"| "search"| "color";
 
 type CommonProps = {
   label: string;
