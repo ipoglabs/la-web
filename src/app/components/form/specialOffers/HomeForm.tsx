@@ -11,12 +11,8 @@ export default function HomeLivingForm() {
 
   // Set default category & subcategory
   useEffect(() => {
-    if (!formData.category) {
-      updateFormData("category", "For Sale");
-    }
-    if (!formData.subcategory) {
-      updateFormData("subcategory", "Home & Living");
-    }
+    if (!formData.category) updateFormData("category", "For Sale");
+    if (!formData.subcategory) updateFormData("subcategory", "Home & Living");
   }, [formData, updateFormData]);
 
   // Handle nested seller info
@@ -42,39 +38,21 @@ export default function HomeLivingForm() {
 
         <div className="space-y-4">
           {/* Category (readonly) */}
-          <FormField
-            label="Category"
-            name="category"
-            value="For Sale"
-            disabled
-          />
+          <FormField label="Category" field="category" value="For Sale" disabled />
 
           {/* Subcategory (readonly) */}
-          <FormField
-            label="Subcategory"
-            name="subcategory"
-            value="Home & Living"
-            disabled
-          />
+          <FormField label="Subcategory" field="subcategory" value="Home & Living" disabled />
 
           {/* Item Name */}
-          <FormField
-            label="Item Name"
-            name="itemName"
-            placeholder="e.g. Sofa, Dining Table, Lamp"
-          />
+          <FormField label="Item Name" field="itemName" placeholder="e.g. Sofa, Dining Table, Lamp" />
 
           {/* Brand Name */}
-          <FormField
-            label="Brand Name"
-            name="brandName"
-            placeholder="Brand or Manufacturer"
-          />
+          <FormField label="Brand Name" field="brandName" placeholder="Brand or Manufacturer" />
 
           {/* Category Type */}
           <SelectField
             label="Category Type"
-            name="categoryType"
+            field="categoryType"
             options={[
               { value: "furniture", label: "Furniture" },
               { value: "home-decor", label: "Home Decor" },
@@ -87,7 +65,7 @@ export default function HomeLivingForm() {
           {/* Condition */}
           <SelectField
             label="Condition"
-            name="condition"
+            field="condition"
             options={[
               { value: "new", label: "New" },
               { value: "used", label: "Used" },
@@ -95,59 +73,18 @@ export default function HomeLivingForm() {
             ]}
           />
 
-          {/* Material */}
-          <FormField
-            label="Material"
-            name="material"
-            placeholder="e.g. Wood, Metal, Fabric"
-          />
-
-          {/* Dimensions */}
-          <FormField
-            label="Dimensions (L x W x H)"
-            name="dimensions"
-            placeholder="e.g. 6ft x 3ft x 2.5ft"
-          />
-
-          {/* Color */}
-          <FormField
-            label="Color"
-            name="color"
-            placeholder="e.g. Black, Beige, Oak"
-          />
-
-          {/* Weight */}
-          <FormField
-            label="Weight"
-            name="weight"
-            placeholder="e.g. 25kg"
-          />
-
-          {/* Warranty */}
-          <FormField
-            label="Warranty"
-            name="warranty"
-            placeholder="e.g. 1 Year"
-          />
-
-          {/* Usage Duration */}
-          <FormField
-            label="Usage Duration (if used)"
-            name="usageDuration"
-            placeholder="e.g. 6 months, 2 years"
-          />
-
-          {/* Price */}
-          <FormField
-            label="Price"
-            name="price"
-            placeholder="e.g. ₹15,000"
-          />
+          <FormField label="Material" field="material" placeholder="e.g. Wood, Metal, Fabric" />
+          <FormField label="Dimensions (L x W x H)" field="dimensions" placeholder="e.g. 6ft x 3ft x 2.5ft" />
+          <FormField label="Color" field="color" placeholder="e.g. Black, Beige, Oak" />
+          <FormField label="Weight" field="weight" placeholder="e.g. 25kg" />
+          <FormField label="Warranty" field="warranty" placeholder="e.g. 1 Year" />
+          <FormField label="Usage Duration (if used)" field="usageDuration" placeholder="e.g. 6 months, 2 years" />
+          <FormField label="Price" field="price" placeholder="e.g. ₹15,000" />
 
           {/* Delivery Option */}
           <SelectField
             label="Delivery / Pickup Option"
-            name="deliveryOption"
+            field="deliveryOption"
             options={[
               { value: "pickup", label: "Pickup Only" },
               { value: "delivery", label: "Home Delivery Available" },
@@ -156,68 +93,59 @@ export default function HomeLivingForm() {
           />
 
           {/* Media */}
-          <FormField
-            label="Image / Media URL"
-            name="mediaUrl"
-            placeholder="https://example.com/item-image.jpg"
-          />
+          <FormField label="Image / Media URL" field="mediaUrl" placeholder="https://example.com/item-image.jpg" />
 
           {/* Description */}
-          <FormField
-            label="Description"
-            name="description"
-            placeholder="Provide details about the item"
-            type="textarea"
-          />
+          <FormField label="Description" field="description" placeholder="Provide details about the item" type="textarea" />
 
           {/* Location */}
           <h3 className="text-lg font-semibold mt-6 mb-2">Location</h3>
           <FormField
             label="City"
-            name="__ignore_city"
-            placeholder="Enter City"
+            field="location.city"
             value={formData.location?.city || ""}
-            onChange={(e) => handleLocationChange("city", e.target.value)}
+            onChange={(val) => handleLocationChange("city", val as string)}
+            placeholder="Enter City"
           />
           <FormField
             label="State"
-            name="__ignore_state"
-            placeholder="Enter State"
+            field="location.state"
             value={formData.location?.state || ""}
-            onChange={(e) => handleLocationChange("state", e.target.value)}
+            onChange={(val) => handleLocationChange("state", val as string)}
+            placeholder="Enter State"
           />
           <FormField
             label="Zipcode"
-            name="__ignore_zipcode"
-            placeholder="Enter Zipcode"
+            field="location.zipcode"
             value={formData.location?.zipcode || ""}
-            onChange={(e) => handleLocationChange("zipcode", e.target.value)}
+            onChange={(val) => handleLocationChange("zipcode", val as string)}
+            placeholder="Enter Zipcode"
           />
 
           {/* Seller Info */}
           <h3 className="text-lg font-semibold mt-6 mb-2">Seller Information</h3>
           <FormField
             label="Name"
-            name="__ignore_name"
-            placeholder="Contact Person"
+            field="sellerInfo.name"
             value={formData.sellerInfo?.name || ""}
-            onChange={(e) => handleSellerInfoChange("name", e.target.value)}
+            onChange={(val) => handleSellerInfoChange("name", val as string)}
+            placeholder="Contact Person"
           />
           <FormField
             label="Email"
-            name="__ignore_email"
+            field="sellerInfo.email"
             type="email"
-            placeholder="Email Address"
             value={formData.sellerInfo?.email || ""}
-            onChange={(e) => handleSellerInfoChange("email", e.target.value)}
+            onChange={(val) => handleSellerInfoChange("email", val as string)}
+            placeholder="Email Address"
           />
           <FormField
             label="Phone"
-            name="__ignore_phone"
+            field="sellerInfo.phone"
             type="tel"
-            placeholder="Phone Number"
             value={formData.sellerInfo?.phone || ""}
-            onChange={(e) => handleSellerInfoChange("phone", e.target.value)}
+            onChange={(val) => handleSellerInfoChange("phone", val as string)}
+            placeholder="Phone Number"
           />
         </div>
       </CardContent>

@@ -131,9 +131,6 @@ export default function FoodDiningForm() {
           label="Average Rating"
           field="averageRating"
           type="number"
-          step="0.1"
-          min="0"
-          max="5"
           placeholder="e.g. 4.5"
         />
 
