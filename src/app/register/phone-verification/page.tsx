@@ -1,120 +1,160 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import phoneImg from '@/app/assets/img/phone-image.svg'; // You can replace this with a phone SVG if preferred
 
-const PhoneVerification: React.FC = () => {
-  const [countryCode, setCountryCode] = useState('+91');
-  const [phone, setPhone] = useState('');
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+
+import { useRegisterStore } from '@/store/registerStore';
+import { phoneSchema } from '@/lib/validators';
+
+export default function PhoneVerificationPage() {
+  const router = useRouter();
+  const { phones, updatePhones, phoneVerified, setPhoneVerified } = useRegisterStore();
+
   const [otp, setOtp] = useState('');
-  const [isVerified, setIsVerified] = useState(false);
-  const [countdown, setCountdown] = useState(45);
+  const [resendTimeout, setResendTimeout] = useState(0);
+  const [loadingSend, setLoadingSend] = useState(false);
+  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // countdown for resend
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isVerified && countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown, isVerified]);
+    if (resendTimeout <= 0) return;
+    const t = setInterval(() => setResendTimeout((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [resendTimeout]);
 
-  const handleVerify = () => {
-    if (phone.length >= 6) {
-      setIsVerified(true);
-      setCountdown(45);
-      // Trigger backend SMS OTP here
-    } else {
-      alert('Please enter a valid phone number');
+  const sendOtp = async () => {
+    // validate numbers (at least primary)
+    const parsed = phoneSchema.safeParse(phones);
+    if (!parsed.success) {
+      const map: Record<string, string> = {};
+      parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
+      setErrors(map);
+      toast.error('Please fix the phone number');
+      return;
+    }
+    setErrors({});
+    setLoadingSend(true);
+    try {
+      const res = await fetch('/api/sms/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phones.primaryNumber }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('SMS OTP sent to primary number');
+        setResendTimeout(60);
+      } else {
+        toast.error(data.error || 'Failed to send SMS OTP');
+      }
+    } catch {
+      toast.error('Something went wrong sending SMS');
+    } finally {
+      setLoadingSend(false);
     }
   };
 
-  const handleSubmitOTP = () => {
-    if (otp.length === 3) {
-      alert('OTP submitted');
-    } else {
-      alert('Invalid OTP');
+  const verifyOtp = async () => {
+    if (!otp) return toast.error('Enter the SMS OTP');
+    setLoadingVerify(true);
+    try {
+      const res = await fetch('/api/sms/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phones.primaryNumber, otp }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPhoneVerified(true);
+        toast.success('Phone verified');
+        router.push('/register/profile-setup');
+      } else {
+        toast.error(data.error || 'Invalid OTP');
+      }
+    } catch {
+      toast.error('Verification failed');
+    } finally {
+      setLoadingVerify(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-4xl bg-white p-10 rounded-2xl shadow-lg space-y-10">
-        {/* Phone Input */}
-        <div>
-          <label className="block text-xl font-semibold text-black mb-2">Phone Number</label>
-          <p className="text-base text-gray-500 mb-5">
-            Please ensure that the phone number provided is correct
-          </p>
-          <div className="flex items-center gap-4">
-            <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="px-4 py-4 border border-black rounded-lg text-lg bg-white focus:outline-none"
-            >
-              <option value="+91">🇮🇳 +91 (India)</option>
-              <option value="+65">🇸🇬 +65 (Singapore)</option>
-              <option value="+44">🇬🇧 +44 (UK)</option>
-            </select>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter phone number"
-              className="flex-grow px-6 py-4 border border-black rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              onClick={handleVerify}
-              className="px-6 py-4 bg-indigo-100 text-indigo-800 text-lg font-medium rounded-md hover:bg-indigo-200"
-            >
-              Verify
-            </button>
-          </div>
-        </div>
+    <div className="flex items-center justify-center min-h-screen p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Step 3: Mobile Verification</CardTitle>
+        </CardHeader>
 
-        {/* OTP Verification UI */}
-        {isVerified && (
-          <div className="flex items-center bg-[#f5f6fa] rounded-lg p-8 border border-gray-300 gap-10">
-            {/* Left: Illustration */}
-            <div className="w-36 h-36 flex-shrink-0">
-              <Image
-                src={phoneImg}
-                alt="Phone Icon"
-                className="w-full h-full object-contain"
+        <CardContent className="space-y-5">
+          {/* Primary / secondary numbers */}
+          <div>
+            <Label>Primary Number *</Label>
+            <Input
+              placeholder="+65 9xxxxxxx"
+              value={phones.primaryNumber}
+              onChange={(e) => updatePhones({ primaryNumber: e.target.value })}
+              aria-invalid={!!errors.primaryNumber}
+            />
+            {errors.primaryNumber && (
+              <p className="text-sm text-red-600">{errors.primaryNumber}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Secondary Number 1</Label>
+              <Input
+                placeholder="+65 …"
+                value={phones.secondaryNumber1}
+                onChange={(e) => updatePhones({ secondaryNumber1: e.target.value })}
               />
             </div>
-
-            {/* Right: Content */}
-            <div className="flex flex-col flex-grow">
-              <p className="text-xl font-semibold text-gray-900 mb-2">Verify your phone</p>
-              <p className="text-base text-gray-600 mb-5">
-                An SMS with a 6-digit verification code was sent to your number. It will be valid for 30 minutes.
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-700 font-mono text-lg">OTP-</span>
-                <input
-                  type="text"
-                  maxLength={3}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter code"
-                  className="w-60 px-6 py-3 border border-indigo-400 rounded-md text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <button
-                  onClick={handleSubmitOTP}
-                  className="px-6 py-3 bg-indigo-600 text-white text-lg rounded-md hover:bg-indigo-700"
-                >
-                  Submit
-                </button>
-              </div>
-              <p className="text-sm text-gray-400 mt-3">
-                {countdown > 0 ? `Resend OTP in ${countdown}s` : 'Resend OTP available'}
-              </p>
+            <div>
+              <Label>Secondary Number 2</Label>
+              <Input
+                placeholder="+65 …"
+                value={phones.secondaryNumber2}
+                onChange={(e) => updatePhones({ secondaryNumber2: e.target.value })}
+              />
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Actions: send + verify */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              onClick={sendOtp}
+              disabled={resendTimeout > 0 || loadingSend}
+            >
+              {resendTimeout > 0 ? `Resend (${resendTimeout})` : 'Send OTP'}
+            </Button>
+
+            <Input
+              placeholder="Enter SMS OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button onClick={verifyOtp} disabled={loadingVerify}>
+              {loadingVerify ? 'Verifying…' : 'Verify'}
+            </Button>
+
+            <Button variant="outline" onClick={() => router.push('/register/email-verification')}>
+              Back
+            </Button>
+          </div>
+
+          {phoneVerified && (
+            <p className="text-green-600 text-sm">✅ Phone already verified</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default PhoneVerification;
+}

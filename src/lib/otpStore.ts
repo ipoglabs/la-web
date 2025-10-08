@@ -1,15 +1,24 @@
-type OtpRecord = {
+// lib/otpStore.ts
+
+/**
+ * Email OTP in-memory store (shared globally across server reloads)
+ * Used for Step 2: Email Verification
+ */
+
+export type OtpRecord = {
   otp: string;
   expiresAt: number;
   verified?: boolean;
 };
 
 declare global {
-  var otpStore: { [email: string]: OtpRecord } | undefined;
+  // Allow re-use across hot reloads in Next.js (globalThis scope)
+  // eslint-disable-next-line no-var
+  var otpStore: Record<string, OtpRecord> | undefined;
 }
 
-// Create global store if not already initialized
-const otpStore: { [email: string]: OtpRecord } = global.otpStore || {};
+// Initialize a single global store instance (to survive hot reloads)
+const otpStore: Record<string, OtpRecord> = global.otpStore || {};
 if (!global.otpStore) global.otpStore = otpStore;
 
 export default otpStore;

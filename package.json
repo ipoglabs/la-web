@@ -42,7 +42,9 @@
     "tailwind-variants": "^1.0.0",
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
+    "twilio": "^5.10.2",
     "vaul": "^1.1.2",
+    "zod": "^4.1.12",
     "zustand": "^5.0.7"
   },
   "devDependencies": {
