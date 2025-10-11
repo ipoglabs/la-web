@@ -1,4 +1,3 @@
-// store/registerStore.ts
 'use client';
 
 import { create } from 'zustand';
@@ -36,10 +35,11 @@ export const useRegisterStore = create<RegisterState>()(
         firstName: '',
         lastName: '',
         dateOfBirth: '',
-        gender: '',
-        nationality: '',
-        residency: '',
+        gender: '',                // 'male' | 'female' | 'prefer-not-to-say' | 'other'
+        residency: '',             // derived as `${state}, ${country}`
         email: '',
+        country: '',
+        state: '',
       },
 
       phones: {
@@ -76,9 +76,10 @@ export const useRegisterStore = create<RegisterState>()(
             lastName: '',
             dateOfBirth: '',
             gender: '',
-            nationality: '',
             residency: '',
             email: '',
+            country: '',
+            state: '',
           },
           phones: {
             primaryNumber: '',
@@ -95,7 +96,7 @@ export const useRegisterStore = create<RegisterState>()(
         }),
     }),
     {
-      name: 'register-store', // key in localStorage
+      name: 'register-store',
       partialize: (state) => ({
         general: state.general,
         phones: state.phones,

@@ -1,20 +1,52 @@
-// lib/validators.ts
 import { z } from 'zod';
+
+/* ----------------------------- Helpers ----------------------------- */
+function isAdult(dobISO: string) {
+  const dob = new Date(dobISO);
+  if (Number.isNaN(dob.getTime())) return false;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age >= 18;
+}
 
 /**
  * Step 1 – General Information validation
+ * - Nationality removed
+ * - Country + State required (Locality)
+ * - Residency kept for backend (you derive `${state}, ${country}` before submit/route change)
  */
 export const generalInfoSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z
-    .enum(['male', 'female', 'other'])
-    .or(z.literal(''))
-    .refine((v) => !!v, 'Gender is required'),
-  nationality: z.string().min(1, 'Nationality is required'),
-  residency: z.string().min(1, 'Residency is required'),
-  email: z.string().email('Enter a valid email address'),
+  firstName: z
+    .string()
+    .min(1, 'Please enter your first name so people know who you are.'),
+  lastName: z
+    .string()
+    .min(1, 'Please enter your last name.'),
+  dateOfBirth: z
+    .string()
+    .min(1, 'Please enter your date of birth.')
+    .refine((v) => isAdult(v), {
+      message:
+        'Sorry — you need to be 18 or older to use Lokalads. If that’s wrong, double-check your birth date.',
+    }),
+  gender: z.enum(['male', 'female', 'prefer-not-to-say', 'other'], {
+    errorMap: () => ({ message: 'Please select a gender option.' }),
+  }),
+
+  // Locality (required)
+  country: z.string().min(1, 'Select your country.'),
+  state: z.string().min(1, 'Select your state/region.'),
+
+  // Keep for backend compatibility (you set it from country/state in the UI)
+  residency: z
+    .string()
+    .min(1, 'Tell us where you’re based so we can show local listings.'),
+
+  email: z
+    .string()
+    .email('Please enter a valid email address.'),
 });
 
 export type GeneralInfoForm = z.infer<typeof generalInfoSchema>;

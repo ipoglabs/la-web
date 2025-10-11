@@ -1,19 +1,21 @@
 // app/api/register/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import connectDB from '@/lib/dbConnect';
 import User from '@/models/user';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// OTP stores
-import otpStore from '@/lib/otpStore';            // Email OTP store (you already have this)
-import otpPhoneStore from '@/lib/otpPhoneStore';  // Phone OTP store (new)
+import otpStore from '@/lib/otpStore';
+import otpPhoneStore from '@/lib/otpPhoneStore';
+
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     await connectDB();
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({} as any));
     const {
       // Step 1 – General
       firstName,
@@ -31,9 +33,11 @@ export async function POST(req: Request) {
       username,
       password,
       role,
+      // optional
+      subscribe,
     } = body ?? {};
 
-    // Basic required fields
+    // Required checks
     if (
       !firstName ||
       !lastName ||
@@ -50,38 +54,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Normalize
     const normalizedEmail = String(email).toLowerCase().trim();
     const normalizedPhone = String(primaryNumber).trim();
+    const normalizedUsername = String(username).trim();
 
-    // ✅ Verify email OTP
+    // ✅ Safely read cookies (cache the store; use optional chaining + nullish coalescing)
+    const cookieStore = cookies();
+    const regEmailCookie = cookieStore.get('reg_email_v')?.value ?? null;
+    const regPhoneCookie = cookieStore.get('reg_phone_v')?.value ?? null;
+
+    // Email verified? (cookie OR in-memory store)
     const emailRec = otpStore[normalizedEmail];
-    if (!emailRec || emailRec.verified !== true) {
+    const emailIsVerified =
+      (emailRec && emailRec.verified === true) || regEmailCookie === normalizedEmail;
+
+    if (!emailIsVerified) {
       return NextResponse.json({ error: 'Email not verified' }, { status: 400 });
     }
 
-    // ✅ Verify phone OTP (primary)
-    const phoneRec = otpPhoneStore[normalizedPhone];
-    if (!phoneRec || phoneRec.verified !== true) {
+    // Phone verified? (cookie OR in-memory store)
+    const phoneRec = otpPhoneStore?.[normalizedPhone];
+    const phoneIsVerified =
+      (phoneRec && phoneRec.verified === true) || regPhoneCookie === normalizedPhone;
+
+    if (!phoneIsVerified) {
       return NextResponse.json({ error: 'Phone not verified' }, { status: 400 });
     }
 
-    // 🚫 Uniqueness checks
-    const existing = await User.findOne({
-      $or: [{ email: normalizedEmail }, { username }],
-    });
-    if (existing) {
+    // Uniqueness checks
+    const usernameExists = await User.findOne({ username: normalizedUsername }).select('_id').lean();
+    if (usernameExists) {
       return NextResponse.json(
-        { error: 'User with this email or username already exists' },
+        { error: 'Sorry, that username is already taken please try some other name', code: 'USERNAME_TAKEN' },
         { status: 400 }
       );
     }
 
-    // 🔐 Hash password
+    const emailExists = await User.findOne({ email: normalizedEmail }).select('_id').lean();
+    if (emailExists) {
+      return NextResponse.json(
+        { error: 'This email is already registered. Sign in or choose “Forgot password”.', code: 'EMAIL_TAKEN' },
+        { status: 400 }
+      );
+    }
+
+    const phoneExists = await User.findOne({ primaryNumber: normalizedPhone }).select('_id').lean();
+    if (phoneExists) {
+      return NextResponse.json(
+        { error: 'This number is linked to another account. Use a different number or contact support.', code: 'PHONE_TAKEN' },
+        { status: 400 }
+      );
+    }
+
+    // Hash + create user
     const hashedPassword = await bcrypt.hash(String(password), 12);
 
-    // 💾 Create user
     const newUser = new User({
-      username,
+      username: normalizedUsername,
+      password: hashedPassword,
+      role,
       firstName,
       lastName,
       dateOfBirth,
@@ -89,25 +121,17 @@ export async function POST(req: Request) {
       nationality,
       residency,
       email: normalizedEmail,
-      password: hashedPassword,
-      role,
-      provider: 'credentials',
       isEmailVerified: true,
       isPhoneVerified: true,
-      phones: {
-        primary: normalizedPhone,
-        secondary1: secondaryNumber1 || null,
-        secondary2: secondaryNumber2 || null,
-      },
+      primaryNumber: normalizedPhone,
+      secondaryNumber1: secondaryNumber1 || null,
+      secondaryNumber2: secondaryNumber2 || null,
+      provider: 'credentials',
+      ...(typeof subscribe === 'boolean' ? { marketingOptIn: subscribe } : {}),
     });
 
     await newUser.save();
 
-    // 🧹 Cleanup OTPs after success
-    delete otpStore[normalizedEmail];
-    delete otpPhoneStore[normalizedPhone];
-
-    // 🎟️ JWT
     const token = jwt.sign(
       {
         userId: String(newUser._id),
@@ -119,7 +143,7 @@ export async function POST(req: Request) {
       { expiresIn: '7d' }
     );
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       {
         success: true,
         message: 'User registered successfully',
@@ -133,6 +157,16 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
+
+    // Clear cookies safely
+    res.cookies.set('reg_email_v', '', { maxAge: 0, path: '/' });
+    res.cookies.set('reg_phone_v', '', { maxAge: 0, path: '/' });
+
+    // Clear in-memory OTP stores (optional)
+    if (otpStore[normalizedEmail]) delete otpStore[normalizedEmail];
+    if (otpPhoneStore && otpPhoneStore[normalizedPhone]) delete otpPhoneStore[normalizedPhone];
+
+    return res;
   } catch (e) {
     console.error('Register Error:', e);
     return NextResponse.json(

@@ -1,16 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, CheckCircle2, XCircle } from 'lucide-react';
 
 import { useRegisterStore } from '@/store/registerStore';
 import { profileSchema } from '@/lib/validators';
+
+/* -------------------------- Username helpers -------------------------- */
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
+// Keep this short client-side; enforce a better filter on server if needed.
+const BLOCKED_FRAGMENTS = ['admin', 'moderator', 'support', 'lokalads', 'staff'];
+const hasBlockedWord = (u: string) =>
+  BLOCKED_FRAGMENTS.some((w) => u.toLowerCase().includes(w));
+
+/* -------------------------- Password helpers -------------------------- */
+const COMMON_PASSWORDS = new Set([
+  'password', 'password1', '12345678', 'qwerty', 'letmein', 'welcome', 'admin123',
+  'iloveyou', 'abc12345', '123456789', 'lokalads', 'passw0rd'
+]);
+
+function scorePassword(pw: string) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[a-z]/.test(pw)) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (COMMON_PASSWORDS.has(pw.toLowerCase())) score = 0; // tank score for common pw
+  return Math.min(score, 5);
+}
+function strengthLabel(score: number) {
+  if (score <= 1) return 'Weak';
+  if (score <= 3) return 'Good';
+  return 'Strong';
+}
+
+/* -------------------------- Role options -------------------------- */
+const ROLES = [
+  { key: 'individual', label: 'Individual' },
+  { key: 'business', label: 'Business' },
+  { key: 'agency', label: 'Agency' },
+  { key: 'other', label: 'Other' },
+] as const;
+
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'blocked';
 
 export default function ProfileSetupPage() {
   const router = useRouter();
@@ -26,29 +66,152 @@ export default function ProfileSetupPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
+  // UI-only fields
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [subscribe, setSubscribe] = useState(false);
+
+  // Username check
+  const [unameStatus, setUnameStatus] = useState<UsernameStatus>('idle');
+  const [unameMsg, setUnameMsg] = useState<string>('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Derived password bits
+  const pwScore = useMemo(() => scorePassword(profile.password), [profile.password]);
+  const pwLabel = strengthLabel(pwScore);
+  const pwTooCommon = useMemo(
+    () => profile.password && COMMON_PASSWORDS.has(profile.password.toLowerCase()),
+    [profile.password]
+  );
+  const pwMismatch = useMemo(
+    () => confirmPassword.length > 0 && confirmPassword !== profile.password,
+    [confirmPassword, profile.password]
+  );
+
+  // Debounced live username check
+  useEffect(() => {
+    const uname = (profile.username || '').trim();
+
+    // local validations first
+    if (!uname) {
+      setUnameStatus('idle');
+      setUnameMsg('');
+      return;
+    }
+    if (!USERNAME_RE.test(uname)) {
+      setUnameStatus('invalid');
+      setUnameMsg('Usernames can only use letters, numbers and underscores.');
+      return;
+    }
+    if (hasBlockedWord(uname)) {
+      setUnameStatus('blocked');
+      setUnameMsg('That username includes words we can’t allow — try another.');
+      return;
+    }
+
+    setUnameStatus('checking');
+    setUnameMsg('Checking availability…');
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (abortRef.current) abortRef.current.abort();
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        abortRef.current = new AbortController();
+        const res = await fetch('/api/users/check-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: uname }),
+          signal: abortRef.current.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setUnameStatus('invalid');
+          setUnameMsg(data?.error || 'Unable to check username right now.');
+          return;
+        }
+        if (data?.available === false) {
+          setUnameStatus('taken');
+          setUnameMsg('Sorry, that username is already taken please try some other name');
+        } else {
+          setUnameStatus('available');
+          setUnameMsg('Username is available');
+        }
+      } catch {
+        // ignore aborted; show soft error otherwise
+        if (unameStatus !== 'checking') return;
+        setUnameStatus('invalid');
+        setUnameMsg('Unable to check username right now.');
+      }
+    }, 400);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.username]);
 
   const submit = async () => {
-    // client-side validation
+    // base zod (username, password complexity, role)
     const parsed = profileSchema.safeParse(profile);
+
+    const map: Record<string, string> = {};
     if (!parsed.success) {
-      const map: Record<string, string> = {};
       parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
+    }
+
+    // extra username rules
+    const uname = (profile.username || '').trim();
+    if (!uname) {
+      map.username = 'Please choose a username.';
+    } else if (!USERNAME_RE.test(uname)) {
+      map.username = 'Usernames can only use letters, numbers and underscores.';
+    } else if (hasBlockedWord(uname)) {
+      map.username = 'That username includes words we can’t allow — try another.';
+    } else if (unameStatus === 'taken') {
+      map.username = 'Sorry, that username is already taken please try some other name';
+    }
+
+    // password checks
+    if (pwTooCommon || pwScore <= 1) {
+      map.password = 'Try a longer password or add a symbol for better protection.';
+    }
+    if (pwMismatch) {
+      map.confirmPassword = 'Passwords don’t match — please check both fields.';
+    }
+
+    // role required
+    if (!profile.role) {
+      map.role = 'Tell us how you’ll use Lokalads so we can tailor your experience.';
+    }
+
+    // consent required
+    if (!consent) {
+      map.consent = 'We need your agreement to our Terms & Privacy Policy to create your account.';
+    }
+
+    if (Object.keys(map).length > 0) {
       setErrors(map);
       toast.error('Please fix the highlighted fields');
       return;
     }
+
+    setErrors({});
+
+    // Ensure earlier steps are verified
     if (!emailVerified) return toast.error('Please verify your email first');
     if (!phoneVerified) return toast.error('Please verify your phone first');
 
-    setErrors({});
-    setLoading(true);
     try {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // general
+          // Step 1 — General
           firstName: general.firstName,
           lastName: general.lastName,
           dateOfBirth: general.dateOfBirth,
@@ -56,14 +219,16 @@ export default function ProfileSetupPage() {
           nationality: general.nationality,
           residency: general.residency,
           email: general.email,
-          // phones
+          // Step 3 — Phones
           primaryNumber: phones.primaryNumber,
           secondaryNumber1: phones.secondaryNumber1,
           secondaryNumber2: phones.secondaryNumber2,
-          // profile
+          // Step 4 — Profile
           username: profile.username,
           password: profile.password,
           role: profile.role,
+          // Optional marketing flag (store later if you want)
+          subscribe,
         }),
       });
 
@@ -77,12 +242,11 @@ export default function ProfileSetupPage() {
         reset();
         router.push('/');
       } else {
+        // map username/email/phone uniqueness messages, if server sends them
         toast.error(data.error || 'Registration failed');
       }
     } catch {
       toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -90,29 +254,45 @@ export default function ProfileSetupPage() {
     <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle>Step 4: Profile Setup</CardTitle>
+          <CardTitle>Step 4 — Profile Setup</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create your account credentials and pick how you want to appear on Lokalads.
+          </p>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Username / Password / Role */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Username</Label>
-              <Input
-                value={profile.username}
-                onChange={(e) => updateProfile({ username: e.target.value })}
-                aria-invalid={!!errors.username}
-              />
-              {errors.username && (
-                <p className="text-sm text-red-600">{errors.username}</p>
+          {/* Username */}
+          <div>
+            <Label>Username</Label>
+            <Input
+              placeholder="jane_doe"
+              value={profile.username}
+              onChange={(e) => updateProfile({ username: e.target.value })}
+              aria-invalid={!!errors.username}
+            />
+            <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
+              <span>This is public — choose something friendly and recognisable.</span>
+              {unameStatus === 'available' && <CheckCircle2 className="inline h-4 w-4 text-green-600" />}
+              {(unameStatus === 'taken' || unameStatus === 'invalid' || unameStatus === 'blocked') && (
+                <XCircle className="inline h-4 w-4 text-red-600" />
               )}
             </div>
+            {unameMsg && (
+              <p className={`text-sm mt-1 ${unameStatus === 'available' ? 'text-green-600' : 'text-red-600'}`}>
+                {unameMsg}
+              </p>
+            )}
+            {errors.username && <p className="text-sm text-red-600 mt-1">{errors.username}</p>}
+          </div>
 
-            <div className="md:col-span-2">
+          {/* Password + Confirm */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
               <Label>Password</Label>
               <div className="relative">
                 <Input
                   type={showPwd ? 'text' : 'password'}
+                  placeholder="Create a secure password"
                   value={profile.password}
                   onChange={(e) => updateProfile({ password: e.target.value })}
                   className="pr-10"
@@ -127,28 +307,129 @@ export default function ProfileSetupPage() {
                   {showPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-sm text-red-600">{errors.password}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                At least 8 characters. Use numbers, letters and a symbol for extra strength.
+              </p>
+
+              {/* Strength meter */}
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex gap-1">
+                  {[0,1,2,3,4].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-1.5 w-8 rounded ${
+                        i < pwScore ? (pwScore >= 4 ? 'bg-green-600' : pwScore >= 2 ? 'bg-yellow-500' : 'bg-red-500') : 'bg-muted'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground">{pwLabel}</span>
+              </div>
+
+              {(pwTooCommon || errors.password) && (
+                <p className="text-sm text-red-600 mt-1">
+                  {errors.password || 'That password is too common — choose something harder to guess.'}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label>Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  type={showConfirmPwd ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pr-10"
+                  aria-invalid={!!errors.confirmPassword}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPwd((p) => !p)}
+                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                  aria-label={showConfirmPwd ? 'Hide confirm password' : 'Show confirm password'}
+                >
+                  {showConfirmPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                </button>
+              </div>
+              {pwMismatch && (
+                <p className="text-sm text-red-600 mt-1">
+                  Passwords don’t match — please check both fields.
+                </p>
+              )}
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>
               )}
             </div>
           </div>
 
+          {/* Role (radio cards) */}
           <div>
             <Label>Role</Label>
-            {/* native select keeps deps light; swap to shadcn Select if you prefer */}
-            <select
-              className="mt-2 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={profile.role}
-              onChange={(e) => updateProfile({ role: e.target.value })}
-              aria-invalid={!!errors.role}
-            >
-              <option value="">Select…</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-            {errors.role && <p className="text-sm text-red-600">{errors.role}</p>}
+            <p className="text-xs text-muted-foreground mt-1">
+              Choose how you’ll use Lokalads — roles customise your dashboard and features.
+            </p>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {ROLES.map((r) => {
+                const active = profile.role === r.key;
+                return (
+                  <button
+                    key={r.key}
+                    type="button"
+                    onClick={() => updateProfile({ role: r.key })}
+                    className={`rounded-xl border p-4 text-left transition ${
+                      active ? 'border-primary ring-2 ring-primary/30' : 'border-input hover:bg-muted/40'
+                    }`}
+                    aria-pressed={active}
+                  >
+                    <div className="font-medium">{r.label}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {r.key === 'individual' && 'Personal buying/selling'}
+                      {r.key === 'business' && 'Shops, SMBs and brands'}
+                      {r.key === 'agency' && 'Manage listings for clients'}
+                      {r.key === 'other' && 'Something else'}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {errors.role && <p className="text-sm text-red-600 mt-2">{errors.role}</p>}
           </div>
 
+          {/* Consent + marketing */}
+          <div className="space-y-2">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+              />
+              <span>
+                I agree to the{' '}
+                <a href="/legal/terms" className="underline underline-offset-2" target="_blank" rel="noreferrer">
+                  Lokalads Terms &amp; Conditions
+                </a>{' '}
+                and{' '}
+                <a href="/legal/privacy" className="underline underline-offset-2" target="_blank" rel="noreferrer">
+                  Privacy Policy
+                </a>.
+              </span>
+            </label>
+            {errors.consent && <p className="text-sm text-red-600">{errors.consent}</p>}
+
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={subscribe}
+                onChange={(e) => setSubscribe(e.target.checked)}
+              />
+              <span>Subscribe to product updates &amp; occasional offers</span>
+            </label>
+          </div>
+
+          {/* Actions */}
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
@@ -157,8 +438,8 @@ export default function ProfileSetupPage() {
             >
               Back
             </Button>
-            <Button onClick={submit} disabled={loading}>
-              {loading ? 'Submitting…' : 'Create Account'}
+            <Button onClick={submit}>
+              Create Account
             </Button>
           </div>
 

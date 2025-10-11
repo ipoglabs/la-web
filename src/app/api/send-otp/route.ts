@@ -1,35 +1,32 @@
+// app/api/send-otp/route.ts
 import { NextResponse } from 'next/server';
+import { sendEmailOtp } from '@/lib/sendEmailOtp';
 import { generateOtp } from '@/lib/generateOtp';
 import otpStore from '@/lib/otpStore';
-import { sendEmailOtp } from '@/lib/sendEmailOtp'; // your existing mail helper
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
+    if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });
 
     const normalizedEmail = String(email).toLowerCase().trim();
-
     const otp = generateOtp();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins
 
-    otpStore[normalizedEmail] = { otp, expiresAt, verified: false };
+    otpStore[normalizedEmail] = {
+      otp,
+      expiresAt,
+      verified: false,
+      attempts: 0,       // 🔄 reset attempts on resend
+      lockedUntil: null, // 🔄 clear any lock on resend
+    };
 
     await sendEmailOtp(normalizedEmail, otp);
-
-    // Helpful for dev console fallback (don’t do this in prod)
-    if ((process.env.NODE_ENV || 'development') === 'development') {
-      // eslint-disable-next-line no-console
-      console.log(`[DEV EMAIL OTP] ${normalizedEmail} -> ${otp}`);
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (e) {
-    console.error('Send OTP error:', e);
+    return NextResponse.json({ success: true, message: 'OTP sent' });
+  } catch (err) {
+    console.error('Send OTP error:', err);
     return NextResponse.json({ error: 'Failed to send OTP' }, { status: 500 });
   }
 }

@@ -1,0 +1,26 @@
+{
+  "India": [
+    "Andhra Pradesh",
+    "Delhi (NCT)",
+    "Gujarat",
+    "Karnataka",
+    "Maharashtra",
+    "Tamil Nadu",
+    "Telangana",
+    "Uttar Pradesh",
+    "West Bengal"
+  ],
+  "Singapore": [
+    "Central Region",
+    "East Region",
+    "North Region",
+    "North-East Region",
+    "West Region"
+  ],
+  "United Kingdom": [
+    "England",
+    "Scotland",
+    "Wales",
+    "Northern Ireland"
+  ]
+}
