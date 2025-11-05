@@ -2,24 +2,16 @@
 "use server";
 
 import { cookies } from "next/headers";
-import mongoose, { Types } from "mongoose";
+import { Types } from "mongoose";
 import connectDB from "@/config/database";
 import Post from "@/models/post";
 import cloudinary from "@/config/cloudinary";
 import { verifyToken } from "@/lib/auth";
 
 type LocationData = { address?: string; lat?: number; lng?: number };
+type DecodedJwt = Record<string, unknown> | null;
 
-type DecodedJwt =
-  | {
-      id?: unknown;
-      email?: unknown;
-      user?: { email?: unknown };
-      sub?: unknown;
-    }
-  | Record<string, unknown>
-  | null;
-
+// ---------- helpers ----------
 function safeParse<T = any>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;
@@ -27,7 +19,6 @@ function safeParse<T = any>(val: string, fallback: T): T {
     return fallback;
   }
 }
-
 const pullString = (v: FormDataEntryValue | null | undefined) => {
   const s = (v as string | null) ?? "";
   const t = s?.trim?.() ?? s;
@@ -49,8 +40,6 @@ const pullArray = (v: FormDataEntryValue | null | undefined) => {
     .map((x) => x.trim())
     .filter(Boolean);
 };
-
-/** remove undefined keys recursively so we don't overwrite the document with empties */
 function stripUndef(obj: Record<string, any>) {
   const out: Record<string, any> = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -61,61 +50,62 @@ function stripUndef(obj: Record<string, any>) {
   }
   return out;
 }
+const normEmail = (e?: string) => (e ? String(e).trim().toLowerCase() : undefined);
 
-/** Safely derive user id (as ObjectId) from a decoded JWT */
-function getJwtObjectId(decoded: DecodedJwt): Types.ObjectId | undefined {
-  const maybeId =
-    (decoded && typeof (decoded as any).id === "string" && (decoded as any).id) || undefined;
-  if (!maybeId) return undefined;
-  return Types.ObjectId.isValid(maybeId) ? new Types.ObjectId(maybeId) : undefined;
+function pickJwtObjectId(decoded: DecodedJwt): Types.ObjectId | undefined {
+  if (!decoded || typeof decoded !== "object") return;
+  const raw =
+    (typeof (decoded as any).id === "string" && (decoded as any).id) ||
+    (typeof (decoded as any).userId === "string" && (decoded as any).userId) ||
+    undefined;
+  if (!raw || !Types.ObjectId.isValid(raw)) return;
+  return new Types.ObjectId(raw);
 }
-
-/** Safely derive user email from a decoded JWT */
-function getJwtEmail(decoded: DecodedJwt): string | undefined {
-  if (!decoded || typeof decoded !== "object") return undefined;
-
-  const direct = (decoded as any).email;
-  if (typeof direct === "string" && direct.includes("@")) return direct;
-
-  const nested = (decoded as any).user?.email;
-  if (typeof nested === "string" && nested.includes("@")) return nested;
-
-  const sub = (decoded as any).sub;
-  if (typeof sub === "string" && sub.includes("@")) return sub;
-
-  return undefined;
+function pickJwtEmail(decoded: DecodedJwt): string | undefined {
+  if (!decoded || typeof decoded !== "object") return;
+  const e1 = (decoded as any).email;
+  const e2 = (decoded as any).user?.email;
+  const e3 = (decoded as any).sub;
+  const chosen =
+    (typeof e1 === "string" && e1.includes("@") && e1) ||
+    (typeof e2 === "string" && e2.includes("@") && e2) ||
+    (typeof e3 === "string" && e3.includes("@") && e3) ||
+    undefined;
+  return normEmail(chosen);
 }
+// ----------------------------
 
 export async function updatePost(
   postId: string,
   formData: FormData
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   try {
-    // ----- Input id validation -----
-    if (!postId) return { ok: false, error: "Missing post id" };
-    if (!Types.ObjectId.isValid(postId)) {
+    if (!postId || !Types.ObjectId.isValid(postId)) {
       return { ok: false, error: "Invalid post id" };
     }
 
     await connectDB();
 
-    // ----- AuthZ from cookie -----
-    const cookieStore = cookies();
-    const tokenCookie = cookieStore.get("token"); // may be undefined
-    let raw = tokenCookie?.value;
+    // Next 15: cookies() must be awaited
+    const cookieStore = await cookies();
+    let raw = cookieStore.get("token")?.value;
     if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length);
 
     const decoded = (raw ? verifyToken(raw) : null) as DecodedJwt;
-    const ownerObjectId = getJwtObjectId(decoded);
-    const ownerEmailFromJwt = getJwtEmail(decoded);
+    const ownerObjectId = pickJwtObjectId(decoded);
+    const ownerEmailFromJwt = pickJwtEmail(decoded);
 
-    // Only allow editing your own post
-    const filter: Record<string, any> = { _id: new Types.ObjectId(postId) };
-    if (ownerObjectId) filter.ownerId = ownerObjectId;
+    // Load current doc first
+    const current = await Post.findById(new Types.ObjectId(postId)).lean();
+    if (!current) return { ok: false, error: "Not found or not authorized to edit this post" };
 
-    // Fetch current doc so we can merge images & keep identity
-    const current = await Post.findOne(filter).lean();
-    if (!current) {
+    // Authorization: prefer ownerId; else fallback to email
+    const hasOwnerMatch =
+      ownerObjectId && current.ownerId && String(current.ownerId) === String(ownerObjectId);
+    const hasEmailMatch =
+      ownerEmailFromJwt && current.seller_info?.email?.toLowerCase() === ownerEmailFromJwt;
+
+    if (!hasOwnerMatch && !hasEmailMatch) {
       return { ok: false, error: "Not found or not authorized to edit this post" };
     }
 
@@ -124,7 +114,6 @@ export async function updatePost(
       pullString(formData.get("name")) ||
       pullString(formData.get("jobTitle")) ||
       pullString(formData.get("projectTitle"));
-
     const description = pullString(formData.get("description"));
     const category = pullString(formData.get("category"));
     const subcategory = pullString(formData.get("subcategory"));
@@ -132,18 +121,19 @@ export async function updatePost(
     const locationRaw = (formData.get("locationData") as string) || "";
     const location: LocationData = locationRaw ? safeParse<LocationData>(locationRaw, {}) : {};
 
-    // Seller info (accept multiple shapes) — we will also force email from JWT if absent
+    // Seller info
     const seller_info = {
       name:
         pullString(formData.get("seller_info.name")) ||
         pullString(formData.get("sellerInfo.name")) ||
         pullString(formData.get("contactName")),
       email:
-        pullString(formData.get("seller_info.email")) ||
-        pullString(formData.get("sellerInfo.email")) ||
-        pullString(formData.get("contactEmail")) ||
-        pullString(formData.get("email")) ||
-        ownerEmailFromJwt, // fallback to JWT email
+        normEmail(
+          pullString(formData.get("seller_info.email")) ||
+            pullString(formData.get("sellerInfo.email")) ||
+            pullString(formData.get("contactEmail")) ||
+            pullString(formData.get("email"))
+        ) || ownerEmailFromJwt,
       phone:
         pullString(formData.get("seller_info.phone")) ||
         pullString(formData.get("sellerInfo.phone")) ||
@@ -151,7 +141,7 @@ export async function updatePost(
         pullString(formData.get("contactNumber")),
     };
 
-    // ----- Images: preserve existing URLs + add new uploads -----
+    // Images: keep existing + new uploads
     const imageUrlEntries = (formData.getAll("imageUrl") as string[]) || [];
     const imageFiles = (formData.getAll("images") as File[]) || [];
     const mergedImages: string[] = [...imageUrlEntries];
@@ -171,15 +161,13 @@ export async function updatePost(
       }
     }
 
-    // If the client didn't send any `imageUrl`, keep existing ones
     const images =
       imageUrlEntries.length === 0 && imageFiles.length === 0
         ? current.images ?? []
         : mergedImages;
 
-    // ----- Build update object -----
+    // Build update
     const updateRaw: Record<string, any> = {
-      // core
       name,
       description,
       category,
@@ -187,17 +175,16 @@ export async function updatePost(
       location,
       images,
 
-      // seller_info: ensure we never drop email/identity
       seller_info: {
         name: seller_info.name ?? current.seller_info?.name,
         email: seller_info.email ?? current.seller_info?.email,
         phone: seller_info.phone ?? current.seller_info?.phone,
       },
 
-      // ALWAYS (re)attach identity from JWT so doc is consistently owned
+      // Only attach ownerId if it is a valid ObjectId derived from JWT
       ...(ownerObjectId ? { ownerId: ownerObjectId } : {}),
 
-      // ===== Property =====
+      // --- the rest of your fields (unchanged) ---
       propertyType: pullString(formData.get("propertyType")),
       beds: pullNumber(formData.get("beds")),
       baths: pullNumber(formData.get("baths")),
@@ -239,7 +226,6 @@ export async function updatePost(
       minArea: pullNumber(formData.get("minArea")),
       preferred_locations: pullArray(formData.get("preferred_locations")),
 
-      // ===== Jobs =====
       company: pullString(formData.get("company")),
       clientName: pullString(formData.get("clientName")),
       jobType: pullString(formData.get("jobType")),
@@ -264,7 +250,6 @@ export async function updatePost(
       shifts: pullArray(formData.get("shifts")),
       candidateName: pullString(formData.get("candidateName")),
 
-      // ===== Vehicles =====
       make: pullString(formData.get("make")),
       model: pullString(formData.get("model")),
       year: pullNumber(formData.get("year")),
@@ -282,7 +267,6 @@ export async function updatePost(
       engineCapacity: pullNumber(formData.get("engineCapacity")),
       seatingCapacity: pullNumber(formData.get("seatingCapacity")),
 
-      // ===== Pets =====
       petName: pullString(formData.get("petName")),
       petType: pullString(formData.get("petType")),
       breed: pullString(formData.get("breed")),
@@ -305,7 +289,6 @@ export async function updatePost(
       serviceProviderName: pullString(formData.get("serviceProviderName")),
       availability: pullString(formData.get("availability")),
 
-      // ===== Services blocks =====
       educationType: pullString(formData.get("educationType")),
       subject: pullString(formData.get("subject")),
       mode: pullString(formData.get("mode")),
@@ -325,7 +308,7 @@ export async function updatePost(
       urgency: pullString(formData.get("urgency")),
     };
 
-    // Map service price → salePrice if provided that way
+    // Map service price → salePrice if given that way
     if (updateRaw.salePrice === undefined) {
       const svcPrice = pullNumber(formData.get("price"));
       if (svcPrice !== undefined) updateRaw.salePrice = svcPrice;
@@ -343,7 +326,6 @@ export async function updatePost(
         phone: updateRaw.seller_info?.phone ?? current.seller_info?.phone,
       },
     };
-
     const errors: string[] = [];
     if (!effective.name) errors.push("Title is required");
     if (!effective.description) errors.push("Description is required");
@@ -357,8 +339,13 @@ export async function updatePost(
     // Only $set provided values
     const $set = stripUndef(updateRaw);
 
+    // FINAL SAFETY: never set an invalid ownerId
+    if ("ownerId" in $set && !($set.ownerId instanceof Types.ObjectId)) {
+      delete $set.ownerId;
+    }
+
     const doc = await Post.findOneAndUpdate(
-      filter,
+      { _id: new Types.ObjectId(postId) },
       { $set },
       { new: true, runValidators: true }
     ).lean();

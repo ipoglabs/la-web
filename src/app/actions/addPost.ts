@@ -1,8 +1,8 @@
 // src/app/actions/addPost.ts
 "use server";
 
-import connectDB from "../../config/database";
-import Post from "../../models/post";
+import connectDB from "@/config/database";
+import Post from "@/models/post";
 import cloudinary from "@/config/cloudinary";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
@@ -10,28 +10,70 @@ import mongoose from "mongoose";
 
 type LocationData = { address?: string; lat?: number; lng?: number };
 
-export async function addPost(formData: FormData): Promise<
-  | { ok: true; id: string }
-  | { ok: false; error: string }
-> {
+// --- helpers -------------------------------------------------
+function safeParse<T = any>(val: string, fallback: T): T {
+  try {
+    return JSON.parse(val) as T;
+  } catch {
+    return fallback;
+  }
+}
+const pullString = (v: FormDataEntryValue | null | undefined) => {
+  const s = (v as string | null) ?? "";
+  const t = s?.trim?.() ?? s;
+  return t || undefined;
+};
+const pullNumber = (v: FormDataEntryValue | null | undefined) => {
+  const s = pullString(v);
+  if (!s) return undefined;
+  const n = Number(s);
+  return Number.isNaN(n) ? undefined : n;
+};
+const pullArray = (v: FormDataEntryValue | null | undefined) => {
+  const s = pullString(v);
+  if (!s) return [];
+  const parsed = safeParse<any>(s, []);
+  if (Array.isArray(parsed)) return parsed;
+  return String(s)
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+};
+function normalizeEmail(e?: string) {
+  return e ? String(e).trim().toLowerCase() : undefined;
+}
+function validObjectIdFrom(anyId: unknown): mongoose.Types.ObjectId | undefined {
+  // Accept only plain strings; ignore Buffer/objects to prevent cast errors
+  if (typeof anyId !== "string") return undefined;
+  const s = anyId.trim();
+  if (!mongoose.Types.ObjectId.isValid(s)) return undefined;
+  return new mongoose.Types.ObjectId(s);
+}
+
+// -------------------------------------------------------------
+
+export async function addPost(
+  formData: FormData
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   try {
     await connectDB();
 
     // --- Read identity from cookie (token) ---
     const cookieStore = cookies();
     let raw = cookieStore.get("token")?.value;
-    if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length);
+    if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
 
     const decoded = raw ? verifyToken(raw) : null;
-    const ownerId =
-      decoded?.id && mongoose.Types.ObjectId.isValid(decoded.id)
-        ? new mongoose.Types.ObjectId(decoded.id)
-        : undefined;
-    const ownerEmail: string | undefined =
-      (decoded as any)?.email ||
-      (decoded as any)?.user?.email ||
+
+    // ownerId: only if JWT has a *string* id and it is a valid ObjectId
+    const ownerId = validObjectIdFrom((decoded as any)?.id || (decoded as any)?.userId);
+
+    // ownerEmail fallback (normalized)
+    const ownerEmail =
+      normalizeEmail((decoded as any)?.email) ||
+      normalizeEmail((decoded as any)?.user?.email) ||
       (typeof (decoded as any)?.sub === "string" && (decoded as any).sub.includes("@")
-        ? (decoded as any).sub
+        ? normalizeEmail((decoded as any).sub)
         : undefined);
 
     // --- Core fields ---
@@ -47,30 +89,7 @@ export async function addPost(formData: FormData): Promise<
     const locationRaw = (formData.get("locationData") as string) || "";
     const location: LocationData = locationRaw ? safeParse<LocationData>(locationRaw, {}) : {};
 
-    // Helpers
-    const pullString = (v: FormDataEntryValue | null | undefined) => {
-      const s = (v as string | null) ?? "";
-      const t = s?.trim?.() ?? s;
-      return t || undefined;
-    };
-    const pullNumber = (v: FormDataEntryValue | null | undefined) => {
-      const s = pullString(v);
-      if (!s) return undefined;
-      const n = Number(s);
-      return Number.isNaN(n) ? undefined : n;
-    };
-    const pullArray = (v: FormDataEntryValue | null | undefined) => {
-      const s = pullString(v);
-      if (!s) return [];
-      const parsed = safeParse<any>(s, []);
-      if (Array.isArray(parsed)) return parsed;
-      return String(s)
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-    };
-
-    // Seller info — default to token email when missing
+    // Seller info — default to token email when missing (normalized)
     const seller_info = {
       name:
         pullString(formData.get("seller_info.name")) ||
@@ -78,11 +97,13 @@ export async function addPost(formData: FormData): Promise<
         pullString(formData.get("contactName")) ||
         "",
       email:
-        pullString(formData.get("seller_info.email")) ||
-        pullString(formData.get("sellerInfo.email")) ||
-        pullString(formData.get("contactEmail")) ||
-        pullString(formData.get("email")) ||
-        ownerEmail || // fallback from JWT
+        normalizeEmail(
+          pullString(formData.get("seller_info.email")) ||
+            pullString(formData.get("sellerInfo.email")) ||
+            pullString(formData.get("contactEmail")) ||
+            pullString(formData.get("email"))
+        ) ||
+        ownerEmail ||
         "",
       phone:
         pullString(formData.get("seller_info.phone")) ||
@@ -118,7 +139,7 @@ export async function addPost(formData: FormData): Promise<
 
     // ===== Build postData =====
     const postData: Record<string, any> = {
-      ownerId,                    // <-- attach ownerId
+      ownerId, // attach owner if present
       category,
       subcategory,
       name,
@@ -127,7 +148,7 @@ export async function addPost(formData: FormData): Promise<
       seller_info,
       images,
 
-      // ... keep the rest of your fields exactly as before ...
+      // Property / Commercial
       propertyType: pullString(formData.get("propertyType")),
       beds: pullNumber(formData.get("beds")),
       baths: pullNumber(formData.get("baths")),
@@ -150,20 +171,28 @@ export async function addPost(formData: FormData): Promise<
       available_from: pullString(formData.get("available_from")),
       leaseTerm: pullNumber(formData.get("leaseTerm")),
       powerBackup: pullString(formData.get("powerBackup")),
+
+      // Holiday
       holidayType: pullString(formData.get("holidayType")),
       guests: pullNumber(formData.get("guests")),
       house_rules: pullArray(formData.get("house_rules")),
       rateNightly: pullNumber(formData.get("rateNightly")),
       rateWeekly: pullNumber(formData.get("rateWeekly")),
       rateMonthly: pullNumber(formData.get("rateMonthly")),
+
+      // Room rental
       type: pullString(formData.get("type")),
       rent: pullNumber(formData.get("rent")),
       preferred_tenants: pullString(formData.get("preferred_tenants")),
       rules: pullArray(formData.get("rules")),
+
+      // Sale extras
       plot_area: pullNumber(formData.get("plot_area")),
       negotiable: pullString(formData.get("negotiable")),
       ownership: pullString(formData.get("ownership")),
       age: pullString(formData.get("age")),
+
+      // Jobs
       company: pullString(formData.get("company")),
       clientName: pullString(formData.get("clientName")),
       jobType: pullString(formData.get("jobType")),
@@ -191,6 +220,8 @@ export async function addPost(formData: FormData): Promise<
       minBudget: pullNumber(formData.get("minBudget")),
       maxBudget: pullNumber(formData.get("maxBudget")),
       minArea: pullNumber(formData.get("minArea")),
+
+      // Vehicles
       make: pullString(formData.get("make")),
       model: pullString(formData.get("model")),
       year: pullNumber(formData.get("year")),
@@ -207,9 +238,13 @@ export async function addPost(formData: FormData): Promise<
       features: pullArray(formData.get("features")),
       engineCapacity: pullNumber(formData.get("engineCapacity")),
       seatingCapacity: pullNumber(formData.get("seatingCapacity")),
+
+      // Parts (Vehicles)
       partsCategory: pullString(formData.get("partsCategory")),
       brand: pullString(formData.get("brand")),
       compatibility: pullArray(formData.get("compatibility")),
+
+      // Pets: Adoption
       petName: pullString(formData.get("petName")),
       petType: pullString(formData.get("petType")),
       breed: pullString(formData.get("breed")),
@@ -217,19 +252,29 @@ export async function addPost(formData: FormData): Promise<
       gender: pullString(formData.get("gender")),
       vaccination: pullString(formData.get("vaccination")),
       size: pullString(formData.get("size")),
+
+      // Pets: Wanted
       wantedPetType: pullString(formData.get("wantedPetType")),
       breedPreference: pullString(formData.get("breedPreference")),
       agePreference: pullString(formData.get("agePreference")),
       genderPreference: pullString(formData.get("genderPreference")),
       sizePreference: pullString(formData.get("sizePreference")),
       budget: pullNumber(formData.get("budget")),
+
+      // Pets: Accessories
       accessoryName: pullString(formData.get("accessoryName")),
+
+      // Pets: Lost & Found
       reportType: pullString(formData.get("reportType")),
       lastSeenLocation: pullString(formData.get("lastSeenLocation")),
       lfDate: pullString(formData.get("date")),
+
+      // Pets: Services
       serviceType: pullString(formData.get("serviceType")),
       serviceProviderName: pullString(formData.get("serviceProviderName")),
       availability: pullString(formData.get("availability")),
+
+      // Services (new blocks)
       educationType: pullString(formData.get("educationType")),
       subject: pullString(formData.get("subject")),
       mode: pullString(formData.get("mode")),
@@ -248,7 +293,7 @@ export async function addPost(formData: FormData): Promise<
       urgency: pullString(formData.get("urgency")),
     };
 
-    // Map generic "price" into salePrice if salePrice absent
+    // Map generic "price" into salePrice if absent
     if (postData.salePrice === undefined) {
       const svcPrice = pullNumber(formData.get("price"));
       if (svcPrice !== undefined) postData.salePrice = svcPrice;
@@ -276,13 +321,5 @@ export async function addPost(formData: FormData): Promise<
   } catch (e: any) {
     console.error("addPost fatal error:", e);
     return { ok: false, error: e?.message || "Unknown server error in addPost" };
-  }
-}
-
-function safeParse<T = any>(val: string, fallback: T): T {
-  try {
-    return JSON.parse(val) as T;
-  } catch {
-    return fallback;
   }
 }

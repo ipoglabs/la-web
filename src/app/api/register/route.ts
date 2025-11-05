@@ -17,7 +17,6 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({} as any));
     const {
-      // Step 1 – General
       firstName,
       lastName,
       dateOfBirth,
@@ -25,31 +24,19 @@ export async function POST(req: Request) {
       nationality,
       residency,
       email,
-      // Step 3 – Phones
       primaryNumber,
       secondaryNumber1,
       secondaryNumber2,
-      // Step 4 – Profile
       username,
       password,
       role,
-      // optional
       subscribe,
     } = body ?? {};
 
     // Required checks
     if (
-      !firstName ||
-      !lastName ||
-      !dateOfBirth ||
-      !gender ||
-      !nationality ||
-      !residency ||
-      !email ||
-      !username ||
-      !password ||
-      !role ||
-      !primaryNumber
+      !firstName || !lastName || !dateOfBirth || !gender || !nationality ||
+      !residency || !email || !username || !password || !role || !primaryNumber
     ) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -59,24 +46,28 @@ export async function POST(req: Request) {
     const normalizedPhone = String(primaryNumber).trim();
     const normalizedUsername = String(username).trim();
 
-    // ✅ Safely read cookies (cache the store; use optional chaining + nullish coalescing)
+    // Read cookies
     const cookieStore = cookies();
     const regEmailCookie = cookieStore.get('reg_email_v')?.value ?? null;
     const regPhoneCookie = cookieStore.get('reg_phone_v')?.value ?? null;
 
-    // Email verified? (cookie OR in-memory store)
+    // Clear cookies from request context (preemptively)
+    cookieStore.delete('reg_email_v');
+    cookieStore.delete('reg_phone_v');
+
+    // Email verified?
     const emailRec = otpStore[normalizedEmail];
     const emailIsVerified =
-      (emailRec && emailRec.verified === true) || regEmailCookie === normalizedEmail;
+      (emailRec?.verified === true) || regEmailCookie === normalizedEmail;
 
     if (!emailIsVerified) {
       return NextResponse.json({ error: 'Email not verified' }, { status: 400 });
     }
 
-    // Phone verified? (cookie OR in-memory store)
+    // Phone verified?
     const phoneRec = otpPhoneStore?.[normalizedPhone];
     const phoneIsVerified =
-      (phoneRec && phoneRec.verified === true) || regPhoneCookie === normalizedPhone;
+      (phoneRec?.verified === true) || regPhoneCookie === normalizedPhone;
 
     if (!phoneIsVerified) {
       return NextResponse.json({ error: 'Phone not verified' }, { status: 400 });
@@ -86,7 +77,7 @@ export async function POST(req: Request) {
     const usernameExists = await User.findOne({ username: normalizedUsername }).select('_id').lean();
     if (usernameExists) {
       return NextResponse.json(
-        { error: 'Sorry, that username is already taken please try some other name', code: 'USERNAME_TAKEN' },
+        { error: 'Sorry, that username is already taken. Please try another.', code: 'USERNAME_TAKEN' },
         { status: 400 }
       );
     }
@@ -94,7 +85,7 @@ export async function POST(req: Request) {
     const emailExists = await User.findOne({ email: normalizedEmail }).select('_id').lean();
     if (emailExists) {
       return NextResponse.json(
-        { error: 'This email is already registered. Sign in or choose “Forgot password”.', code: 'EMAIL_TAKEN' },
+        { error: 'This email is already registered. Sign in or use “Forgot password”.', code: 'EMAIL_TAKEN' },
         { status: 400 }
       );
     }
@@ -107,9 +98,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash + create user
+    // Hash password
     const hashedPassword = await bcrypt.hash(String(password), 12);
 
+    // Create user
     const newUser = new User({
       username: normalizedUsername,
       password: hashedPassword,
@@ -132,6 +124,7 @@ export async function POST(req: Request) {
 
     await newUser.save();
 
+    // Create JWT
     const token = jwt.sign(
       {
         userId: String(newUser._id),
@@ -143,6 +136,7 @@ export async function POST(req: Request) {
       { expiresIn: '7d' }
     );
 
+    // Prepare response
     const res = NextResponse.json(
       {
         success: true,
@@ -158,13 +152,13 @@ export async function POST(req: Request) {
       { status: 201 }
     );
 
-    // Clear cookies safely
-    res.cookies.set('reg_email_v', '', { maxAge: 0, path: '/' });
-    res.cookies.set('reg_phone_v', '', { maxAge: 0, path: '/' });
+    // Clear cookies in response
+    res.cookies.delete('reg_email_v');
+    res.cookies.delete('reg_phone_v');
 
-    // Clear in-memory OTP stores (optional)
-    if (otpStore[normalizedEmail]) delete otpStore[normalizedEmail];
-    if (otpPhoneStore && otpPhoneStore[normalizedPhone]) delete otpPhoneStore[normalizedPhone];
+    // Clear in-memory OTP stores
+    delete otpStore[normalizedEmail];
+    delete otpPhoneStore?.[normalizedPhone];
 
     return res;
   } catch (e) {
