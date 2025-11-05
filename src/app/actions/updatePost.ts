@@ -1,101 +1,160 @@
-// src/app/actions/addPost.ts
+// src/app/actions/updatePost.ts
 "use server";
 
-import connectDB from "../../config/database";
-import Post from "../../models/post";
-import cloudinary from "@/config/cloudinary";
 import { cookies } from "next/headers";
+import mongoose, { Types } from "mongoose";
+import connectDB from "@/config/database";
+import Post from "@/models/post";
+import cloudinary from "@/config/cloudinary";
 import { verifyToken } from "@/lib/auth";
-import mongoose from "mongoose";
 
 type LocationData = { address?: string; lat?: number; lng?: number };
 
-export async function addPost(formData: FormData): Promise<
-  | { ok: true; id: string }
-  | { ok: false; error: string }
-> {
+type DecodedJwt =
+  | {
+      id?: unknown;
+      email?: unknown;
+      user?: { email?: unknown };
+      sub?: unknown;
+    }
+  | Record<string, unknown>
+  | null;
+
+function safeParse<T = any>(val: string, fallback: T): T {
   try {
+    return JSON.parse(val) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+const pullString = (v: FormDataEntryValue | null | undefined) => {
+  const s = (v as string | null) ?? "";
+  const t = s?.trim?.() ?? s;
+  return t || undefined;
+};
+const pullNumber = (v: FormDataEntryValue | null | undefined) => {
+  const s = pullString(v);
+  if (!s) return undefined;
+  const n = Number(s);
+  return Number.isNaN(n) ? undefined : n;
+};
+const pullArray = (v: FormDataEntryValue | null | undefined) => {
+  const s = pullString(v);
+  if (!s) return [];
+  const parsed = safeParse<any>(s, []);
+  if (Array.isArray(parsed)) return parsed;
+  return String(s)
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+};
+
+/** remove undefined keys recursively so we don't overwrite the document with empties */
+function stripUndef(obj: Record<string, any>) {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    if (Array.isArray(v)) out[k] = v;
+    else if (v && typeof v === "object" && !(v instanceof Date)) out[k] = stripUndef(v as any);
+    else out[k] = v;
+  }
+  return out;
+}
+
+/** Safely derive user id (as ObjectId) from a decoded JWT */
+function getJwtObjectId(decoded: DecodedJwt): Types.ObjectId | undefined {
+  const maybeId =
+    (decoded && typeof (decoded as any).id === "string" && (decoded as any).id) || undefined;
+  if (!maybeId) return undefined;
+  return Types.ObjectId.isValid(maybeId) ? new Types.ObjectId(maybeId) : undefined;
+}
+
+/** Safely derive user email from a decoded JWT */
+function getJwtEmail(decoded: DecodedJwt): string | undefined {
+  if (!decoded || typeof decoded !== "object") return undefined;
+
+  const direct = (decoded as any).email;
+  if (typeof direct === "string" && direct.includes("@")) return direct;
+
+  const nested = (decoded as any).user?.email;
+  if (typeof nested === "string" && nested.includes("@")) return nested;
+
+  const sub = (decoded as any).sub;
+  if (typeof sub === "string" && sub.includes("@")) return sub;
+
+  return undefined;
+}
+
+export async function updatePost(
+  postId: string,
+  formData: FormData
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  try {
+    // ----- Input id validation -----
+    if (!postId) return { ok: false, error: "Missing post id" };
+    if (!Types.ObjectId.isValid(postId)) {
+      return { ok: false, error: "Invalid post id" };
+    }
+
     await connectDB();
 
-    // --- Read identity from cookie (token) ---
+    // ----- AuthZ from cookie -----
     const cookieStore = cookies();
-    let raw = cookieStore.get("token")?.value;
+    const tokenCookie = cookieStore.get("token"); // may be undefined
+    let raw = tokenCookie?.value;
     if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length);
 
-    const decoded = raw ? verifyToken(raw) : null;
-    const ownerId =
-      decoded?.id && mongoose.Types.ObjectId.isValid(decoded.id)
-        ? new mongoose.Types.ObjectId(decoded.id)
-        : undefined;
-    const ownerEmail: string | undefined =
-      (decoded as any)?.email ||
-      (decoded as any)?.user?.email ||
-      (typeof (decoded as any)?.sub === "string" && (decoded as any).sub.includes("@")
-        ? (decoded as any).sub
-        : undefined);
+    const decoded = (raw ? verifyToken(raw) : null) as DecodedJwt;
+    const ownerObjectId = getJwtObjectId(decoded);
+    const ownerEmailFromJwt = getJwtEmail(decoded);
 
-    // --- Core fields ---
+    // Only allow editing your own post
+    const filter: Record<string, any> = { _id: new Types.ObjectId(postId) };
+    if (ownerObjectId) filter.ownerId = ownerObjectId;
+
+    // Fetch current doc so we can merge images & keep identity
+    const current = await Post.findOne(filter).lean();
+    if (!current) {
+      return { ok: false, error: "Not found or not authorized to edit this post" };
+    }
+
+    // ----- Core fields -----
     const name =
-      ((formData.get("name") as string) ?? "").trim() ||
-      ((formData.get("jobTitle") as string) ?? "").trim() ||
-      ((formData.get("projectTitle") as string) ?? "").trim();
+      pullString(formData.get("name")) ||
+      pullString(formData.get("jobTitle")) ||
+      pullString(formData.get("projectTitle"));
 
-    const description = ((formData.get("description") as string) ?? "").trim();
-    const category = ((formData.get("category") as string) ?? "").trim();
-    const subcategory = ((formData.get("subcategory") as string) ?? "").trim();
+    const description = pullString(formData.get("description"));
+    const category = pullString(formData.get("category"));
+    const subcategory = pullString(formData.get("subcategory"));
 
     const locationRaw = (formData.get("locationData") as string) || "";
     const location: LocationData = locationRaw ? safeParse<LocationData>(locationRaw, {}) : {};
 
-    // Helpers
-    const pullString = (v: FormDataEntryValue | null | undefined) => {
-      const s = (v as string | null) ?? "";
-      const t = s?.trim?.() ?? s;
-      return t || undefined;
-    };
-    const pullNumber = (v: FormDataEntryValue | null | undefined) => {
-      const s = pullString(v);
-      if (!s) return undefined;
-      const n = Number(s);
-      return Number.isNaN(n) ? undefined : n;
-    };
-    const pullArray = (v: FormDataEntryValue | null | undefined) => {
-      const s = pullString(v);
-      if (!s) return [];
-      const parsed = safeParse<any>(s, []);
-      if (Array.isArray(parsed)) return parsed;
-      return String(s)
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-    };
-
-    // Seller info — default to token email when missing
+    // Seller info (accept multiple shapes) — we will also force email from JWT if absent
     const seller_info = {
       name:
         pullString(formData.get("seller_info.name")) ||
         pullString(formData.get("sellerInfo.name")) ||
-        pullString(formData.get("contactName")) ||
-        "",
+        pullString(formData.get("contactName")),
       email:
         pullString(formData.get("seller_info.email")) ||
         pullString(formData.get("sellerInfo.email")) ||
         pullString(formData.get("contactEmail")) ||
         pullString(formData.get("email")) ||
-        ownerEmail || // fallback from JWT
-        "",
+        ownerEmailFromJwt, // fallback to JWT email
       phone:
         pullString(formData.get("seller_info.phone")) ||
         pullString(formData.get("sellerInfo.phone")) ||
         pullString(formData.get("contactPhone")) ||
-        pullString(formData.get("contactNumber")) ||
-        "",
+        pullString(formData.get("contactNumber")),
     };
 
-    // --- Images (URLs + Files) ---
+    // ----- Images: preserve existing URLs + add new uploads -----
     const imageUrlEntries = (formData.getAll("imageUrl") as string[]) || [];
     const imageFiles = (formData.getAll("images") as File[]) || [];
-    const images: string[] = [...imageUrlEntries];
+    const mergedImages: string[] = [...imageUrlEntries];
 
     for (const file of imageFiles) {
       if (!(file instanceof File) || !file.size || !file.type?.startsWith("image/")) continue;
@@ -106,38 +165,49 @@ export async function addPost(formData: FormData): Promise<
           `data:${file.type};base64,${base64}`,
           { folder: "posts" }
         );
-        images.push(result.secure_url);
+        mergedImages.push(result.secure_url);
       } catch (e) {
         console.error("Cloudinary upload failed:", e);
       }
     }
 
-    // Reusable arrays
-    const facilities = pullArray(formData.get("facilities"));
-    const amenities = pullArray(formData.get("amenities"));
+    // If the client didn't send any `imageUrl`, keep existing ones
+    const images =
+      imageUrlEntries.length === 0 && imageFiles.length === 0
+        ? current.images ?? []
+        : mergedImages;
 
-    // ===== Build postData =====
-    const postData: Record<string, any> = {
-      ownerId,                    // <-- attach ownerId
-      category,
-      subcategory,
+    // ----- Build update object -----
+    const updateRaw: Record<string, any> = {
+      // core
       name,
       description,
+      category,
+      subcategory,
       location,
-      seller_info,
       images,
 
-      // ... keep the rest of your fields exactly as before ...
+      // seller_info: ensure we never drop email/identity
+      seller_info: {
+        name: seller_info.name ?? current.seller_info?.name,
+        email: seller_info.email ?? current.seller_info?.email,
+        phone: seller_info.phone ?? current.seller_info?.phone,
+      },
+
+      // ALWAYS (re)attach identity from JWT so doc is consistently owned
+      ...(ownerObjectId ? { ownerId: ownerObjectId } : {}),
+
+      // ===== Property =====
       propertyType: pullString(formData.get("propertyType")),
       beds: pullNumber(formData.get("beds")),
       baths: pullNumber(formData.get("baths")),
       rentPrice: pullNumber(formData.get("rentPrice")),
       salePrice: pullNumber(formData.get("salePrice")),
       deposit: pullNumber(formData.get("deposit")),
+      facilities: pullArray(formData.get("facilities")),
+      amenities: pullArray(formData.get("amenities")),
       occupancy: pullString(formData.get("occupancy")),
       gender_pref: pullString(formData.get("gender_pref")),
-      facilities,
-      amenities,
       builtup_area: pullNumber(formData.get("builtup_area")),
       carpet_area: pullNumber(formData.get("carpet_area")),
       floor: pullNumber(formData.get("floor")),
@@ -164,6 +234,12 @@ export async function addPost(formData: FormData): Promise<
       negotiable: pullString(formData.get("negotiable")),
       ownership: pullString(formData.get("ownership")),
       age: pullString(formData.get("age")),
+      minBudget: pullNumber(formData.get("minBudget")),
+      maxBudget: pullNumber(formData.get("maxBudget")),
+      minArea: pullNumber(formData.get("minArea")),
+      preferred_locations: pullArray(formData.get("preferred_locations")),
+
+      // ===== Jobs =====
       company: pullString(formData.get("company")),
       clientName: pullString(formData.get("clientName")),
       jobType: pullString(formData.get("jobType")),
@@ -187,10 +263,8 @@ export async function addPost(formData: FormData): Promise<
       benefits: pullArray(formData.get("benefits")),
       shifts: pullArray(formData.get("shifts")),
       candidateName: pullString(formData.get("candidateName")),
-      preferred_locations: pullArray(formData.get("preferred_locations")),
-      minBudget: pullNumber(formData.get("minBudget")),
-      maxBudget: pullNumber(formData.get("maxBudget")),
-      minArea: pullNumber(formData.get("minArea")),
+
+      // ===== Vehicles =====
       make: pullString(formData.get("make")),
       model: pullString(formData.get("model")),
       year: pullNumber(formData.get("year")),
@@ -207,9 +281,8 @@ export async function addPost(formData: FormData): Promise<
       features: pullArray(formData.get("features")),
       engineCapacity: pullNumber(formData.get("engineCapacity")),
       seatingCapacity: pullNumber(formData.get("seatingCapacity")),
-      partsCategory: pullString(formData.get("partsCategory")),
-      brand: pullString(formData.get("brand")),
-      compatibility: pullArray(formData.get("compatibility")),
+
+      // ===== Pets =====
       petName: pullString(formData.get("petName")),
       petType: pullString(formData.get("petType")),
       breed: pullString(formData.get("breed")),
@@ -224,16 +297,20 @@ export async function addPost(formData: FormData): Promise<
       sizePreference: pullString(formData.get("sizePreference")),
       budget: pullNumber(formData.get("budget")),
       accessoryName: pullString(formData.get("accessoryName")),
+      partsCategory: pullString(formData.get("partsCategory")),
       reportType: pullString(formData.get("reportType")),
       lastSeenLocation: pullString(formData.get("lastSeenLocation")),
       lfDate: pullString(formData.get("date")),
       serviceType: pullString(formData.get("serviceType")),
       serviceProviderName: pullString(formData.get("serviceProviderName")),
       availability: pullString(formData.get("availability")),
+
+      // ===== Services blocks =====
       educationType: pullString(formData.get("educationType")),
       subject: pullString(formData.get("subject")),
       mode: pullString(formData.get("mode")),
       qualification: pullString(formData.get("qualification")),
+      price: pullNumber(formData.get("price")),
       cuisineType: pullString(formData.get("cuisineType")),
       dietaryOptions: pullArray(formData.get("dietaryOptions")),
       deliveryAvailable: pullString(formData.get("deliveryAvailable")),
@@ -248,41 +325,48 @@ export async function addPost(formData: FormData): Promise<
       urgency: pullString(formData.get("urgency")),
     };
 
-    // Map generic "price" into salePrice if salePrice absent
-    if (postData.salePrice === undefined) {
+    // Map service price → salePrice if provided that way
+    if (updateRaw.salePrice === undefined) {
       const svcPrice = pullNumber(formData.get("price"));
-      if (svcPrice !== undefined) postData.salePrice = svcPrice;
+      if (svcPrice !== undefined) updateRaw.salePrice = svcPrice;
     }
 
-    // --- Required checks ---
+    // Required checks based on effective values
+    const effective = {
+      name: updateRaw.name ?? current.name,
+      description: updateRaw.description ?? current.description,
+      category: updateRaw.category ?? current.category,
+      subcategory: updateRaw.subcategory ?? current.subcategory,
+      seller_info: {
+        name: updateRaw.seller_info?.name ?? current.seller_info?.name,
+        email: updateRaw.seller_info?.email ?? current.seller_info?.email,
+        phone: updateRaw.seller_info?.phone ?? current.seller_info?.phone,
+      },
+    };
+
     const errors: string[] = [];
-    if (!postData.name) errors.push("Title is required");
-    if (!postData.description) errors.push("Description is required");
-    if (!postData.category) errors.push("Category is required");
-    if (!postData.subcategory) errors.push("Subcategory is required");
-    if (!postData.seller_info?.name) errors.push("Contact name is required");
-    if (!postData.seller_info?.email) errors.push("Contact email is required");
-    if (!postData.seller_info?.phone) errors.push("Contact phone is required");
+    if (!effective.name) errors.push("Title is required");
+    if (!effective.description) errors.push("Description is required");
+    if (!effective.category) errors.push("Category is required");
+    if (!effective.subcategory) errors.push("Subcategory is required");
+    if (!effective.seller_info?.name) errors.push("Contact name is required");
+    if (!effective.seller_info?.email) errors.push("Contact email is required");
+    if (!effective.seller_info?.phone) errors.push("Contact phone is required");
+    if (errors.length) return { ok: false, error: errors.join(" • ") };
 
-    if (errors.length) {
-      console.error("Validation errors:", errors, { postData });
-      return { ok: false, error: errors.join(" • ") };
-    }
+    // Only $set provided values
+    const $set = stripUndef(updateRaw);
 
-    const newPost = new Post(postData);
-    await newPost.save();
+    const doc = await Post.findOneAndUpdate(
+      filter,
+      { $set },
+      { new: true, runValidators: true }
+    ).lean();
 
-    return { ok: true, id: String(newPost._id) };
+    if (!doc) return { ok: false, error: "Not found or not authorized to edit this post" };
+    return { ok: true, id: String(doc._id) };
   } catch (e: any) {
-    console.error("addPost fatal error:", e);
-    return { ok: false, error: e?.message || "Unknown server error in addPost" };
-  }
-}
-
-function safeParse<T = any>(val: string, fallback: T): T {
-  try {
-    return JSON.parse(val) as T;
-  } catch {
-    return fallback;
+    console.error("updatePost fatal error:", e);
+    return { ok: false, error: e?.message || "Unknown server error in updatePost" };
   }
 }

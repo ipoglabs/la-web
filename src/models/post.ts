@@ -14,6 +14,15 @@ export interface IPost {
   category: string;
   subcategory: string;
 
+  /** NEW: owner link (for "My Ads") */
+  ownerId?: mongoose.Types.ObjectId;
+
+  /** NEW: lifecycle fields */
+  status?: "pending" | "active" | "off" | "expired" | "deleted";
+  expiresAt?: Date;
+  lastBumpedAt?: Date;
+  deletedAt?: Date;
+
   location?: {
     address?: string;
     lat?: number;
@@ -114,6 +123,8 @@ export interface IPost {
   insuranceValidTill?: string;
   serviceHistory?: string;
   features?: string[];
+  engineCapacity?: number;
+  seatingCapacity?: number;
 
   /** ===== Pets ===== */
   // Adoption
@@ -145,38 +156,32 @@ export interface IPost {
 
   /** ===== Services (new blocks) ===== */
   // Education
-  educationType?: string;   // tutoring | coaching | online | school | language | professional
+  educationType?: string;
   subject?: string;
-  mode?: string;            // online | offline | both
+  mode?: string;
   qualification?: string;
-  price?: number;           // generalized numeric price/fee
+  price?: number;
 
   // Food
   cuisineType?: string;
-  dietaryOptions?: string[];    // Vegetarian, Vegan, Gluten-Free…
-  deliveryAvailable?: string;   // yes | no
+  dietaryOptions?: string[];
+  deliveryAvailable?: string;
 
   // Health
   providerName?: string;
-  consultationMode?: string;    // online | in-person | both
-
-  // Home
-  // reuse: serviceType | experience | availability | price
-
-  // Other
-  // reuse: serviceType | availability | price
+  consultationMode?: string;
 
   // Technology
-  rateType?: string;            // hourly | daily | monthly | project | negotiable
+  rateType?: string;
 
   // Travel
   destination?: string;
   packageDetails?: string;
   agencyName?: string;
-  durationText?: string;        // keep free text like "5D/4N" if you prefer
+  durationText?: string;
 
   // Tutoring
-  level?: string;               // primary | secondary | higher-secondary | college | competitive
+  level?: string;
 
   // Service → Wanted
   urgency?: string;
@@ -196,9 +201,21 @@ const PostSchema = new Schema<IPost>(
     category: { type: String, required: true, index: true },
     subcategory: { type: String, required: true, index: true },
 
-    // location is now optional to match forms that omit it
+    /** NEW: owner & lifecycle */
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    status: {
+      type: String,
+      enum: ["pending", "active", "off", "expired", "deleted"],
+      default: "pending",
+      index: true,
+    },
+    expiresAt: { type: Date, index: true },
+    lastBumpedAt: { type: Date, index: true },
+    deletedAt: { type: Date, index: true },
+
+    // location is optional to match forms that omit it
     location: {
-      address: { type: String }, // removed `required: true`
+      address: { type: String },
       lat: Number,
       lng: Number,
     },
@@ -206,7 +223,7 @@ const PostSchema = new Schema<IPost>(
     seller_info: {
       name: { type: String, required: true },
       phone: { type: String, required: true },
-      email: { type: String, required: true },
+      email: { type: String, required: true, lowercase: true, trim: true, index: true },
     },
 
     /** ===== Property ===== */
@@ -301,9 +318,10 @@ const PostSchema = new Schema<IPost>(
     insuranceValidTill: String,
     serviceHistory: String,
     features: { type: [String], default: [] },
+    engineCapacity: Number,
+    seatingCapacity: Number,
 
     /** ===== Pets ===== */
-    // Adoption
     petName: String,
     petType: String,
     breed: String,
@@ -311,21 +329,17 @@ const PostSchema = new Schema<IPost>(
     gender: String,
     vaccination: String,
     size: String,
-    // Wanted
     wantedPetType: String,
     breedPreference: String,
     agePreference: String,
     genderPreference: String,
     sizePreference: String,
     budget: Number,
-    // Accessories
     accessoryName: String,
     partsCategory: String,
-    // Lost & Found
     reportType: String,
     lastSeenLocation: String,
     lfDate: String,
-    // Services
     serviceType: String,
     serviceProviderName: String,
     availability: String,
@@ -364,6 +378,10 @@ const PostSchema = new Schema<IPost>(
   },
   { timestamps: true }
 );
+
+/** Helpful compound indexes for dashboards & cleanups */
+PostSchema.index({ ownerId: 1, updatedAt: -1 });
+PostSchema.index({ status: 1, updatedAt: -1 });
 
 const Post: Model<IPost> =
   (models.Post as Model<IPost>) || model<IPost>("Post", PostSchema);

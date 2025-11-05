@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { usePostFormStore } from '../store/postFormStore';
-import { categoryIN } from '@/static/data'; // ✅ adjust if path is different
+import { categoryIN } from '@/static/data';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,7 +16,11 @@ import {
 
 export default function SelectCategoryPage() {
   const router = useRouter();
-  const setField = usePostFormStore((s) => s.setField);
+  const params = useSearchParams();
+
+  const reset     = usePostFormStore((s) => s.reset);
+  const setField  = usePostFormStore((s) => s.setField);
+  const setBulk   = usePostFormStore((s: any) => s.setBulk);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
@@ -24,8 +28,23 @@ export default function SelectCategoryPage() {
   const categories = categoryIN.data;
   const currentCategory = categories.find((cat) => cat.id === selectedCategoryId);
 
+  // --- Always start a brand-new post here ---
+  useEffect(() => {
+    // If you only want to reset when explicitly requested, uncomment:
+    // if (params.get('fresh') === '1') reset();
+    reset();
+  }, [reset /*, params */]);
+
   const handleContinue = () => {
     if (currentCategory && selectedSubCategory) {
+      // ensure fresh create (no leaked edit flags)
+      if (typeof setBulk === 'function') {
+        setBulk({ editMode: false, postId: undefined });
+      } else {
+        setField('editMode', false);
+        setField('postId', undefined as any);
+      }
+
       setField('category', currentCategory.name);
       setField('subcategory', selectedSubCategory);
       router.push('/post/details');
@@ -72,7 +91,8 @@ export default function SelectCategoryPage() {
                   className="w-full justify-between text-left"
                   disabled={!selectedCategoryId}
                 >
-                  {selectedSubCategory || (!selectedCategoryId ? 'Select category first' : 'Choose Sub-category')}
+                  {selectedSubCategory ||
+                    (!selectedCategoryId ? 'Select category first' : 'Choose Sub-category')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-full max-h-64 overflow-y-auto">

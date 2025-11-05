@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import AppHeader from "@/app/components/AppHeader/appHeader";
 import AppFooter from "@/app/components/AppFooter/appFooter";
 import { addPost } from "@/app/actions/addPost";
+import { updatePost } from "@/app/actions/updatePost"; // <-- import updater
 import { buildPostFormData } from "@/lib/buildPostFormData";
 
 function fmtCurrency(v: unknown) {
@@ -95,6 +96,9 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
 
+  const isEdit = !!data.editMode && !!data.postId;   // <-- edit mode check
+  const postId = data.postId as string | undefined;
+
   const has = (k: string) =>
     data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== "";
 
@@ -111,7 +115,7 @@ export default function PreviewPage() {
     </p>
   );
 
-  // Location is now OPTIONAL to avoid blocking forms that don't collect it
+  // Location is OPTIONAL
   const missing = useMemo(() => {
     const m: string[] = [];
     if (!data.name) m.push("Title");
@@ -138,9 +142,21 @@ export default function PreviewPage() {
       setClientError(`Please fill: ${missing.join(", ")}`);
       return;
     }
+
     setLoading(true);
     const fd = buildPostFormData(data);
-    const res = await addPost(fd);
+
+    // IMPORTANT: keep existing image URLs and attach new File objects in buildPostFormData
+    // e.g. inside buildPostFormData:
+    //   for (const img of state.images) {
+    //     if (img instanceof File) form.append("images", img);
+    //     else form.append("imageUrl", img);
+    //   }
+
+    const res = isEdit && postId
+      ? await updatePost(postId, fd)   // <-- update existing
+      : await addPost(fd);             // <-- create new
+
     setLoading(false);
 
     if (!res || (res as any).ok === false) {
@@ -150,6 +166,7 @@ export default function PreviewPage() {
       setClientError(msg);
       return;
     }
+
     router.push(`/post-details/${(res as any).id}`);
   };
 
@@ -177,7 +194,10 @@ export default function PreviewPage() {
   const isPetServices = isPets && sub.includes("service");
 
   const isServices =
-    cat === "services" || ["education", "food", "health", "home", "other", "technology", "travel", "tutoring", "wanted"].some(s => sub.includes(s));
+    cat === "services" ||
+    ["education", "food", "health", "home", "other", "technology", "travel", "tutoring", "wanted"].some(
+      (s) => sub.includes(s)
+    );
 
   const isEdu = isServices && sub.includes("education");
   const isFood = isServices && sub.includes("food");
@@ -193,7 +213,9 @@ export default function PreviewPage() {
     <>
       <AppHeader />
       <main className="max-w-2xl mx-auto p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Preview Your Post</h2>
+        <h2 className="text-2xl font-bold">
+          {isEdit ? "Preview Your Changes" : "Preview Your Post"}
+        </h2>
 
         {clientError && (
           <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded">
@@ -406,8 +428,7 @@ export default function PreviewPage() {
             </>
           )}
 
-          {/* ===== Vehicles / Property / Jobs blocks remain in your existing codebase.
-               Keep them below if you already had them, or integrate them similarly. ===== */}
+          {/* ===== Add/keep other domain blocks (vehicles/property/jobs) as in your codebase ===== */}
         </section>
 
         {/* Contact Details */}
@@ -460,7 +481,7 @@ export default function PreviewPage() {
         </section>
 
         <Button onClick={handleSubmit} disabled={loading} className="w-full">
-          {loading ? "Submitting..." : "Submit Post"}
+          {loading ? "Submitting..." : isEdit ? "Save Changes" : "Submit Post"}
         </Button>
       </main>
       <AppFooter />
