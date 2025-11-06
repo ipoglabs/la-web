@@ -11,6 +11,8 @@ import { EyeIcon, EyeOffIcon, CheckCircle2, XCircle } from 'lucide-react';
 
 import { useRegisterStore } from '@/store/registerStore';
 import { profileSchema } from '@/lib/validators';
+import { useAuthStore } from '@/store/authStore';
+
 
 /* -------------------------- Username helpers -------------------------- */
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
@@ -67,6 +69,7 @@ export default function ProfileSetupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // UI-only fields
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -78,6 +81,9 @@ export default function ProfileSetupPage() {
   const [unameMsg, setUnameMsg] = useState<string>('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // for scrolling/focusing first error
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   // Derived password bits
   const pwScore = useMemo(() => scorePassword(profile.password), [profile.password]);
@@ -142,7 +148,6 @@ export default function ProfileSetupPage() {
         }
       } catch {
         // ignore aborted; show soft error otherwise
-        if (unameStatus !== 'checking') return;
         setUnameStatus('invalid');
         setUnameMsg('Unable to check username right now.');
       }
@@ -155,100 +160,150 @@ export default function ProfileSetupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.username]);
 
+  const scrollToFirstError = (map: Record<string, string>) => {
+    const order = [
+      'username',
+      'password',
+      'confirmPassword',
+      'role',
+      'consent',
+    ];
+    const first = order.find((k) => map[k]);
+    if (!first) return;
+    const el =
+      formRef.current?.querySelector(`[name="${first}"]`) ||
+      formRef.current?.querySelector(`[data-field="${first}"]`);
+    (el as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    (el as HTMLElement | null)?.focus?.();
+  };
+
   const submit = async () => {
-    // base zod (username, password complexity, role)
-    const parsed = profileSchema.safeParse(profile);
+  // Block while username still checking
+  if (unameStatus === 'checking') {
+    toast.error('Please wait while we finish checking your username.');
+    return;
+  }
 
-    const map: Record<string, string> = {};
-    if (!parsed.success) {
-      parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
-    }
+  // base zod (username, password complexity, role) with trimming
+  const trimmed = {
+    ...profile,
+    username: (profile.username || '').trim(),
+    password: (profile.password || '').trim(),
+  };
+  const parsed = profileSchema.safeParse(trimmed);
 
-    // extra username rules
-    const uname = (profile.username || '').trim();
-    if (!uname) {
-      map.username = 'Please choose a username.';
-    } else if (!USERNAME_RE.test(uname)) {
-      map.username = 'Usernames can only use letters, numbers and underscores.';
-    } else if (hasBlockedWord(uname)) {
-      map.username = 'That username includes words we can’t allow — try another.';
-    } else if (unameStatus === 'taken') {
-      map.username = 'Sorry, that username is already taken please try some other name';
-    }
+  const map: Record<string, string> = {};
+  if (!parsed.success) {
+    parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
+  }
 
-    // password checks
-    if (pwTooCommon || pwScore <= 1) {
-      map.password = 'Try a longer password or add a symbol for better protection.';
-    }
-    if (pwMismatch) {
-      map.confirmPassword = 'Passwords don’t match — please check both fields.';
-    }
+  // extra username rules
+  const uname = trimmed.username;
+  if (!uname) {
+    map.username = 'Please choose a username.';
+  } else if (!USERNAME_RE.test(uname)) {
+    map.username = 'Usernames can only use letters, numbers and underscores.';
+  } else if (hasBlockedWord(uname)) {
+    map.username = 'That username includes words we can’t allow — try another.';
+  } else if (unameStatus === 'taken') {
+    map.username = 'Sorry, that username is already taken please try some other name';
+  } else if (unameStatus === 'invalid' || unameStatus === 'blocked') {
+    map.username = unameMsg || 'Invalid username.';
+  }
 
-    // role required
-    if (!profile.role) {
-      map.role = 'Tell us how you’ll use Lokalads so we can tailor your experience.';
-    }
+  // password checks
+  if (pwTooCommon || pwScore <= 1) {
+    map.password = 'Try a longer password or add a symbol for better protection.';
+  }
+  if (pwMismatch) {
+    map.confirmPassword = 'Passwords don’t match — please check both fields.';
+  }
 
-    // consent required
-    if (!consent) {
-      map.consent = 'We need your agreement to our Terms & Privacy Policy to create your account.';
-    }
+  // role required
+  if (!trimmed.role) {
+    map.role = 'Tell us how you’ll use Lokalads so we can tailor your experience.';
+  }
 
-    if (Object.keys(map).length > 0) {
-      setErrors(map);
-      toast.error('Please fix the highlighted fields');
+  // consent required
+  if (!consent) {
+    map.consent = 'We need your agreement to our Terms & Privacy Policy to create your account.';
+  }
+
+  if (Object.keys(map).length > 0) {
+    setErrors(map);
+    scrollToFirstError(map);
+    toast.error('Please fix the highlighted fields');
+    return;
+  }
+
+  if (!emailVerified) return toast.error('Please verify your email first');
+  if (!phoneVerified) return toast.error('Please verify your phone first');
+
+  setErrors({});
+  setSubmitting(true);
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // Step 1 — General
+        firstName: general.firstName,
+        lastName: general.lastName,
+        dateOfBirth: general.dateOfBirth,
+        gender: general.gender,
+        residency: general.residency || undefined,
+        nationality: general.nationality || undefined, // optional
+        email: general.email,
+        country: general.country || undefined,          // optional
+        state: general.state || undefined,              // optional
+
+        // Step 3 — Phones
+        primaryNumber: phones.primaryNumber,
+        secondaryNumber1: phones.secondaryNumber1 || undefined,
+        secondaryNumber2: phones.secondaryNumber2 || undefined,
+
+        // Step 4 — Profile
+        username: trimmed.username,
+        password: trimmed.password,
+        role: trimmed.role,
+
+        // Optional marketing flag
+        subscribe,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data?.error || 'Registration failed';
+      toast.error(msg);
       return;
     }
 
-    setErrors({});
+    toast.success('Registered successfully');
 
-    // Ensure earlier steps are verified
-    if (!emailVerified) return toast.error('Please verify your email first');
-    if (!phoneVerified) return toast.error('Please verify your phone first');
+    // ✅ AUTO-LOGIN: write to auth store (so the app treats user as logged in)
+    if (data.token && data.user) {
+      // keep localStorage if your backend expects it elsewhere
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
 
-    try {
-      const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // Step 1 — General
-          firstName: general.firstName,
-          lastName: general.lastName,
-          dateOfBirth: general.dateOfBirth,
-          gender: general.gender,
-          nationality: general.nationality,
-          residency: general.residency,
-          email: general.email,
-          // Step 3 — Phones
-          primaryNumber: phones.primaryNumber,
-          secondaryNumber1: phones.secondaryNumber1,
-          secondaryNumber2: phones.secondaryNumber2,
-          // Step 4 — Profile
-          username: profile.username,
-          password: profile.password,
-          role: profile.role,
-          // Optional marketing flag (store later if you want)
-          subscribe,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        toast.success('Registered successfully');
-        if (data.token && data.user) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-        reset();
-        router.push('/');
-      } else {
-        // map username/email/phone uniqueness messages, if server sends them
-        toast.error(data.error || 'Registration failed');
-      }
-    } catch {
-      toast.error('Something went wrong');
+      // global in-memory (persisted) auth — this is what removes the login page
+      useAuthStore.getState().setAuth(data.token, data.user);
     }
-  };
+
+    // optional: clear the multi-step register store so future tabs start clean
+    reset();
+
+    // Go straight to the app
+    router.push('/'); // or '/' if your home is gated by auth
+  } catch {
+    toast.error('Something went wrong');
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
@@ -260,11 +315,12 @@ export default function ProfileSetupPage() {
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6" ref={formRef}>
           {/* Username */}
-          <div>
+          <div data-field="username">
             <Label>Username</Label>
             <Input
+              name="username"
               placeholder="jane_doe"
               value={profile.username}
               onChange={(e) => updateProfile({ username: e.target.value })}
@@ -287,10 +343,11 @@ export default function ProfileSetupPage() {
 
           {/* Password + Confirm */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div data-field="password">
               <Label>Password</Label>
               <div className="relative">
                 <Input
+                  name="password"
                   type={showPwd ? 'text' : 'password'}
                   placeholder="Create a secure password"
                   value={profile.password}
@@ -333,10 +390,11 @@ export default function ProfileSetupPage() {
               )}
             </div>
 
-            <div>
+            <div data-field="confirmPassword">
               <Label>Confirm Password</Label>
               <div className="relative">
                 <Input
+                  name="confirmPassword"
                   type={showConfirmPwd ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -364,7 +422,7 @@ export default function ProfileSetupPage() {
           </div>
 
           {/* Role (radio cards) */}
-          <div>
+          <div data-field="role">
             <Label>Role</Label>
             <p className="text-xs text-muted-foreground mt-1">
               Choose how you’ll use Lokalads — roles customise your dashboard and features.
@@ -381,6 +439,7 @@ export default function ProfileSetupPage() {
                       active ? 'border-primary ring-2 ring-primary/30' : 'border-input hover:bg-muted/40'
                     }`}
                     aria-pressed={active}
+                    name="role"
                   >
                     <div className="font-medium">{r.label}</div>
                     <div className="text-xs text-muted-foreground mt-1">
@@ -397,13 +456,14 @@ export default function ProfileSetupPage() {
           </div>
 
           {/* Consent + marketing */}
-          <div className="space-y-2">
+          <div data-field="consent" className="space-y-2">
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="checkbox"
                 className="mt-1"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
+                name="consent"
               />
               <span>
                 I agree to the{' '}
@@ -424,6 +484,7 @@ export default function ProfileSetupPage() {
                 className="mt-1"
                 checked={subscribe}
                 onChange={(e) => setSubscribe(e.target.checked)}
+                name="subscribe"
               />
               <span>Subscribe to product updates &amp; occasional offers</span>
             </label>
@@ -438,8 +499,8 @@ export default function ProfileSetupPage() {
             >
               Back
             </Button>
-            <Button onClick={submit}>
-              Create Account
+            <Button onClick={submit} disabled={submitting || unameStatus === 'checking'}>
+              {submitting ? 'Creating…' : 'Create Account'}
             </Button>
           </div>
 

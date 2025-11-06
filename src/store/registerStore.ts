@@ -1,32 +1,36 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GeneralInfoForm, PhoneForm, ProfileForm } from '@/lib/validators';
 
 type RegisterState = {
-  // Step 1 – General Info
   general: GeneralInfoForm;
   updateGeneral: (data: Partial<GeneralInfoForm>) => void;
 
-  // Step 2 – Email
   emailVerified: boolean;
   setEmailVerified: (v: boolean) => void;
 
-  // Step 3 – Phone
   phones: PhoneForm;
   updatePhones: (data: Partial<PhoneForm>) => void;
   phoneVerified: boolean;
   setPhoneVerified: (v: boolean) => void;
 
-  // Step 4 – Profile
   profile: ProfileForm;
   updateProfile: (data: Partial<ProfileForm>) => void;
 
-  // Reset entire flow
   reset: () => void;
+
+  _metaLastUpdated: number | null;
+  _metaStorageType: 'session';
 };
+
+// One-time cleanup in the browser: remove any legacy localStorage copy
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('register-store');
+  } catch {}
+}
 
 export const useRegisterStore = create<RegisterState>()(
   persist(
@@ -35,11 +39,13 @@ export const useRegisterStore = create<RegisterState>()(
         firstName: '',
         lastName: '',
         dateOfBirth: '',
-        gender: '',                // 'male' | 'female' | 'prefer-not-to-say' | 'other'
-        residency: '',             // derived as `${state}, ${country}`
+        gender: '',
         email: '',
+        // ✅ Optional fields initialized to empty string
+        nationality: '',
         country: '',
         state: '',
+        residency: '',
       },
 
       phones: {
@@ -58,16 +64,25 @@ export const useRegisterStore = create<RegisterState>()(
       phoneVerified: false,
 
       updateGeneral: (data) =>
-        set((state) => ({ general: { ...state.general, ...data } })),
+        set((state) => ({
+          general: { ...state.general, ...data },
+          _metaLastUpdated: Date.now(),
+        })),
 
       updatePhones: (data) =>
-        set((state) => ({ phones: { ...state.phones, ...data } })),
+        set((state) => ({
+          phones: { ...state.phones, ...data },
+          _metaLastUpdated: Date.now(),
+        })),
 
       updateProfile: (data) =>
-        set((state) => ({ profile: { ...state.profile, ...data } })),
+        set((state) => ({
+          profile: { ...state.profile, ...data },
+          _metaLastUpdated: Date.now(),
+        })),
 
-      setEmailVerified: (v) => set({ emailVerified: v }),
-      setPhoneVerified: (v) => set({ phoneVerified: v }),
+      setEmailVerified: (v) => set({ emailVerified: v, _metaLastUpdated: Date.now() }),
+      setPhoneVerified: (v) => set({ phoneVerified: v, _metaLastUpdated: Date.now() }),
 
       reset: () =>
         set({
@@ -76,10 +91,11 @@ export const useRegisterStore = create<RegisterState>()(
             lastName: '',
             dateOfBirth: '',
             gender: '',
-            residency: '',
             email: '',
+            nationality: '',
             country: '',
             state: '',
+            residency: '',
           },
           phones: {
             primaryNumber: '',
@@ -93,17 +109,17 @@ export const useRegisterStore = create<RegisterState>()(
           },
           emailVerified: false,
           phoneVerified: false,
+          _metaLastUpdated: null,
+          _metaStorageType: 'session',
         }),
+
+      _metaLastUpdated: null,
+      _metaStorageType: 'session',
     }),
     {
       name: 'register-store',
-      partialize: (state) => ({
-        general: state.general,
-        phones: state.phones,
-        profile: state.profile,
-        emailVerified: state.emailVerified,
-        phoneVerified: state.phoneVerified,
-      }),
+      storage: createJSONStorage(() => sessionStorage),
+      version: 3, // 🔁 bump to avoid stale shapes in session
     }
   )
 );

@@ -1,201 +1,118 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { useRegisterStore } from '@/store/registerStore';
 import { generalInfoSchema } from '@/lib/validators';
 
-// JSON data
-import COUNTRIES_JSON from '@/data/countries.json';
-import STATES_JSON from '@/data/states.json';
+import { Form } from '@/components/shadcn/form';
+import { Input } from '@/components/shadcn/input';
+import { Button } from '@/components/shadcn/button';
+import { FormField } from '@/components/FormField';
+import { FormFieldWrapper } from '@/components/FormFieldWrapper';
+import { FormHelperText } from '@/components/FormHelperText';
+import { useMediaQuery } from '@/components/hooks/use-media-query';
+import { z } from 'zod';
 
-// shadcn/ui
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-
-// util (if you already have a cn util, import it instead)
-function cn(...xs: Array<string | false | null | undefined>) {
-  return xs.filter(Boolean).join(' ');
+/* ---------- utils ---------- */
+function pad(n: number) {
+  return String(n).padStart(2, '0');
 }
-
-const COUNTRIES = COUNTRIES_JSON as readonly string[];
-const STATES_BY_COUNTRY = STATES_JSON as Record<string, string[]>;
-
-function calcAge(dobISO?: string) {
-  if (!dobISO) return undefined;
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function fromISODate(s?: string) {
+  if (!s) return undefined;
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  return Number.isNaN(dt.getTime()) ? undefined : dt;
+}
+function calcAgeFromISO(dobISO?: string) {
+  if (!dobISO) return;
   const today = new Date();
-  const dob = new Date(dobISO);
+  const dob = fromISODate(dobISO);
+  if (!dob) return;
   let age = today.getFullYear() - dob.getFullYear();
   const m = today.getMonth() - dob.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
   return age;
 }
 
-/* ------------------------- Reusable SearchableSelect ------------------------- */
-type SearchableSelectProps = {
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  placeholder?: string;
-  disabled?: boolean;
-  'aria-invalid'?: boolean;
-};
+// ✅ Validate only fields present on this step
+const step1Schema = generalInfoSchema.pick({
+  firstName: true,
+  lastName: true,
+  dateOfBirth: true,
+  gender: true,
+  email: true,
+});
 
-function SearchableSelect({
-  value,
-  onChange,
-  options,
-  placeholder = 'Select…',
-  disabled,
-  ...rest
-}: SearchableSelectProps) {
-  const [open, setOpen] = useState(false);
-
-  const selectedLabel = value || '';
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className={cn('w-full justify-between', disabled && 'opacity-60')}
-          {...rest}
-        >
-          {selectedLabel ? selectedLabel : <span className="text-muted-foreground">{placeholder}</span>}
-          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0 w-[--radix-popover-trigger-width]">
-        <Command>
-          <CommandInput placeholder="Type to search…" />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((opt) => {
-                const isActive = value === opt;
-                return (
-                  <CommandItem
-                    key={opt}
-                    value={opt}
-                    onSelect={() => {
-                      onChange(opt);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check className={cn('mr-2 h-4 w-4', isActive ? 'opacity-100' : 'opacity-0')} />
-                    {opt}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-/* --------------------------------- Page --------------------------------- */
 export default function GeneralInfoPage() {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+
   const { general, updateGeneral } = useRegisterStore();
-
-  // Move country/state into local UI state, seeded from store (if user comes back)
-  const [country, setCountry] = useState<string>(general.country || '');
-  const [stateName, setStateName] = useState<string>(general.state || '');
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const states = useMemo<string[]>(
-    () => (country && STATES_BY_COUNTRY[country]) ? STATES_BY_COUNTRY[country] : [],
-    [country]
-  );
+  const isBelowLaptop = useMediaQuery('(max-width:1024px)');
 
-  useEffect(() => {
-    if (stateName && !states.includes(stateName)) setStateName('');
-  }, [states, stateName]);
+  const onSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
 
-  const next = () => {
+    const firstName = (general.firstName || '').trim();
+    const lastName = (general.lastName || '').trim();
+    const dateOfBirth = general.dateOfBirth || '';
+    const gender = general.gender || '';
+    const email = (general.email || '').trim();
+
     const mappedErrors: Record<string, string> = {};
 
-    // Derive residency to keep backend compatibility
-    const residency = country && stateName ? `${stateName}, ${country}` : '';
-
-    // Construct object for zod validation
-    const toValidate = {
-      ...general,
-      country,
-      state: stateName,
-      residency,
-    };
-
-    // Friendly messages
-    if (!general.firstName?.trim()) {
-      mappedErrors.firstName = 'Please enter your first name so people know who you are.';
-    }
-    if (!general.lastName?.trim() && !mappedErrors.lastName) {
-      mappedErrors.lastName = 'Please enter your last name.';
-    }
-    if (!general.dateOfBirth) {
+    // friendly checks before zod
+    if (!firstName) mappedErrors.firstName = 'Please enter your first name so people know who you are.';
+    if (!lastName) mappedErrors.lastName = 'Please enter your last name.';
+    if (!dateOfBirth) {
       mappedErrors.dateOfBirth = 'Please enter your date of birth.';
-    } else {
-      const age = calcAge(general.dateOfBirth);
-      if (typeof age === 'number' && age < 18) {
-        mappedErrors.dateOfBirth =
-          'Sorry — you need to be 18 or older to use Lokalads. If that’s wrong, double-check your birth date.';
-      }
+    } else if ((calcAgeFromISO(dateOfBirth) ?? 0) < 18) {
+      mappedErrors.dateOfBirth = 'Sorry — you need to be 18 or older to use Lokalads.';
     }
-    if (!general.gender) {
-      mappedErrors.gender = 'Please select a gender option.';
-    }
-    if (!country || !stateName) {
-      mappedErrors.locality = 'Tell us where you’re based so we can show local listings.';
-      if (!country) mappedErrors.country = 'Select your country.';
-      if (!stateName) mappedErrors.state = 'Select your state/region.';
-    }
-    if (!general.email) {
-      mappedErrors.email = 'Please enter a valid email address.';
-    }
+    if (!gender) mappedErrors.gender = 'Please select a gender option.';
+    // zod will do email format; we only ensure non-empty here
+    if (!email) mappedErrors.email = 'Please enter a valid email address.';
 
-    const parsed = generalInfoSchema.safeParse(toValidate);
+    // ✅ only these 5 keys are validated; locality is ignored on this page
+    const parsed = step1Schema.safeParse({
+      firstName,
+      lastName,
+      dateOfBirth,
+      gender,
+      email,
+    });
+
     if (!parsed.success) {
-      parsed.error.issues.forEach((i) => {
-        const key = i.path.join('.');
-        if (!mappedErrors[key]) mappedErrors[key] = i.message;
+      parsed.error.issues.forEach((issue) => {
+        const key = issue.path.join('.');
+        if (!mappedErrors[key]) mappedErrors[key] = issue.message;
       });
     }
 
     if (Object.keys(mappedErrors).length > 0) {
       setErrors(mappedErrors);
-      toast.error('Please fix the highlighted fields');
+
+      // scroll to first error
+      const firstErrorField = Object.keys(mappedErrors)[0];
+      const el = formRef.current?.querySelector<HTMLElement>(`[name="${firstErrorField}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      toast.error('Please fix the highlighted fields.');
       return;
     }
 
-    // Persist to store (including derived residency)
-    updateGeneral({
-      country,
-      state: stateName,
-      residency,
-    });
-
+    // save normalized values and continue
+    updateGeneral({ firstName, lastName, dateOfBirth, gender, email });
     setErrors({});
     router.push('/register/email-verification');
   };
@@ -210,139 +127,127 @@ export default function GeneralInfoPage() {
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Name */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>First Name</Label>
-              <Input
-                placeholder="Janet"
-                value={general.firstName}
-                onChange={(e) => updateGeneral({ firstName: e.target.value })}
-                aria-invalid={!!errors.firstName}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Enter your real name so buyers/sellers know who they’re contacting
-              </p>
-              {errors.firstName && (
-                <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>
-              )}
-            </div>
+        <CardContent>
+          <Form onSubmit={onSubmit} ref={formRef}>
+            {/* hidden heading/intro (to match your other page) */}
+            <h2 className="hidden text-3xl font-bold text-slate-800 mb-1">
+              Step 1- General Information
+            </h2>
+            <p className="hidden text-lg font-light text-slate-700 mb-3">
+              Lets get to know you, a few details to personalise your lokalads experience,
+            </p>
 
-            <div>
-              <Label>Last Name</Label>
-              <Input
-                placeholder="Willson"
-                value={general.lastName}
-                onChange={(e) => updateGeneral({ lastName: e.target.value })}
-                aria-invalid={!!errors.lastName}
-              />
-              {errors.lastName && (
-                <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>
-              )}
-            </div>
-          </div>
+            {/* First / Last Name with highlight behavior */}
+            <FormFieldWrapper
+              className="grid grid-cols-1 md:grid-cols-2 md:gap-4"
+              showFocusWithin={!isBelowLaptop}
+            >
+              <FormField
+                label="First Name"
+                htmlFor="firstName"
+                error={errors.firstName}
+                className="mb-0"
+                showFocusWithin={isBelowLaptop}
+              >
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  value={general.firstName}
+                  onChange={(e) => updateGeneral({ firstName: e.target.value })}
+                  placeholder="e.g. Johnson"
+                  aria-invalid={!!errors.firstName}
+                />
+              </FormField>
 
-          {/* DOB / Gender */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Date of birth</Label>
-              <Input
+              <FormField
+                label="Last Name"
+                htmlFor="lastName"
+                error={errors.lastName}
+                className="mb-0"
+                showFocusWithin={isBelowLaptop}
+              >
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  value={general.lastName}
+                  onChange={(e) => updateGeneral({ lastName: e.target.value })}
+                  placeholder="e.g. Davis"
+                  aria-invalid={!!errors.lastName}
+                />
+              </FormField>
+            </FormFieldWrapper>
+
+            <FormHelperText className="mt-1 mb-4">
+              Use your real name to build trust.
+            </FormHelperText>
+
+            {/* Date of Birth */}
+            <FormField
+              label="Date of Birth"
+              htmlFor="dateOfBirth"
+              error={errors.dateOfBirth}
+              helperLabel="We need this to confirm you are 18+"
+              showFocusWithin={!isBelowLaptop}
+            >
+              <input
+                id="dateOfBirth"
+                name="dateOfBirth" /* must match error key */
                 type="date"
-                value={general.dateOfBirth}
+                value={general.dateOfBirth || ''}
                 onChange={(e) => updateGeneral({ dateOfBirth: e.target.value })}
-                aria-invalid={!!errors.dateOfBirth}
+                className="flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 text-left pr-2"
+                aria-label="Date of Birth"
+                autoComplete="bday"
+                max={todayISO()}
+                min="1900-01-01"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                We need this to confirm you’re 18+
-              </p>
-              {errors.dateOfBirth && (
-                <p className="text-sm text-red-600 mt-1">{errors.dateOfBirth}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div>
-              <Label>Gender</Label>
+            {/* Gender */}
+            <FormField
+              label="Gender"
+              htmlFor="gender"
+              error={errors.gender}
+              showFocusWithin={!isBelowLaptop}
+            >
               <select
-                className="mt-2 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                id="gender"
+                name="gender"
                 value={general.gender}
                 onChange={(e) => updateGeneral({ gender: e.target.value as any })}
-                aria-invalid={!!errors.gender}
+                className="flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Gender"
+                aria-label="Gender"
+                required
               >
-                <option value="">Select…</option>
+                <option value="">Select your gender...</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="prefer-not-to-say">Prefer not to say</option>
-                <option value="other">Other</option>
               </select>
-              {errors.gender && (
-                <p className="text-sm text-red-600 mt-1">{errors.gender}</p>
-              )}
-            </div>
+            </FormField>
 
-            <div className="hidden md:block" />
-          </div>
+            {/* Email */}
+            <FormField
+              label="Email"
+              htmlFor="email"
+              error={errors.email}
+              showFocusWithin={!isBelowLaptop}
+            >
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={general.email}
+                onChange={(e) => updateGeneral({ email: e.target.value })}
+                aria-invalid={!!errors.email}
+              />
+            </FormField>
 
-          {/* Locality: Country + State (shadcn searchable) */}
-          <div>
-            <Label>Locality</Label>
-            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <SearchableSelect
-                  value={country}
-                  onChange={(v) => {
-                    setCountry(v);
-                    // reset state if country changed
-                    setStateName('');
-                  }}
-                  options={COUNTRIES.slice()}
-                  placeholder="Select country…"
-                  aria-invalid={!!errors.country || !!errors.locality}
-                />
-                {errors.country && (
-                  <p className="text-sm text-red-600 mt-1">{errors.country}</p>
-                )}
-              </div>
-
-              <div>
-                <SearchableSelect
-                  value={stateName}
-                  onChange={(v) => setStateName(v)}
-                  options={states}
-                  placeholder={country ? 'Select state/region…' : 'Select country first'}
-                  disabled={!country}
-                  aria-invalid={!!errors.state || !!errors.locality}
-                />
-                {errors.state && (
-                  <p className="text-sm text-red-600 mt-1">{errors.state}</p>
-                )}
-                {!errors.state && errors.locality && (
-                  <p className="text-sm text-red-600 mt-1">{errors.locality}</p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  Used to show relevant local rules and content.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Email */}
-          <div>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={general.email}
-              onChange={(e) => updateGeneral({ email: e.target.value })}
-              aria-invalid={!!errors.email}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={next}>Next: Verify Email</Button>
-          </div>
+            <Button type="submit" className="mt-4 w-full">
+              Next: Verify Email
+            </Button>
+          </Form>
         </CardContent>
       </Card>
     </div>

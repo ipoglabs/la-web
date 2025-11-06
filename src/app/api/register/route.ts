@@ -1,170 +1,93 @@
-// app/api/register/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import connectDB from '@/lib/dbConnect';
+import dbConnect from '@/lib/dbConnect'; // your mongo connect helper
 import User from '@/models/user';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { hash } from 'bcryptjs';
 
-import otpStore from '@/lib/otpStore';
-import otpPhoneStore from '@/lib/otpPhoneStore';
-
-export const runtime = 'nodejs';
+function stripEmpty(obj: Record<string, any>) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== '' && v !== undefined && v !== null)
+  );
+}
 
 export async function POST(req: Request) {
   try {
-    await connectDB();
+    await dbConnect();
+    const body = await req.json();
 
-    const body = await req.json().catch(() => ({} as any));
-    const {
-      firstName,
-      lastName,
-      dateOfBirth,
-      gender,
-      nationality,
-      residency,
-      email,
-      primaryNumber,
-      secondaryNumber1,
-      secondaryNumber2,
-      username,
-      password,
-      role,
-      subscribe,
-    } = body ?? {};
+    // sanitize / trim
+    const payload = stripEmpty({
+      firstName: String(body.firstName || '').trim(),
+      lastName: String(body.lastName || '').trim(),
+      dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
+      gender: String(body.gender || '').trim() || 'other',
 
-    // Required checks
-    if (
-      !firstName || !lastName || !dateOfBirth || !gender || !nationality ||
-      !residency || !email || !username || !password || !role || !primaryNumber
-    ) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+      // optional fields: keep only if provided
+      nationality: body.nationality ? String(body.nationality).trim() : undefined,
+      country: body.country ? String(body.country).trim() : undefined,
+      state: body.state ? String(body.state).trim() : undefined,
+      residency: body.residency ? String(body.residency).trim() : undefined,
 
-    // Normalize
-    const normalizedEmail = String(email).toLowerCase().trim();
-    const normalizedPhone = String(primaryNumber).trim();
-    const normalizedUsername = String(username).trim();
+      email: String(body.email || '').toLowerCase().trim(),
 
-    // Read cookies
-    const cookieStore = cookies();
-    const regEmailCookie = cookieStore.get('reg_email_v')?.value ?? null;
-    const regPhoneCookie = cookieStore.get('reg_phone_v')?.value ?? null;
+      primaryNumber: String(body.primaryNumber || '').trim(),
+      secondaryNumber1: body.secondaryNumber1 ? String(body.secondaryNumber1).trim() : undefined,
+      secondaryNumber2: body.secondaryNumber2 ? String(body.secondaryNumber2).trim() : undefined,
 
-    // Clear cookies from request context (preemptively)
-    cookieStore.delete('reg_email_v');
-    cookieStore.delete('reg_phone_v');
+      username: String(body.username || '').trim(),
+      password: String(body.password || ''),
+      role: String(body.role || 'user'),
 
-    // Email verified?
-    const emailRec = otpStore[normalizedEmail];
-    const emailIsVerified =
-      (emailRec?.verified === true) || regEmailCookie === normalizedEmail;
-
-    if (!emailIsVerified) {
-      return NextResponse.json({ error: 'Email not verified' }, { status: 400 });
-    }
-
-    // Phone verified?
-    const phoneRec = otpPhoneStore?.[normalizedPhone];
-    const phoneIsVerified =
-      (phoneRec?.verified === true) || regPhoneCookie === normalizedPhone;
-
-    if (!phoneIsVerified) {
-      return NextResponse.json({ error: 'Phone not verified' }, { status: 400 });
-    }
-
-    // Uniqueness checks
-    const usernameExists = await User.findOne({ username: normalizedUsername }).select('_id').lean();
-    if (usernameExists) {
-      return NextResponse.json(
-        { error: 'Sorry, that username is already taken. Please try another.', code: 'USERNAME_TAKEN' },
-        { status: 400 }
-      );
-    }
-
-    const emailExists = await User.findOne({ email: normalizedEmail }).select('_id').lean();
-    if (emailExists) {
-      return NextResponse.json(
-        { error: 'This email is already registered. Sign in or use “Forgot password”.', code: 'EMAIL_TAKEN' },
-        { status: 400 }
-      );
-    }
-
-    const phoneExists = await User.findOne({ primaryNumber: normalizedPhone }).select('_id').lean();
-    if (phoneExists) {
-      return NextResponse.json(
-        { error: 'This number is linked to another account. Use a different number or contact support.', code: 'PHONE_TAKEN' },
-        { status: 400 }
-      );
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(String(password), 12);
-
-    // Create user
-    const newUser = new User({
-      username: normalizedUsername,
-      password: hashedPassword,
-      role,
-      firstName,
-      lastName,
-      dateOfBirth,
-      gender,
-      nationality,
-      residency,
-      email: normalizedEmail,
-      isEmailVerified: true,
-      isPhoneVerified: true,
-      primaryNumber: normalizedPhone,
-      secondaryNumber1: secondaryNumber1 || null,
-      secondaryNumber2: secondaryNumber2 || null,
-      provider: 'credentials',
-      ...(typeof subscribe === 'boolean' ? { marketingOptIn: subscribe } : {}),
+      marketingOptIn: !!body.subscribe,
     });
 
-    await newUser.save();
+    // required server-side (these are essential)
+    const missing: string[] = [];
+    if (!payload.firstName) missing.push('firstName');
+    if (!payload.lastName) missing.push('lastName');
+    if (!payload.dateOfBirth) missing.push('dateOfBirth');
+    if (!payload.email) missing.push('email');
+    if (!payload.primaryNumber) missing.push('primaryNumber');
+    if (!payload.username) missing.push('username');
+    if (!payload.password) missing.push('password');
 
-    // Create JWT
-    const token = jwt.sign(
-      {
-        userId: String(newUser._id),
-        email: newUser.email,
-        username: newUser.username,
-        role: newUser.role,
-      },
-      process.env.JWT_SECRET as string,
-      { expiresIn: '7d' }
-    );
+    if (missing.length) {
+      return NextResponse.json(
+        { error: `Missing required fields: ${missing.join(', ')}` },
+        { status: 400 }
+      );
+    }
 
-    // Prepare response
-    const res = NextResponse.json(
+    // hash password
+    const passwordHash = await hash(payload.password, 10);
+
+    const created = await User.create({
+      ...payload,
+      password: passwordHash,
+      isEmailVerified: true,  // set as needed
+      isPhoneVerified: true,  // set as needed
+    });
+
+    return NextResponse.json(
       {
-        success: true,
-        message: 'User registered successfully',
         user: {
-          id: newUser._id,
-          username: newUser.username,
-          email: newUser.email,
-          role: newUser.role,
+          id: created._id,
+          username: created.username,
+          email: created.email,
         },
-        token,
+        token: 'mock-jwt', // generate your real token here
       },
       { status: 201 }
     );
-
-    // Clear cookies in response
-    res.cookies.delete('reg_email_v');
-    res.cookies.delete('reg_phone_v');
-
-    // Clear in-memory OTP stores
-    delete otpStore[normalizedEmail];
-    delete otpPhoneStore?.[normalizedPhone];
-
-    return res;
-  } catch (e) {
-    console.error('Register Error:', e);
+  } catch (err: any) {
+    if (err?.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0] || 'field';
+      return NextResponse.json(
+        { error: `That ${field} is already in use.` },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
-      { error: 'Something went wrong during registration' },
+      { error: err?.message || 'Registration failed' },
       { status: 500 }
     );
   }

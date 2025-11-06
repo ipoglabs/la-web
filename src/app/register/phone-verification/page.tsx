@@ -15,17 +15,20 @@ const RESEND_COOLDOWN = 30;
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
-const DIAL_BY_COUNTRY: Record<string, string> = {
-  'United Kingdom': '+44',
-  Singapore: '+65',
-  India: '+91',
-};
+/** Country code options for PRIMARY number */
+const CODE_OPTIONS = [
+  { value: '+65', view: '+65 [SG]' },
+  { value: '+95', view: '+95 [IND]' }, // per your ask (note: +95 is Myanmar IRL)
+  { value: '+44', view: '+44 [UK]' },
+  { value: 'mock', view: 'Mock [TEST]' }, // special testing option
+] as const;
+type CodeValue = typeof CODE_OPTIONS[number]['value'];
 
 export default function PhoneVerificationPage() {
   const router = useRouter();
   const { general, phones, updatePhones, phoneVerified, setPhoneVerified } = useRegisterStore();
 
-  // NEW: controls for revealing secondary fields
+  // show/hide secondaries (unchanged)
   const [showSec1, setShowSec1] = useState<boolean>(!!phones.secondaryNumber1);
   const [showSec2, setShowSec2] = useState<boolean>(!!phones.secondaryNumber2);
 
@@ -41,7 +44,7 @@ export default function PhoneVerificationPage() {
   // verified badge for primary
   const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
 
-  // attempts/lock (client-side UX; server should enforce, too)
+  // attempts/lock
   const [attempts, setAttempts] = useState(0);
   const [lockUntil, setLockUntil] = useState<number | null>(null);
   const lockActive = lockUntil ? Date.now() < lockUntil : false;
@@ -49,18 +52,37 @@ export default function PhoneVerificationPage() {
 
   const otpInputRef = useRef<HTMLInputElement | null>(null);
 
-  const countryDial = useMemo(() => {
-    const c = (general.country || '').trim();
-    return DIAL_BY_COUNTRY[c] || '';
-  }, [general.country]);
-
-  // Prefill primary dial code once when empty, based on Step 1 country
-  useEffect(() => {
-    if (!phones.primaryNumber && countryDial) {
-      updatePhones({ primaryNumber: countryDial + ' ' });
+  /** ---------- Split/compose primary number for dropdown + input ---------- */
+  const splitPrimary = (value: string | undefined) => {
+    if (!value) return { code: '+65' as CodeValue, number: '' }; // default
+    // mock format
+    if (value.startsWith('mock ')) return { code: 'mock' as CodeValue, number: value.slice(5) };
+    // match "+XX..." then rest
+    const m = value.match(/^(\+\d{1,3})\s*(.*)$/);
+    if (m) {
+      const code = (m[1] as CodeValue) ?? '+65';
+      const number = m[2] ?? '';
+      return { code, number };
     }
+    return { code: '+65' as CodeValue, number: value };
+  };
+
+  const { code: initCode, number: initNumber } = useMemo(
+    () => splitPrimary(phones.primaryNumber),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [countryDial]);
+    []
+  );
+
+  const [primaryCode, setPrimaryCode] = useState<CodeValue>(initCode);
+  const [primaryBody, setPrimaryBody] = useState<string>(initNumber);
+
+  // Compose and keep store in sync whenever local parts change
+  useEffect(() => {
+    const composed =
+      primaryCode === 'mock' ? `mock ${primaryBody.trim()}` : `${primaryCode} ${primaryBody.trim()}`.trim();
+    updatePhones({ primaryNumber: composed });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primaryCode, primaryBody]);
 
   // resend countdown
   useEffect(() => {
@@ -92,39 +114,49 @@ export default function PhoneVerificationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phones.primaryNumber]);
 
-  // ---------- Secondary fields controls ----------
+  // ---------- Secondary fields controls (unchanged) ----------
   const addSecondary = () => {
     if (!showSec1) {
       setShowSec1(true);
-      if (!phones.secondaryNumber1 && countryDial) {
-        updatePhones({ secondaryNumber1: `${countryDial} ` });
-      }
       return;
     }
     if (!showSec2) {
       setShowSec2(true);
-      if (!phones.secondaryNumber2 && countryDial) {
-        updatePhones({ secondaryNumber2: `${countryDial} ` });
-      }
       return;
     }
   };
-
   const removeSecondary = (which: 1 | 2) => {
-    if (which === 1) {
-      setShowSec1(false);
-      // keep the value unless you want to clear it:
-      // updatePhones({ secondaryNumber1: '' });
-    } else {
-      setShowSec2(false);
-      // updatePhones({ secondaryNumber2: '' });
-    }
+    if (which === 1) setShowSec1(false);
+    else setShowSec2(false);
   };
 
   // ---------- Actions ----------
   const sendOtp = async () => {
-    // Validate at least primary number
-    const parsed = phoneSchema.safeParse(phones);
+    // Compose a value for schema (mock allowed)
+    const composed =
+      primaryCode === 'mock' ? `mock ${primaryBody.trim()}` : `${primaryCode} ${primaryBody.trim()}`.trim();
+
+    // Basic friendly checks
+    if (!primaryBody.trim()) {
+      setErrors({ primaryNumber: 'Enter your phone number.' });
+      toast.error('Please fix the phone number');
+      return;
+    }
+
+    // For mock, skip server call
+    if (primaryCode === 'mock') {
+      setErrors({});
+      toast.success('Mock mode enabled. Use OTP: 111111');
+      setResendTimeout(RESEND_COOLDOWN);
+      setAttempts(0);
+      setLockUntil(null);
+      saveGuard(0, null);
+      setTimeout(() => otpInputRef.current?.focus(), 50);
+      return;
+    }
+
+    // Real validation
+    const parsed = phoneSchema.safeParse({ ...phones, primaryNumber: composed });
     if (!parsed.success) {
       const map: Record<string, string> = {};
       parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
@@ -142,7 +174,7 @@ export default function PhoneVerificationPage() {
       const res = await fetch('/api/sms/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phones.primaryNumber }),
+        body: JSON.stringify({ phone: composed }),
       });
       const data = await res.json();
 
@@ -170,6 +202,21 @@ export default function PhoneVerificationPage() {
 
   const verifyOtp = async () => {
     if (!otp) return toast.error('Enter the SMS OTP');
+
+    // Mock: client-side accept 111111
+    if (primaryCode === 'mock') {
+      if (otp === '111111') {
+        setPhoneVerified(true);
+        const when = new Date().toLocaleString();
+        setVerifiedAt(when);
+        toast.success('Phone verified (mock)');
+        setTimeout(() => router.push('/register/profile-setup'), 600);
+      } else {
+        toast.error('Wrong mock code — expected 111111');
+      }
+      return;
+    }
+
     if (lockActive) {
       return toast.error(
         `For security we’ve locked OTP attempts for 15 minutes. You can try again in ${Math.ceil(
@@ -178,12 +225,15 @@ export default function PhoneVerificationPage() {
       );
     }
 
+    const composed =
+      primaryCode === 'mock' ? `mock ${primaryBody.trim()}` : `${primaryCode} ${primaryBody.trim()}`.trim();
+
     setLoadingVerify(true);
     try {
       const res = await fetch('/api/sms/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phones.primaryNumber, otp }),
+        body: JSON.stringify({ phone: composed, otp }),
       });
       const data = await res.json();
 
@@ -240,15 +290,33 @@ export default function PhoneVerificationPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Primary */}
+          {/* Primary with country code dropdown */}
           <div>
             <Label>Primary phone number *</Label>
-            <Input
-              placeholder="+44 7123 456789"
-              value={phones.primaryNumber}
-              onChange={(e) => updatePhones({ primaryNumber: e.target.value })}
-              aria-invalid={!!errors.primaryNumber}
-            />
+
+            <div className="mt-1 flex gap-2">
+              <select
+                aria-label="Country code"
+                value={primaryCode}
+                onChange={(e) => setPrimaryCode(e.target.value as CodeValue)}
+                className="w-[160px] h-10 rounded-sm border border-gray-700/50 bg-gray-50 px-2 text-sm"
+              >
+                {CODE_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.view}
+                  </option>
+                ))}
+              </select>
+
+              <Input
+                placeholder={primaryCode === 'mock' ? 'enter any test number' : 'phone number'}
+                value={primaryBody}
+                onChange={(e) => setPrimaryBody(e.target.value)}
+                aria-invalid={!!errors.primaryNumber}
+                className="flex-1"
+              />
+            </div>
+
             <p className="text-xs text-muted-foreground mt-1">
               Used to receive OTP and for important notifications — you can hide this on your profile.
             </p>
@@ -262,7 +330,7 @@ export default function PhoneVerificationPage() {
             )}
           </div>
 
-          {/* Secondary controls + fields */}
+          {/* Secondary controls + fields (unchanged UI) */}
           <div className="space-y-3">
             <div className="flex gap-2">
               <Button
@@ -290,7 +358,7 @@ export default function PhoneVerificationPage() {
                 <div>
                   <Label>Secondary number 1 (optional)</Label>
                   <Input
-                    placeholder={countryDial ? `${countryDial} …` : '+…'}
+                    placeholder="+…"
                     value={phones.secondaryNumber1}
                     onChange={(e) => updatePhones({ secondaryNumber1: e.target.value })}
                   />
@@ -304,7 +372,7 @@ export default function PhoneVerificationPage() {
                 <div>
                   <Label>Secondary number 2 (optional)</Label>
                   <Input
-                    placeholder={countryDial ? `${countryDial} …` : '+…'}
+                    placeholder="+…"
                     value={phones.secondaryNumber2}
                     onChange={(e) => updatePhones({ secondaryNumber2: e.target.value })}
                   />
@@ -325,7 +393,7 @@ export default function PhoneVerificationPage() {
 
             <Input
               ref={otpInputRef}
-              placeholder="Enter 6-digit code"
+              placeholder={primaryCode === 'mock' ? 'Enter 111111 (mock)' : 'Enter 6-digit code'}
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               className="max-w-xs"
@@ -350,7 +418,6 @@ export default function PhoneVerificationPage() {
             </p>
           )}
 
-          {/* Optional: “Verify later” for secondaries */}
           <div className="flex justify-end pt-2">
             <Button onClick={() => router.push('/register/profile-setup')} variant="ghost">
               I’ll verify secondary numbers later →
