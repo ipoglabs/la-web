@@ -369,19 +369,71 @@ export default function ProfileSetupPage() {
               </p>
 
               {/* Strength meter */}
-              <div className="mt-2 flex items-center gap-2">
-                <div className="flex gap-1">
-                  {[0,1,2,3,4].map((i) => (
-                    <div
-                      key={i}
-                      className={`h-1.5 w-8 rounded ${
-                        i < pwScore ? (pwScore >= 4 ? 'bg-green-600' : pwScore >= 2 ? 'bg-yellow-500' : 'bg-red-500') : 'bg-muted'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-muted-foreground">{pwLabel}</span>
-              </div>
+              {/* Strength meter */}
+<div className="mt-2 flex items-center gap-2">
+  <div className="flex gap-1">
+    {[0,1,2,3,4].map((i) => (
+      <div
+        key={i}
+        className={`h-1.5 w-8 rounded ${
+          i < pwScore
+            ? pwScore >= 4
+              ? "bg-green-600"
+              : pwScore >= 2
+              ? "bg-yellow-500"
+              : "bg-red-500"
+            : "bg-muted"
+        }`}
+      />
+    ))}
+  </div>
+  <span className="text-xs text-muted-foreground">{pwLabel}</span>
+</div>
+
+{/* ✅ Password Requirement Checklist */}
+<div className="mt-3 space-y-1 text-xs">
+  {[
+    {
+      label: "At least 8 characters long",
+      valid: profile.password.length >= 8,
+    },
+    {
+      label: "At least 1 letter",
+      valid: /[a-zA-Z]/.test(profile.password),
+    },
+    {
+      label: "At least 1 number",
+      valid: /\d/.test(profile.password),
+    },
+    {
+      label: "At least 1 special character",
+      valid: /[^A-Za-z0-9]/.test(profile.password),
+    },
+    {
+      label: "Not your email",
+      valid:
+        profile.password.length > 0 &&
+        general.email &&
+        profile.password.toLowerCase() !== general.email.toLowerCase(),
+    },
+    {
+      label: "Not more than 24 characters long",
+      valid: profile.password.length <= 24 && profile.password.length > 0,
+    },
+  ].map((rule, idx) => (
+    <div key={idx} className="flex items-center gap-2">
+      {rule.valid ? (
+        <CheckCircle2 className="h-4 w-4 text-green-600" />
+      ) : (
+        <XCircle className="h-4 w-4 text-red-600" />
+      )}
+      <p className={`${rule.valid ? "text-green-600" : "text-red-600"}`}>
+        {rule.label}
+      </p>
+    </div>
+  ))}
+</div>
+
 
               {(pwTooCommon || errors.password) && (
                 <p className="text-sm text-red-600 mt-1">

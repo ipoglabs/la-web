@@ -1,32 +1,22 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
 import connectDB from "@/config/database";
 import User from "@/models/user";
-import { verifyToken } from "@/lib/auth";
 import mongoose from "mongoose";
-
-function getIdAndEmail(decoded: any) {
-  const id = decoded?.id || decoded?.userId; // supports both login & register tokens
-  const email =
-    decoded?.email ||
-    decoded?.user?.email ||
-    (typeof decoded?.sub === "string" && decoded.sub.includes("@") ? decoded.sub : undefined);
-  return { id, email };
-}
 
 export async function getCurrentUser() {
   await connectDB();
 
-  const token = cookies().get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
-  const decoded = token ? verifyToken(token) : null;
-  if (!decoded) return null;
+  const session = getSession();
+  if (!session) return null;
 
-  const { id, email } = getIdAndEmail(decoded);
+  const { userId, email } = session;
 
   let user = null;
-  if (id && mongoose.Types.ObjectId.isValid(id)) {
-    user = await User.findById(id).lean();
+
+  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+    user = await User.findById(userId).lean();
   } else if (email) {
     user = await User.findOne({ email }).lean();
   }
@@ -37,7 +27,9 @@ export async function getCurrentUser() {
     id: String(user._id),
     firstName: user.firstName,
     lastName: user.lastName,
-    dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().slice(0, 10) : "",
+    dateOfBirth: user.dateOfBirth
+      ? new Date(user.dateOfBirth).toISOString().slice(0, 10)
+      : "",
     gender: user.gender,
     nationality: user.nationality,
     residency: user.residency,

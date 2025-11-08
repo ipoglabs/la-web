@@ -1,13 +1,22 @@
-// src/app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/dbConnect";
+import dbConnect from "@/lib/dbConnect";
 import User from "@/models/user";
 import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+const COOKIE_NAME = "session";
+const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+
+function signJwt(payload: object) {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not set");
+  }
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: MAX_AGE });
+}
+
 export async function POST(req: Request) {
   try {
-    await connectDB();
+    await dbConnect();
 
     const body = await req.json().catch(() => ({} as any));
     const emailRaw = String(body?.email ?? "").trim().toLowerCase();
@@ -37,17 +46,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Sign JWT with string id (prevents ObjectId buffer issues downstream)
-    const token = jwt.sign(
-      {
-        id: String(user._id),
-        email: user.email,
-        username: user.username,
-        role: user.role ?? "user",
-      },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "7d" }
-    );
+    const token = signJwt({
+      userId: String(user._id),
+      email: user.email,
+      username: user.username,
+      role: user.role ?? "user",
+    });
 
     const res = NextResponse.json({
       message: "Login successful",
@@ -59,21 +63,18 @@ export async function POST(req: Request) {
         lastName: user.lastName,
         role: user.role ?? "user",
       },
-      // If you also want to return the token to SPA/mobile callers, uncomment:
-      // token,
+      token, // optional
     });
 
-    // Auth cookie (HTTP-only)
-    res.cookies.set("token", token, {
+    res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: MAX_AGE,
     });
 
-    // (Optional) tiny readable cookie for UI hints (not sensitive)
-    // Remove this block if you prefer not to set a readable cookie.
+    // optional readable hint cookie
     res.cookies.set(
       "uinfo",
       JSON.stringify({ id: String(user._id), u: user.username }),
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: MAX_AGE,
       }
     );
 

@@ -34,15 +34,14 @@ export default async function MyAdsPage() {
   const cookieStore = cookies();
   const hdrs = headers();
 
-  // Prefer cookie, but also gracefully accept Authorization header if you use it
-  let raw = cookieStore.get("token")?.value || hdrs.get("authorization") || "";
+  // ✅ FIX: read session cookie
+  let raw = cookieStore.get("session")?.value || hdrs.get("authorization") || "";
   if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
 
   const decoded = raw ? verifyToken(raw) : null;
   const email = extractEmailFromDecoded(decoded);
   const ownerId = extractUserIdFromDecoded(decoded);
 
-  // Not logged in (neither ownerId nor email present)
   if (!ownerId && !email) {
     return (
       <main className="max-w-4xl mx-auto p-6 space-y-6">
@@ -57,28 +56,13 @@ export default async function MyAdsPage() {
           You are not logged in or your session expired.
           <br />
           <span className="text-sm">
-            Please{" "}
-            <Link href="/login" className="underline">
-              log in
-            </Link>{" "}
-            again.
+            Please <Link href="/login" className="underline">log in</Link> again.
           </span>
-
-          {/* Dev-only diagnostics; remove in production */}
-          <details className="mt-3 text-xs text-slate-500">
-            <summary>Debug (dev only)</summary>
-            <pre>Has token: {String(Boolean(raw))}</pre>
-            <pre>JWT verified: {String(Boolean(decoded))}</pre>
-            <pre>email: {email || "—"}</pre>
-            <pre>ownerId: {ownerId || "—"}</pre>
-          </details>
         </div>
       </main>
     );
   }
 
-  // Fetch posts by ownerId (preferred), fallback to email
-  // TIP: Update action signature to: getMyPosts({ ownerId?: string; email?: string })
   const rows = await getMyPosts({ ownerId, email });
 
   return (
@@ -99,12 +83,9 @@ export default async function MyAdsPage() {
           .
         </p>
       ) : (
-        <ClientList
-          initialRows={rows}
-          ownerEmail={email}
-          ownerId={ownerId}
-        />
+        <ClientList initialRows={rows} ownerEmail={email} ownerId={ownerId} />
       )}
     </main>
   );
 }
+

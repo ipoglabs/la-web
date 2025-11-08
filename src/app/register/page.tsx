@@ -15,7 +15,6 @@ import { FormField } from '@/components/FormField';
 import { FormFieldWrapper } from '@/components/FormFieldWrapper';
 import { FormHelperText } from '@/components/FormHelperText';
 import { useMediaQuery } from '@/components/hooks/use-media-query';
-import { z } from 'zod';
 
 /* ---------- utils ---------- */
 function pad(n: number) {
@@ -51,6 +50,11 @@ const step1Schema = generalInfoSchema.pick({
   email: true,
 });
 
+// tiny helper to merge classes
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(' ');
+}
+
 export default function GeneralInfoPage() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -80,7 +84,6 @@ export default function GeneralInfoPage() {
       mappedErrors.dateOfBirth = 'Sorry — you need to be 18 or older to use Lokalads.';
     }
     if (!gender) mappedErrors.gender = 'Please select a gender option.';
-    // zod will do email format; we only ensure non-empty here
     if (!email) mappedErrors.email = 'Please enter a valid email address.';
 
     // ✅ only these 5 keys are validated; locality is ignored on this page
@@ -106,6 +109,7 @@ export default function GeneralInfoPage() {
       const firstErrorField = Object.keys(mappedErrors)[0];
       const el = formRef.current?.querySelector<HTMLElement>(`[name="${firstErrorField}"]`);
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      (el as HTMLElement | null)?.focus?.();
 
       toast.error('Please fix the highlighted fields.');
       return;
@@ -156,7 +160,16 @@ export default function GeneralInfoPage() {
                   onChange={(e) => updateGeneral({ firstName: e.target.value })}
                   placeholder="e.g. Johnson"
                   aria-invalid={!!errors.firstName}
+                  aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                  className={cx(
+                    !!errors.firstName && 'border-red-500 focus-visible:ring-red-500/20'
+                  )}
                 />
+                {/* {errors.firstName && (
+                  <p id="firstName-error" className="text-sm text-red-600 mt-1">
+                    {errors.firstName}
+                  </p>
+                )} */}
               </FormField>
 
               <FormField
@@ -173,7 +186,16 @@ export default function GeneralInfoPage() {
                   onChange={(e) => updateGeneral({ lastName: e.target.value })}
                   placeholder="e.g. Davis"
                   aria-invalid={!!errors.lastName}
+                  aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                  className={cx(
+                    !!errors.lastName && 'border-red-500 focus-visible:ring-red-500/20'
+                  )}
                 />
+                {/* {errors.lastName && (
+                  <p id="lastName-error" className="text-sm text-red-600 mt-1">
+                    {errors.lastName}
+                  </p>
+                )} */}
               </FormField>
             </FormFieldWrapper>
 
@@ -195,12 +217,22 @@ export default function GeneralInfoPage() {
                 type="date"
                 value={general.dateOfBirth || ''}
                 onChange={(e) => updateGeneral({ dateOfBirth: e.target.value })}
-                className="flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 text-left pr-2"
+                className={cx(
+                  'flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 text-left pr-2',
+                  !!errors.dateOfBirth && 'border-red-500 focus-visible:ring-red-500/20'
+                )}
                 aria-label="Date of Birth"
+                aria-invalid={!!errors.dateOfBirth}
+                aria-describedby={errors.dateOfBirth ? 'dateOfBirth-error' : undefined}
                 autoComplete="bday"
                 max={todayISO()}
                 min="1900-01-01"
               />
+              {/* {errors.dateOfBirth && (
+                <p id="dateOfBirth-error" className="text-sm text-red-600 mt-1">
+                  {errors.dateOfBirth}
+                </p>
+              )} */}
             </FormField>
 
             {/* Gender */}
@@ -215,16 +247,25 @@ export default function GeneralInfoPage() {
                 name="gender"
                 value={general.gender}
                 onChange={(e) => updateGeneral({ gender: e.target.value as any })}
-                className="flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                className={cx(
+                  'flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50',
+                  !!errors.gender && 'border-red-500 focus-visible:ring-red-500/20'
+                )}
                 title="Gender"
                 aria-label="Gender"
-                required
+                aria-invalid={!!errors.gender}
+                aria-describedby={errors.gender ? 'gender-error' : undefined}
               >
                 <option value="">Select your gender...</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="prefer-not-to-say">Prefer not to say</option>
               </select>
+              {/* {errors.gender && (
+                <p id="gender-error" className="text-sm text-red-600 mt-1">
+                  {errors.gender}
+                </p>
+              )} */}
             </FormField>
 
             {/* Email */}
@@ -241,7 +282,16 @@ export default function GeneralInfoPage() {
                 value={general.email}
                 onChange={(e) => updateGeneral({ email: e.target.value })}
                 aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                className={cx(
+                  !!errors.email && 'border-red-500 focus-visible:ring-red-500/20'
+                )}
               />
+              {/* {errors.email && (
+                <p id="email-error" className="text-sm text-red-600 mt-1">
+                  {errors.email}
+                </p>
+              )} */}
             </FormField>
 
             <Button type="submit" className="mt-4 w-full">
