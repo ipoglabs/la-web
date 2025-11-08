@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -67,12 +67,7 @@ export default function PhoneVerificationPage() {
     return { code: '+65' as CodeValue, number: value };
   };
 
-  const { code: initCode, number: initNumber } = useMemo(
-    () => splitPrimary(phones.primaryNumber),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-
+  const { code: initCode, number: initNumber } = splitPrimary(phones.primaryNumber);
   const [primaryCode, setPrimaryCode] = useState<CodeValue>(initCode);
   const [primaryBody, setPrimaryBody] = useState<string>(initNumber);
 
@@ -132,11 +127,9 @@ export default function PhoneVerificationPage() {
 
   // ---------- Actions ----------
   const sendOtp = async () => {
-    // Compose a value for schema (mock allowed)
     const composed =
       primaryCode === 'mock' ? `mock ${primaryBody.trim()}` : `${primaryCode} ${primaryBody.trim()}`.trim();
 
-    // Basic friendly checks
     if (!primaryBody.trim()) {
       setErrors({ primaryNumber: 'Enter your phone number.' });
       toast.error('Please fix the phone number');
@@ -210,7 +203,7 @@ export default function PhoneVerificationPage() {
         const when = new Date().toLocaleString();
         setVerifiedAt(when);
         toast.success('Phone verified (mock)');
-        setTimeout(() => router.push('/register/profile-setup'), 600);
+        // ⛔️ Do NOT auto-redirect. Next button will be enabled.
       } else {
         toast.error('Wrong mock code — expected 111111');
       }
@@ -242,7 +235,7 @@ export default function PhoneVerificationPage() {
         const when = new Date().toLocaleString();
         setVerifiedAt(when);
         toast.success('Phone verified');
-        setTimeout(() => router.push('/register/profile-setup'), 800);
+        // ⛔️ Do NOT auto-redirect. Next button will be enabled.
       } else {
         const code = data?.code as string | undefined;
 
@@ -278,6 +271,10 @@ export default function PhoneVerificationPage() {
       setLoadingVerify(false);
     }
   };
+
+  // ✅ only enable Verify when OTP is exactly 6 digits
+  const otpDigitsOnly = (s: string) => s.replace(/\D/g, '').slice(0, 6);
+  const canVerify = otp.length === 6 && !loadingVerify && !lockActive;
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
@@ -323,11 +320,7 @@ export default function PhoneVerificationPage() {
             {errors.primaryNumber && (
               <p className="text-sm text-red-600 mt-1">{errors.primaryNumber}</p>
             )}
-            {phoneVerified && (
-              <p className="text-sm text-green-600 mt-1">
-                ✅ Verified{verifiedAt ? ` • ${verifiedAt}` : ''}
-              </p>
-            )}
+            
           </div>
 
           {/* Secondary controls + fields (unchanged UI) */}
@@ -381,7 +374,7 @@ export default function PhoneVerificationPage() {
             </div>
           </div>
 
-          {/* Actions */}
+          {/* OTP + Verify */}
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
@@ -395,21 +388,26 @@ export default function PhoneVerificationPage() {
               ref={otpInputRef}
               placeholder={primaryCode === 'mock' ? 'Enter 111111 (mock)' : 'Enter 6-digit code'}
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => setOtp(otpDigitsOnly(e.target.value))}
               className="max-w-xs"
               inputMode="numeric"
+              maxLength={6}
               aria-label="SMS OTP"
               disabled={lockActive}
-              onKeyDown={(e) => e.key === 'Enter' && verifyOtp()}
+              onKeyDown={(e) => e.key === 'Enter' && canVerify && verifyOtp()}
             />
-            <Button onClick={verifyOtp} disabled={loadingVerify || lockActive}>
+
+            <Button onClick={verifyOtp} disabled={!canVerify}>
               {loadingVerify ? 'Verifying…' : 'Verify'}
             </Button>
-
-            <Button variant="outline" onClick={() => router.push('/register/email-verification')}>
-              Back
-            </Button>
           </div>
+
+          {/* ✅ Success message directly below the OTP field */}
+          {phoneVerified && (
+            <p className="text-green-600 text-sm -mt-2">
+              ✅ Phone verified successfully
+            </p>
+          )}
 
           {/* Lock notice */}
           {lockActive && (
@@ -418,9 +416,17 @@ export default function PhoneVerificationPage() {
             </p>
           )}
 
-          <div className="flex justify-end pt-2">
-            <Button onClick={() => router.push('/register/profile-setup')} variant="ghost">
-              I’ll verify secondary numbers later →
+          {/* Bottom navigation: Back (left) · Next (right) */}
+          <div className="flex items-center justify-between pt-4">
+            <Button variant="outline" onClick={() => router.push('/register/email-verification')}>
+              Back
+            </Button>
+
+            <Button
+              onClick={() => router.push('/register/profile-setup')}
+              disabled={!phoneVerified}
+            >
+              Next: Profile Setup
             </Button>
           </div>
         </CardContent>

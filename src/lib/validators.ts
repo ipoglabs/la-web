@@ -61,14 +61,14 @@ export const profileSchema = z.object({
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
+    .max(24, "Password must be at most 24 characters")
+    .refine((v) => /[A-Za-z]/.test(v), "Password must include at least one letter")
+    .refine((v) => /\d/.test(v), "Password must include at least one number")
     .refine(
-      (val) =>
-        /[A-Z]/.test(val) &&
-        /[a-z]/.test(val) &&
-        /[0-9]/.test(val) &&
-        /[^A-Za-z0-9]/.test(val),
-      "Password must include uppercase, lowercase, number, and special character"
+      (v) => /[^A-Za-z0-9]/.test(v),
+      "Password must include at least one special character"
     ),
   role: z.string().min(1, "Role is required"),
 });
+
 export type ProfileForm = z.infer<typeof profileSchema>;

@@ -31,13 +31,13 @@ function scorePassword(pw: string) {
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
-  if (/[a-z]/.test(pw)) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/\d/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (COMMON_PASSWORDS.has(pw.toLowerCase())) score = 0; // tank score for common pw
+  if (/[A-Za-z]/.test(pw)) score++;      // any letter
+  if (/\d/.test(pw)) score++;            // a number
+  if (/[^A-Za-z0-9]/.test(pw)) score++;  // a special
+  if (COMMON_PASSWORDS.has(pw.toLowerCase())) score = 0;
   return Math.min(score, 5);
 }
+
 function strengthLabel(score: number) {
   if (score <= 1) return 'Weak';
   if (score <= 3) return 'Good';
@@ -369,7 +369,6 @@ export default function ProfileSetupPage() {
               </p>
 
               {/* Strength meter */}
-              {/* Strength meter */}
 <div className="mt-2 flex items-center gap-2">
   <div className="flex gap-1">
     {[0,1,2,3,4].map((i) => (
@@ -391,24 +390,13 @@ export default function ProfileSetupPage() {
 </div>
 
 {/* ✅ Password Requirement Checklist */}
+{/* ✅ Password Requirement Checklist (text black, icons colored) */}
 <div className="mt-3 space-y-1 text-xs">
   {[
-    {
-      label: "At least 8 characters long",
-      valid: profile.password.length >= 8,
-    },
-    {
-      label: "At least 1 letter",
-      valid: /[a-zA-Z]/.test(profile.password),
-    },
-    {
-      label: "At least 1 number",
-      valid: /\d/.test(profile.password),
-    },
-    {
-      label: "At least 1 special character",
-      valid: /[^A-Za-z0-9]/.test(profile.password),
-    },
+    { label: "At least 8 characters long", valid: profile.password.length >= 8 },
+    { label: "At least 1 letter",          valid: /[A-Za-z]/.test(profile.password) },
+    { label: "At least 1 number",          valid: /\d/.test(profile.password) },
+    { label: "At least 1 special character", valid: /[^A-Za-z0-9]/.test(profile.password) },
     {
       label: "Not your email",
       valid:
@@ -418,7 +406,7 @@ export default function ProfileSetupPage() {
     },
     {
       label: "Not more than 24 characters long",
-      valid: profile.password.length <= 24 && profile.password.length > 0,
+      valid: profile.password.length > 0 && profile.password.length <= 24,
     },
   ].map((rule, idx) => (
     <div key={idx} className="flex items-center gap-2">
@@ -427,12 +415,12 @@ export default function ProfileSetupPage() {
       ) : (
         <XCircle className="h-4 w-4 text-red-600" />
       )}
-      <p className={`${rule.valid ? "text-green-600" : "text-red-600"}`}>
-        {rule.label}
-      </p>
+      {/* keep the text always black */}
+      <p className="text-slate-900">{rule.label}</p>
     </div>
   ))}
 </div>
+
 
 
               {(pwTooCommon || errors.password) && (
