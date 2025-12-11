@@ -1,16 +1,22 @@
 // src/app/post/preview/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { usePostFormStore } from "../store/postFormStore";
-import { Button } from "@/components/ui/button";
-import AppHeader from "@/app/components/AppHeader/appHeader";
-import AppFooter from "@/app/components/AppFooter/appFooter";
-import { addPost } from "@/app/actions/addPost";
-import { updatePost } from "@/app/actions/updatePost"; // <-- import updater
-import { buildPostFormData } from "@/lib/buildPostFormData";
 
+import PageHeader from "../components/PageHeader";
+import PostFooter from "../components/PostFooter";
+import ReviewDetailsSection from "../components/ReviewSectionMap";
+
+import { usePostFormStore } from "../store/postFormStore";
+
+import { addPost } from "@/app/actions/addPost";
+import { updatePost } from "@/app/actions/updatePost";
+import { buildPostFormData } from "@/lib/buildPostFormData";
+import { useAuthStore } from "@/store/authStore";
+import { Input } from "@/components/ui/input";
+
+/** ---------- helpers ---------- */
 function fmtCurrency(v: unknown) {
   if (v === null || v === undefined || v === "") return undefined;
   const n = Number(v);
@@ -70,421 +76,453 @@ function renderValue(key: string, value: any): string {
   return String(value);
 }
 
-function renderMaybeLink(value: any) {
-  const s = String(value ?? "");
-  if (!s) return "—";
-  try {
-    const u = new URL(s);
-    return (
-      <a
-        href={u.toString()}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 underline"
-      >
-        {u.hostname}
-      </a>
-    );
-  } catch {
-    return s;
-  }
+/** ---------- contact helpers ---------- */
+
+type SellerInfo = {
+  name: string;
+  email: string;
+  phone: string;
+};
+
+// match your DB/user shape: firstName, lastName, email, primaryNumber, username
+function extractUserContact(u: any): SellerInfo {
+  if (!u) return { name: "", email: "", phone: "" };
+
+  const name =
+    `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || "";
+  const email = u.email || "";
+  const phone = u.primaryNumber || u.phone || "";
+
+  return { name, email, phone };
 }
 
-export default function PreviewPage() {
-  const data = usePostFormStore();
+function AdvertiserContactSection({
+  sellerInfo,
+  onPhoneChange,
+}: {
+  sellerInfo: SellerInfo;
+  onPhoneChange: (phone: string) => void;
+}) {
+  return (
+    <section className="pt-2 pb-6">
+      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+        Advertiser Name and Contacts
+      </h3>
+
+      <div className="space-y-2 text-xs sm:text-sm">
+        {/* Name row */}
+        <div className="grid grid-cols-2 gap-4 items-start">
+          <p className="text-gray-600">Name</p>
+          <p className="text-gray-900 break-words">
+            {sellerInfo.name || "—"}
+          </p>
+        </div>
+
+        {/* Email row */}
+        <div className="grid grid-cols-2 gap-4 items-start">
+          <p className="text-gray-600">Email</p>
+          <p className="text-gray-900 break-words">
+            {sellerInfo.email || "—"}
+          </p>
+        </div>
+
+        {/* Phone row (editable) */}
+        <div className="grid grid-cols-2 gap-4 items-start">
+          <p className="text-gray-600">Primary Phone</p>
+          <div>
+            <Input
+              value={sellerInfo.phone}
+              onChange={(e) => onPhoneChange(e.target.value)}
+              className="h-8 text-xs sm:text-sm"
+              placeholder="Enter phone number"
+            />
+            <p className="mt-1 text-[11px] text-gray-400">
+              This number will be shown in your advertisement.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** ---------- main component ---------- */
+
+export default function ReviewDetails() {
   const router = useRouter();
+
+  const data = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
+
+  const user = useAuthStore((s) => s.user);
+  const setAuth = useAuthStore((s) => s.setAuth);
+
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
 
-  const isEdit = !!data.editMode && !!data.postId;   // <-- edit mode check
-  const postId = data.postId as string | undefined;
+  const isEdit =
+    data.editMode === true &&
+    typeof data.postId === "string" &&
+    data.postId.trim().length > 0;
+
+  const postId = isEdit ? (data.postId as string) : undefined;
 
   const has = (k: string) =>
-    data[k] !== undefined && data[k] !== null && String(data[k]).trim() !== "";
+    (data as any)[k] !== undefined &&
+    (data as any)[k] !== null &&
+    String((data as any)[k]).trim() !== "";
 
-  const row = (label: string, value: any, keyHint?: string) => (
-    <p>
-      <b>{label}:</b>{" "}
-      {keyHint
-        ? renderValue(keyHint, value)
-        : Array.isArray(value)
-        ? value.length
-          ? value.join(", ")
-          : "—"
-        : String(value ?? "—")}
-    </p>
-  );
+  // Normalize sellerInfo from store
+  const sellerInfo: SellerInfo = {
+    name: data.sellerInfo?.name || "",
+    email: data.sellerInfo?.email || "",
+    phone: data.sellerInfo?.phone || "",
+  };
 
-  // Location is OPTIONAL
+  /** ---------- 1) hydrate auth store from /api/auth/me if empty ---------- */
+  useEffect(() => {
+    if (user) return;
+
+    (async () => {
+      try {
+        console.log("🌐 [Preview] Fetching /api/auth/me to hydrate auth store");
+        const res = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          console.warn("⚠️ [Preview] /api/auth/me returned status", res.status);
+          return;
+        }
+
+        const json = await res.json();
+        console.log("✅ [Preview] /api/auth/me payload =", json);
+
+        if (!json.user) {
+          console.warn("⚠️ [Preview] /api/auth/me had no user");
+          return;
+        }
+
+        setAuth("", json.user);
+        console.log("✅ [Preview] authStore hydrated from /api/auth/me");
+      } catch (e) {
+        console.error("❌ [Preview] Failed to hydrate auth store:", e);
+      }
+    })();
+  }, [user, setAuth]);
+
+  /** ---------- 2) auto-inject contact from auth user (once / when available) ---------- */
+  useEffect(() => {
+    console.log("🔎 [Preview] authStore.user =", user);
+    console.log("🔎 [Preview] postForm.sellerInfo BEFORE =", data.sellerInfo);
+
+    if (!user) {
+      console.log("⚠️ [Preview] No user in auth store (yet).");
+      return;
+    }
+
+    const fromProfile = extractUserContact(user);
+    console.log("✅ [Preview] Extracted contact from user =", fromProfile);
+
+    if (!fromProfile.name && !fromProfile.email && !fromProfile.phone) {
+      console.log("⚠️ [Preview] extractUserContact returned empty.");
+      return;
+    }
+
+    const current = data.sellerInfo || { name: "", email: "", phone: "" };
+
+    const next: SellerInfo = {
+      name: current.name || fromProfile.name,
+      email: current.email || fromProfile.email,
+      phone: current.phone || fromProfile.phone,
+    };
+
+    console.log("🧩 [Preview] Merging sellerInfo:", { current, next });
+
+    if (
+      next.name !== current.name ||
+      next.email !== current.email ||
+      next.phone !== current.phone
+    ) {
+      setField("sellerInfo", next);
+    }
+  }, [user, data.sellerInfo, setField]);
+
+  /** ---------- required fields check ---------- */
   const missing = useMemo(() => {
     const m: string[] = [];
     if (!data.name) m.push("Title");
     if (!data.description) m.push("Description");
     if (!data.category) m.push("Category");
     if (!data.subcategory) m.push("Subcategory");
-    if (!data.sellerInfo?.name) m.push("Contact Name");
-    if (!data.sellerInfo?.email) m.push("Contact Email");
-    if (!data.sellerInfo?.phone) m.push("Contact Phone");
+    if (!sellerInfo.name) m.push("Contact Name");
+    if (!sellerInfo.email) m.push("Contact Email");
+    if (!sellerInfo.phone) m.push("Contact Phone");
     return m;
-  }, [data]);
+  }, [
+    data.name,
+    data.description,
+    data.category,
+    data.subcategory,
+    sellerInfo.name,
+    sellerInfo.email,
+    sellerInfo.phone,
+  ]);
+
+  /** ---------- submit (add | update) ---------- */
+  /** ---------- submit (add | update) ---------- */
+const handleSubmit = async () => {
+  setClientError(null);
+
+  console.log("📝 [Preview] isEdit =", isEdit, "postId =", postId);
+
+  if (missing.length) {
+    setClientError(`Please fill: ${missing.join(", ")}`);
+    return;
+  }
+
+  setLoading(true);
+
+  const fd = buildPostFormData({
+    ...data,
+    sellerInfo,
+  });
+
+  let res;
+  if (isEdit && postId) {
+    console.log("🔧 [Preview] Calling updatePost with id =", postId);
+    res = await updatePost(postId, fd);
+  } else {
+    console.log("➕ [Preview] Calling addPost (create new)");
+    res = await addPost(fd);
+  }
+
+  setLoading(false);
+
+  if (!res || (res as any).ok === false) {
+    console.error("❌ [Preview] submit error:", res);
+    const msg =
+      (res as any)?.error ||
+      "Submit failed. Please check required fields and try again.";
+    setClientError(msg);
+    return;
+  }
+
+  const newId = (res as any).id as string | undefined;
+
+  if (!isEdit) {
+    // reset create mode flags if needed
+    setField("editMode", false);
+    setField("postId", undefined as unknown as string);
+
+    // 👉 redirect to congratulations page (with id in query if you want)
+    const target = newId
+      ? `/congratulation?postId=${encodeURIComponent(newId)}`
+      : "/congratulation";
+
+    router.push(target);
+  } else {
+    // 👉 for edit keep your old behaviour
+    if (postId) {
+      router.push(`/post-details/${postId}`);
+    } else if (newId) {
+      router.push(`/post-details/${newId}`);
+    } else {
+      router.push("/my-ads"); // fallback
+    }
+  }
+};
+
+
+
+  /** ---------- build sections ---------- */
+
+  const categorySection = [
+    {
+      title: "Main / Sub Category",
+      value: `${data.category || "—"}${
+        data.subcategory ? ` → ${data.subcategory}` : ""
+      }`,
+      type: "text" as const,
+    },
+  ];
+
+  const advDetails: Array<{
+    title: string;
+    value: string;
+    type?: "text" | "bullets";
+    noWrap?: boolean;
+  }> = [];
+
+  advDetails.push(
+    { title: "Title", value: String(data.name || "—"), noWrap: true },
+    { title: "Description", value: String(data.description || "—"), noWrap: true }
+  );
+
+  const keyFeatures =
+    (Array.isArray((data as any).keyFeatures) &&
+      (data as any).keyFeatures.join(", ")) ||
+    (typeof (data as any).keyFeatures === "string" && (data as any).keyFeatures) ||
+    "";
+  if (keyFeatures) {
+    advDetails.push({
+      title: "Key Features",
+      value: keyFeatures,
+      type: "bullets",
+      noWrap: true,
+    });
+  }
+
+  const possibleFields: Array<[string, string]> = [
+    ["price", "Asking Price / Rent"],
+    ["rentPrice", "Asking Rent"],
+    ["salePrice", "Sale Price"],
+    ["deposit", "Deposit"],
+    ["available_from", "Available From"],
+    ["deadline", "Deadline"],
+    ["startDate", "Start Date"],
+    ["endDate", "End Date"],
+    ["propertyType", "Property Type"],
+    ["bedroom", "Bedroom"],
+    ["bathroom", "Bathroom"],
+    ["size", "Size"],
+    ["furnishType", "Furnish type"],
+    ["letType", "Let type"],
+    ["councilTax", "Council Tax"],
+  ];
+
+  for (const [k, label] of possibleFields) {
+    if (has(k)) {
+      advDetails.push({ title: label, value: renderValue(k, (data as any)[k]) });
+    }
+  }
+
+  const hasAddress = (data.location?.address || "").trim().length > 0;
+  const coords =
+    typeof data.location?.lat === "number" &&
+    typeof data.location?.lng === "number"
+      ? `${data.location.lat.toFixed(6)}°, ${data.location.lng.toFixed(6)}°`
+      : "";
+
+  const locationProvider: Array<{ title: string; value: string; type?: "text" }> =
+    [];
+  if (hasAddress) {
+    locationProvider.push({
+      title: "Address",
+      value: data.location?.address || "—",
+      type: "text",
+    });
+  }
+  if (coords) {
+    locationProvider.push({
+      title: "Coordinates",
+      value: coords,
+      type: "text",
+    });
+  }
+
+  const mapData =
+    typeof data.location?.lat === "number" &&
+    typeof data.location?.lng === "number"
+      ? { lat: data.location.lat, lng: data.location.lng }
+      : null;
+
+  const imageProvider =
+    Array.isArray(data.images) && data.images.length
+      ? data.images.map((img: File | string) => ({
+          imageUrl: img instanceof File ? URL.createObjectURL(img) : (img as string),
+        }))
+      : [];
 
   const debugJson = useMemo(() => {
     try {
-      return JSON.stringify(data, null, 2);
+      return JSON.stringify({ ...data, sellerInfo }, null, 2);
     } catch {
       return "—";
     }
-  }, [data]);
-
-  const handleSubmit = async () => {
-    setClientError(null);
-    if (missing.length) {
-      setClientError(`Please fill: ${missing.join(", ")}`);
-      return;
-    }
-
-    setLoading(true);
-    const fd = buildPostFormData(data);
-
-    // IMPORTANT: keep existing image URLs and attach new File objects in buildPostFormData
-    // e.g. inside buildPostFormData:
-    //   for (const img of state.images) {
-    //     if (img instanceof File) form.append("images", img);
-    //     else form.append("imageUrl", img);
-    //   }
-
-    const res = isEdit && postId
-      ? await updatePost(postId, fd)   // <-- update existing
-      : await addPost(fd);             // <-- create new
-
-    setLoading(false);
-
-    if (!res || (res as any).ok === false) {
-      const msg =
-        (res as any)?.error ||
-        "Submit failed. Please check required fields and try again.";
-      setClientError(msg);
-      return;
-    }
-
-    router.push(`/post-details/${(res as any).id}`);
-  };
-
-  // quick booleans for sectioning
-  const cat = String(data.category || "").toLowerCase();
-  const sub = String(data.subcategory || "").toLowerCase();
-
-  const isVehicle = cat === "vehicles" || has("make") || has("model");
-  const isParts =
-    (cat === "vehicles" && sub.includes("parts")) ||
-    has("partsCategory") ||
-    has("compatibility");
-  const isVehicleWanted =
-    (cat === "vehicles" && sub.includes("wanted")) ||
-    has("vehicleType") ||
-    has("maxBudget") ||
-    has("preferred_locations");
-
-  const isPets = cat === "pets" || cat === "pet";
-  const isPetAdoption = isPets && sub.includes("adoption");
-  const isPetWanted = isPets && sub.includes("wanted");
-  const isPetAccessories = isPets && sub.includes("accessories");
-  const isPetLostFound =
-    isPets && (sub.includes("lost") || sub.includes("found"));
-  const isPetServices = isPets && sub.includes("service");
-
-  const isServices =
-    cat === "services" ||
-    ["education", "food", "health", "home", "other", "technology", "travel", "tutoring", "wanted"].some(
-      (s) => sub.includes(s)
-    );
-
-  const isEdu = isServices && sub.includes("education");
-  const isFood = isServices && sub.includes("food");
-  const isHealth = isServices && sub.includes("health");
-  const isHome = isServices && sub.includes("home");
-  const isOther = isServices && sub.includes("other");
-  const isTech = isServices && (sub.includes("tech") || sub.includes("technology"));
-  const isTravel = isServices && sub.includes("travel");
-  const isTutoring = isServices && sub.includes("tutoring");
-  const isSvcWanted = isServices && sub.includes("wanted");
+  }, [data, sellerInfo]);
 
   return (
-    <>
-      <AppHeader />
-      <main className="max-w-2xl mx-auto p-6 space-y-6">
-        <h2 className="text-2xl font-bold">
-          {isEdit ? "Preview Your Changes" : "Preview Your Post"}
-        </h2>
+    <main className="min-h-screen bg-gray-50">
+      <div className="w-full max-w-xl mx-auto px-6 pt-10 pb-16">
+        <div className="text-center mb-8">
+          <PageHeader
+            title="Review Details"
+            description="Take a moment to review all the information you’ve provided. Make sure everything looks good before you submit your advertisement."
+          />
+        </div>
 
         {clientError && (
-          <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded">
+          <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded mb-6">
             {clientError}
           </div>
         )}
 
-        {/* Basic Info */}
-        <section className="space-y-1 border-b pb-4">
-          <h3 className="text-lg font-semibold">Basic Info</h3>
-          {row(
-            "Category",
-            `${data.category || "—"}${
-              data.subcategory ? ` → ${data.subcategory}` : ""
-            }`
-          )}
-          {row("Title", data.name || "—")}
-          {row("Description", data.description || "—")}
-        </section>
+        <ReviewDetailsSection
+          title="Selected Category"
+          dataProvider={categorySection}
+          routeBackTo="/post/select-category"
+        />
 
-        {/* Details */}
-        <section className="space-y-1 border-b pb-4">
-          <h3 className="text-lg font-semibold">Details</h3>
+        <ReviewDetailsSection
+          title="Advertisement Details"
+          dataProvider={advDetails}
+          routeBackTo="/post/details"
+        />
 
-          {/* ===== Pets: Adoption ===== */}
-          {isPetAdoption && (
-            <>
-              {has("petName") && row("Pet Name", data.petName)}
-              {has("petType") && row("Pet Type", data.petType)}
-              {has("breed") && row("Breed", data.breed)}
-              {has("ageText") && row("Age", data.ageText)}
-              {has("age") && !has("ageText") && row("Age", data.age)}
-              {has("gender") && row("Gender", data.gender)}
-              {has("vaccination") && row("Vaccination", data.vaccination)}
-              {has("size") && row("Size", data.size)}
-              {has("price") && row("Adoption Fee", data.price, "price")}
-              {!has("price") && has("salePrice") &&
-                row("Adoption Fee", data.salePrice, "salePrice")}
-            </>
-          )}
-
-          {/* ===== Pets: Wanted ===== */}
-          {isPetWanted && (
-            <>
-              {has("wantedPetType") &&
-                row("Wanted Pet Type", data.wantedPetType)}
-              {has("breedPreference") &&
-                row("Breed Preference", data.breedPreference)}
-              {has("agePreference") &&
-                row("Age Preference", data.agePreference)}
-              {has("genderPreference") &&
-                row("Gender Preference", data.genderPreference)}
-              {has("sizePreference") &&
-                row("Size Preference", data.sizePreference)}
-              {has("budget") && row("Budget", data.budget, "budget")}
-            </>
-          )}
-
-          {/* ===== Pets: Accessories ===== */}
-          {isPetAccessories && (
-            <>
-              {has("accessoryName") && row("Accessory Name", data.accessoryName)}
-              {has("partsCategory") && row("Category", data.partsCategory)}
-              {has("brand") && row("Brand", data.brand)}
-              {has("condition") && row("Condition", data.condition)}
-              {has("price") && row("Price", data.price, "price")}
-              {!has("price") && has("salePrice") &&
-                row("Price", data.salePrice, "salePrice")}
-            </>
-          )}
-
-          {/* ===== Pets: Lost & Found ===== */}
-          {isPetLostFound && (
-            <>
-              {has("reportType") && row("Report Type", data.reportType)}
-              {has("petType") && row("Pet Type", data.petType)}
-              {has("breed") && row("Breed", data.breed)}
-              {has("color") && row("Color", data.color)}
-              {has("ageText") && row("Age", data.ageText)}
-              {has("age") && !has("ageText") && row("Age", data.age)}
-              {has("lastSeenLocation") &&
-                row("Last Seen Location", data.lastSeenLocation)}
-              {has("lfDate") && row("Date", data.lfDate, "lfDate")}
-              {has("date") && !has("lfDate") && row("Date", data.date, "date")}
-            </>
-          )}
-
-          {/* ===== Pets: Services ===== */}
-          {isPetServices && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("serviceProviderName") &&
-                row("Provider Name", data.serviceProviderName)}
-              {has("experience") && row("Experience", data.experience)}
-              {has("availability") && row("Availability", data.availability)}
-              {has("price") && row("Price", data.price, "price")}
-              {!has("price") && has("salePrice") &&
-                row("Price", data.salePrice, "salePrice")}
-            </>
-          )}
-
-          {/* ===== Services: Education ===== */}
-          {isEdu && (
-            <>
-              {has("educationType") && row("Education Type", data.educationType)}
-              {has("subject") && row("Subject / Course", data.subject)}
-              {has("mode") && row("Mode of Study", data.mode)}
-              {has("qualification") &&
-                row("Required Qualification", data.qualification)}
-              {has("experience") && row("Experience (years)", data.experience)}
-              {has("availability") &&
-                row("Availability / Schedule", data.availability)}
-              {has("price") && row("Fees / Price", data.price, "price")}
-            </>
-          )}
-
-          {/* ===== Services: Food ===== */}
-          {isFood && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("cuisineType") && row("Cuisine Type", data.cuisineType)}
-              {Array.isArray(data.dietaryOptions) &&
-                row("Dietary Options", data.dietaryOptions)}
-              {has("price") && row("Price", data.price, "price")}
-              {has("deliveryAvailable") &&
-                row("Delivery Available", data.deliveryAvailable)}
-            </>
-          )}
-
-          {/* ===== Services: Health ===== */}
-          {isHealth && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("providerName") && row("Provider Name", data.providerName)}
-              {has("qualification") && row("Qualification", data.qualification)}
-              {has("experience") && row("Experience", data.experience)}
-              {has("consultationMode") &&
-                row("Consultation Mode", data.consultationMode)}
-              {has("price") && row("Consultation Fee", data.price, "price")}
-              {has("availability") && row("Availability", data.availability)}
-            </>
-          )}
-
-          {/* ===== Services: Home ===== */}
-          {isHome && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("experience") && row("Experience", data.experience)}
-              {has("availability") && row("Availability", data.availability)}
-              {has("price") && row("Service Charge", data.price, "price")}
-            </>
-          )}
-
-          {/* ===== Services: Other ===== */}
-          {isOther && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("availability") && row("Availability", data.availability)}
-              {has("price") && row("Price", data.price, "price")}
-            </>
-          )}
-
-          {/* ===== Services: Technology ===== */}
-          {isTech && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {Array.isArray(data.skills) && row("Skills", data.skills)}
-              {has("experience") && row("Experience", data.experience)}
-              {has("availability") && row("Availability", data.availability)}
-              {has("rateType") && row("Rate Type", data.rateType)}
-              {has("price") && row("Rate", data.price, "price")}
-            </>
-          )}
-
-          {/* ===== Services: Travel ===== */}
-          {isTravel && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("destination") && row("Destination", data.destination)}
-              {has("packageDetails") &&
-                row("Package Details", data.packageDetails)}
-              {has("duration") && row("Duration", data.duration)}
-              {has("price") && row("Price", data.price, "price")}
-              {has("availability") && row("Availability", data.availability)}
-              {has("agencyName") && row("Agency Name", data.agencyName)}
-            </>
-          )}
-
-          {/* ===== Services: Tutoring ===== */}
-          {isTutoring && (
-            <>
-              {has("subject") && row("Subject", data.subject)}
-              {has("level") && row("Level", data.level)}
-              {has("mode") && row("Mode", data.mode)}
-              {has("qualification") && row("Qualification", data.qualification)}
-              {has("experience") && row("Experience (years)", data.experience)}
-              {has("availability") &&
-                row("Availability / Schedule", data.availability)}
-              {has("price") && row("Hourly Rate", data.price, "price")}
-            </>
-          )}
-
-          {/* ===== Services: Wanted ===== */}
-          {isSvcWanted && (
-            <>
-              {has("serviceType") && row("Service Type", data.serviceType)}
-              {has("budgetAmount") &&
-                row("Budget", data.budgetAmount, "budgetAmount")}
-              {has("urgency") && row("Urgency", data.urgency)}
-            </>
-          )}
-
-          {/* ===== Add/keep other domain blocks (vehicles/property/jobs) as in your codebase ===== */}
-        </section>
-
-        {/* Contact Details */}
-        <section className="space-y-1 border-b pb-4">
-          <h3 className="text-lg font-semibold">Contact Details</h3>
-          {row("Name", data.sellerInfo?.name || "—")}
-          {row("Email", data.sellerInfo?.email || "—")}
-          {row("Phone", data.sellerInfo?.phone || "—")}
-        </section>
-
-        {/* Location (optional) */}
-        {(data.location?.address || "").trim() ? (
-          <section className="space-y-1 border-b pb-4">
-            <h3 className="text-lg font-semibold">Location</h3>
-            {row("Address", data.location?.address || "—")}
-          </section>
-        ) : null}
-
-        {/* Images */}
-        {Array.isArray(data.images) && data.images.length > 0 && (
-          <section className="space-y-2 border-b pb-4">
-            <h3 className="text-lg font-semibold">Images</h3>
-            <div className="flex flex-wrap gap-3">
-              {data.images.map((img, i) => {
-                const url =
-                  img instanceof File ? URL.createObjectURL(img) : (img as string);
-                return (
-                  <img
-                    key={i}
-                    src={url}
-                    alt={`preview-${i}`}
-                    className="w-28 h-28 object-cover rounded"
-                  />
-                );
-              })}
-            </div>
-          </section>
+        {(hasAddress || mapData) && (
+          <ReviewDetailsSection
+            title="Selected Location"
+            dataProvider={locationProvider}
+            mapData={mapData || undefined}
+            routeBackTo="/post/pick-location"
+          />
         )}
 
-        {/* Debug JSON */}
-        <section>
-          <details className="group">
-            <summary className="cursor-pointer text-sm text-gray-600">
-              Debug JSON
-            </summary>
-            <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
-              {debugJson}
-            </pre>
-          </details>
-        </section>
+        {imageProvider.length > 0 && (
+          <ReviewDetailsSection
+            title="Uploaded Photos"
+            imageProvider={imageProvider}
+            routeBackTo="/post/upload-photo"
+          />
+        )}
 
-        <Button onClick={handleSubmit} disabled={loading} className="w-full">
-          {loading ? "Submitting..." : isEdit ? "Save Changes" : "Submit Post"}
-        </Button>
-      </main>
-      <AppFooter />
-    </>
+        <AdvertiserContactSection
+          sellerInfo={sellerInfo}
+          onPhoneChange={(phone) =>
+            setField("sellerInfo", { ...sellerInfo, phone })
+          }
+        />
+
+        <details className="group mt-4">
+          <summary className="cursor-pointer text-sm text-gray-600">
+            Debug JSON
+          </summary>
+          <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
+            {debugJson}
+          </pre>
+        </details>
+
+        <div className="mt-6">
+          <PostFooter
+            showBack={false}
+            showNext={false}
+            showSubmit={true}
+            onSubmit={handleSubmit}
+            submitting={loading}
+            submitLabel={
+              loading
+                ? isEdit
+                  ? "Saving..."
+                  : "Submitting..."
+                : isEdit
+                ? "Save Changes"
+                : "Submit Post"
+            }
+          />
+        </div>
+      </div>
+    </main>
   );
 }

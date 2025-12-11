@@ -19,24 +19,40 @@ export async function POST(req: Request) {
     await dbConnect();
 
     const body = await req.json().catch(() => ({} as any));
-    const emailRaw = String(body?.email ?? "").trim().toLowerCase();
+
+    const rawIdentifier = String(body?.identifier ?? "").trim(); // 👈 email OR phone
     const password = String(body?.password ?? "");
 
-    if (!emailRaw || !password) {
+    if (!rawIdentifier || !password) {
       return NextResponse.json(
-        { error: "Email and password are required." },
+        { error: "Email / phone and password are required." },
         { status: 400 }
       );
     }
 
-    const user = await User.findOne({ email: emailRaw }).lean();
+    // Heuristic: if it contains '@' -> treat as email; else phone
+    const isEmail = rawIdentifier.includes("@");
+    const emailRaw = isEmail ? rawIdentifier.toLowerCase() : undefined;
+    const phoneRaw = isEmail ? undefined : rawIdentifier;
+
+    const query = isEmail
+      ? { email: emailRaw }
+      : { primaryNumber: phoneRaw };
+
+    const user = await User.findOne(query).lean();
     if (!user) {
-      return NextResponse.json({ error: "User not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Account not found with that email / phone." },
+        { status: 404 }
+      );
     }
 
     const ok = await compare(password, user.password);
     if (!ok) {
-      return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid credentials." },
+        { status: 401 }
+      );
     }
 
     if (!user.isEmailVerified) {
@@ -49,22 +65,26 @@ export async function POST(req: Request) {
     const token = signJwt({
       userId: String(user._id),
       email: user.email,
-      username: user.username,
+      primaryNumber: user.primaryNumber, // 👈 phone instead of username
       role: user.role ?? "user",
     });
 
-    const res = NextResponse.json({
-      message: "Login successful",
-      user: {
-        id: String(user._id),
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role ?? "user",
+    const res = NextResponse.json(
+      {
+        message: "Login successful",
+        user: {
+          id: String(user._id),
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role ?? "user",
+          primaryNumber: user.primaryNumber,
+          locality: (user as any).locality, // if you added locality in schema
+        },
+        token,
       },
-      token, // optional
-    });
+      { status: 200 }
+    );
 
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
@@ -74,10 +94,13 @@ export async function POST(req: Request) {
       maxAge: MAX_AGE,
     });
 
-    // optional readable hint cookie
+    // readable hint cookie – use phone now instead of username
     res.cookies.set(
       "uinfo",
-      JSON.stringify({ id: String(user._id), u: user.username }),
+      JSON.stringify({
+        id: String(user._id),
+        ph: user.primaryNumber,
+      }),
       {
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",

@@ -13,8 +13,6 @@ function isAdult(dobISO: string) {
 
 /**
  * Step 1 – General Information
- * nationality, country, state: OPTIONAL
- * residency: OPTIONAL (keep required if you prefer — just change to .min(1, "..."))
  */
 export const generalInfoSchema = z.object({
   firstName: z.string().min(1, "Please enter your first name."),
@@ -29,7 +27,7 @@ export const generalInfoSchema = z.object({
     errorMap: () => ({ message: "Please select a gender option." }),
   }),
 
-  // ✅ Optional fields
+  // Optional fields
   nationality: z.string().optional().or(z.literal("")),
   country: z.string().optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
@@ -55,20 +53,63 @@ export type PhoneForm = z.infer<typeof phoneSchema>;
 
 /**
  * Step 4 – Profile Setup
+ * locality + password + role (+ optional roleTitle / roleDescription)
  */
-export const profileSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(24, "Password must be at most 24 characters")
-    .refine((v) => /[A-Za-z]/.test(v), "Password must include at least one letter")
-    .refine((v) => /\d/.test(v), "Password must include at least one number")
-    .refine(
-      (v) => /[^A-Za-z0-9]/.test(v),
-      "Password must include at least one special character"
-    ),
-  role: z.string().min(1, "Role is required"),
-});
+export const profileSchema = z
+  .object({
+    locality: z
+      .string()
+      .min(2, "Please enter your locality.")
+      .max(80, "Locality is too long — keep it under 80 characters."),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(24, "Password must be at most 24 characters")
+      .refine(
+        (v) => /[A-Za-z]/.test(v),
+        "Password must include at least one letter"
+      )
+      .refine(
+        (v) => /\d/.test(v),
+        "Password must include at least one number"
+      )
+      .refine(
+        (v) => /[^A-Za-z0-9]/.test(v),
+        "Password must include at least one special character"
+      ),
+    role: z.enum(["individual", "business", "agency", "other"], {
+      errorMap: () => ({ message: "Role is required" }),
+    }),
+
+    // Only required when role === "other"
+    roleTitle: z
+      .string()
+      .max(80, "Role title is too long")
+      .optional()
+      .or(z.literal("")),
+    roleDescription: z
+      .string()
+      .max(400, "Role description is too long")
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.role === "other") {
+      if (!data.roleTitle || !data.roleTitle.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["roleTitle"],
+          message: "Please enter a role title.",
+        });
+      }
+      if (!data.roleDescription || !data.roleDescription.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["roleDescription"],
+          message: "Please describe how you plan to use Lokalads.",
+        });
+      }
+    }
+  });
 
 export type ProfileForm = z.infer<typeof profileSchema>;

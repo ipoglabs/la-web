@@ -1,4 +1,4 @@
-// src/app/listing/page.tsx  (or /listings/page.tsx if that's your route)
+// src/app/listing/page.tsx
 import AppHeader from "../components/AppHeader/appHeader";
 import SecondarySearchArea from "../components/AppHeader/secondarySearchArea";
 import Filter from "../components/ListingComponents/filter";
@@ -43,7 +43,11 @@ export default async function ListingPage({
 
   const page = Math.max(1, Number(searchParams?.page ?? "1") || 1);
   const sort = getSort(searchParams?.sort);
-  const filter: Record<string, any> = {};
+
+  // 🔎 base filter: hide pending & pause posts
+  const filter: Record<string, any> = {
+    status: { $nin: ["pending", "pause"] },
+  };
 
   // Optional basic filters
   if (searchParams?.q) {
@@ -55,6 +59,7 @@ export default async function ListingPage({
       { "location.address": { $regex: searchParams.q, $options: "i" } },
     ];
   }
+
   if (searchParams?.category) filter.category = searchParams.category;
   if (searchParams?.subcategory) filter.subcategory = searchParams.subcategory;
 

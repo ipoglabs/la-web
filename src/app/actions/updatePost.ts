@@ -1,17 +1,16 @@
 // src/app/actions/updatePost.ts
 "use server";
 
-import { cookies } from "next/headers";
 import { Types } from "mongoose";
 import connectDB from "@/config/database";
 import Post from "@/models/post";
 import cloudinary from "@/config/cloudinary";
-import { verifyToken } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
+
+/* ---------------------- helpers (unchanged from you) ---------------------- */
 
 type LocationData = { address?: string; lat?: number; lng?: number };
-type DecodedJwt = Record<string, unknown> | null;
 
-// ---------- helpers ----------
 function safeParse<T = any>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;
@@ -19,17 +18,20 @@ function safeParse<T = any>(val: string, fallback: T): T {
     return fallback;
   }
 }
+
 const pullString = (v: FormDataEntryValue | null | undefined) => {
   const s = (v as string | null) ?? "";
   const t = s?.trim?.() ?? s;
   return t || undefined;
 };
+
 const pullNumber = (v: FormDataEntryValue | null | undefined) => {
   const s = pullString(v);
   if (!s) return undefined;
   const n = Number(s);
   return Number.isNaN(n) ? undefined : n;
 };
+
 const pullArray = (v: FormDataEntryValue | null | undefined) => {
   const s = pullString(v);
   if (!s) return [];
@@ -40,6 +42,7 @@ const pullArray = (v: FormDataEntryValue | null | undefined) => {
     .map((x) => x.trim())
     .filter(Boolean);
 };
+
 function stripUndef(obj: Record<string, any>) {
   const out: Record<string, any> = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -50,30 +53,11 @@ function stripUndef(obj: Record<string, any>) {
   }
   return out;
 }
-const normEmail = (e?: string) => (e ? String(e).trim().toLowerCase() : undefined);
 
-function pickJwtObjectId(decoded: DecodedJwt): Types.ObjectId | undefined {
-  if (!decoded || typeof decoded !== "object") return;
-  const raw =
-    (typeof (decoded as any).id === "string" && (decoded as any).id) ||
-    (typeof (decoded as any).userId === "string" && (decoded as any).userId) ||
-    undefined;
-  if (!raw || !Types.ObjectId.isValid(raw)) return;
-  return new Types.ObjectId(raw);
-}
-function pickJwtEmail(decoded: DecodedJwt): string | undefined {
-  if (!decoded || typeof decoded !== "object") return;
-  const e1 = (decoded as any).email;
-  const e2 = (decoded as any).user?.email;
-  const e3 = (decoded as any).sub;
-  const chosen =
-    (typeof e1 === "string" && e1.includes("@") && e1) ||
-    (typeof e2 === "string" && e2.includes("@") && e2) ||
-    (typeof e3 === "string" && e3.includes("@") && e3) ||
-    undefined;
-  return normEmail(chosen);
-}
-// ----------------------------
+const normEmail = (e?: string) =>
+  e ? String(e).trim().toLowerCase() : undefined;
+
+/* ------------------------------------------------------------------------- */
 
 export async function updatePost(
   postId: string,
@@ -86,24 +70,37 @@ export async function updatePost(
 
     await connectDB();
 
-    // Next 15: cookies() must be awaited
-    const cookieStore = await cookies();
-    let raw = cookieStore.get("token")?.value;
-    if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length);
+    // 🔐 Use same session mechanism as getCurrentUser()
+    const session = getSession();
+    if (!session) {
+      return { ok: false, error: "Not authenticated" };
+    }
 
-    const decoded = (raw ? verifyToken(raw) : null) as DecodedJwt;
-    const ownerObjectId = pickJwtObjectId(decoded);
-    const ownerEmailFromJwt = pickJwtEmail(decoded);
+    const sessionUserId = session.userId;
+    const sessionEmail = normEmail(session.email);
+
+    if (!sessionUserId || !Types.ObjectId.isValid(sessionUserId)) {
+      return { ok: false, error: "Invalid session user id" };
+    }
+
+    const sessionOwnerId = new Types.ObjectId(sessionUserId);
 
     // Load current doc first
     const current = await Post.findById(new Types.ObjectId(postId)).lean();
-    if (!current) return { ok: false, error: "Not found or not authorized to edit this post" };
+    if (!current) {
+      return { ok: false, error: "Not found or not authorized to edit this post" };
+    }
 
-    // Authorization: prefer ownerId; else fallback to email
+    // ----- Authorization -----
+    const currentOwnerId = current.ownerId as Types.ObjectId | undefined;
+    const currentEmail = normEmail(current.seller_info?.email);
+
+    // You might have old posts without ownerId — allow by email match
     const hasOwnerMatch =
-      ownerObjectId && current.ownerId && String(current.ownerId) === String(ownerObjectId);
+      currentOwnerId && String(currentOwnerId) === String(sessionOwnerId);
+
     const hasEmailMatch =
-      ownerEmailFromJwt && current.seller_info?.email?.toLowerCase() === ownerEmailFromJwt;
+      sessionEmail && currentEmail && currentEmail === sessionEmail;
 
     if (!hasOwnerMatch && !hasEmailMatch) {
       return { ok: false, error: "Not found or not authorized to edit this post" };
@@ -114,14 +111,17 @@ export async function updatePost(
       pullString(formData.get("name")) ||
       pullString(formData.get("jobTitle")) ||
       pullString(formData.get("projectTitle"));
+
     const description = pullString(formData.get("description"));
     const category = pullString(formData.get("category"));
     const subcategory = pullString(formData.get("subcategory"));
 
     const locationRaw = (formData.get("locationData") as string) || "";
-    const location: LocationData = locationRaw ? safeParse<LocationData>(locationRaw, {}) : {};
+    const location: LocationData = locationRaw
+      ? safeParse<LocationData>(locationRaw, {})
+      : {};
 
-    // Seller info
+    // Seller info: accept anything from form, but fall back to current + session email
     const seller_info = {
       name:
         pullString(formData.get("seller_info.name")) ||
@@ -133,7 +133,9 @@ export async function updatePost(
             pullString(formData.get("sellerInfo.email")) ||
             pullString(formData.get("contactEmail")) ||
             pullString(formData.get("email"))
-        ) || ownerEmailFromJwt,
+        ) ||
+        sessionEmail ||
+        undefined,
       phone:
         pullString(formData.get("seller_info.phone")) ||
         pullString(formData.get("sellerInfo.phone")) ||
@@ -141,15 +143,19 @@ export async function updatePost(
         pullString(formData.get("contactNumber")),
     };
 
-    // Images: keep existing + new uploads
+    // ----- Images: keep existing + new uploads -----
     const imageUrlEntries = (formData.getAll("imageUrl") as string[]) || [];
     const imageFiles = (formData.getAll("images") as File[]) || [];
     const mergedImages: string[] = [...imageUrlEntries];
 
     for (const file of imageFiles) {
+      // In server actions, File is available
+      // but we still sanity check
       if (!(file instanceof File) || !file.size || !file.type?.startsWith("image/")) continue;
+
       const buffer = await file.arrayBuffer();
       const base64 = Buffer.from(new Uint8Array(buffer)).toString("base64");
+
       try {
         const result = await cloudinary.uploader.upload(
           `data:${file.type};base64,${base64}`,
@@ -166,7 +172,7 @@ export async function updatePost(
         ? current.images ?? []
         : mergedImages;
 
-    // Build update
+    // ----- Build update object (mostly your existing mapping) -----
     const updateRaw: Record<string, any> = {
       name,
       description,
@@ -181,10 +187,10 @@ export async function updatePost(
         phone: seller_info.phone ?? current.seller_info?.phone,
       },
 
-      // Only attach ownerId if it is a valid ObjectId derived from JWT
-      ...(ownerObjectId ? { ownerId: ownerObjectId } : {}),
+      // Always ensure ownerId is set to session user for this edit
+      ownerId: currentOwnerId ?? sessionOwnerId,
 
-      // --- the rest of your fields (unchanged) ---
+      // --- remaining fields (copied from your original) ---
       propertyType: pullString(formData.get("propertyType")),
       beds: pullNumber(formData.get("beds")),
       baths: pullNumber(formData.get("baths")),
@@ -270,7 +276,9 @@ export async function updatePost(
       petName: pullString(formData.get("petName")),
       petType: pullString(formData.get("petType")),
       breed: pullString(formData.get("breed")),
-      ageText: pullString(formData.get("age")) || pullString(formData.get("ageText")),
+      ageText:
+        pullString(formData.get("age")) ||
+        pullString(formData.get("ageText")),
       gender: pullString(formData.get("gender")),
       vaccination: pullString(formData.get("vaccination")),
       size: pullString(formData.get("size")),
@@ -303,7 +311,9 @@ export async function updatePost(
       destination: pullString(formData.get("destination")),
       packageDetails: pullString(formData.get("packageDetails")),
       agencyName: pullString(formData.get("agencyName")),
-      durationText: pullString(formData.get("duration")) || pullString(formData.get("durationText")),
+      durationText:
+        pullString(formData.get("duration")) ||
+        pullString(formData.get("durationText")),
       level: pullString(formData.get("level")),
       urgency: pullString(formData.get("urgency")),
     };
@@ -314,7 +324,7 @@ export async function updatePost(
       if (svcPrice !== undefined) updateRaw.salePrice = svcPrice;
     }
 
-    // Required checks based on effective values
+    // ----- Required checks based on effective values -----
     const effective = {
       name: updateRaw.name ?? current.name,
       description: updateRaw.description ?? current.description,
@@ -326,6 +336,7 @@ export async function updatePost(
         phone: updateRaw.seller_info?.phone ?? current.seller_info?.phone,
       },
     };
+
     const errors: string[] = [];
     if (!effective.name) errors.push("Title is required");
     if (!effective.description) errors.push("Description is required");
@@ -334,14 +345,17 @@ export async function updatePost(
     if (!effective.seller_info?.name) errors.push("Contact name is required");
     if (!effective.seller_info?.email) errors.push("Contact email is required");
     if (!effective.seller_info?.phone) errors.push("Contact phone is required");
-    if (errors.length) return { ok: false, error: errors.join(" • ") };
 
-    // Only $set provided values
+    if (errors.length) {
+      return { ok: false, error: errors.join(" • ") };
+    }
+
+    // ----- Clean $set and final safety -----
     const $set = stripUndef(updateRaw);
 
-    // FINAL SAFETY: never set an invalid ownerId
+    // Final safety: ensure ownerId is a valid ObjectId
     if ("ownerId" in $set && !($set.ownerId instanceof Types.ObjectId)) {
-      delete $set.ownerId;
+      $set.ownerId = sessionOwnerId;
     }
 
     const doc = await Post.findOneAndUpdate(
@@ -350,7 +364,10 @@ export async function updatePost(
       { new: true, runValidators: true }
     ).lean();
 
-    if (!doc) return { ok: false, error: "Not found or not authorized to edit this post" };
+    if (!doc) {
+      return { ok: false, error: "Not found or not authorized to edit this post" };
+    }
+
     return { ok: true, id: String(doc._id) };
   } catch (e: any) {
     console.error("updatePost fatal error:", e);

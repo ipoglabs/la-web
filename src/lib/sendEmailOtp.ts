@@ -15,42 +15,135 @@ export async function sendEmailOtp(email: string, otp: string) {
     subject: "Your OTP for Email Verification",
     html: `
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Lokalads Verification Code</title>
-<style>
-  body { font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
-  .container { background-color: #ffffff; max-width: 480px; margin: 40px auto; padding: 24px 28px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-  .header { display: flex; align-items: center; padding-bottom: 12px; margin-bottom: 22px; }
-  .message { color: #333; font-size: 18px; line-height: 1.4; }
-  .code { background: #f2f3f5; border-left: 4px solid #ff3366; padding: 10px 16px; font-size: 32px; font-weight: bold; color: #000; margin: 18px 0; letter-spacing: 2px; }
-  .footer { margin-top: 28px; font-size: 16px; color: #777; border-top: 1px solid #d1d1d1; padding-top: 12px; line-height: 1.4; }
-</style>
-</head>
-
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="${process.env.NEXT_PUBLIC_DOMAIN}/la-logo-symbol-color.svg" alt="Lokalads Logo" style="width: 52px; height: 52px" />
-      <img src="${process.env.NEXT_PUBLIC_DOMAIN}/la-text-black.svg" alt="Lokalads Text" style="width: 140px; height: auto; margin-left: 8px" />
-    </div>
-
-    <p class="message">
-      Use this one-time passcode (OTP) to verify your email address for your Lokalads account.
-    </p>
-
-    <div class="code">${otp}</div>
-
-    <p>This code will expire in 10 minutes.</p>
-
-    <div class="footer">
-      Please do not reply to this email — it's an automatic message.<br />
-      © 2025 lokalads.com — All rights reserved.
-    </div>
-  </div>
-</body>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lokalads Verification Code</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0px;
+      background-color: #f8f8f8;
+      font-family: Arial, Helvetica, sans-serif;
+    "
+  >
+    <table
+      style="
+        border: 0px;
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+      "
+    >
+      <!--  Main header section -->
+      <tr>
+        <td
+          style="
+            border: 0px;
+            padding-bottom: 14px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 20px;
+          "
+        >
+          <img
+            src="https://www.lokalads.com/la-logo.png"
+            style="width: 190px; height: auto"
+          />
+        </td>
+      </tr>
+      <!--  Main body section -->
+      <tr>
+        <td
+          style="
+            border: 0px;
+            padding-top: 4px;
+            padding-left: 20px;
+            padding-right: 20px;
+          "
+        >
+          <p
+            style="
+              font-size: 18px;
+              color: #333;
+              line-height: 1.55;
+              padding: 0;
+              padding-bottom: 18px;
+              margin: 0;
+            "
+          >
+            Use this one-time passcode (OTP) to verify your email address for
+            your lokalads account.
+          </p>
+          <p
+            style="
+              background-color: #f2f3f5;
+              border-left: 6px solid #ff3366;
+              padding: 14px 18px;
+              font-size: 32px;
+              font-weight: bold;
+              margin-top: 0;
+              margin-bottom: 8px;
+            "
+          >
+            ${otp}
+          </p>
+          <p
+            style="
+              font-size: 16px;
+              color: #777;
+              font-style: italic;
+              padding: 0px;
+              padding-bottom: 16px;
+              margin: 0px;
+            "
+          >
+            For your security, do not share this code with anyone.
+          </p>
+          <p
+            style="
+              font-size: 18px;
+              color: #555;
+              padding-bottom: 18px;
+              margin: 0;
+            "
+          >
+            This code will expire in <b>10 minutes</b>.
+          </p>
+          <hr
+            style="
+              border: none;
+              border-top: 1px solid #d1d1d1;
+              padding: 0;
+              margin: 0;
+            "
+          />
+        </td>
+      </tr>
+      <!--  Main footer section -->
+      <tr>
+        <td
+          style="
+            border: none;
+            padding-bottom: 14px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 14px;
+            font-size: 16px;
+            color: #777;
+          "
+        >
+          <p style="margin: 0 0 8px 0; font-size: 16px; color: #777">
+            Please do not reply to this email – it’s an automatic message from
+            an unmonitored account.
+          </p>
+          <p style="margin: 0">© 2025 lokalads.com – All rights reserved.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>
 `,
   };

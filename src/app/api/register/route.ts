@@ -9,7 +9,9 @@ const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 function stripEmpty(obj: Record<string, any>) {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== "" && v !== undefined && v !== null)
+    Object.entries(obj).filter(
+      ([, v]) => v !== "" && v !== undefined && v !== null
+    )
   );
 }
 
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
     await dbConnect();
     const body = await req.json();
 
-    // sanitize / trim
+    // sanitize / trim – username removed, add roleTitle / roleDescription
     const payload = stripEmpty({
       firstName: String(body.firstName || "").trim(),
       lastName: String(body.lastName || "").trim(),
@@ -33,7 +35,9 @@ export async function POST(req: Request) {
       gender: String(body.gender || "other").trim(),
 
       // optional
-      nationality: body.nationality ? String(body.nationality).trim() : undefined,
+      nationality: body.nationality
+        ? String(body.nationality).trim()
+        : undefined,
       country: body.country ? String(body.country).trim() : undefined,
       state: body.state ? String(body.state).trim() : undefined,
       residency: body.residency ? String(body.residency).trim() : undefined,
@@ -41,12 +45,25 @@ export async function POST(req: Request) {
       email: String(body.email || "").trim().toLowerCase(),
 
       primaryNumber: String(body.primaryNumber || "").trim(),
-      secondaryNumber1: body.secondaryNumber1 ? String(body.secondaryNumber1).trim() : undefined,
-      secondaryNumber2: body.secondaryNumber2 ? String(body.secondaryNumber2).trim() : undefined,
+      secondaryNumber1: body.secondaryNumber1
+        ? String(body.secondaryNumber1).trim()
+        : undefined,
+      secondaryNumber2: body.secondaryNumber2
+        ? String(body.secondaryNumber2).trim()
+        : undefined,
 
-      username: String(body.username || "").trim(),
+      locality: String(body.locality || "").trim(), // 👈 required now
+
       password: String(body.password || ""),
-      role: String(body.role || "user"),
+      role: String(body.role || "user").trim(),
+
+      // NEW – only meaningful if role === "other"
+      roleTitle: body.roleTitle
+        ? String(body.roleTitle).trim()
+        : undefined,
+      roleDescription: body.roleDescription
+        ? String(body.roleDescription).trim()
+        : undefined,
 
       marketingOptIn: !!body.subscribe,
     });
@@ -58,7 +75,7 @@ export async function POST(req: Request) {
     if (!payload.dateOfBirth) missing.push("dateOfBirth");
     if (!payload.email) missing.push("email");
     if (!payload.primaryNumber) missing.push("primaryNumber");
-    if (!payload.username) missing.push("username");
+    if (!payload.locality) missing.push("locality");
     if (!payload.password) missing.push("password");
     if (missing.length) {
       return NextResponse.json(
@@ -67,26 +84,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // friendly dup check
+    // ✅ duplicate check ONLY on email + primaryNumber
     const dup = await User.findOne({
-      $or: [
-        { email: payload.email },
-        { username: payload.username },
-        { primaryNumber: payload.primaryNumber },
-      ],
+      $or: [{ email: payload.email }, { primaryNumber: payload.primaryNumber }],
     })
-      .select("email username primaryNumber")
+      .select("email primaryNumber")
       .lean();
 
     if (dup) {
       if (dup.email === payload.email) {
-        return NextResponse.json({ error: "That email is already in use." }, { status: 409 });
-      }
-      if (dup.username === payload.username) {
-        return NextResponse.json({ error: "That username is already in use." }, { status: 409 });
+        return NextResponse.json(
+          { error: "That email is already in use." },
+          { status: 409 }
+        );
       }
       if (dup.primaryNumber === payload.primaryNumber) {
-        return NextResponse.json({ error: "That phone number is already in use." }, { status: 409 });
+        return NextResponse.json(
+          { error: "That phone number is already in use." },
+          { status: 409 }
+        );
       }
     }
 
@@ -103,7 +119,6 @@ export async function POST(req: Request) {
     const token = signJwt({
       userId: String(created._id),
       email: created.email,
-      username: created.username,
       role: created.role ?? "user",
     });
 
@@ -112,13 +127,15 @@ export async function POST(req: Request) {
         message: "Registered successfully",
         user: {
           id: String(created._id),
-          username: created.username,
           email: created.email,
           firstName: created.firstName,
           lastName: created.lastName,
           role: created.role ?? "user",
+          locality: created.locality,
+          roleTitle: created.roleTitle ?? null,
+          roleDescription: created.roleDescription ?? null,
         },
-        token, // optional for SPA usage
+        token,
       },
       { status: 201 }
     );
@@ -134,7 +151,11 @@ export async function POST(req: Request) {
     // optional readable hint cookie
     res.cookies.set(
       "uinfo",
-      JSON.stringify({ id: String(created._id), u: created.username }),
+      JSON.stringify({
+        id: String(created._id),
+        loc: created.locality,
+        rt: created.roleTitle ?? undefined,
+      }),
       {
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",
@@ -146,11 +167,18 @@ export async function POST(req: Request) {
 
     return res;
   } catch (err: any) {
+    // handle generic dup (for email/phone indexes)
     if (err?.code === 11000) {
       const field = Object.keys(err.keyPattern || {})[0] || "field";
-      return NextResponse.json({ error: `That ${field} is already in use.` }, { status: 409 });
+      return NextResponse.json(
+        { error: `That ${field} is already in use.` },
+        { status: 409 }
+      );
     }
     console.error("Register error:", err);
-    return NextResponse.json({ error: err?.message || "Registration failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message || "Registration failed" },
+      { status: 500 }
+    );
   }
 }

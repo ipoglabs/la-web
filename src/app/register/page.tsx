@@ -205,68 +205,70 @@ export default function GeneralInfoPage() {
 
             {/* Date of Birth */}
             <FormField
-              label="Date of Birth"
-              htmlFor="dateOfBirth"
-              error={errors.dateOfBirth}
-              helperLabel="We need this to confirm you are 18+"
-              showFocusWithin={!isBelowLaptop}
-            >
-              <input
-                id="dateOfBirth"
-                name="dateOfBirth" /* must match error key */
-                type="date"
-                value={general.dateOfBirth || ''}
-                onChange={(e) => updateGeneral({ dateOfBirth: e.target.value })}
-                className={cx(
-                  'flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 text-left pr-2',
-                  !!errors.dateOfBirth && 'border-red-500 focus-visible:ring-red-500/20'
-                )}
-                aria-label="Date of Birth"
-                aria-invalid={!!errors.dateOfBirth}
-                aria-describedby={errors.dateOfBirth ? 'dateOfBirth-error' : undefined}
-                autoComplete="bday"
-                max={todayISO()}
-                min="1900-01-01"
-              />
-              {/* {errors.dateOfBirth && (
-                <p id="dateOfBirth-error" className="text-sm text-red-600 mt-1">
-                  {errors.dateOfBirth}
-                </p>
-              )} */}
-            </FormField>
+  label="Date of Birth"
+  htmlFor="dateOfBirth"
+  error={errors.dateOfBirth}
+  helperLabel="We need this to confirm you are 18+"
+  showFocusWithin={!isBelowLaptop}
+>
+  <div className="relative">
+    <input
+      id="dateOfBirth"
+      name="dateOfBirth"
+      type="date"
+      value={general.dateOfBirth || ''}
+      onChange={(e) => updateGeneral({ dateOfBirth: e.target.value })}
+      className={cx(
+        'flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 pl-3 pr-10 py-2 text-base font-normal text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50',
+        'appearance-none',                 // hide default icon
+        'bg-[url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' fill=\'none\' stroke=\'%23666\' stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' viewBox=\'0 0 24 24\'%3E%3Crect width=\'18\' height=\'18\' x=\'3\' y=\'4\' rx=\'2\' ry=\'2\'/%3E%3Cline x1=\'16\' x2=\'16\' y1=\'2\' y2=\'6\'/%3E%3Cline x1=\'8\' x2=\'8\' y1=\'2\' y2=\'6\'/%3E%3Cline x1=\'3\' x2=\'21\' y1=\'10\' y2=\'10\'/%3E%3C/svg%3E")] bg-no-repeat bg-right-3 bg-center',
+        !!errors.dateOfBirth && 'border-red-500 focus-visible:ring-red-500/20'
+      )}
+      aria-label="Date of Birth"
+      aria-invalid={!!errors.dateOfBirth}
+      aria-describedby={errors.dateOfBirth ? 'dateOfBirth-error' : undefined}
+      autoComplete="bday"
+      max={todayISO()}
+      min="1900-01-01"
+    />
+  </div>
+</FormField>
+
 
             {/* Gender */}
-            <FormField
-              label="Gender"
-              htmlFor="gender"
-              error={errors.gender}
-              showFocusWithin={!isBelowLaptop}
-            >
-              <select
-                id="gender"
-                name="gender"
-                value={general.gender}
-                onChange={(e) => updateGeneral({ gender: e.target.value as any })}
-                className={cx(
-                  'flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50',
-                  !!errors.gender && 'border-red-500 focus-visible:ring-red-500/20'
-                )}
-                title="Gender"
-                aria-label="Gender"
-                aria-invalid={!!errors.gender}
-                aria-describedby={errors.gender ? 'gender-error' : undefined}
-              >
-                <option value="">Select your gender...</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="prefer-not-to-say">Prefer not to say</option>
-              </select>
-              {/* {errors.gender && (
-                <p id="gender-error" className="text-sm text-red-600 mt-1">
-                  {errors.gender}
-                </p>
-              )} */}
-            </FormField>
+           <FormField
+  label="Gender"
+  htmlFor="gender"
+  error={errors.gender}
+  showFocusWithin={!isBelowLaptop}
+>
+  <div className="flex flex-col gap-3 py-1">
+    {[
+      { value: "male", label: "Male" },
+      { value: "female", label: "Female" },
+      { value: "prefer-not-to-say", label: "Prefer not to say" },
+    ].map((opt) => (
+      <label
+        key={opt.value}
+        className="flex items-center gap-2 cursor-pointer text-gray-800"
+      >
+        <input
+          type="radio"
+          name="gender"
+          value={opt.value}
+          checked={general.gender === opt.value}
+          onChange={(e) => updateGeneral({ gender: e.target.value })}
+          className={cx(
+            "h-4 w-4 text-blue-600 border-gray-700/50 focus:ring-blue-500",
+            !!errors.gender && "ring-red-500"
+          )}
+        />
+        <span>{opt.label}</span>
+      </label>
+    ))}
+  </div>
+</FormField>
+
 
             {/* Email */}
             <FormField

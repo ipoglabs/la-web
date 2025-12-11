@@ -1,58 +1,69 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { EyeIcon, EyeOffIcon, CheckCircle2, XCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+import { EyeIcon, EyeOffIcon, CheckCircle2, XCircle } from "lucide-react";
+import { Autocomplete, useLoadScript } from "@react-google-maps/api";
 
-import { useRegisterStore } from '@/store/registerStore';
-import { profileSchema } from '@/lib/validators';
-import { useAuthStore } from '@/store/authStore';
+import { useRegisterStore } from "@/store/registerStore";
+import { profileSchema } from "@/lib/validators";
+import { useAuthStore } from "@/store/authStore";
 
+import { Form } from "@/components/shadcn/form";
+import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/shadcn/button";
+import { FormField } from "@/components/FormField";
+import { FormFieldWrapper } from "@/components/FormFieldWrapper";
+import { FormHelperText } from "@/components/FormHelperText";
+import { useMediaQuery } from "@/components/hooks/use-media-query";
 
-/* -------------------------- Username helpers -------------------------- */
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
-// Keep this short client-side; enforce a better filter on server if needed.
-const BLOCKED_FRAGMENTS = ['admin', 'moderator', 'support', 'lokalads', 'staff'];
-const hasBlockedWord = (u: string) =>
-  BLOCKED_FRAGMENTS.some((w) => u.toLowerCase().includes(w));
+const libraries: ("places")[] = ["places"];
 
 /* -------------------------- Password helpers -------------------------- */
 const COMMON_PASSWORDS = new Set([
-  'password', 'password1', '12345678', 'qwerty', 'letmein', 'welcome', 'admin123',
-  'iloveyou', 'abc12345', '123456789', 'lokalads', 'passw0rd'
+  "password",
+  "password1",
+  "12345678",
+  "qwerty",
+  "letmein",
+  "welcome",
+  "admin123",
+  "iloveyou",
+  "abc12345",
+  "123456789",
+  "lokalads",
+  "passw0rd",
 ]);
 
 function scorePassword(pw: string) {
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
-  if (/[A-Za-z]/.test(pw)) score++;      // any letter
-  if (/\d/.test(pw)) score++;            // a number
-  if (/[^A-Za-z0-9]/.test(pw)) score++;  // a special
+  if (/[A-Za-z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
   if (COMMON_PASSWORDS.has(pw.toLowerCase())) score = 0;
   return Math.min(score, 5);
 }
 
 function strengthLabel(score: number) {
-  if (score <= 1) return 'Weak';
-  if (score <= 3) return 'Good';
-  return 'Strong';
+  if (score <= 1) return "Weak";
+  if (score <= 3) return "Good";
+  return "Strong";
 }
 
-/* -------------------------- Role options -------------------------- */
 const ROLES = [
-  { key: 'individual', label: 'Individual' },
-  { key: 'business', label: 'Business' },
-  { key: 'agency', label: 'Agency' },
-  { key: 'other', label: 'Other' },
+  { key: "individual", label: "Individual" },
+  { key: "business", label: "Business" },
+  { key: "agency", label: "Agency" },
+  { key: "other", label: "Other" },
 ] as const;
 
-type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'blocked';
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
 
 export default function ProfileSetupPage() {
   const router = useRouter();
@@ -71,239 +82,237 @@ export default function ProfileSetupPage() {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // UI-only fields
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [consent, setConsent] = useState(false);
   const [subscribe, setSubscribe] = useState(false);
 
-  // Username check
-  const [unameStatus, setUnameStatus] = useState<UsernameStatus>('idle');
-  const [unameMsg, setUnameMsg] = useState<string>('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const [locationQuery, setLocationQuery] = useState(profile.locality || "");
+  const autocompleteRef =
+    useRef<google.maps.places.Autocomplete | null>(null);
 
-  // for scrolling/focusing first error
-  const formRef = useRef<HTMLDivElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const isBelowLaptop = useMediaQuery("(max-width:1024px)");
 
-  // Derived password bits
-  const pwScore = useMemo(() => scorePassword(profile.password), [profile.password]);
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env
+      .NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+    libraries,
+  });
+
+  const pwScore = useMemo(
+    () => scorePassword(profile.password),
+    [profile.password]
+  );
   const pwLabel = strengthLabel(pwScore);
   const pwTooCommon = useMemo(
-    () => profile.password && COMMON_PASSWORDS.has(profile.password.toLowerCase()),
+    () =>
+      Boolean(profile.password) &&
+      COMMON_PASSWORDS.has(profile.password.toLowerCase()),
     [profile.password]
   );
   const pwMismatch = useMemo(
-    () => confirmPassword.length > 0 && confirmPassword !== profile.password,
+    () =>
+      confirmPassword.length > 0 &&
+      confirmPassword !== profile.password,
     [confirmPassword, profile.password]
   );
 
-  // Debounced live username check
   useEffect(() => {
-    const uname = (profile.username || '').trim();
-
-    // local validations first
-    if (!uname) {
-      setUnameStatus('idle');
-      setUnameMsg('');
-      return;
+    if (profile.locality && profile.locality !== locationQuery) {
+      setLocationQuery(profile.locality);
     }
-    if (!USERNAME_RE.test(uname)) {
-      setUnameStatus('invalid');
-      setUnameMsg('Usernames can only use letters, numbers and underscores.');
-      return;
-    }
-    if (hasBlockedWord(uname)) {
-      setUnameStatus('blocked');
-      setUnameMsg('That username includes words we can’t allow — try another.');
-      return;
-    }
-
-    setUnameStatus('checking');
-    setUnameMsg('Checking availability…');
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (abortRef.current) abortRef.current.abort();
-
-    debounceRef.current = setTimeout(async () => {
-      try {
-        abortRef.current = new AbortController();
-        const res = await fetch('/api/users/check-username', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: uname }),
-          signal: abortRef.current.signal,
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setUnameStatus('invalid');
-          setUnameMsg(data?.error || 'Unable to check username right now.');
-          return;
-        }
-        if (data?.available === false) {
-          setUnameStatus('taken');
-          setUnameMsg('Sorry, that username is already taken please try some other name');
-        } else {
-          setUnameStatus('available');
-          setUnameMsg('Username is available');
-        }
-      } catch {
-        // ignore aborted; show soft error otherwise
-        setUnameStatus('invalid');
-        setUnameMsg('Unable to check username right now.');
-      }
-    }, 400);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (abortRef.current) abortRef.current.abort();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.username]);
+  }, [profile.locality, locationQuery]);
 
   const scrollToFirstError = (map: Record<string, string>) => {
     const order = [
-      'username',
-      'password',
-      'confirmPassword',
-      'role',
-      'consent',
+      "locality",
+      "password",
+      "confirmPassword",
+      "role",
+      "roleTitle",
+      "roleDescription",
+      "consent",
     ];
     const first = order.find((k) => map[k]);
     if (!first) return;
+    const root =
+      formRef.current ||
+      (typeof document !== "undefined"
+        ? (document.querySelector("form") as HTMLFormElement | null)
+        : null);
+
     const el =
-      formRef.current?.querySelector(`[name="${first}"]`) ||
-      formRef.current?.querySelector(`[data-field="${first}"]`);
-    (el as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    (el as HTMLElement | null)?.focus?.();
+      root?.querySelector<HTMLElement>(`[name="${first}"]`) ||
+      root?.querySelector<HTMLElement>(`[data-field="${first}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
   };
 
-  const submit = async () => {
-  // Block while username still checking
-  if (unameStatus === 'checking') {
-    toast.error('Please wait while we finish checking your username.');
-    return;
-  }
+  /* -------------------- Google Places handlers -------------------- */
+  const handlePlaceChanged = () => {
+    const ac = autocompleteRef.current;
+    if (!ac) return;
 
-  // base zod (username, password complexity, role) with trimming
-  const trimmed = {
-    ...profile,
-    username: (profile.username || '').trim(),
-    password: (profile.password || '').trim(),
-  };
-  const parsed = profileSchema.safeParse(trimmed);
+    const place = ac.getPlace();
+    if (!place || !place.address_components) return;
 
-  const map: Record<string, string> = {};
-  if (!parsed.success) {
-    parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
-  }
+    const components = place.address_components;
 
-  // extra username rules
-  const uname = trimmed.username;
-  if (!uname) {
-    map.username = 'Please choose a username.';
-  } else if (!USERNAME_RE.test(uname)) {
-    map.username = 'Usernames can only use letters, numbers and underscores.';
-  } else if (hasBlockedWord(uname)) {
-    map.username = 'That username includes words we can’t allow — try another.';
-  } else if (unameStatus === 'taken') {
-    map.username = 'Sorry, that username is already taken please try some other name';
-  } else if (unameStatus === 'invalid' || unameStatus === 'blocked') {
-    map.username = unameMsg || 'Invalid username.';
-  }
+    const getComponent = (types: string[]) =>
+      components.find((c) => types.some((t) => c.types.includes(t)))
+        ?.long_name || "";
 
-  // password checks
-  if (pwTooCommon || pwScore <= 1) {
-    map.password = 'Try a longer password or add a symbol for better protection.';
-  }
-  if (pwMismatch) {
-    map.confirmPassword = 'Passwords don’t match — please check both fields.';
-  }
+    const district =
+      getComponent(["administrative_area_level_2"]) ||
+      getComponent(["locality"]) ||
+      getComponent(["sublocality_level_1"]);
 
-  // role required
-  if (!trimmed.role) {
-    map.role = 'Tell us how you’ll use Lokalads so we can tailor your experience.';
-  }
+    const state = getComponent(["administrative_area_level_1"]);
+    const country = getComponent(["country"]);
 
-  // consent required
-  if (!consent) {
-    map.consent = 'We need your agreement to our Terms & Privacy Policy to create your account.';
-  }
+    const parts = [district, state, country].filter(Boolean);
+    const localityStr = parts.join(", ");
 
-  if (Object.keys(map).length > 0) {
-    setErrors(map);
-    scrollToFirstError(map);
-    toast.error('Please fix the highlighted fields');
-    return;
-  }
-
-  if (!emailVerified) return toast.error('Please verify your email first');
-  if (!phoneVerified) return toast.error('Please verify your phone first');
-
-  setErrors({});
-  setSubmitting(true);
-
-  try {
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // Step 1 — General
-        firstName: general.firstName,
-        lastName: general.lastName,
-        dateOfBirth: general.dateOfBirth,
-        gender: general.gender,
-        residency: general.residency || undefined,
-        nationality: general.nationality || undefined, // optional
-        email: general.email,
-        country: general.country || undefined,          // optional
-        state: general.state || undefined,              // optional
-
-        // Step 3 — Phones
-        primaryNumber: phones.primaryNumber,
-        secondaryNumber1: phones.secondaryNumber1 || undefined,
-        secondaryNumber2: phones.secondaryNumber2 || undefined,
-
-        // Step 4 — Profile
-        username: trimmed.username,
-        password: trimmed.password,
-        role: trimmed.role,
-
-        // Optional marketing flag
-        subscribe,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data?.error || 'Registration failed';
-      toast.error(msg);
+    if (!localityStr) {
+      const fallback = place.formatted_address || "";
+      setLocationQuery(fallback);
+      updateProfile({ locality: fallback });
       return;
     }
 
-    toast.success('Registered successfully');
+    setLocationQuery(localityStr);
+    updateProfile({ locality: localityStr });
+  };
 
-    // ✅ AUTO-LOGIN: write to auth store (so the app treats user as logged in)
-    if (data.token && data.user) {
-      // keep localStorage if your backend expects it elsewhere
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+  /* --------------------------- Submit handler --------------------------- */
+  const submit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
 
-      // global in-memory (persisted) auth — this is what removes the login page
-      useAuthStore.getState().setAuth(data.token, data.user);
+    const trimmed = {
+      ...profile,
+      password: (profile.password || "").trim(),
+      locality: (locationQuery || "").trim(),
+      roleTitle: (profile.roleTitle || "").trim(),
+      roleDescription: (profile.roleDescription || "").trim(),
+    };
+
+    const parsed = profileSchema.safeParse(trimmed);
+
+    const map: Record<string, string> = {};
+    if (!parsed.success) {
+      parsed.error.issues.forEach((i) => (map[i.path.join(".")] = i.message));
     }
 
-    // optional: clear the multi-step register store so future tabs start clean
-    reset();
+    // extra friendly checks
+    if (!trimmed.locality) {
+      map.locality = "Please enter your locality.";
+    } else if (trimmed.locality.length < 2) {
+      map.locality =
+        "Locality looks too short — please provide a bit more detail.";
+    } else if (trimmed.locality.length > 80) {
+      map.locality = "Locality is too long — keep it under 80 characters.";
+    }
 
-    // Go straight to the app
-    router.push('/'); // or '/' if your home is gated by auth
-  } catch {
-    toast.error('Something went wrong');
-  } finally {
-    setSubmitting(false);
-  }
-};
+    if (pwTooCommon || pwScore <= 1) {
+      map.password =
+        "Try a longer password or add a symbol for better protection.";
+    }
+    if (pwMismatch) {
+      map.confirmPassword =
+        "Passwords don’t match — please check both fields.";
+    }
 
+    if (!trimmed.role) {
+      map.role =
+        "Tell us how you’ll use Lokalads so we can tailor your experience.";
+    }
+
+    if (trimmed.role === "other") {
+      if (!trimmed.roleTitle) {
+        map.roleTitle = "Please enter a role title.";
+      }
+      if (!trimmed.roleDescription) {
+        map.roleDescription =
+          "Please describe how you plan to use Lokalads.";
+      }
+    }
+
+    if (!consent) {
+      map.consent =
+        "We need your agreement to our Terms & Privacy Policy to create your account.";
+    }
+
+    if (Object.keys(map).length > 0) {
+      setErrors(map);
+      scrollToFirstError(map);
+      toast.error("Please fix the highlighted fields");
+      return;
+    }
+
+    if (!emailVerified) return toast.error("Please verify your email first");
+    if (!phoneVerified) return toast.error("Please verify your phone first");
+
+    setErrors({});
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // Step 1 — General
+          firstName: general.firstName,
+          lastName: general.lastName,
+          dateOfBirth: general.dateOfBirth,
+          gender: general.gender,
+          residency: general.residency || undefined,
+          nationality: general.nationality || undefined,
+          email: general.email,
+          country: general.country || undefined,
+          state: general.state || undefined,
+
+          // Step 3 — Phones
+          primaryNumber: phones.primaryNumber,
+          secondaryNumber1: phones.secondaryNumber1 || undefined,
+          secondaryNumber2: phones.secondaryNumber2 || undefined,
+
+          // Step 4 — Profile
+          locality: trimmed.locality,
+          password: trimmed.password,
+          role: trimmed.role,
+          roleTitle: trimmed.role === "other" ? trimmed.roleTitle : undefined,
+          roleDescription:
+            trimmed.role === "other" ? trimmed.roleDescription : undefined,
+
+          subscribe,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data?.error || "Registration failed";
+        toast.error(msg);
+        return;
+      }
+
+      toast.success("Registered successfully");
+
+      if (data.token && data.user) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        useAuthStore.getState().setAuth(data.token, data.user);
+      }
+
+      reset();
+      router.push("/");
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /* ---------------------------------------------------------------------- */
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
@@ -311,245 +320,436 @@ export default function ProfileSetupPage() {
         <CardHeader>
           <CardTitle>Step 4 — Profile Setup</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Create your account credentials and pick how you want to appear on Lokalads.
+            Create your account credentials and tell us where you’re located.
           </p>
         </CardHeader>
 
-        <CardContent className="space-y-6" ref={formRef}>
-          {/* Username */}
-          <div data-field="username">
-            <Label>Username</Label>
-            <Input
-              name="username"
-              placeholder="jane_doe"
-              value={profile.username}
-              onChange={(e) => updateProfile({ username: e.target.value })}
-              aria-invalid={!!errors.username}
-            />
-            <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-              <span>This is public — choose something friendly and recognisable.</span>
-              {unameStatus === 'available' && <CheckCircle2 className="inline h-4 w-4 text-green-600" />}
-              {(unameStatus === 'taken' || unameStatus === 'invalid' || unameStatus === 'blocked') && (
-                <XCircle className="inline h-4 w-4 text-red-600" />
-              )}
-            </div>
-            {unameMsg && (
-              <p className={`text-sm mt-1 ${unameStatus === 'available' ? 'text-green-600' : 'text-red-600'}`}>
-                {unameMsg}
-              </p>
-            )}
-            {errors.username && <p className="text-sm text-red-600 mt-1">{errors.username}</p>}
-          </div>
-
-          {/* Password + Confirm */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div data-field="password">
-              <Label>Password</Label>
-              <div className="relative">
-                <Input
-                  name="password"
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Create a secure password"
-                  value={profile.password}
-                  onChange={(e) => updateProfile({ password: e.target.value })}
-                  className="pr-10"
-                  aria-invalid={!!errors.password}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd((p) => !p)}
-                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
-                  aria-label={showPwd ? 'Hide password' : 'Show password'}
-                >
-                  {showPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                At least 8 characters. Use numbers, letters and a symbol for extra strength.
-              </p>
-
-              {/* Strength meter */}
-<div className="mt-2 flex items-center gap-2">
-  <div className="flex gap-1">
-    {[0,1,2,3,4].map((i) => (
-      <div
-        key={i}
-        className={`h-1.5 w-8 rounded ${
-          i < pwScore
-            ? pwScore >= 4
-              ? "bg-green-600"
-              : pwScore >= 2
-              ? "bg-yellow-500"
-              : "bg-red-500"
-            : "bg-muted"
-        }`}
-      />
-    ))}
-  </div>
-  <span className="text-xs text-muted-foreground">{pwLabel}</span>
-</div>
-
-{/* ✅ Password Requirement Checklist */}
-{/* ✅ Password Requirement Checklist (text black, icons colored) */}
-<div className="mt-3 space-y-1 text-xs">
-  {[
-    { label: "At least 8 characters long", valid: profile.password.length >= 8 },
-    { label: "At least 1 letter",          valid: /[A-Za-z]/.test(profile.password) },
-    { label: "At least 1 number",          valid: /\d/.test(profile.password) },
-    { label: "At least 1 special character", valid: /[^A-Za-z0-9]/.test(profile.password) },
-    {
-      label: "Not your email",
-      valid:
-        profile.password.length > 0 &&
-        general.email &&
-        profile.password.toLowerCase() !== general.email.toLowerCase(),
-    },
-    {
-      label: "Not more than 24 characters long",
-      valid: profile.password.length > 0 && profile.password.length <= 24,
-    },
-  ].map((rule, idx) => (
-    <div key={idx} className="flex items-center gap-2">
-      {rule.valid ? (
-        <CheckCircle2 className="h-4 w-4 text-green-600" />
-      ) : (
-        <XCircle className="h-4 w-4 text-red-600" />
-      )}
-      {/* keep the text always black */}
-      <p className="text-slate-900">{rule.label}</p>
-    </div>
-  ))}
-</div>
-
-
-
-              {(pwTooCommon || errors.password) && (
-                <p className="text-sm text-red-600 mt-1">
-                  {errors.password || 'That password is too common — choose something harder to guess.'}
-                </p>
-              )}
-            </div>
-
-            <div data-field="confirmPassword">
-              <Label>Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  name="confirmPassword"
-                  type={showConfirmPwd ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pr-10"
-                  aria-invalid={!!errors.confirmPassword}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPwd((p) => !p)}
-                  className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
-                  aria-label={showConfirmPwd ? 'Hide confirm password' : 'Show confirm password'}
-                >
-                  {showConfirmPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-                </button>
-              </div>
-              {pwMismatch && (
-                <p className="text-sm text-red-600 mt-1">
-                  Passwords don’t match — please check both fields.
-                </p>
-              )}
-              {errors.confirmPassword && (
-                <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Role (radio cards) */}
-          <div data-field="role">
-            <Label>Role</Label>
-            <p className="text-xs text-muted-foreground mt-1">
-              Choose how you’ll use Lokalads — roles customise your dashboard and features.
+        <CardContent>
+          <Form onSubmit={submit} ref={formRef}>
+            <h2 className="hidden text-3xl font-bold text-slate-800 mb-1">
+              Step 4 — Profile Setup
+            </h2>
+            <p className="hidden text-lg font-light text-slate-700 mb-3">
+              Create your login details and set where you are based.
             </p>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {ROLES.map((r) => {
-                const active = profile.role === r.key;
-                return (
-                  <button
-                    key={r.key}
-                    type="button"
-                    onClick={() => updateProfile({ role: r.key })}
-                    className={`rounded-xl border p-4 text-left transition ${
-                      active ? 'border-primary ring-2 ring-primary/30' : 'border-input hover:bg-muted/40'
-                    }`}
-                    aria-pressed={active}
-                    name="role"
-                  >
-                    <div className="font-medium">{r.label}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {r.key === 'individual' && 'Personal buying/selling'}
-                      {r.key === 'business' && 'Shops, SMBs and brands'}
-                      {r.key === 'agency' && 'Manage listings for clients'}
-                      {r.key === 'other' && 'Something else'}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {errors.role && <p className="text-sm text-red-600 mt-2">{errors.role}</p>}
-          </div>
 
-          {/* Consent + marketing */}
-          <div data-field="consent" className="space-y-2">
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                name="consent"
-              />
-              <span>
-                I agree to the{' '}
-                <a href="/legal/terms" className="underline underline-offset-2" target="_blank" rel="noreferrer">
-                  Lokalads Terms &amp; Conditions
-                </a>{' '}
-                and{' '}
-                <a href="/legal/privacy" className="underline underline-offset-2" target="_blank" rel="noreferrer">
-                  Privacy Policy
-                </a>.
-              </span>
-            </label>
-            {errors.consent && <p className="text-sm text-red-600">{errors.consent}</p>}
-
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={subscribe}
-                onChange={(e) => setSubscribe(e.target.checked)}
-                name="subscribe"
-              />
-              <span>Subscribe to product updates &amp; occasional offers</span>
-            </label>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => router.push('/register/phone-verification')}
+            {/* Locality */}
+            <FormField
+              label="Locality"
+              htmlFor="locality"
+              error={errors.locality}
+              showFocusWithin={!isBelowLaptop}
             >
-              Back
-            </Button>
-            <Button onClick={submit} disabled={submitting || unameStatus === 'checking'}>
-              {submitting ? 'Creating…' : 'Create Account'}
-            </Button>
-          </div>
+              <div className="mt-1 w-full">
+                {isLoaded ? (
+                  <Autocomplete
+                    onLoad={(ac) => {
+                      autocompleteRef.current = ac;
+                    }}
+                    onPlaceChanged={handlePlaceChanged}
+                    options={{
+                      fields: [
+                        "geometry",
+                        "formatted_address",
+                        "name",
+                        "address_components",
+                      ],
+                      types: ["geocode"],
+                    }}
+                  >
+                    <input
+                      name="locality"
+                      type="text"
+                      placeholder="Ex: Trichy, Tamil Nadu"
+                      className={cx(
+                        "w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 p-2 text-base font-normal text-gray-900 placeholder:text-gray-400",
+                        "focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
+                        !!errors.locality &&
+                          "border-red-500 focus-visible:ring-red-500/20"
+                      )}
+                      value={locationQuery}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setLocationQuery(v);
+                        updateProfile({ locality: v });
+                      }}
+                      aria-invalid={!!errors.locality}
+                    />
+                  </Autocomplete>
+                ) : (
+                  <Input
+                    id="locality"
+                    name="locality"
+                    placeholder="e.g. Anna Nagar, Chennai"
+                    className={cx(
+                      "w-full",
+                      !!errors.locality &&
+                        "border-red-500 focus-visible:ring-red-500/20"
+                    )}
+                    value={locationQuery}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setLocationQuery(v);
+                      updateProfile({ locality: v });
+                    }}
+                    aria-invalid={!!errors.locality}
+                  />
+                )}
+              </div>
+              <FormHelperText className="mt-1">
+                Start typing and pick your area — we’ll store district, state
+                and country.
+              </FormHelperText>
+            </FormField>
 
-          {/* status hints */}
-          <div className="text-xs text-muted-foreground">
-            {emailVerified ? '✅ Email verified' : '❌ Email not verified'}
-            {' · '}
-            {phoneVerified ? '✅ Phone verified' : '❌ Phone not verified'}
-          </div>
+            {/* Password + Confirm */}
+            <FormFieldWrapper
+              className="grid grid-cols-1 md:grid-cols-2 md:gap-4 mt-6"
+              showFocusWithin={!isBelowLaptop}
+            >
+              <FormField
+                label="Password"
+                htmlFor="password"
+                error={errors.password}
+                className="mb-0"
+                showFocusWithin={isBelowLaptop}
+              >
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPwd ? "text" : "password"}
+                    placeholder="Create a secure password"
+                    value={profile.password}
+                    onChange={(e) =>
+                      updateProfile({ password: e.target.value })
+                    }
+                    className={cx(
+                      "pr-10",
+                      !!errors.password &&
+                        "border-red-500 focus-visible:ring-red-500/20"
+                    )}
+                    aria-invalid={!!errors.password}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd((p) => !p)}
+                    className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                    aria-label={showPwd ? "Hide password" : "Show password"}
+                  >
+                    {showPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                  </button>
+                </div>
+
+                <FormHelperText className="mt-1">
+                  At least 8 characters. Use numbers, letters and a symbol for
+                  extra strength.
+                </FormHelperText>
+
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className={cx(
+                          "h-1.5 w-8 rounded",
+                          i < pwScore
+                            ? pwScore >= 4
+                              ? "bg-green-600"
+                              : pwScore >= 2
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
+                            : "bg-muted"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {pwLabel}
+                  </span>
+                </div>
+              </FormField>
+
+              <FormField
+                label="Confirm Password"
+                htmlFor="confirmPassword"
+                error={errors.confirmPassword}
+                className="mb-0"
+                showFocusWithin={isBelowLaptop}
+              >
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPwd ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={cx(
+                      "pr-10",
+                      !!errors.confirmPassword &&
+                        "border-red-500 focus-visible:ring-red-500/20"
+                    )}
+                    aria-invalid={!!errors.confirmPassword}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPwd((p) => !p)}
+                    className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
+                    aria-label={
+                      showConfirmPwd
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
+                  >
+                    {showConfirmPwd ? (
+                      <EyeOffIcon size={18} />
+                    ) : (
+                      <EyeIcon size={18} />
+                    )}
+                  </button>
+                </div>
+
+                {pwMismatch && (
+                  <p className="text-sm text-red-600 mt-1">
+                    Passwords don’t match — please check both fields.
+                  </p>
+                )}
+              </FormField>
+            </FormFieldWrapper>
+
+            {/* Password checklist */}
+            <div className="mt-3 space-y-1 pb-6 text-xs">
+              {[
+                {
+                  label: "At least 8 characters long",
+                  valid: profile.password.length >= 8,
+                },
+                {
+                  label: "At least 1 letter",
+                  valid: /[A-Za-z]/.test(profile.password),
+                },
+                {
+                  label: "At least 1 number",
+                  valid: /\d/.test(profile.password),
+                },
+                {
+                  label: "At least 1 special character",
+                  valid: /[^A-Za-z0-9]/.test(profile.password),
+                },
+                {
+                  label: "Not your email",
+                  valid:
+                    profile.password.length > 0 &&
+                    general.email &&
+                    profile.password.toLowerCase() !==
+                      general.email.toLowerCase(),
+                },
+                {
+                  label: "Not more than 24 characters long",
+                  valid:
+                    profile.password.length > 0 &&
+                    profile.password.length <= 24,
+                },
+              ].map((rule, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  {rule.valid ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <p className="text-slate-900">{rule.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Role + extra fields for "other" */}
+            <FormField
+              label="Role"
+              htmlFor="role"
+              error={errors.role || errors.roleTitle || errors.roleDescription}
+              showFocusWithin={!isBelowLaptop}
+            >
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose how you’ll use Lokalads — roles customise your dashboard
+                and features.
+              </p>
+
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {ROLES.map((r) => {
+                  const active = profile.role === r.key;
+                  return (
+                    <button
+                      key={r.key}
+                      type="button"
+                      onClick={() => {
+                        updateProfile({ role: r.key });
+                        if (r.key !== "other") {
+                          updateProfile({
+                            roleTitle: "",
+                            roleDescription: "",
+                          });
+                        }
+                      }}
+                      className={cx(
+                        "rounded-xl border p-4 text-left transition",
+                        active
+                          ? "border-primary ring-2 ring-primary/30"
+                          : "border-input hover:bg-muted/40"
+                      )}
+                      aria-pressed={active}
+                      name="role"
+                    >
+                      <div className="font-medium">{r.label}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {r.key === "individual" && "Personal buying/selling"}
+                        {r.key === "business" && "Shops, SMBs and brands"}
+                        {r.key === "agency" && "Manage listings for clients"}
+                        {r.key === "other" && "Something else"}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {profile.role === "other" && (
+                <FormFieldWrapper
+                  className="mt-4 grid grid-cols-1 gap-3"
+                  showFocusWithin={!isBelowLaptop}
+                >
+                  <FormField
+                    label="Role title"
+                    htmlFor="roleTitle"
+                    error={errors.roleTitle}
+                    className="mb-0"
+                    showFocusWithin={isBelowLaptop}
+                  >
+                    <Input
+                      id="roleTitle"
+                      name="roleTitle"
+                      placeholder="e.g. Community Moderator, Freelancer, etc."
+                      value={profile.roleTitle || ""}
+                      onChange={(e) =>
+                        updateProfile({ roleTitle: e.target.value })
+                      }
+                      aria-invalid={!!errors.roleTitle}
+                      aria-describedby={
+                        errors.roleTitle ? "roleTitle-error" : undefined
+                      }
+                      className={cx(
+                        !!errors.roleTitle &&
+                          "border-red-500 focus-visible:ring-red-500/20"
+                      )}
+                    />
+                  </FormField>
+
+                  <FormField
+                    label="Role description"
+                    htmlFor="roleDescription"
+                    error={errors.roleDescription}
+                    className="mb-0"
+                    showFocusWithin={isBelowLaptop}
+                  >
+                    <textarea
+                      id="roleDescription"
+                      name="roleDescription"
+                      placeholder="Briefly describe how you plan to use Lokalads."
+                      value={profile.roleDescription || ""}
+                      onChange={(e) =>
+                        updateProfile({ roleDescription: e.target.value })
+                      }
+                      aria-invalid={!!errors.roleDescription}
+                      aria-describedby={
+                        errors.roleDescription
+                          ? "roleDescription-error"
+                          : undefined
+                      }
+                      className={cx(
+                        "mt-1 w-full min-h-[80px] rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
+                        !!errors.roleDescription &&
+                          "border-red-500 focus-visible:ring-red-500/20"
+                      )}
+                    />
+                  </FormField>
+                </FormFieldWrapper>
+              )}
+            </FormField>
+
+            {/* Consent + marketing */}
+            <FormField
+              label="Consent"
+              htmlFor="consent"
+              error={errors.consent}
+              showFocusWithin={!isBelowLaptop}
+            >
+              <div className="space-y-2">
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    name="consent"
+                  />
+                  <span>
+                    I agree to the{" "}
+                    <a
+                      href="/legal/terms"
+                      className="underline underline-offset-2"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Lokalads Terms &amp; Conditions
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href="/legal/privacy"
+                      className="underline underline-offset-2"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Privacy Policy
+                    </a>
+                    .
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={subscribe}
+                    onChange={(e) => setSubscribe(e.target.checked)}
+                    name="subscribe"
+                  />
+                  <span>
+                    Subscribe to product updates &amp; occasional offers
+                  </span>
+                </label>
+              </div>
+            </FormField>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between mt-4">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => router.push("/register/phone-verification")}
+              >
+                Back
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Creating…" : "Create Account"}
+              </Button>
+            </div>
+
+            {/* status hints */}
+            <div className="text-xs text-muted-foreground mt-3">
+              {emailVerified ? "✅ Email verified" : "❌ Email not verified"}
+              {" · "}
+              {phoneVerified ? "✅ Phone verified" : "❌ Phone not verified"}
+            </div>
+          </Form>
         </CardContent>
       </Card>
     </div>

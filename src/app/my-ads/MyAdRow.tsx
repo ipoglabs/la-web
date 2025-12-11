@@ -12,8 +12,24 @@ type Row = {
   category: string;
   subcategory: string;
   thumb: string | null;
-  updatedAt: string | null; // ISO string recommended
+  updatedAt: string | null; // ISO string
+  status?: string;          // 👈 add status
 };
+
+// small helper to style status pill
+function getStatusClasses(status?: string): string {
+  switch (status) {
+    case "active":
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    case "pending":
+      return "bg-amber-50 text-amber-700 border border-amber-200";
+    case "pause":
+    case "paused":
+      return "bg-slate-50 text-slate-600 border border-slate-200";
+    default:
+      return "bg-slate-50 text-slate-500 border border-slate-200";
+  }
+}
 
 export default function MyAdRow({
   row,
@@ -39,7 +55,7 @@ export default function MyAdRow({
       dateStyle: "short",
       timeStyle: "medium",
       hour12: true,
-      timeZone: "Asia/Kolkata", // keep it stable across server/client
+      timeZone: "Asia/Kolkata",
     }).format(dt);
     setUpdatedLabel(label);
   }, [row.updatedAt]);
@@ -78,8 +94,6 @@ export default function MyAdRow({
         {row.updatedAt && (
           <div className="text-[11px] text-slate-400">
             Updated{" "}
-            {/* SSR prints ISO (stable), client replaces with pretty label.
-               suppressHydrationWarning avoids mismatch warning. */}
             <span suppressHydrationWarning>
               {updatedLabel ?? new Date(row.updatedAt).toISOString()}
             </span>
@@ -90,12 +104,24 @@ export default function MyAdRow({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* 👇 Status pill before Edit button */}
+        {row.status && (
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusClasses(
+              row.status
+            )}`}
+          >
+            {row.status}
+          </span>
+        )}
+
         <Link href={`/post/edit/${row.id}`}>
           <Button variant="outline" size="sm">
             <Pencil className="h-4 w-4 mr-1" />
             Edit
           </Button>
         </Link>
+
         <Button
           variant="destructive"
           size="sm"

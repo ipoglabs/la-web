@@ -161,32 +161,34 @@ export default function EmailVerificationPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          <div className="flex gap-2">
-            <Input
-              ref={otpInputRef}
-              placeholder="Enter 6-digit code"
-              value={otp}
-              maxLength={6}
-              onChange={(e) => setOtp(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && verifyOtp()}
-              inputMode="numeric"
-              disabled={lockActive}
-            />
+          {/* ❌ Hide OTP input + verify button when email verified */}
+{!emailVerified && (
+  <div className="flex gap-2">
+    <Input
+      ref={otpInputRef}
+      placeholder="Enter 6-digit code"
+      value={otp}
+      maxLength={6}
+      onChange={(e) => setOtp(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && verifyOtp()}
+      inputMode="numeric"
+      disabled={lockActive}
+    />
 
-            <Button
-              onClick={verifyOtp}
-              disabled={otp.length !== 6 || loadingVerify || lockActive}
-            >
-              {loadingVerify ? 'Verifying…' : 'Verify'}
-            </Button>
-          </div>
-    
-            {/* ✅ Show success message when verified */}
-            {emailVerified && (
-              <p className="text-green-600 text-sm mt-1">
-                ✅ Email verified successfully
-              </p>
-            )}
+    <Button
+      onClick={verifyOtp}
+      disabled={otp.length !== 6 || loadingVerify || lockActive}
+    >
+      {loadingVerify ? 'Verifying…' : 'Verify'}
+    </Button>
+  </div>
+)}
+{emailVerified && (
+  <p className="text-green-600 text-sm mt-1">
+    ✅ Email verified successfully
+  </p>
+)}
+
 
 
           <Button
