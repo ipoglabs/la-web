@@ -8,9 +8,7 @@ const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 function signJwt(payload: object) {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET is not set");
-  }
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not set");
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: MAX_AGE });
 }
 
@@ -19,8 +17,7 @@ export async function POST(req: Request) {
     await dbConnect();
 
     const body = await req.json().catch(() => ({} as any));
-
-    const rawIdentifier = String(body?.identifier ?? "").trim(); // 👈 email OR phone
+    const rawIdentifier = String(body?.identifier ?? "").trim();
     const password = String(body?.password ?? "");
 
     if (!rawIdentifier || !password) {
@@ -30,15 +27,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Heuristic: if it contains '@' -> treat as email; else phone
-    const isEmail = rawIdentifier.includes("@");
-    const emailRaw = isEmail ? rawIdentifier.toLowerCase() : undefined;
-    const phoneRaw = isEmail ? undefined : rawIdentifier;
+    const isEmailId = rawIdentifier.includes("@");
+    const emailRaw = isEmailId ? rawIdentifier.toLowerCase() : undefined;
+    const phoneRaw = isEmailId ? undefined : rawIdentifier;
 
-    const query = isEmail
-      ? { email: emailRaw }
-      : { primaryNumber: phoneRaw };
+    const query = isEmailId ? { email: emailRaw } : { primaryNumber: phoneRaw };
 
+    // IMPORTANT: include password in projection
     const user = await User.findOne(query).lean();
     if (!user) {
       return NextResponse.json(
@@ -47,15 +42,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const ok = await compare(password, user.password);
+    const ok = await compare(password, (user as any).password);
     if (!ok) {
-      return NextResponse.json(
-        { error: "Invalid credentials." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
-    if (!user.isEmailVerified) {
+    if (!(user as any).isEmailVerified) {
       return NextResponse.json(
         { error: "Please verify your email before logging in." },
         { status: 403 }
@@ -63,23 +55,23 @@ export async function POST(req: Request) {
     }
 
     const token = signJwt({
-      userId: String(user._id),
-      email: user.email,
-      primaryNumber: user.primaryNumber, // 👈 phone instead of username
-      role: user.role ?? "user",
+      userId: String((user as any)._id),
+      email: (user as any).email,
+      primaryNumber: (user as any).primaryNumber,
+      role: (user as any).role ?? "user",
     });
 
     const res = NextResponse.json(
       {
         message: "Login successful",
         user: {
-          id: String(user._id),
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role ?? "user",
-          primaryNumber: user.primaryNumber,
-          locality: (user as any).locality, // if you added locality in schema
+          id: String((user as any)._id),
+          email: (user as any).email,
+          firstName: (user as any).firstName,
+          lastName: (user as any).lastName,
+          role: (user as any).role ?? "user",
+          primaryNumber: (user as any).primaryNumber,
+          locality: (user as any).locality,
         },
         token,
       },
@@ -94,12 +86,11 @@ export async function POST(req: Request) {
       maxAge: MAX_AGE,
     });
 
-    // readable hint cookie – use phone now instead of username
     res.cookies.set(
       "uinfo",
       JSON.stringify({
-        id: String(user._id),
-        ph: user.primaryNumber,
+        id: String((user as any)._id),
+        ph: (user as any).primaryNumber,
       }),
       {
         httpOnly: false,
