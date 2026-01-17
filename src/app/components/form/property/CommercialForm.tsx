@@ -6,9 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
-import { cn as cx } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
 
 const PROPERTY_TYPES = [
   { value: "office", label: "Office" },
@@ -34,14 +37,13 @@ const PANTRY = [
 const POWER_BACKUP = [
   { value: "none", label: "None" },
   { value: "partial", label: "Partial" },
-  { value: "full", label: "Full", },
+  { value: "full", label: "Full" },
 ];
 
 export default function CommercialForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const setField = usePostFormStore((s) => s.setField);
 
-  // --- store values ---
   const name = usePostFormStore((s) => (s as any).name) ?? "";
   const description = usePostFormStore((s) => (s as any).description) ?? "";
 
@@ -65,10 +67,8 @@ export default function CommercialForm() {
   const leaseTerm = usePostFormStore((s) => (s as any).leaseTerm) ?? "";
   const powerBackup = usePostFormStore((s) => (s as any).powerBackup) ?? "";
 
-  const facilities = (usePostFormStore((s) => (s as any).facilities) as string[]) ?? [];
-
-  const sellerInfo =
-    usePostFormStore((s) => (s as any).sellerInfo) ?? { name: "", email: "", phone: "" };
+  const facilities =
+    (usePostFormStore((s) => (s as any).facilities) as string[]) ?? [];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -76,6 +76,16 @@ export default function CommercialForm() {
     () => ["Parking", "Lift", "Power Backup", "Security/CCTV", "Fire Safety", "Visitor Parking"],
     []
   );
+
+  const setAndClear = (key: string, value: any) => {
+    setField(key, value);
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   const isPositive = (v: unknown) => {
     if (v === null || v === undefined || v === "") return false;
@@ -89,36 +99,58 @@ export default function CommercialForm() {
     return Number.isFinite(n) && n >= 0;
   };
 
-  const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-
-  // let parent page know validation status
   const dispatchValidated = (ok: boolean) => {
-    // generic + specific (so your parent can listen to either)
     window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok } }));
     window.dispatchEvent(new CustomEvent("commercialform:validated", { detail: { ok } }));
+  };
+
+  const scrollToFirstError = (mappedErrors: Record<string, string>) => {
+    const first = Object.keys(mappedErrors)[0];
+    if (!first) return;
+
+    const byName = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
+    if (byName) {
+      byName.scrollIntoView({ behavior: "smooth", block: "center" });
+      byName.focus?.();
+      return;
+    }
+
+    const byId = formRef.current?.querySelector<HTMLElement>(`#${CSS.escape(first)}`);
+    if (byId) {
+      byId.scrollIntoView({ behavior: "smooth", block: "center" });
+      byId.focus?.();
+      return;
+    }
+
+    if (first === "facilities") {
+      const box = document.getElementById("facilities-block");
+      box?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const title = String(name ?? "").trim();
+    const desc = String(description ?? "").trim();
+
     const mapped: Record<string, string> = {};
 
-    // required basics (match your addPost server validation)
-    if (!String(name).trim()) mapped.name = "Listing title is required.";
-    if (!String(description).trim()) mapped.description = "Description is required.";
+    if (!title) mapped.name = "Please enter a listing title.";
+    if (!desc) mapped.description = "Please add a description.";
 
-    // commercial minimums (you can relax if you want)
     if (!propertyType) mapped.propertyType = "Please select property type.";
     if (!isPositive(rentPrice)) mapped.rentPrice = "Monthly rent must be greater than 0.";
 
-    // numbers (only validate if user typed something)
     if (String(builtup_area).trim() && !isPositive(builtup_area))
       mapped.builtup_area = "Built-up area must be a positive number.";
 
     if (String(carpet_area).trim() && !isPositive(carpet_area))
       mapped.carpet_area = "Carpet area must be a positive number.";
 
-    if (String(floor).trim() && !isNonNegative(floor)) mapped.floor = "Floor must be 0 or more.";
+    if (String(floor).trim() && !isNonNegative(floor))
+      mapped.floor = "Floor must be 0 or more.";
+
     if (String(totalFloors).trim() && !isPositive(totalFloors))
       mapped.totalFloors = "Total floors must be greater than 0.";
 
@@ -137,26 +169,25 @@ export default function CommercialForm() {
     if (String(leaseTerm).trim() && !isPositive(leaseTerm))
       mapped.leaseTerm = "Lease term must be greater than 0.";
 
-    // contact validation (server requires name/email/phone)
-    if (!String(sellerInfo?.name ?? "").trim()) mapped.contactName = "Contact name is required.";
-    if (!String(sellerInfo?.email ?? "").trim()) mapped.contactEmail = "Contact email is required.";
-    else if (!isEmail(String(sellerInfo.email))) mapped.contactEmail = "Enter a valid email.";
-    if (!String(sellerInfo?.phone ?? "").trim()) mapped.contactPhone = "Contact phone is required.";
-
-    setErrors(mapped);
-
     if (Object.keys(mapped).length > 0) {
+      setErrors(mapped);
+      scrollToFirstError(mapped);
       toast.error("Please fix the highlighted fields.");
       dispatchValidated(false);
       return;
     }
 
+    setField("name", title);
+    setField("description", desc);
+
+    setErrors({});
     dispatchValidated(true);
   };
 
   return (
     <form
       id="commercialForm"
+      data-post-form="true"
       ref={formRef}
       onSubmit={onSubmit}
       className="w-full max-w-xl space-y-6"
@@ -168,43 +199,36 @@ export default function CommercialForm() {
           name="name"
           placeholder="e.g. Commercial Office Space in T. Nagar"
           value={name}
-          onChange={(e) => setField("name", e.target.value)}
+          onChange={(e) => setAndClear("name", e.target.value)}
+          aria-invalid={!!errors.name}
           className={cx(!!errors.name && "border-red-500 focus-visible:ring-red-500/20")}
         />
       </FormFieldContainer>
 
-      <FormFieldContainer
-        label="Description"
-        htmlFor="description"
-        error={errors.description}
-        showFocusWithin={false}
-      >
+      <FormFieldContainer label="Description" htmlFor="description" error={errors.description} showFocusWithin={false}>
         <Textarea
           id="description"
           name="description"
           placeholder="Describe the space, highlights, connectivity, etc."
           value={description}
-          onChange={(e) => setField("description", e.target.value)}
+          onChange={(e) => setAndClear("description", e.target.value)}
           rows={5}
+          aria-invalid={!!errors.description}
           className={cx(!!errors.description && "border-red-500 focus-visible:ring-red-500/20")}
         />
       </FormFieldContainer>
 
       {/* Property type */}
-      <FormFieldContainer
-        label="Property Type"
-        htmlFor="propertyType"
-        error={errors.propertyType}
-        showFocusWithin={false}
-      >
+      <FormFieldContainer label="Property Type" htmlFor="propertyType" error={errors.propertyType} showFocusWithin={false}>
         <select
           id="propertyType"
           name="propertyType"
           value={propertyType}
-          onChange={(e) => setField("propertyType", e.target.value)}
+          onChange={(e) => setAndClear("propertyType", e.target.value)}
+          aria-invalid={!!errors.propertyType}
           className={cx(
             "w-full h-10 rounded-md border border-input bg-background px-3 text-sm",
-            !!errors.propertyType && "border-red-500"
+            !!errors.propertyType && "border-red-500 focus-visible:ring-red-500/20"
           )}
         >
           <option value="">Select property type</option>
@@ -218,33 +242,27 @@ export default function CommercialForm() {
 
       {/* Areas */}
       <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 md:gap-4" showFocusWithin={false}>
-        <FormFieldContainer
-          label="Built-up Area (sq ft)"
-          htmlFor="builtup_area"
-          error={errors.builtup_area}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Built-up Area (sq ft)" htmlFor="builtup_area" error={errors.builtup_area} showFocusWithin={false}>
           <Input
             id="builtup_area"
             name="builtup_area"
             type="number"
             value={builtup_area as any}
-            onChange={(e) => setField("builtup_area", e.target.value)}
+            onChange={(e) => setAndClear("builtup_area", e.target.value)}
+            aria-invalid={!!errors.builtup_area}
+            className={cx(!!errors.builtup_area && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
-        <FormFieldContainer
-          label="Carpet Area (sq ft)"
-          htmlFor="carpet_area"
-          error={errors.carpet_area}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Carpet Area (sq ft)" htmlFor="carpet_area" error={errors.carpet_area} showFocusWithin={false}>
           <Input
             id="carpet_area"
             name="carpet_area"
             type="number"
             value={carpet_area as any}
-            onChange={(e) => setField("carpet_area", e.target.value)}
+            onChange={(e) => setAndClear("carpet_area", e.target.value)}
+            aria-invalid={!!errors.carpet_area}
+            className={cx(!!errors.carpet_area && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
       </FormFieldWrapper>
@@ -258,23 +276,22 @@ export default function CommercialForm() {
             type="number"
             placeholder="e.g. 4"
             value={floor as any}
-            onChange={(e) => setField("floor", e.target.value)}
+            onChange={(e) => setAndClear("floor", e.target.value)}
+            aria-invalid={!!errors.floor}
+            className={cx(!!errors.floor && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
-        <FormFieldContainer
-          label="Total Floors"
-          htmlFor="totalFloors"
-          error={errors.totalFloors}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Total Floors" htmlFor="totalFloors" error={errors.totalFloors} showFocusWithin={false}>
           <Input
             id="totalFloors"
             name="totalFloors"
             type="number"
             placeholder="e.g. 10"
             value={totalFloors as any}
-            onChange={(e) => setField("totalFloors", e.target.value)}
+            onChange={(e) => setAndClear("totalFloors", e.target.value)}
+            aria-invalid={!!errors.totalFloors}
+            className={cx(!!errors.totalFloors && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
@@ -283,8 +300,11 @@ export default function CommercialForm() {
             id="furnishing"
             name="furnishing"
             value={furnishing}
-            onChange={(e) => setField("furnishing", e.target.value)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            onChange={(e) => setAndClear("furnishing", e.target.value)}
+            className={cx(
+              "w-full h-10 rounded-md border border-input bg-background px-3 text-sm",
+              !!errors.furnishing && "border-red-500 focus-visible:ring-red-500/20"
+            )}
           >
             <option value="">Select</option>
             {FURNISHING.map((o) => (
@@ -298,18 +318,15 @@ export default function CommercialForm() {
 
       {/* Washrooms + Pantry + Parking */}
       <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 md:gap-4" showFocusWithin={false}>
-        <FormFieldContainer
-          label="Washrooms"
-          htmlFor="washrooms"
-          error={errors.washrooms}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Washrooms" htmlFor="washrooms" error={errors.washrooms} showFocusWithin={false}>
           <Input
             id="washrooms"
             name="washrooms"
             type="number"
             value={washrooms as any}
-            onChange={(e) => setField("washrooms", e.target.value)}
+            onChange={(e) => setAndClear("washrooms", e.target.value)}
+            aria-invalid={!!errors.washrooms}
+            className={cx(!!errors.washrooms && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
@@ -318,8 +335,11 @@ export default function CommercialForm() {
             id="pantry"
             name="pantry"
             value={pantry}
-            onChange={(e) => setField("pantry", e.target.value)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            onChange={(e) => setAndClear("pantry", e.target.value)}
+            className={cx(
+              "w-full h-10 rounded-md border border-input bg-background px-3 text-sm",
+              !!errors.pantry && "border-red-500 focus-visible:ring-red-500/20"
+            )}
           >
             <option value="">Select</option>
             {PANTRY.map((o) => (
@@ -330,36 +350,30 @@ export default function CommercialForm() {
           </select>
         </FormFieldContainer>
 
-        <FormFieldContainer
-          label="Parking Spaces"
-          htmlFor="parkingSpaces"
-          error={errors.parkingSpaces}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Parking Spaces" htmlFor="parkingSpaces" error={errors.parkingSpaces} showFocusWithin={false}>
           <Input
             id="parkingSpaces"
             name="parkingSpaces"
             type="number"
             value={parkingSpaces as any}
-            onChange={(e) => setField("parkingSpaces", e.target.value)}
+            onChange={(e) => setAndClear("parkingSpaces", e.target.value)}
+            aria-invalid={!!errors.parkingSpaces}
+            className={cx(!!errors.parkingSpaces && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
       </FormFieldWrapper>
 
       {/* Rent/Deposit/Maint */}
       <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 md:gap-4" showFocusWithin={false}>
-        <FormFieldContainer
-          label="Monthly Rent (₹)"
-          htmlFor="rentPrice"
-          error={errors.rentPrice}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Monthly Rent (₹)" htmlFor="rentPrice" error={errors.rentPrice} showFocusWithin={false}>
           <Input
             id="rentPrice"
             name="rentPrice"
             type="number"
             value={rentPrice as any}
-            onChange={(e) => setField("rentPrice", e.target.value)}
+            onChange={(e) => setAndClear("rentPrice", e.target.value)}
+            aria-invalid={!!errors.rentPrice}
+            className={cx(!!errors.rentPrice && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
@@ -369,22 +383,21 @@ export default function CommercialForm() {
             name="deposit"
             type="number"
             value={deposit as any}
-            onChange={(e) => setField("deposit", e.target.value)}
+            onChange={(e) => setAndClear("deposit", e.target.value)}
+            aria-invalid={!!errors.deposit}
+            className={cx(!!errors.deposit && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
-        <FormFieldContainer
-          label="Maintenance (₹)"
-          htmlFor="maintenance"
-          error={errors.maintenance}
-          showFocusWithin={false}
-        >
+        <FormFieldContainer label="Maintenance (₹)" htmlFor="maintenance" error={errors.maintenance} showFocusWithin={false}>
           <Input
             id="maintenance"
             name="maintenance"
             type="number"
             value={maintenance as any}
-            onChange={(e) => setField("maintenance", e.target.value)}
+            onChange={(e) => setAndClear("maintenance", e.target.value)}
+            aria-invalid={!!errors.maintenance}
+            className={cx(!!errors.maintenance && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
       </FormFieldWrapper>
@@ -397,7 +410,9 @@ export default function CommercialForm() {
             name="available_from"
             type="date"
             value={available_from as any}
-            onChange={(e) => setField("available_from", e.target.value)}
+            onChange={(e) => setAndClear("available_from", e.target.value)}
+            aria-invalid={!!errors.available_from}
+            className={cx(!!errors.available_from && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
@@ -407,7 +422,9 @@ export default function CommercialForm() {
             name="leaseTerm"
             type="number"
             value={leaseTerm as any}
-            onChange={(e) => setField("leaseTerm", e.target.value)}
+            onChange={(e) => setAndClear("leaseTerm", e.target.value)}
+            aria-invalid={!!errors.leaseTerm}
+            className={cx(!!errors.leaseTerm && "border-red-500 focus-visible:ring-red-500/20")}
           />
         </FormFieldContainer>
 
@@ -416,8 +433,11 @@ export default function CommercialForm() {
             id="powerBackup"
             name="powerBackup"
             value={powerBackup}
-            onChange={(e) => setField("powerBackup", e.target.value)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+            onChange={(e) => setAndClear("powerBackup", e.target.value)}
+            className={cx(
+              "w-full h-10 rounded-md border border-input bg-background px-3 text-sm",
+              !!errors.powerBackup && "border-red-500 focus-visible:ring-red-500/20"
+            )}
           >
             <option value="">Select</option>
             {POWER_BACKUP.map((o) => (
@@ -430,46 +450,18 @@ export default function CommercialForm() {
       </FormFieldWrapper>
 
       {/* Facilities */}
-      <FormFieldContainer label="Facilities" htmlFor="facilities" helperLabel="Select all that apply" showFocusWithin={false}>
-        <CheckboxGroupField label="" field="facilities" options={facilitiesOptions} cols={3} />
-      </FormFieldContainer>
-
-      {/* Contact Info */}
-      {/* <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 md:gap-4" showFocusWithin={false}>
-        <FormFieldContainer label="Contact Name" htmlFor="contactName" error={errors.contactName} showFocusWithin={false}>
-          <Input
-            id="contactName"
-            placeholder="Owner/Manager Name"
-            value={sellerInfo?.name ?? ""}
-            onChange={(e) => setField("sellerInfo", { ...sellerInfo, name: e.target.value })}
-            className={cx(!!errors.contactName && "border-red-500")}
-          />
+      <div id="facilities-block">
+        <FormFieldContainer
+          label="Facilities"
+          htmlFor="facilities"
+          helperLabel="Select all that apply"
+          error={errors.facilities}
+          showFocusWithin={false}
+        >
+          <CheckboxGroupField label="" field="facilities" options={facilitiesOptions} cols={3} />
         </FormFieldContainer>
+      </div>
 
-        <FormFieldContainer label="Email" htmlFor="contactEmail" error={errors.contactEmail} showFocusWithin={false}>
-          <Input
-            id="contactEmail"
-            type="email"
-            placeholder="Email address"
-            value={sellerInfo?.email ?? ""}
-            onChange={(e) => setField("sellerInfo", { ...sellerInfo, email: e.target.value })}
-            className={cx(!!errors.contactEmail && "border-red-500")}
-          />
-        </FormFieldContainer>
-
-        <FormFieldContainer label="Phone" htmlFor="contactPhone" error={errors.contactPhone} showFocusWithin={false}>
-          <Input
-            id="contactPhone"
-            type="tel"
-            placeholder="Phone number"
-            value={sellerInfo?.phone ?? ""}
-            onChange={(e) => setField("sellerInfo", { ...sellerInfo, phone: e.target.value })}
-            className={cx(!!errors.contactPhone && "border-red-500")}
-          />
-        </FormFieldContainer>
-      </FormFieldWrapper> */}
-
-      {/* Hidden submit so requestSubmit works */}
       <button type="submit" className="sr-only" aria-hidden />
     </form>
   );

@@ -19,7 +19,6 @@ function extractEmailFromDecoded(decoded: any): string | undefined {
 
 function extractUserIdFromDecoded(decoded: any): string | undefined {
   if (!decoded || typeof decoded !== "object") return undefined;
-  // Typical places an id can live
   return (
     decoded.id ||
     decoded.userId ||
@@ -34,7 +33,6 @@ export default async function MyAdsPage() {
   const cookieStore = cookies();
   const hdrs = headers();
 
-  // ✅ FIX: read session cookie
   let raw = cookieStore.get("session")?.value || hdrs.get("authorization") || "";
   if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
 
@@ -56,7 +54,11 @@ export default async function MyAdsPage() {
           You are not logged in or your session expired.
           <br />
           <span className="text-sm">
-            Please <Link href="/login" className="underline">log in</Link> again.
+            Please{" "}
+            <Link href="/login" className="underline">
+              log in
+            </Link>{" "}
+            again.
           </span>
         </div>
       </main>
@@ -74,18 +76,28 @@ export default async function MyAdsPage() {
         </Link>
       </div>
 
-      {(!rows || rows.length === 0) ? (
+      {!rows || rows.length === 0 ? (
         <p className="text-slate-600">
-          No ads found{email ? <> for <b>{email}</b></> : null}.{" "}
+          No ads found
+          {email ? (
+            <>
+              {" "}
+              for <b>{email}</b>
+            </>
+          ) : null}
+          .{" "}
           <Link href="/post/select-category" className="underline">
             Create your first ad
           </Link>
           .
         </p>
       ) : (
-        <ClientList initialRows={rows} ownerEmail={email} ownerId={ownerId} />
+        <ClientList
+          initialRows={rows}
+          ownerEmail={email ?? ""}
+          ownerId={ownerId ?? ""}
+        />
       )}
     </main>
   );
 }
-

@@ -6,9 +6,11 @@ import MyAdRow from "./MyAdRow";
 export default function ClientList({
   initialRows,
   ownerEmail,
+  ownerId,
 }: {
   initialRows: any[];
   ownerEmail: string;
+  ownerId: string;
 }) {
   const [rows, setRows] = useState(initialRows);
 
@@ -19,7 +21,13 @@ export default function ClientList({
           key={r.id}
           row={r}
           ownerEmail={ownerEmail}
+          ownerId={ownerId}
           onDeleted={(id) => setRows((s: any[]) => s.filter((x) => x.id !== id))}
+          onBumped={(id, iso) =>
+            setRows((s: any[]) =>
+              s.map((x) => (x.id === id ? { ...x, lastBumpedAt: iso } : x))
+            )
+          }
         />
       ))}
     </div>

@@ -140,49 +140,78 @@ export default function PostFormTemplate() {
     if (!importKey) return null;
     return dynamic(() => import(`@/app/components/form/${importKey}`), {
       ssr: false,
-      loading: () => <p className="text-center text-gray-500">Loading form...</p>,
+      loading: () => (
+        <p className="text-center text-gray-500">Loading form...</p>
+      ),
     });
   }, [importKey]);
 
-  // ✅ Listen to generic and legacy events
+  // ✅ Listen to all validation events (generic + legacy)
   useEffect(() => {
     const onValidated = (e: Event) => {
       const ok = (e as CustomEvent).detail?.ok === true;
       if (ok) router.push("/post/upload-photo");
     };
 
-    const events = ["postform:validated", "roomrentalform:validated", "buyform:validated"];
-    events.forEach((ev) => window.addEventListener(ev, onValidated as EventListener));
-    return () => events.forEach((ev) => window.removeEventListener(ev, onValidated as EventListener));
+    const events = [
+      "postform:validated",
+      "roomrentalform:validated",
+      "buyform:validated",
+      "commercialform:validated",
+      // add more legacy events here if any older forms emit them
+    ];
+
+    events.forEach((ev) =>
+      window.addEventListener(ev, onValidated as EventListener)
+    );
+    return () =>
+      events.forEach((ev) =>
+        window.removeEventListener(ev, onValidated as EventListener)
+      );
   }, [router]);
 
-  // ✅ Robust "Next": try whichever form id exists
+  // ✅ Best practice "Next": submit whichever form is currently rendered
   const handleNext = useCallback(() => {
-    const tryIds = ["roomRentalForm", "buyForm", "postForm"];
-    for (const id of tryIds) {
-      const form = document.getElementById(id) as HTMLFormElement | null;
-      if (form) {
-        if ("requestSubmit" in form && typeof (form as any).requestSubmit === "function") {
-          (form as any).requestSubmit();
-        } else {
-          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
-        }
-        return;
-      }
+    // recommended: add data-post-form="true" on each subform <form>
+    const marked = document.querySelector(
+      'form[data-post-form="true"]'
+    ) as HTMLFormElement | null;
+
+    // fallback for older forms without the attribute
+    const fallback =
+      (document.getElementById("roomRentalForm") as HTMLFormElement | null) ||
+      (document.getElementById("buyForm") as HTMLFormElement | null) ||
+      (document.getElementById("commercialForm") as HTMLFormElement | null) ||
+      (document.getElementById("postForm") as HTMLFormElement | null);
+
+    const form = marked || fallback;
+    if (!form) return;
+
+    if (
+      "requestSubmit" in form &&
+      typeof (form as any).requestSubmit === "function"
+    ) {
+      (form as any).requestSubmit();
+    } else {
+      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
     }
   }, []);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
       <PageHeader
-        title={`Advertisement Details `}
+        title="Advertisement Details"
         description="Tell us more about your advertisement. Fill in the main details so potential buyers or viewers know exactly what you’re offering."
       />
 
       <div className="w-full max-w-xl mt-4">
         <div className="text-gray-600 text-sm space-y-1 mb-6">
-          <p><strong>Category:</strong> {category || "-"}</p>
-          <p><strong>Subcategory:</strong> {subcategory || "-"}</p>
+          <p>
+            <strong>Category:</strong> {category || "-"}
+          </p>
+          <p>
+            <strong>Subcategory:</strong> {subcategory || "-"}
+          </p>
         </div>
 
         {SpecificForm ? <SpecificForm /> : null}

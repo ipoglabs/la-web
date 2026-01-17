@@ -8,8 +8,12 @@ import { usePostFormStore } from "@/app/post/store/postFormStore";
 import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
-import { cn as cx } from "@/lib/utils";
 import { toast } from "sonner";
+
+// tiny helper to merge classes (same idea as register page)
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
 
 export default function BuyForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -38,37 +42,63 @@ export default function BuyForm() {
 
   // let parent page know validation status
   const dispatchValidated = (ok: boolean) => {
-    window.dispatchEvent(
-      new CustomEvent("buyform:validated", { detail: { ok } })
+    window.dispatchEvent(new CustomEvent("buyform:validated", { detail: { ok } }));
+  };
+
+  const scrollToFirstError = (mappedErrors: Record<string, string>) => {
+    const firstErrorField = Object.keys(mappedErrors)[0];
+    if (!firstErrorField) return;
+
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${firstErrorField}"]`
     );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    (el as HTMLElement | null)?.focus?.();
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // normalize (same pattern as register form)
+    const title = (name || "").trim();
+    const desc = (description || "").trim();
+    const price = salePrice; // keep raw; validation checks numeric
+    const built = builtup_area;
+    const carpet = carpet_area;
+
     const mapped: Record<string, string> = {};
 
-    // basic ad validations
-    if (!name.trim()) mapped.name = "Listing title is required.";
-    if (!isPositive(salePrice))
-      mapped.salePrice = "Please enter a valid sale price greater than 0.";
+    // friendly validations (register-style)
+    if (!title) mapped.name = "Please enter a listing title.";
+    if (!desc) mapped.description = "Please add a short description.";
 
-    if (String(builtup_area).trim() && !isPositive(builtup_area)) {
+    if (!isPositive(price)) {
+      mapped.salePrice = "Please enter a valid sale price greater than 0.";
+    }
+
+    if (String(built).trim() && !isPositive(built)) {
       mapped.builtup_area = "Built-up area must be a positive number.";
     }
 
-    if (String(carpet_area).trim() && !isPositive(carpet_area)) {
+    if (String(carpet).trim() && !isPositive(carpet)) {
       mapped.carpet_area = "Carpet area must be a positive number.";
     }
 
-    setErrors(mapped);
+    // (optional) facilities required check – keep off unless you want it strict
+    // if (!facilities?.length) mapped.facilities = "Please select at least one facility.";
 
     if (Object.keys(mapped).length > 0) {
+      setErrors(mapped);
+      scrollToFirstError(mapped);
       toast.error("Please fix the highlighted fields.");
       dispatchValidated(false);
       return;
     }
 
+    // Save normalized values back (nice to keep store clean)
+    setField("name", title);
+    setField("description", desc);
+    setErrors({});
     dispatchValidated(true);
   };
 
@@ -80,13 +110,20 @@ export default function BuyForm() {
       className="w-full max-w-xl space-y-6"
     >
       {/* Basic Info */}
-      <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name} showFocusWithin={false}>
+      <FormFieldContainer
+        label="Listing Title"
+        htmlFor="name"
+        error={errors.name}
+        showFocusWithin={false}
+      >
         <Input
           id="name"
           name="name"
           placeholder="e.g. 2BHK Apartment in Anna Nagar"
           value={name}
           onChange={(e) => setField("name", e.target.value)}
+          aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? "name-error" : undefined}
           className={cx(
             !!errors.name && "border-red-500 focus-visible:ring-red-500/20"
           )}
@@ -106,6 +143,8 @@ export default function BuyForm() {
           value={description}
           onChange={(e) => setField("description", e.target.value)}
           rows={5}
+          aria-invalid={!!errors.description}
+          aria-describedby={errors.description ? "description-error" : undefined}
           className={cx(
             !!errors.description && "border-red-500 focus-visible:ring-red-500/20"
           )}
@@ -113,7 +152,10 @@ export default function BuyForm() {
       </FormFieldContainer>
 
       {/* Pricing & Area */}
-      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 md:gap-4" showFocusWithin={false}>
+      <FormFieldWrapper
+        className="grid grid-cols-1 md:grid-cols-3 md:gap-4"
+        showFocusWithin={false}
+      >
         <FormFieldContainer
           label="Sale Price (₹)"
           htmlFor="salePrice"
@@ -127,6 +169,11 @@ export default function BuyForm() {
             placeholder="e.g. 6500000"
             value={salePrice as any}
             onChange={(e) => setField("salePrice", e.target.value)}
+            aria-invalid={!!errors.salePrice}
+            aria-describedby={errors.salePrice ? "salePrice-error" : undefined}
+            className={cx(
+              !!errors.salePrice && "border-red-500 focus-visible:ring-red-500/20"
+            )}
           />
         </FormFieldContainer>
 
@@ -142,6 +189,12 @@ export default function BuyForm() {
             type="number"
             value={builtup_area as any}
             onChange={(e) => setField("builtup_area", e.target.value)}
+            aria-invalid={!!errors.builtup_area}
+            aria-describedby={errors.builtup_area ? "builtup_area-error" : undefined}
+            className={cx(
+              !!errors.builtup_area &&
+                "border-red-500 focus-visible:ring-red-500/20"
+            )}
           />
         </FormFieldContainer>
 
@@ -157,6 +210,12 @@ export default function BuyForm() {
             type="number"
             value={carpet_area as any}
             onChange={(e) => setField("carpet_area", e.target.value)}
+            aria-invalid={!!errors.carpet_area}
+            aria-describedby={errors.carpet_area ? "carpet_area-error" : undefined}
+            className={cx(
+              !!errors.carpet_area &&
+                "border-red-500 focus-visible:ring-red-500/20"
+            )}
           />
         </FormFieldContainer>
       </FormFieldWrapper>
@@ -166,6 +225,7 @@ export default function BuyForm() {
         label="Facilities"
         htmlFor="facilities"
         helperLabel="Select all that apply"
+        error={errors.facilities} // safe even if you don't set it
         showFocusWithin={false}
       >
         <CheckboxGroupField

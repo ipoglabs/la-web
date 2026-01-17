@@ -16,6 +16,10 @@ import { buildPostFormData } from "@/lib/buildPostFormData";
 import { useAuthStore } from "@/store/authStore";
 import { Input } from "@/components/ui/input";
 
+// ✅ NEW: config-driven preview fields
+import { getSpecs } from "@/posting/config/getSpecs";
+import type { FieldSpec } from "@/posting/config/types";
+
 /** ---------- helpers ---------- */
 function fmtCurrency(v: unknown) {
   if (v === null || v === undefined || v === "") return undefined;
@@ -35,44 +39,35 @@ function fmtDate(v: unknown) {
   return d.toLocaleDateString();
 }
 
-const CURRENCY_KEYS = new Set([
-  "rentPrice",
-  "salePrice",
-  "deposit",
-  "maintenance",
-  "price",
-  "rent",
-  "rateNightly",
-  "rateWeekly",
-  "rateMonthly",
-  "salary",
-  "hourlyRate",
-  "stipendAmount",
-  "budgetAmount",
-  "maxBudget",
-  "budget",
-]);
+function renderByType(spec: FieldSpec, value: any): string {
+  if (value === null || value === undefined || value === "") return "—";
 
-function renderValue(key: string, value: any): string {
-  if (CURRENCY_KEYS.has(key)) return fmtCurrency(value) ?? "—";
-
-  if (
-    key === "available_from" ||
-    key === "deadline" ||
-    key === "startDate" ||
-    key === "endDate" ||
-    key === "insuranceValidTill" ||
-    key === "lfDate" ||
-    key === "date"
-  ) {
-    return fmtDate(value) ?? "—";
+  // array
+  if (spec.type === "array") {
+    return Array.isArray(value) ? (value.length ? value.join(", ") : "—") : "—";
   }
 
-  if (key === "kms" && value) return `${value} km`;
-  if (key === "engineCapacity" && value) return `${value} cc`;
+  // currency
+  if (spec.type === "currency") return fmtCurrency(value) ?? "—";
 
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
-  if (value === null || value === undefined || value === "") return "—";
+  // date
+  if (spec.type === "date") return fmtDate(value) ?? "—";
+
+  // boolean
+  if (spec.type === "boolean") {
+    if (value === true || value === "true" || value === 1 || value === "1") return "Yes";
+    if (value === false || value === "false" || value === 0 || value === "0") return "No";
+    return String(value);
+  }
+
+  // number
+  if (spec.type === "number") {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value);
+    return spec.unit ? `${n} ${spec.unit}` : String(n);
+  }
+
+  // string fallback
   return String(value);
 }
 
@@ -167,10 +162,14 @@ export default function ReviewDetails() {
 
   const postId = isEdit ? (data.postId as string) : undefined;
 
-  const has = (k: string) =>
-    (data as any)[k] !== undefined &&
-    (data as any)[k] !== null &&
-    String((data as any)[k]).trim() !== "";
+  // ✅ safer "has": works for arrays/numbers/booleans too
+  const has = (k: string) => {
+    const v = (data as any)[k];
+    if (v === undefined || v === null) return false;
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === "string") return v.trim().length > 0;
+    return true;
+  };
 
   // Normalize sellerInfo from store
   const sellerInfo: SellerInfo = {
@@ -271,79 +270,74 @@ export default function ReviewDetails() {
   ]);
 
   /** ---------- submit (add | update) ---------- */
-  /** ---------- submit (add | update) ---------- */
-const handleSubmit = async () => {
-  setClientError(null);
+  const handleSubmit = async () => {
+    setClientError(null);
 
-  console.log("📝 [Preview] isEdit =", isEdit, "postId =", postId);
+    console.log("📝 [Preview] isEdit =", isEdit, "postId =", postId);
 
-  if (missing.length) {
-    setClientError(`Please fill: ${missing.join(", ")}`);
-    return;
-  }
-
-  setLoading(true);
-
-  const fd = buildPostFormData({
-    ...data,
-    sellerInfo,
-  });
-
-  let res;
-  if (isEdit && postId) {
-    console.log("🔧 [Preview] Calling updatePost with id =", postId);
-    res = await updatePost(postId, fd);
-  } else {
-    console.log("➕ [Preview] Calling addPost (create new)");
-    res = await addPost(fd);
-  }
-
-  setLoading(false);
-
-  if (!res || (res as any).ok === false) {
-    console.error("❌ [Preview] submit error:", res);
-    const msg =
-      (res as any)?.error ||
-      "Submit failed. Please check required fields and try again.";
-    setClientError(msg);
-    return;
-  }
-
-  const newId = (res as any).id as string | undefined;
-
-  if (!isEdit) {
-    // reset create mode flags if needed
-    setField("editMode", false);
-    setField("postId", undefined as unknown as string);
-
-    // 👉 redirect to congratulations page (with id in query if you want)
-    const target = newId
-      ? `/congratulation?postId=${encodeURIComponent(newId)}`
-      : "/congratulation";
-
-    router.push(target);
-  } else {
-    // 👉 for edit keep your old behaviour
-    if (postId) {
-      router.push(`/post-details/${postId}`);
-    } else if (newId) {
-      router.push(`/post-details/${newId}`);
-    } else {
-      router.push("/my-ads"); // fallback
+    if (missing.length) {
+      setClientError(`Please fill: ${missing.join(", ")}`);
+      return;
     }
-  }
-};
 
+    setLoading(true);
 
+    const fd = buildPostFormData({
+      ...data,
+      sellerInfo,
+    });
+
+    let res;
+    if (isEdit && postId) {
+      console.log("🔧 [Preview] Calling updatePost with id =", postId);
+      res = await updatePost(postId, fd);
+    } else {
+      console.log("➕ [Preview] Calling addPost (create new)");
+      res = await addPost(fd);
+    }
+
+    setLoading(false);
+
+    if (!res || (res as any).ok === false) {
+      console.error("❌ [Preview] submit error:", res);
+      const msg =
+        (res as any)?.error ||
+        "Submit failed. Please check required fields and try again.";
+      setClientError(msg);
+      return;
+    }
+
+    const newId = (res as any).id as string | undefined;
+
+    if (!isEdit) {
+      // reset create mode flags if needed
+      setField("editMode", false);
+      setField("postId", undefined as unknown as string);
+
+      // 👉 redirect to congratulations page (with id in query if you want)
+      const target = newId
+        ? `/congratulation?postId=${encodeURIComponent(newId)}`
+        : "/congratulation";
+
+      router.push(target);
+    } else {
+      // 👉 for edit keep your old behaviour
+      if (postId) {
+        router.push(`/post-details/${postId}`);
+      } else if (newId) {
+        router.push(`/post-details/${newId}`);
+      } else {
+        router.push("/my-ads"); // fallback
+      }
+    }
+  };
 
   /** ---------- build sections ---------- */
 
   const categorySection = [
     {
       title: "Main / Sub Category",
-      value: `${data.category || "—"}${
-        data.subcategory ? ` → ${data.subcategory}` : ""
-      }`,
+      value: `${data.category || "—"}${data.subcategory ? ` → ${data.subcategory}` : ""}`,
       type: "text" as const,
     },
   ];
@@ -361,10 +355,10 @@ const handleSubmit = async () => {
   );
 
   const keyFeatures =
-    (Array.isArray((data as any).keyFeatures) &&
-      (data as any).keyFeatures.join(", ")) ||
+    (Array.isArray((data as any).keyFeatures) && (data as any).keyFeatures.join(", ")) ||
     (typeof (data as any).keyFeatures === "string" && (data as any).keyFeatures) ||
     "";
+
   if (keyFeatures) {
     advDetails.push({
       title: "Key Features",
@@ -374,27 +368,18 @@ const handleSubmit = async () => {
     });
   }
 
-  const possibleFields: Array<[string, string]> = [
-    ["price", "Asking Price / Rent"],
-    ["rentPrice", "Asking Rent"],
-    ["salePrice", "Sale Price"],
-    ["deposit", "Deposit"],
-    ["available_from", "Available From"],
-    ["deadline", "Deadline"],
-    ["startDate", "Start Date"],
-    ["endDate", "End Date"],
-    ["propertyType", "Property Type"],
-    ["bedroom", "Bedroom"],
-    ["bathroom", "Bathroom"],
-    ["size", "Size"],
-    ["furnishType", "Furnish type"],
-    ["letType", "Let type"],
-    ["councilTax", "Council Tax"],
-  ];
+  // ✅ config-driven fields (category + subcategory decides which fields show)
+  const specs = useMemo(() => {
+    if (!data.category || !data.subcategory) return [];
+    return getSpecs(data.category, data.subcategory);
+  }, [data.category, data.subcategory]);
 
-  for (const [k, label] of possibleFields) {
-    if (has(k)) {
-      advDetails.push({ title: label, value: renderValue(k, (data as any)[k]) });
+  for (const spec of specs) {
+    if (has(spec.key)) {
+      advDetails.push({
+        title: spec.label,
+        value: renderByType(spec, (data as any)[spec.key]),
+      });
     }
   }
 
@@ -405,8 +390,7 @@ const handleSubmit = async () => {
       ? `${data.location.lat.toFixed(6)}°, ${data.location.lng.toFixed(6)}°`
       : "";
 
-  const locationProvider: Array<{ title: string; value: string; type?: "text" }> =
-    [];
+  const locationProvider: Array<{ title: string; value: string; type?: "text" }> = [];
   if (hasAddress) {
     locationProvider.push({
       title: "Address",
@@ -490,9 +474,7 @@ const handleSubmit = async () => {
 
         <AdvertiserContactSection
           sellerInfo={sellerInfo}
-          onPhoneChange={(phone) =>
-            setField("sellerInfo", { ...sellerInfo, phone })
-          }
+          onPhoneChange={(phone) => setField("sellerInfo", { ...sellerInfo, phone })}
         />
 
         <details className="group mt-4">

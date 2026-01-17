@@ -1,4 +1,4 @@
-// lib/auth.ts
+// src/lib/auth.ts
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
@@ -7,16 +7,22 @@ const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export type SessionPayload = {
   userId: string;
-  email: string;
-  username: string;
-  role: string;
+  email?: string;
+  role?: string;
+
+  // optional fields (because not every flow signs them)
+  username?: string;
+  primaryNumber?: string;
 };
 
-/** ✅ create session (used in register & login) */
+function requireSecret() {
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not set");
+  return process.env.JWT_SECRET;
+}
+
+/** create session (optional utility) */
 export function createSession(payload: SessionPayload) {
-  const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
-    expiresIn: MAX_AGE,
-  });
+  const token = jwt.sign(payload, requireSecret(), { expiresIn: MAX_AGE });
 
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
@@ -29,27 +35,28 @@ export function createSession(payload: SessionPayload) {
   return token;
 }
 
-/** ✅ read + verify session cookie (used in getCurrentUser) */
+/** read + verify session cookie */
 export function getSession(): SessionPayload | null {
   const token = cookies().get(COOKIE_NAME)?.value;
   if (!token) return null;
+
   try {
-    return jwt.verify(token, process.env.JWT_SECRET as string) as SessionPayload;
+    return jwt.verify(token, requireSecret()) as SessionPayload;
   } catch {
     return null;
   }
 }
 
-/** ✅ added verifyToken to avoid the error */
+/** verify raw token */
 export function verifyToken(token: string): SessionPayload | null {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET as string) as SessionPayload;
-  } catch (err) {
+    return jwt.verify(token, requireSecret()) as SessionPayload;
+  } catch {
     return null;
   }
 }
 
-/** ✅ logout */
+/** logout */
 export function clearSession() {
   cookies().delete(COOKIE_NAME);
 }

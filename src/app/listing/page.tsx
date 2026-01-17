@@ -10,7 +10,7 @@ import AppFooter from "../components/AppFooter/appFooter";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 
-export const revalidate = 0;          // always fresh server-render
+export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 12;
@@ -18,13 +18,23 @@ const PAGE_SIZE = 12;
 function getSort(sort?: string) {
   switch (sort) {
     case "oldest":
-      return { createdAt: 1 } as const;
+      return { lastBumpedAt: -1, createdAt: 1 } as const;
     case "price_desc":
-      return { rentPrice: -1, salePrice: -1, createdAt: -1 } as const;
+      return {
+        lastBumpedAt: -1,
+        rentPrice: -1,
+        salePrice: -1,
+        createdAt: -1,
+      } as const;
     case "price_asc":
-      return { rentPrice: 1, salePrice: 1, createdAt: -1 } as const;
+      return {
+        lastBumpedAt: -1,
+        rentPrice: 1,
+        salePrice: 1,
+        createdAt: -1,
+      } as const;
     default:
-      return { createdAt: -1 } as const; // newest
+      return { lastBumpedAt: -1, createdAt: -1 } as const;
   }
 }
 
@@ -44,12 +54,9 @@ export default async function ListingPage({
   const page = Math.max(1, Number(searchParams?.page ?? "1") || 1);
   const sort = getSort(searchParams?.sort);
 
-  // 🔎 base filter: hide pending & pause posts
-  const filter: Record<string, any> = {
-    status: { $nin: ["pending", "pause"] },
-  };
+  // ✅ Public listing only shows active (approved) ads
+  const filter: Record<string, any> = { status: "active" };
 
-  // Optional basic filters
   if (searchParams?.q) {
     filter.$or = [
       { name: { $regex: searchParams.q, $options: "i" } },
@@ -79,12 +86,9 @@ export default async function ListingPage({
       <SecondarySearchArea />
 
       <div className="container mx-auto flex flex-row items-start flex-nowrap gap-4 px-4 sm:px-6 lg:px-16 py-4">
-        {/* Left filters column stays as-is */}
         <Filter />
 
-        {/* Right: dynamic listing grid */}
         <div className="flex-1 max-sm:w-full">
-          {/* Header row */}
           <div className="container mx-auto flex items-center">
             <button
               aria-label="open filters"
@@ -113,7 +117,6 @@ export default async function ListingPage({
             <SortDropdown />
           </div>
 
-          {/* Grid */}
           <div className="w-full mt-3 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {items.length === 0 ? (
               <div className="col-span-full text-center text-sm text-slate-500 py-10">
@@ -140,7 +143,6 @@ export default async function ListingPage({
             )}
           </div>
 
-          {/* Pagination */}
           <Pagination total={total} pageSize={PAGE_SIZE} />
         </div>
       </div>

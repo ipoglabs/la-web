@@ -519,3 +519,6 @@ export default function PhoneVerificationPage() {
     </div>
   );
 }
+ 
+// Template SMS content:
+// Lokalads verification code: 123456 — valid for 10 minutes. Do not share this code with anyone.
