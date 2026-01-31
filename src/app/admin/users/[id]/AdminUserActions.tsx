@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { deleteUser } from "../../../../actions/deleteUser";
+import { deleteUser } from "../../../actions/deleteUser";
 
 export default function AdminUserActions({
   userId,
