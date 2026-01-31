@@ -8,11 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import AppHeader from "@/app/components/AppHeader/appHeader";
 import AppFooter from "@/app/components/AppFooter/appFooter";
-import {
-  CATEGORY_CONFIG,
-  normalizeCategory,
-  normalizeSubcategory,
-} from "@/lib/buildPostFormData";
+import { normalizeCategory, normalizeSubcategory } from "@/posting/config/normalize";
+import { CATEGORY_CONFIG } from "@/posting/config/categoryConfig";
+
 
 // ---- Labels (shared with Preview) ----
 const LABELS: Record<string, string> = {
