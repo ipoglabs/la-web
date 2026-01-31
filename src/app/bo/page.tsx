@@ -23,7 +23,7 @@ export default async function AdminDashboard({
 
   const session = token ? verifyAdminJwt(token) : null;
   if (!session || !isAdminRole(session.role)) {
-    redirect("/admin-login?next=/admin");
+    redirect("/bo-login?next=/bo");
   }
 
   const role = session.role;
@@ -39,25 +39,25 @@ export default async function AdminDashboard({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {hasPerm(role, "users.manage") && (
-          <Link href="/admin/users" className="p-6 bg-white rounded shadow hover:bg-slate-50">
+          <Link href="/bo/users" className="p-6 bg-white rounded shadow hover:bg-slate-50">
             👤 Manage Users
           </Link>
         )}
 
         {hasPerm(role, "posts.manage") && (
-          <Link href="/admin/posts" className="p-6 bg-white rounded shadow hover:bg-slate-50">
+          <Link href="/bo/posts" className="p-6 bg-white rounded shadow hover:bg-slate-50">
             📢 Manage Ads
           </Link>
         )}
 
         {hasPerm(role, "comm.manage") && (
-          <Link href="/admin/communications" className="p-6 bg-white rounded shadow hover:bg-slate-50">
+          <Link href="/bo/communications" className="p-6 bg-white rounded shadow hover:bg-slate-50">
             💬 User Communication
           </Link>
         )}
 
         {role === "super_admin" && (
-          <Link href="/admin/register" className="p-6 bg-white rounded shadow hover:bg-slate-50">
+          <Link href="/bo/register" className="p-6 bg-white rounded shadow hover:bg-slate-50">
             🛡️ Create Admin Accounts
           </Link>
         )}

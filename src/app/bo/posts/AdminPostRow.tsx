@@ -28,7 +28,7 @@ export default function AdminPostRow({ post }: { post: AdminPost }) {
 
   return (
     <div
-      onClick={() => router.push(`/admin/posts/${post.id}`)} // ✅ admin details
+      onClick={() => router.push(`/bo/posts/${post.id}`)} // ✅ admin details
       className="bg-white p-4 rounded shadow flex justify-between items-center cursor-pointer hover:bg-slate-50 transition"
     >
       <div>

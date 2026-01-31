@@ -64,7 +64,7 @@ export default function AdminUserAdCard({ post }: { post: any }) {
 
   return (
     <div
-      onClick={() => router.push(`/admin/posts/${post.id}`)}
+      onClick={() => router.push(`/bo/posts/${post.id}`)}
       className="p-4 rounded-lg border bg-white hover:bg-slate-50 transition cursor-pointer"
     >
       <div className="flex items-start justify-between gap-3">
@@ -127,7 +127,7 @@ export default function AdminUserAdCard({ post }: { post: any }) {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.push(`/admin/posts/${post.id}`)}
+            onClick={() => router.push(`/bo/posts/${post.id}`)}
           >
             View
           </Button>

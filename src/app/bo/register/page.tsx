@@ -50,7 +50,7 @@ export default function AdminRegisterPage() {
       }
 
       // ✅ redirect to dashboard with success flag
-      router.push("/admin?created=1");
+      router.push("/bo?created=1");
       router.refresh();
     } catch (e: any) {
       setErr(e?.message || "Register failed");

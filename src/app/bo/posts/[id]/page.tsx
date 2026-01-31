@@ -31,7 +31,7 @@ export default async function AdminPostDetailsPage({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Link href="/admin/posts" className="text-sm text-blue-600 underline">
+      <Link href="/bo/posts" className="text-sm text-blue-600 underline">
         ← Back to posts
       </Link>
 

@@ -109,7 +109,7 @@ export default async function AdminUserAds({
     <div className="space-y-6">
       {/* Top bar: Back + Delete */}
       <div className="flex items-center justify-between">
-        <Link href="/admin/users" className="text-sm text-blue-600 underline">
+        <Link href="/bo/users" className="text-sm text-blue-600 underline">
           ← Back to users
         </Link>
 

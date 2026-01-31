@@ -14,7 +14,7 @@ export default async function AdminLayout({
 
   const session = token ? verifyAdminJwt(token) : null;
   if (!session || !isAdminRole(session.role)) {
-    redirect("/admin-login?next=/admin");
+    redirect("/bo-login?next=/bo");
   }
 
   return (
@@ -24,13 +24,13 @@ export default async function AdminLayout({
           <div className="font-semibold">Admin Panel</div>
 
           <div className="flex items-center gap-4">
-            <Link href="/admin" className="text-blue-600 underline">
+            <Link href="/bo" className="text-blue-600 underline">
               Dashboard
             </Link>
-            <Link href="/admin/users" className="text-blue-600 underline">
+            <Link href="/bo/users" className="text-blue-600 underline">
               Users
             </Link>
-            <Link href="/admin/posts" className="text-blue-600 underline">
+            <Link href="/bo/posts" className="text-blue-600 underline">
               Ads
             </Link>
 

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminLoginClient() {
   const sp = useSearchParams();
-  const next = sp.get("next") || "/admin";
+  const next = sp.get("next") || "/bo";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

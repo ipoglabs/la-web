@@ -30,7 +30,7 @@ export default function AdminHeader({
 
   const logout = async () => {
     await fetch("/api/admin/auth/logout", { method: "POST" });
-    router.replace("/admin-login");
+    router.replace("/bo-login");
   };
 
   return (
@@ -53,7 +53,7 @@ export default function AdminHeader({
           </div>
 
           <Link
-            href="/admin/profile"
+            href="/bo/profile"
             className="block px-4 py-2 text-sm hover:bg-slate-50"
             onClick={() => setOpen(false)}
           >

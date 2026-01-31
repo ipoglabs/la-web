@@ -28,7 +28,7 @@ export default function AdminUserActions({
         return;
       }
 
-      router.push("/admin/users");
+      router.push("/bo/users");
       router.refresh();
     });
   };

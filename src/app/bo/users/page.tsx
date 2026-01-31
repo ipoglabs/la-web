@@ -32,7 +32,7 @@ export default async function AdminUsersPage() {
               <td>{new Date(u.createdAt).toLocaleDateString()}</td>
               <td>
                 <Link
-                  href={`/admin/users/${u._id}`}
+                  href={`/bo/users/${u._id}`}
                   className="text-blue-600 underline"
                 >
                   View Ads
