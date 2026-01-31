@@ -65,17 +65,36 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+/* -------------------------- Role validations -------------------------- */
+// Role Title: min 2, max 80, allowed special chars: , | &
+const ROLE_TITLE_REGEX = /^[A-Za-z\s,&|]+$/;
+
+// Role Description: min 2, max 300, allowed special chars: . , | & and numbers allowed
+const ROLE_DESC_REGEX = /^[A-Za-z0-9\s.,&|]+$/;
+
+function validateRoleTitle(v: string) {
+  const s = (v ?? "").trim();
+  if (!s) return "Please enter a role title.";
+  if (s.length < 2) return "Role title must be at least 2 characters.";
+  if (s.length > 80) return "Role title must be at most 80 characters.";
+  if (!ROLE_TITLE_REGEX.test(s)) return "Only letters, spaces, and ( , | & ) are allowed.";
+  return "";
+}
+
+function validateRoleDescription(v: string) {
+  const s = (v ?? "").trim();
+  if (!s) return "Please describe how you plan to use Lokalads.";
+  if (s.length < 2) return "Role description must be at least 2 characters.";
+  if (s.length > 300) return "Role description must be at most 300 characters.";
+  if (!ROLE_DESC_REGEX.test(s))
+    return "Only letters, numbers, spaces, and ( . , | & ) are allowed.";
+  return "";
+}
+
 export default function ProfileSetupPage() {
   const router = useRouter();
-  const {
-    general,
-    emailVerified,
-    phones,
-    phoneVerified,
-    profile,
-    updateProfile,
-    reset,
-  } = useRegisterStore();
+  const { general, emailVerified, phones, phoneVerified, profile, updateProfile, reset } =
+    useRegisterStore();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPwd, setShowPwd] = useState(false);
@@ -83,39 +102,68 @@ export default function ProfileSetupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false); // ✅ used for blur-based revalidation
   const [consent, setConsent] = useState(false);
   const [subscribe, setSubscribe] = useState(false);
 
   const [locationQuery, setLocationQuery] = useState(profile.locality || "");
-  const autocompleteRef =
-    useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const isBelowLaptop = useMediaQuery("(max-width:1024px)");
 
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env
-      .NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
     libraries,
   });
 
-  const pwScore = useMemo(
-    () => scorePassword(profile.password),
-    [profile.password]
-  );
+  const pwScore = useMemo(() => scorePassword(profile.password), [profile.password]);
   const pwLabel = strengthLabel(pwScore);
   const pwTooCommon = useMemo(
-    () =>
-      Boolean(profile.password) &&
-      COMMON_PASSWORDS.has(profile.password.toLowerCase()),
+    () => Boolean(profile.password) && COMMON_PASSWORDS.has(profile.password.toLowerCase()),
     [profile.password]
   );
-  const pwMismatch = useMemo(
-    () =>
-      confirmPassword.length > 0 &&
-      confirmPassword !== profile.password,
-    [confirmPassword, profile.password]
-  );
+
+  const validateConfirmPassword = (value: string) => {
+    if (!value) return "";
+    if (value !== (profile.password || "")) {
+      return "Passwords don’t match — please check both fields.";
+    }
+    return "";
+  };
+
+  const clearFieldError = (key: string) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const setFieldError = (key: string, msg?: string) => {
+    setErrors((prev) => {
+      const next = { ...prev };
+      if (msg) next[key] = msg;
+      else delete next[key];
+      return next;
+    });
+  };
+
+  // ✅ If password changes after confirm field was blurred, keep error accurate
+  useEffect(() => {
+    if (!confirmTouched) return;
+    if (!confirmPassword) return;
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      const msg = validateConfirmPassword(confirmPassword);
+      if (msg) next.confirmPassword = msg;
+      else delete next.confirmPassword;
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.password]);
 
   useEffect(() => {
     if (profile.locality && profile.locality !== locationQuery) {
@@ -135,6 +183,7 @@ export default function ProfileSetupPage() {
     ];
     const first = order.find((k) => map[k]);
     if (!first) return;
+
     const root =
       formRef.current ||
       (typeof document !== "undefined"
@@ -144,6 +193,7 @@ export default function ProfileSetupPage() {
     const el =
       root?.querySelector<HTMLElement>(`[name="${first}"]`) ||
       root?.querySelector<HTMLElement>(`[data-field="${first}"]`);
+
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     el?.focus?.();
   };
@@ -159,8 +209,7 @@ export default function ProfileSetupPage() {
     const components = place.address_components;
 
     const getComponent = (types: string[]) =>
-      components.find((c) => types.some((t) => c.types.includes(t)))
-        ?.long_name || "";
+      components.find((c) => types.some((t) => c.types.includes(t)))?.long_name || "";
 
     const district =
       getComponent(["administrative_area_level_2"]) ||
@@ -207,39 +256,34 @@ export default function ProfileSetupPage() {
     if (!trimmed.locality) {
       map.locality = "Please enter your locality.";
     } else if (trimmed.locality.length < 2) {
-      map.locality =
-        "Locality looks too short — please provide a bit more detail.";
+      map.locality = "Locality looks too short — please provide a bit more detail.";
     } else if (trimmed.locality.length > 80) {
       map.locality = "Locality is too long — keep it under 80 characters.";
     }
 
     if (pwTooCommon || pwScore <= 1) {
-      map.password =
-        "Try a longer password or add a symbol for better protection.";
+      map.password = "Try a longer password or add a symbol for better protection.";
     }
-    if (pwMismatch) {
-      map.confirmPassword =
-        "Passwords don’t match — please check both fields.";
-    }
+
+    // ✅ confirm password check on submit (still required)
+    const confirmMsg = validateConfirmPassword(confirmPassword);
+    if (confirmMsg) map.confirmPassword = confirmMsg;
 
     if (!trimmed.role) {
-      map.role =
-        "Tell us how you’ll use Lokalads so we can tailor your experience.";
+      map.role = "Tell us how you’ll use Lokalads so we can tailor your experience.";
     }
 
+    // ✅ UPDATED VALIDATIONS (other role) - as per your new rules
     if (trimmed.role === "other") {
-      if (!trimmed.roleTitle) {
-        map.roleTitle = "Please enter a role title.";
-      }
-      if (!trimmed.roleDescription) {
-        map.roleDescription =
-          "Please describe how you plan to use Lokalads.";
-      }
+      const titleMsg = validateRoleTitle(trimmed.roleTitle || "");
+      if (titleMsg) map.roleTitle = titleMsg;
+
+      const descMsg = validateRoleDescription(trimmed.roleDescription || "");
+      if (descMsg) map.roleDescription = descMsg;
     }
 
     if (!consent) {
-      map.consent =
-        "We need your agreement to our Terms & Privacy Policy to create your account.";
+      map.consent = "We need your agreement to our Terms & Privacy Policy to create your account.";
     }
 
     if (Object.keys(map).length > 0) {
@@ -260,7 +304,6 @@ export default function ProfileSetupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // Step 1 — General
           firstName: general.firstName,
           lastName: general.lastName,
           dateOfBirth: general.dateOfBirth,
@@ -271,27 +314,27 @@ export default function ProfileSetupPage() {
           country: general.country || undefined,
           state: general.state || undefined,
 
-          // Step 3 — Phones
           primaryNumber: phones.primaryNumber,
           secondaryNumber1: phones.secondaryNumber1 || undefined,
           secondaryNumber2: phones.secondaryNumber2 || undefined,
 
-          // Step 4 — Profile
           locality: trimmed.locality,
           password: trimmed.password,
           role: trimmed.role,
           roleTitle: trimmed.role === "other" ? trimmed.roleTitle : undefined,
-          roleDescription:
-            trimmed.role === "other" ? trimmed.roleDescription : undefined,
+          roleDescription: trimmed.role === "other" ? trimmed.roleDescription : undefined,
 
           subscribe,
+
+          isTermsAndConditionAccepted: consent,
+          isPrivacyAndPolicyAccepted: consent,
+          isCookiesPolicyAccepted: consent,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        const msg = data?.error || "Registration failed";
-        toast.error(msg);
+        toast.error(data?.error || "Registration failed");
         return;
       }
 
@@ -312,8 +355,6 @@ export default function ProfileSetupPage() {
     }
   };
 
-  /* ---------------------------------------------------------------------- */
-
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-2xl">
@@ -326,13 +367,6 @@ export default function ProfileSetupPage() {
 
         <CardContent>
           <Form onSubmit={submit} ref={formRef}>
-            <h2 className="hidden text-3xl font-bold text-slate-800 mb-1">
-              Step 4 — Profile Setup
-            </h2>
-            <p className="hidden text-lg font-light text-slate-700 mb-3">
-              Create your login details and set where you are based.
-            </p>
-
             {/* Locality */}
             <FormField
               label="Locality"
@@ -348,12 +382,7 @@ export default function ProfileSetupPage() {
                     }}
                     onPlaceChanged={handlePlaceChanged}
                     options={{
-                      fields: [
-                        "geometry",
-                        "formatted_address",
-                        "name",
-                        "address_components",
-                      ],
+                      fields: ["geometry", "formatted_address", "name", "address_components"],
                       types: ["geocode"],
                     }}
                   >
@@ -365,14 +394,14 @@ export default function ProfileSetupPage() {
                         "w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 p-2 text-base font-normal text-gray-900 placeholder:text-gray-400",
                         "focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
                         "disabled:cursor-not-allowed disabled:opacity-50",
-                        !!errors.locality &&
-                          "border-red-500 focus-visible:ring-red-500/20"
+                        !!errors.locality && "border-red-500 focus-visible:ring-red-500/20"
                       )}
                       value={locationQuery}
                       onChange={(e) => {
                         const v = e.target.value;
                         setLocationQuery(v);
                         updateProfile({ locality: v });
+                        clearFieldError("locality");
                       }}
                       aria-invalid={!!errors.locality}
                     />
@@ -382,24 +411,20 @@ export default function ProfileSetupPage() {
                     id="locality"
                     name="locality"
                     placeholder="e.g. Anna Nagar, Chennai"
-                    className={cx(
-                      "w-full",
-                      !!errors.locality &&
-                        "border-red-500 focus-visible:ring-red-500/20"
-                    )}
+                    className={cx("w-full", !!errors.locality && "border-red-500 focus-visible:ring-red-500/20")}
                     value={locationQuery}
                     onChange={(e) => {
                       const v = e.target.value;
                       setLocationQuery(v);
                       updateProfile({ locality: v });
+                      clearFieldError("locality");
                     }}
                     aria-invalid={!!errors.locality}
                   />
                 )}
               </div>
               <FormHelperText className="mt-1">
-                Start typing and pick your area — we’ll store district, state
-                and country.
+                Start typing and pick your area — we’ll store district, state and country.
               </FormHelperText>
             </FormField>
 
@@ -408,6 +433,7 @@ export default function ProfileSetupPage() {
               className="grid grid-cols-1 md:grid-cols-2 md:gap-4 mt-6"
               showFocusWithin={!isBelowLaptop}
             >
+              {/* Password */}
               <FormField
                 label="Password"
                 htmlFor="password"
@@ -422,14 +448,11 @@ export default function ProfileSetupPage() {
                     type={showPwd ? "text" : "password"}
                     placeholder="Create a secure password"
                     value={profile.password}
-                    onChange={(e) =>
-                      updateProfile({ password: e.target.value })
-                    }
-                    className={cx(
-                      "pr-10",
-                      !!errors.password &&
-                        "border-red-500 focus-visible:ring-red-500/20"
-                    )}
+                    onChange={(e) => {
+                      updateProfile({ password: e.target.value });
+                      clearFieldError("password");
+                    }}
+                    className={cx("pr-10", !!errors.password && "border-red-500 focus-visible:ring-red-500/20")}
                     aria-invalid={!!errors.password}
                   />
                   <button
@@ -443,8 +466,7 @@ export default function ProfileSetupPage() {
                 </div>
 
                 <FormHelperText className="mt-1">
-                  At least 8 characters. Use numbers, letters and a symbol for
-                  extra strength.
+                  At least 8 characters. Use numbers, letters and a symbol for extra strength.
                 </FormHelperText>
 
                 <div className="mt-2 flex items-center gap-2">
@@ -465,12 +487,11 @@ export default function ProfileSetupPage() {
                       />
                     ))}
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {pwLabel}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{pwLabel}</span>
                 </div>
               </FormField>
 
+              {/* Confirm Password — ✅ focus-out validation only */}
               <FormField
                 label="Confirm Password"
                 htmlFor="confirmPassword"
@@ -484,72 +505,51 @@ export default function ProfileSetupPage() {
                     name="confirmPassword"
                     type={showConfirmPwd ? "text" : "password"}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value); // ✅ no live validation
+                      clearFieldError("confirmPassword");
+                    }}
+                    onBlur={() => {
+                      setConfirmTouched(true);
+                      const msg = validateConfirmPassword(confirmPassword);
+                      setFieldError("confirmPassword", msg || undefined);
+                    }}
                     className={cx(
                       "pr-10",
-                      !!errors.confirmPassword &&
-                        "border-red-500 focus-visible:ring-red-500/20"
+                      !!errors.confirmPassword && "border-red-500 focus-visible:ring-red-500/20"
                     )}
                     aria-invalid={!!errors.confirmPassword}
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowConfirmPwd((p) => !p)}
                     className="absolute right-2 top-2 text-gray-500 hover:text-gray-800"
-                    aria-label={
-                      showConfirmPwd
-                        ? "Hide confirm password"
-                        : "Show confirm password"
-                    }
+                    aria-label={showConfirmPwd ? "Hide confirm password" : "Show confirm password"}
                   >
-                    {showConfirmPwd ? (
-                      <EyeOffIcon size={18} />
-                    ) : (
-                      <EyeIcon size={18} />
-                    )}
+                    {showConfirmPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
                   </button>
                 </div>
-
-                {pwMismatch && (
-                  <p className="text-sm text-red-600 mt-1">
-                    Passwords don’t match — please check both fields.
-                  </p>
-                )}
               </FormField>
             </FormFieldWrapper>
 
             {/* Password checklist */}
             <div className="mt-3 space-y-1 pb-6 text-xs">
               {[
-                {
-                  label: "At least 8 characters long",
-                  valid: profile.password.length >= 8,
-                },
-                {
-                  label: "At least 1 letter",
-                  valid: /[A-Za-z]/.test(profile.password),
-                },
-                {
-                  label: "At least 1 number",
-                  valid: /\d/.test(profile.password),
-                },
-                {
-                  label: "At least 1 special character",
-                  valid: /[^A-Za-z0-9]/.test(profile.password),
-                },
+                { label: "At least 8 characters long", valid: profile.password.length >= 8 },
+                { label: "At least 1 letter", valid: /[A-Za-z]/.test(profile.password) },
+                { label: "At least 1 number", valid: /\d/.test(profile.password) },
+                { label: "At least 1 special character", valid: /[^A-Za-z0-9]/.test(profile.password) },
                 {
                   label: "Not your email",
                   valid:
                     profile.password.length > 0 &&
                     general.email &&
-                    profile.password.toLowerCase() !==
-                      general.email.toLowerCase(),
+                    profile.password.toLowerCase() !== general.email.toLowerCase(),
                 },
                 {
                   label: "Not more than 24 characters long",
-                  valid:
-                    profile.password.length > 0 &&
-                    profile.password.length <= 24,
+                  valid: profile.password.length > 0 && profile.password.length <= 24,
                 },
               ].map((rule, idx) => (
                 <div key={idx} className="flex items-center gap-2">
@@ -563,7 +563,7 @@ export default function ProfileSetupPage() {
               ))}
             </div>
 
-            {/* Role + extra fields for "other" */}
+            {/* Role */}
             <FormField
               label="Role"
               htmlFor="role"
@@ -571,8 +571,7 @@ export default function ProfileSetupPage() {
               showFocusWithin={!isBelowLaptop}
             >
               <p className="text-xs text-muted-foreground mt-1">
-                Choose how you’ll use Lokalads — roles customise your dashboard
-                and features.
+                Choose how you’ll use Lokalads — roles customise your dashboard and features.
               </p>
 
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -584,18 +583,16 @@ export default function ProfileSetupPage() {
                       type="button"
                       onClick={() => {
                         updateProfile({ role: r.key });
+                        clearFieldError("role");
                         if (r.key !== "other") {
-                          updateProfile({
-                            roleTitle: "",
-                            roleDescription: "",
-                          });
+                          updateProfile({ roleTitle: "", roleDescription: "" });
+                          clearFieldError("roleTitle");
+                          clearFieldError("roleDescription");
                         }
                       }}
                       className={cx(
                         "rounded-xl border p-4 text-left transition",
-                        active
-                          ? "border-primary ring-2 ring-primary/30"
-                          : "border-input hover:bg-muted/40"
+                        active ? "border-primary ring-2 ring-primary/30" : "border-input hover:bg-muted/40"
                       )}
                       aria-pressed={active}
                       name="role"
@@ -612,11 +609,9 @@ export default function ProfileSetupPage() {
                 })}
               </div>
 
+              {/* Other role extra fields */}
               {profile.role === "other" && (
-                <FormFieldWrapper
-                  className="mt-4 grid grid-cols-1 gap-3"
-                  showFocusWithin={!isBelowLaptop}
-                >
+                <FormFieldWrapper className="mt-4 grid grid-cols-1 gap-3" showFocusWithin={!isBelowLaptop}>
                   <FormField
                     label="Role title"
                     htmlFor="roleTitle"
@@ -629,18 +624,22 @@ export default function ProfileSetupPage() {
                       name="roleTitle"
                       placeholder="e.g. Community Moderator, Freelancer, etc."
                       value={profile.roleTitle || ""}
-                      onChange={(e) =>
-                        updateProfile({ roleTitle: e.target.value })
-                      }
+                      maxLength={80}
+                      onChange={(e) => {
+                        updateProfile({ roleTitle: e.target.value }); // ✅ allow typing anything
+                        clearFieldError("roleTitle");
+                      }}
+                      onBlur={(e) => {
+                        const msg = validateRoleTitle(e.target.value);
+                        setFieldError("roleTitle", msg || undefined);
+                        updateProfile({ roleTitle: e.target.value.trim() });
+                      }}
                       aria-invalid={!!errors.roleTitle}
-                      aria-describedby={
-                        errors.roleTitle ? "roleTitle-error" : undefined
-                      }
-                      className={cx(
-                        !!errors.roleTitle &&
-                          "border-red-500 focus-visible:ring-red-500/20"
-                      )}
+                      className={cx(!!errors.roleTitle && "border-red-500 focus-visible:ring-red-500/20")}
                     />
+                    <FormHelperText className="mt-1">
+                      2–80 characters. Allowed special characters: ( , | & ).
+                    </FormHelperText>
                   </FormField>
 
                   <FormField
@@ -655,40 +654,42 @@ export default function ProfileSetupPage() {
                       name="roleDescription"
                       placeholder="Briefly describe how you plan to use Lokalads."
                       value={profile.roleDescription || ""}
-                      onChange={(e) =>
-                        updateProfile({ roleDescription: e.target.value })
-                      }
+                      maxLength={300}
+                      onChange={(e) => {
+                        updateProfile({ roleDescription: e.target.value }); // ✅ allow typing anything
+                        clearFieldError("roleDescription");
+                      }}
+                      onBlur={(e) => {
+                        const msg = validateRoleDescription(e.target.value);
+                        setFieldError("roleDescription", msg || undefined);
+                        updateProfile({ roleDescription: e.target.value.trim() });
+                      }}
                       aria-invalid={!!errors.roleDescription}
-                      aria-describedby={
-                        errors.roleDescription
-                          ? "roleDescription-error"
-                          : undefined
-                      }
                       className={cx(
                         "mt-1 w-full min-h-[80px] rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
-                        !!errors.roleDescription &&
-                          "border-red-500 focus-visible:ring-red-500/20"
+                        !!errors.roleDescription && "border-red-500 focus-visible:ring-red-500/20"
                       )}
                     />
+                    <FormHelperText className="mt-1">
+                      2–300 characters. Allowed special characters: ( . , | & ). Numbers allowed.
+                    </FormHelperText>
                   </FormField>
                 </FormFieldWrapper>
               )}
             </FormField>
 
             {/* Consent + marketing */}
-            <FormField
-              label="Consent"
-              htmlFor="consent"
-              error={errors.consent}
-              showFocusWithin={!isBelowLaptop}
-            >
+            <FormField label="Consent" htmlFor="consent" error={errors.consent} showFocusWithin={!isBelowLaptop}>
               <div className="space-y-2">
                 <label className="flex items-start gap-2 text-sm">
                   <input
                     type="checkbox"
                     className="mt-1"
                     checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
+                    onChange={(e) => {
+                      setConsent(e.target.checked);
+                      clearFieldError("consent");
+                    }}
                     name="consent"
                   />
                   <span>
@@ -722,20 +723,14 @@ export default function ProfileSetupPage() {
                     onChange={(e) => setSubscribe(e.target.checked)}
                     name="subscribe"
                   />
-                  <span>
-                    Subscribe to product updates &amp; occasional offers
-                  </span>
+                  <span>Subscribe to product updates &amp; occasional offers</span>
                 </label>
               </div>
             </FormField>
 
             {/* Actions */}
             <div className="flex items-center justify-between mt-4">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => router.push("/register/phone-verification")}
-              >
+              <Button variant="outline" type="button" onClick={() => router.push("/register/phone-verification")}>
                 Back
               </Button>
               <Button type="submit" disabled={submitting}>

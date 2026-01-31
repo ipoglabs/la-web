@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import User from "@/models/user";
+import { getNextUserId } from "@/lib/sequence";
 import { hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -13,10 +14,6 @@ function stripEmpty(obj: Record<string, any>) {
   );
 }
 
-// ✅ Convert to "Name Case" (Title Case)
-// "akilan" -> "Akilan"
-// "mOHan" -> "Mohan"
-// "akilan mohan" -> "Akilan Mohan"
 function toNameCase(input: string) {
   return String(input || "")
     .trim()
@@ -38,33 +35,47 @@ export async function POST(req: Request) {
     await dbConnect();
     const body = await req.json();
 
+    // ✅ New structured fields
+    const address = stripEmpty({
+      street1: body.street1 ? String(body.street1).trim() : undefined,
+      street2: body.street2 ? String(body.street2).trim() : undefined,
+      district: body.district ? String(body.district).trim() : undefined,
+      state: body.state ? String(body.state).trim() : undefined,
+      country: body.country ? String(body.country).trim() : undefined,
+      postalCode: body.postalCode ? String(body.postalCode).trim() : undefined,
+    });
+
+    const audit = stripEmpty({
+      IPAddress:
+        String(req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "").trim() ||
+        undefined,
+      Device: String(req.headers.get("user-agent") || "").trim() || undefined,
+      others: body.auditOthers ? String(body.auditOthers).trim() : undefined,
+    });
+
     const payload = stripEmpty({
-      // ✅ camel/title case for names
       firstName: toNameCase(body.firstName),
       lastName: toNameCase(body.lastName),
-
       dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
       gender: String(body.gender || "other").trim(),
 
       nationality: body.nationality ? String(body.nationality).trim() : undefined,
-      country: body.country ? String(body.country).trim() : undefined,
-      state: body.state ? String(body.state).trim() : undefined,
-      residency: body.residency ? String(body.residency).trim() : undefined,
+      residence: body.residence ? String(body.residence).trim() : undefined,
 
+      locality: String(body.locality || "").trim(),
       email: String(body.email || "").trim().toLowerCase(),
 
       primaryNumber: String(body.primaryNumber || "").trim(),
-      secondaryNumber1: body.secondaryNumber1 ? String(body.secondaryNumber1).trim() : undefined,
-      secondaryNumber2: body.secondaryNumber2 ? String(body.secondaryNumber2).trim() : undefined,
-
-      locality: String(body.locality || "").trim(),
 
       password: String(body.password || ""),
-      role: String(body.role || "user").trim(),
+      role: String(body.role || "individual").trim(),
 
-      roleTitle: body.roleTitle ? String(body.roleTitle).trim() : undefined,
-      roleDescription: body.roleDescription ? String(body.roleDescription).trim() : undefined,
+      // ✅ Consents
+      isTermsAndConditionAccepted: !!body.isTermsAndConditionAccepted,
+      isPrivacyAndPolicyAccepted: !!body.isPrivacyAndPolicyAccepted,
+      isCookiesPolicyAccepted: !!body.isCookiesPolicyAccepted,
 
+      // ✅ Marketing
       marketingOptIn: !!body.subscribe,
     });
 
@@ -85,7 +96,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // duplicate check ONLY on email + primaryNumber
+    // duplicate check
     const dup = await User.findOne({
       $or: [{ email: payload.email }, { primaryNumber: payload.primaryNumber }],
     })
@@ -97,20 +108,35 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "That email is already in use." }, { status: 409 });
       }
       if (dup.primaryNumber === payload.primaryNumber) {
-        return NextResponse.json(
-          { error: "That phone number is already in use." },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: "That phone number is already in use." }, { status: 409 });
       }
     }
 
+    // ✅ generate incremental userId
+    const userId = await getNextUserId(12);
     const passwordHash = await hash(payload.password, 10);
 
     const created = await User.create({
       ...payload,
+      userId,
       password: passwordHash,
+
+      // ✅ Save structured address + audit only if present
+      ...(Object.keys(address).length ? { address } : {}),
+      ...(Object.keys(audit).length ? { audit } : {}),
+
+      // ✅ status fields
+      accountStatus: "Pending",
+      isNewUser: true,
+
+      // ✅ verification
       isEmailVerified: true,
+      isPrimaryNumberVerified: true,
+
+      // legacy field (keep for backward compat)
       isPhoneVerified: true,
+
+      provider: "credentials",
     });
 
     const token = signJwt({
@@ -124,13 +150,13 @@ export async function POST(req: Request) {
         message: "Registered successfully",
         user: {
           id: String(created._id),
+          userId: created.userId,
           email: created.email,
           firstName: created.firstName,
           lastName: created.lastName,
           role: created.role ?? "user",
           locality: created.locality,
-          roleTitle: created.roleTitle ?? null,
-          roleDescription: created.roleDescription ?? null,
+          accountStatus: created.accountStatus,
         },
         token,
       },
@@ -145,22 +171,6 @@ export async function POST(req: Request) {
       maxAge: MAX_AGE,
     });
 
-    res.cookies.set(
-      "uinfo",
-      JSON.stringify({
-        id: String(created._id),
-        loc: created.locality,
-        rt: created.roleTitle ?? undefined,
-      }),
-      {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: MAX_AGE,
-      }
-    );
-
     return res;
   } catch (err: any) {
     if (err?.code === 11000) {
@@ -168,9 +178,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `That ${field} is already in use.` }, { status: 409 });
     }
     console.error("Register error:", err);
-    return NextResponse.json(
-      { error: err?.message || "Registration failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message || "Registration failed" }, { status: 500 });
   }
 }

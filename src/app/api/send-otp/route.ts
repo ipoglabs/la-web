@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
     const normalizedEmail = String(email).toLowerCase().trim();
     const otp = generateOtp();
-    const expiresAt = Date.now() + 10 * 60 * 1000;
+    const expiresAt = Date.now() + 5 * 60 * 1000;
 
     otpStore[normalizedEmail] = {
       otp,

@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { toClientPost } from "@/lib/serialize";
 import AdminUserAdCard from "./AdminUserAdCard";
 import { Types } from "mongoose";
+import Link from "next/link";
+import AdminUserActions from "./AdminUserActions"; // ✅ correct import
 
 function fmtDate(d?: any) {
   if (!d) return "-";
@@ -80,7 +82,7 @@ export default async function AdminUserAds({
 
   if (!user) return notFound();
 
-  // ✅ FIX: find posts by ownerId OR seller_info.email (same as getMyPosts)
+  // ✅ find posts by ownerId OR seller_info.email (same as getMyPosts)
   const or: any[] = [];
 
   if (Types.ObjectId.isValid(params.id)) {
@@ -105,6 +107,16 @@ export default async function AdminUserAds({
 
   return (
     <div className="space-y-6">
+      {/* Top bar: Back + Delete */}
+      <div className="flex items-center justify-between">
+        <Link href="/admin/users" className="text-sm text-blue-600 underline">
+          ← Back to users
+        </Link>
+
+        {/* ✅ Delete button top-right */}
+        <AdminUserActions userId={params.id} userEmail={user.email} />
+      </div>
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -141,29 +153,29 @@ export default async function AdminUserAds({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <div className="text-slate-500 text-xs">Date of Birth</div>
-            <div className="font-medium">{fmtDate(user.dateOfBirth)}</div>
+            <div className="font-medium">{fmtDate((user as any).dateOfBirth)}</div>
           </div>
           <div>
             <div className="text-slate-500 text-xs">Gender</div>
-            <div className="font-medium">{user.gender || "-"}</div>
+            <div className="font-medium">{(user as any).gender || "-"}</div>
           </div>
           <div>
             <div className="text-slate-500 text-xs">Locality</div>
-            <div className="font-medium">{user.locality || "-"}</div>
+            <div className="font-medium">{(user as any).locality || "-"}</div>
           </div>
           <div>
             <div className="text-slate-500 text-xs">Country / State</div>
             <div className="font-medium">
-              {[user.country, user.state].filter(Boolean).join(" / ") || "-"}
+              {[(user as any).country, (user as any).state].filter(Boolean).join(" / ") || "-"}
             </div>
           </div>
           <div>
             <div className="text-slate-500 text-xs">Primary Number</div>
-            <div className="font-medium">{user.primaryNumber || "-"}</div>
+            <div className="font-medium">{(user as any).primaryNumber || "-"}</div>
           </div>
           <div>
             <div className="text-slate-500 text-xs">Joined</div>
-            <div className="font-medium">{fmtDateTime(user.createdAt)}</div>
+            <div className="font-medium">{fmtDateTime((user as any).createdAt)}</div>
           </div>
         </div>
       </div>

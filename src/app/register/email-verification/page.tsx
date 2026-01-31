@@ -69,10 +69,7 @@ export default function EmailVerificationPage() {
 
   const persistGuard = (nextAttempts: number, nextLockUntil: number | null) => {
     const key = `email-otp-guard:${email}`;
-    localStorage.setItem(
-      key,
-      JSON.stringify({ attempts: nextAttempts, lockUntil: nextLockUntil })
-    );
+    localStorage.setItem(key, JSON.stringify({ attempts: nextAttempts, lockUntil: nextLockUntil }));
   };
 
   const sendOtp = async () => {
@@ -107,9 +104,7 @@ export default function EmailVerificationPage() {
     if (otp.length !== 6) return;
 
     if (lockActive) {
-      toast.error(
-        `Too many attempts. Try again in ${Math.ceil(lockSecondsLeft / 60)} minutes.`
-      );
+      toast.error(`Too many attempts. Try again in ${Math.ceil(lockSecondsLeft / 60)} minutes.`);
       return;
     }
 
@@ -161,61 +156,59 @@ export default function EmailVerificationPage() {
         </CardHeader>
 
         <CardContent className="space-y-5">
-          {/* ❌ Hide OTP input + verify button when email verified */}
-{!emailVerified && (
-  <div className="flex gap-2">
-    <Input
-      ref={otpInputRef}
-      placeholder="Enter 6-digit code"
-      value={otp}
-      maxLength={6}
-      onChange={(e) => setOtp(e.target.value)}
-      onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && verifyOtp()}
-      inputMode="numeric"
-      disabled={lockActive}
-    />
+          {/* OTP input + verify (hide after verified) */}
+          {!emailVerified && (
+            <div className="flex gap-2">
+              <Input
+                ref={otpInputRef}
+                placeholder="Enter 6-digit code"
+                value={otp}
+                maxLength={6}
+                onChange={(e) => setOtp(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && verifyOtp()}
+                inputMode="numeric"
+                disabled={lockActive}
+              />
 
-    <Button
-      onClick={verifyOtp}
-      disabled={otp.length !== 6 || loadingVerify || lockActive}
-    >
-      {loadingVerify ? 'Verifying…' : 'Verify'}
-    </Button>
-  </div>
-)}
-{emailVerified && (
-  <p className="text-green-600 text-sm mt-1">
-    ✅ Email verified successfully
-  </p>
-)}
+              <Button onClick={verifyOtp} disabled={otp.length !== 6 || loadingVerify || lockActive}>
+                {loadingVerify ? 'Verifying…' : 'Verify'}
+              </Button>
+            </div>
+          )}
 
+          {emailVerified && (
+            <p className="text-green-600 text-sm mt-1">✅ Email verified successfully</p>
+          )}
 
+          {/* ✅ Resend button should also hide after verified */}
+          {!emailVerified && (
+            <Button
+              variant="secondary"
+              onClick={sendOtp}
+              disabled={resendTimeout > 0 || loadingSend}
+            >
+              {loadingSend
+                ? 'Sending…'
+                : resendTimeout > 0
+                ? `Resend code (${resendTimeout}s)`
+                : 'Resend code'}
+            </Button>
+          )}
 
-          <Button
-            variant="secondary"
-            onClick={sendOtp}
-            disabled={resendTimeout > 0}
-          >
-            {resendTimeout > 0 ? `Resend code (${resendTimeout}s)` : 'Resend code'}
-          </Button>
-
-          {lockActive && (
+          {/* lock message (optional: hide after verified) */}
+          {!emailVerified && lockActive && (
             <p className="text-sm text-red-600">
               Locked for security. Try again in <b>{lockSecondsLeft}</b>s.
             </p>
           )}
         </CardContent>
 
-        {/* ✅ Back & Next aligned bottom */}
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={() => router.push('/register')}>
             Back
           </Button>
 
-          <Button
-            onClick={() => router.push('/register/phone-verification')}
-            disabled={!emailVerified}
-          >
+          <Button onClick={() => router.push('/register/phone-verification')} disabled={!emailVerified}>
             Next
           </Button>
         </CardFooter>
