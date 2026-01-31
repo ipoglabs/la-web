@@ -32,7 +32,7 @@ export default async function AdminDashboard({
   return (
     <div className="space-y-4">
       {created && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
           ✅ Admin account created successfully
         </div>
       )}
