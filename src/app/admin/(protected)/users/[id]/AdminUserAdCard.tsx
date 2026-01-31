@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { updatePostStatus } from "../../actions/updatePostStatus";
+import { updatePostStatus } from "../../../actions/updatePostStatus";
 
 function fmtDateTime(d?: any) {
   if (!d) return "-";

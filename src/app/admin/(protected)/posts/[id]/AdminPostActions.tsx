@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { updatePostStatus } from "../../actions/updatePostStatus";
+import { updatePostStatus } from "../../../actions/updatePostStatus";
 
 export default function AdminPostActions({
   postId,
