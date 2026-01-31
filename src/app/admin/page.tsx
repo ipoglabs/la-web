@@ -23,7 +23,7 @@ export default async function AdminDashboard({
 
   const session = token ? verifyAdminJwt(token) : null;
   if (!session || !isAdminRole(session.role)) {
-    redirect("/admin/login?next=/admin");
+    redirect("/admin-login?next=/admin");
   }
 
   const role = session.role;

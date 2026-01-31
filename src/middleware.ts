@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
   if (!pathname.startsWith("/admin")) return NextResponse.next();
 
   // allow public admin pages
-  if (pathname === "/admin/login" || pathname === "/admin/register") {
+  if (pathname === "/admin-login" || pathname === "/admin/register") {
     return NextResponse.next();
   }
 
@@ -35,7 +35,7 @@ export async function middleware(req: NextRequest) {
 
   if (!token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/admin/login";
+    url.pathname = "/admin-login";
     url.searchParams.set("next", pathname + (search || ""));
     return NextResponse.redirect(url);
   }
@@ -43,7 +43,7 @@ export async function middleware(req: NextRequest) {
   const session = await verifyEdgeJwt(token);
   if (!session || !isAdminRole(session.role)) {
     const url = req.nextUrl.clone();
-    url.pathname = "/admin/login";
+    url.pathname = "/admin-login";
     url.searchParams.set("next", pathname + (search || ""));
     return NextResponse.redirect(url);
   }

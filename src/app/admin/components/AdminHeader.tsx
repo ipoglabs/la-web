@@ -30,7 +30,7 @@ export default function AdminHeader({
 
   const logout = async () => {
     await fetch("/api/admin/auth/logout", { method: "POST" });
-    router.replace("/admin/login");
+    router.replace("/admin-login");
   };
 
   return (
