@@ -24,10 +24,10 @@ async function verifyEdgeJwt(token: string) {
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  if (!pathname.startsWith("/admin")) return NextResponse.next();
+  if (!pathname.startsWith("/bo")) return NextResponse.next();
 
   // allow public admin pages
-  if (pathname === "/admin-login" || pathname === "/admin/register") {
+  if (pathname === "/bo-login" || pathname === "/bo/register") {
     return NextResponse.next();
   }
 
@@ -35,7 +35,7 @@ export async function middleware(req: NextRequest) {
 
   if (!token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/admin-login";
+    url.pathname = "/bo-login";
     url.searchParams.set("next", pathname + (search || ""));
     return NextResponse.redirect(url);
   }
@@ -43,7 +43,7 @@ export async function middleware(req: NextRequest) {
   const session = await verifyEdgeJwt(token);
   if (!session || !isAdminRole(session.role)) {
     const url = req.nextUrl.clone();
-    url.pathname = "/admin-login";
+    url.pathname = "/bo-login";
     url.searchParams.set("next", pathname + (search || ""));
     return NextResponse.redirect(url);
   }
@@ -52,5 +52,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/bo/:path*"],
 };
