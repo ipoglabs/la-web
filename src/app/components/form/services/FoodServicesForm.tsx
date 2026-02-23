@@ -1,144 +1,213 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function FoodServiceForm() {
-  const store = usePostFormStore();
+  const formRef = useRef<HTMLFormElement | null>(null);
   const setField = usePostFormStore((s) => s.setField);
+  const store = usePostFormStore();
 
-  // Ensure category/subcategory for Services → Food
-  React.useEffect(() => {
-    if (!store.category) setField("category", "Services");
-    if (!store.subcategory) setField("subcategory", "Food");
-  }, [store.category, store.subcategory, setField]);
+  const name = store.name ?? "";
+  const cuisineType = (store as any).cuisineType ?? "";
+  const deliveryAvailable = (store as any).deliveryAvailable ?? "";
+  const price = (store as any).price ?? "";
+  const description = store.description ?? "";
+  const sellerInfo = store.sellerInfo ?? {};
+  const location = store.location ?? {};
+  const dietaryVal = (store as any).dietaryOptions ?? [];
 
-  // Helpers for nested fields
+  const [dietaryText, setDietaryText] = useState(
+    Array.isArray(dietaryVal) ? dietaryVal.join(", ") : ""
+  );
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${first}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const commitDietary = () => {
+    const arr = dietaryText
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    setField("dietaryOptions", arr);
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v); // sync with backend model
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
-  // Optionally keep dietary options as a simple comma-separated string.
-  // If you prefer an array in the store, split/join here.
-  const dietaryValue = (store.dietaryOptions as string) ?? "";
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Service title required";
+    if (!cuisineType) mapped.cuisineType = "Cuisine type required";
+    if (!isPositive(price)) mapped.price = "Valid price required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", name.trim());
+    setField("description", description.trim());
+    commitDietary();
+
+    setErrors({});
+    dispatchValidated(true);
+  };
 
   return (
-    <Card className="max-w-3xl mx-auto my-6 shadow-lg rounded-2xl">
-      <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Post Food Service</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="max-w-3xl mx-auto my-6 space-y-6"
+    >
+      <h2 className="text-2xl font-bold">Post Food Service</h2>
 
-        {/* Category / Subcategory */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Services" required />
-          <FormField label="Subcategory" field="subcategory" placeholder="Food" required />
-        </div>
+      <FormField
+        label="Service Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Basic */}
+      <SelectField
+        label="Service Type"
+        field="serviceType"
+        options={[
+          { value: "home-cooked" },
+          { value: "tiffin" },
+          { value: "catering" },
+          { value: "restaurant" },
+          { value: "cloud-kitchen" },
+        ]}
+      />
+
+      <FormField
+        label="Cuisine Type"
+        field="cuisineType"
+        value={cuisineType}
+        onChange={(v) => setField("cuisineType", v)}
+      />
+
+      {/* Dietary Options */}
+      <div>
+        <label className="text-sm font-medium">
+          Dietary Options (comma-separated)
+        </label>
+        <input
+          className="border rounded w-full py-2 px-3"
+          value={dietaryText}
+          onChange={(e) => setDietaryText(e.target.value)}
+          onBlur={commitDietary}
+          placeholder="Vegetarian, Vegan, Gluten-Free"
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
         <FormField
-          label="Service Title"
-          field="name"
-          placeholder="e.g., Home-cooked Tiffin Service"
+          label="Price (₹)"
+          field="price"
+          type="number"
+          value={price}
+          onChange={(v) => handlePrice(String(v))}
           required
         />
 
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Location"
+          value={location?.address ?? ""}
+          onChange={(e) => setLoc(e.target.value)}
+        />
+
         <SelectField
-          label="Service Type"
-          field="serviceType"
-          placeholder="Select service type"
+          label="Delivery Available"
+          field="deliveryAvailable"
           options={[
-            { value: "home-cooked", label: "Home Cooked" },
-            { value: "tiffin", label: "Tiffin Service" },
-            { value: "catering", label: "Catering" },
-            { value: "restaurant", label: "Restaurant Service" },
-            { value: "cloud-kitchen", label: "Cloud Kitchen" },
+            { value: "yes" },
+            { value: "no" },
           ]}
         />
+      </div>
 
-        <FormField
-          label="Cuisine Type"
-          field="cuisineType"
-          placeholder="e.g., Indian, Chinese, Italian"
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
+
+      {/* Contact */}
+      {/* <div className="grid grid-cols-3 gap-4 border-t pt-6">
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
+          required
         />
-
-        <FormField
-          label="Dietary Options"
-          field="dietaryOptions"
-          placeholder="e.g., Vegetarian, Vegan, Gluten-Free"
-          // keep as string; if you want an array, split on commas here and setField with an array
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
+          required
         />
-
-        {/* Service Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Price / Range"
-            field="price"
-            type="number"
-            placeholder="e.g., 150 per meal"
-          />
-          <FormField
-            label="Location"
-            field="__ignore_location__"
-            placeholder="e.g., Chennai, TN"
-            value={store.location?.address ?? ""}
-            onChange={(v) => setLoc((v as string) || "")}
-          />
-          <SelectField
-            label="Delivery Available"
-            field="deliveryAvailable"
-            placeholder="Select option"
-            options={[
-              { value: "yes", label: "Yes" },
-              { value: "no", label: "No" },
-            ]}
-          />
-        </div>
-
-        {/* Description */}
-        <FormField
-          label="Service Description"
-          field="description"
-          type="textarea"
-          placeholder="Describe your service (menu, hygiene, packaging, delivery area, timings)…"
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
         />
+      </div> */}
 
-        {/* Contact Info (seller_info) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Your full name"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="example@email.com"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="+91 9876543210"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

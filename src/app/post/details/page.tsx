@@ -1,12 +1,22 @@
 "use client";
 
-import React, { useEffect, useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { usePostFormStore } from "../store/postFormStore";
+import { toast } from "sonner";
+
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
+import PostHeader from "../components/PostHeader";
 
+import { usePostFormStore } from "../store/postFormStore";
+import { useWizardGuard } from "../wizard/guard";
+import { normalizeCategory } from "@/posting/config/normalize";
+import { validatePost } from "@/posting/validation/validatePost";
+import { useAuthStore } from "@/store/authStore";
+
+
+// ✅ CATEGORY NORMALIZATION (FROM OLD)
 const categoryAlias: Record<string, string> = {
   Property: "property",
   Jobs: "job",
@@ -19,25 +29,29 @@ const categoryAlias: Record<string, string> = {
   "Special Offers": "specialOffers",
 };
 
+
+// ✅ FULL FORM MAPPING (MERGED + FIXED)
 const formMapping: Record<string, Record<string, string>> = {
   property: {
     "To Buy": "BuyForm",
     "To Rent": "RentForm",
     Commercial: "CommercialForm",
     "For Students": "ForStudentForm",
-    "Holiday Rental": "HolidayRental",
+    "Holiday Rental": "HolidayRentalForm",
     "Room Rental": "RoomRentalForm",
-    "Land for Sale/Lease": "SaleForm",
+    "Land for Sale/Lease": "PropertySaleForm", // ✅ FIXED CASE
     Wanted: "WantedForm",
   },
+
   job: {
     "Full Time": "FulltimeForm",
     "Part Time": "ParttimeForm",
-    Freelance: "FreelanceForm",
+    Freelance: "FreelanceForm", // ✅ match your file
     Internship: "InternshipForm",
     "Temptoary & Sesonal": "TemptoaryForm",
     Wanted: "WantedForm",
   },
+
   vehicles: {
     Car: "CarForm",
     Motorcycle: "MotorCycleForm",
@@ -46,6 +60,7 @@ const formMapping: Record<string, Record<string, string>> = {
     "Parts & Accessories": "PartsForm",
     Wanted: "WantedForm",
   },
+
   services: {
     "Home Services": "HomeServicesForm",
     "Business Services": "BusinessServicesForm",
@@ -58,6 +73,7 @@ const formMapping: Record<string, Record<string, string>> = {
     "Other Services": "OtherServicesForm",
     Wanted: "WantedForm",
   },
+
   pet: {
     "For Sale": "ForSaleForm",
     Adoption: "AdoptionForm",
@@ -66,6 +82,7 @@ const formMapping: Record<string, Record<string, string>> = {
     "Lost & Found": "LostAndFoundForm",
     Wanted: "WantedForm",
   },
+
   forsale: {
     Electronics: "ElectronicsForm",
     "Home & Furniture": "FurnitureForm",
@@ -81,6 +98,7 @@ const formMapping: Record<string, Record<string, string>> = {
     Miscellaneous: "MiscellaneousForm",
     Wanted: "WantedForm",
   },
+
   business: {
     "Business for Sale/Lease": "SaleForm",
     "B2B Service": "B2BServiceForm",
@@ -96,6 +114,7 @@ const formMapping: Record<string, Record<string, string>> = {
     Miscellaneous: "MiscellaneousForm",
     Wanted: "WantedForm",
   },
+
   community: {
     "Lost & Found": "LostForm",
     Events: "EventsForm",
@@ -107,6 +126,7 @@ const formMapping: Record<string, Record<string, string>> = {
     "General / Others": "GeneralForm",
     Wanted: "WantedForm",
   },
+
   specialOffers: {
     "Banking & Financial Deals": "BankingForm",
     "Travel & Tourism": "TravelForm",
@@ -123,110 +143,100 @@ const formMapping: Record<string, Record<string, string>> = {
   },
 };
 
-export default function PostFormTemplate() {
+
+export default function DetailsPage() {
+  useWizardGuard("details");
+
   const router = useRouter();
 
   const category = usePostFormStore((s) => s.category);
   const subcategory = usePostFormStore((s) => s.subcategory);
+  const setField = usePostFormStore((s) => s.setField);
 
+  const user = useAuthStore((s) => s.user);
+
+  // ✅ AUTO-FILL SELLER
+  useEffect(() => {
+    if (!user) return;
+
+    const fullName = [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
+    setField("sellerInfo", {
+      name: fullName,
+      email: user.email,
+      phone: user.primaryNumber,
+    });
+  }, [user, setField]);
+
+  // ✅ IMPORT KEY (FIXED)
   const importKey = useMemo(() => {
     if (!category || !subcategory) return null;
-    const normalizedCategory = categoryAlias[category] || category.toLowerCase();
+
+    const normalizedCategory =
+      categoryAlias[category] || normalizeCategory(category);
+
     const subFormName = formMapping[normalizedCategory]?.[subcategory];
-    return subFormName ? `${normalizedCategory}/${subFormName}` : null;
+
+    return subFormName
+      ? `${normalizedCategory}/${subFormName}`
+      : null;
   }, [category, subcategory]);
 
   const SpecificForm = useMemo(() => {
     if (!importKey) return null;
+
     return dynamic(() => import(`@/app/components/form/${importKey}`), {
       ssr: false,
-      loading: () => (
-        <p className="text-center text-gray-500">Loading form...</p>
-      ),
+      loading: () => <p>Loading form...</p>,
     });
   }, [importKey]);
 
-  // ✅ Listen to all validation events (generic + legacy)
-  useEffect(() => {
-    const onValidated = (e: Event) => {
-      const ok = (e as CustomEvent).detail?.ok === true;
-      if (ok) router.push("/post/upload-photo");
-    };
-
-    const events = [
-      "postform:validated",
-      "roomrentalform:validated",
-      "buyform:validated",
-      "commercialform:validated",
-      // add more legacy events here if any older forms emit them
-    ];
-
-    events.forEach((ev) =>
-      window.addEventListener(ev, onValidated as EventListener)
-    );
-    return () =>
-      events.forEach((ev) =>
-        window.removeEventListener(ev, onValidated as EventListener)
-      );
-  }, [router]);
-
-  // ✅ Best practice "Next": submit whichever form is currently rendered
   const handleNext = useCallback(() => {
-    // recommended: add data-post-form="true" on each subform <form>
-    const marked = document.querySelector(
-      'form[data-post-form="true"]'
-    ) as HTMLFormElement | null;
-
-    // fallback for older forms without the attribute
-    const fallback =
-      (document.getElementById("roomRentalForm") as HTMLFormElement | null) ||
-      (document.getElementById("buyForm") as HTMLFormElement | null) ||
-      (document.getElementById("commercialForm") as HTMLFormElement | null) ||
-      (document.getElementById("postForm") as HTMLFormElement | null);
-
-    const form = marked || fallback;
-    if (!form) return;
-
-    if (
-      "requestSubmit" in form &&
-      typeof (form as any).requestSubmit === "function"
-    ) {
-      (form as any).requestSubmit();
-    } else {
-      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    if (!category || !subcategory) {
+      toast.error("Category or subcategory missing.");
+      return;
     }
-  }, []);
+
+    const store = usePostFormStore.getState();
+
+    const errors = validatePost(
+      normalizeCategory(category),
+      subcategory.toLowerCase(),
+      store
+    );
+
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0]);
+      return;
+    }
+
+    router.push("/post/upload-photo");
+  }, [category, subcategory, router]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
-      <PageHeader
-        title="Advertisement Details"
-        description="Tell us more about your advertisement. Fill in the main details so potential buyers or viewers know exactly what you’re offering."
-      />
+    <>
+      <PostHeader />
 
-      <div className="w-full max-w-xl mt-4">
-        <div className="text-gray-600 text-sm space-y-1 mb-6">
-          <p>
-            <strong>Category:</strong> {category || "-"}
-          </p>
-          <p>
-            <strong>Subcategory:</strong> {subcategory || "-"}
-          </p>
-        </div>
+      <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
+        <PageHeader
+          title="Advertisement Details"
+          description="Fill in the main details."
+        />
 
-        {SpecificForm ? <SpecificForm /> : null}
+        <div className="w-full max-w-xl mt-4">
+          {SpecificForm ? <SpecificForm /> : <p>No form found</p>}
 
-        <div className="mt-8">
           <PostFooter
             showBack
             showNext
-            showSubmit={false}
-            basePath="/post"
-            steps={["select-category", "details", "upload-photo", "pick-location", "preview"]}
             onNext={handleNext}
+            onBack={() => router.push("/post/select-category")}
           />
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

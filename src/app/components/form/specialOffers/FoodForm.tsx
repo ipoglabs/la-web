@@ -1,169 +1,240 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function FoodDiningForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default category/subcategory for this form
-  React.useEffect(() => {
-    if (!store.category) setField("category", "Community & Events");
-    if (!store.subcategory) setField("subcategory", "Food & Dining");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested objects
+  const name = store.name ?? "";
+  const foodCategory = store.foodCategory ?? "";
+  const description = store.description ?? "";
+  const priceRange = store.priceRange ?? "";
+  const cuisineType = store.cuisineType ?? "";
+  const openingHours = store.openingHours ?? "";
+  const deliveryOption = store.deliveryOption ?? "";
+  const website = store.website ?? "";
+  const menuLink = store.menuLink ?? "";
+  const averageRating = store.averageRating ?? "";
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Default category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "Community & Events");
+    if (!subcategory) setField("subcategory", "Food & Dining");
+  }, [category, subcategory, setField]);
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Service / restaurant name required";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // Clean persist
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Food & Dining Service</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Food & Dining Service</h2>
 
-        {/* Category / Subcategory (kept visible & editable for consistency) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Community & Events" required />
-          <FormField label="Subcategory" field="subcategory" placeholder="Food & Dining" required />
-        </div>
+      {/* Service Name */}
+      <FormField
+        label="Service / Restaurant Name"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Service / Restaurant Name → shared "name" */}
+      {/* Internal Category */}
+      <SelectField
+        label="Category"
+        field="foodCategory"
+        value={foodCategory}
+        onChange={(v) => setField("foodCategory", v)}
+        options={[
+          { value: "restaurant", label: "Restaurant" },
+          { value: "cafe", label: "Cafe" },
+          { value: "delivery", label: "Food Delivery" },
+          { value: "catering", label: "Catering" },
+          { value: "streetfood", label: "Street Food" },
+          { value: "other", label: "Other" },
+        ]}
+      />
+
+      {/* Description */}
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
+
+      {/* Location */}
+      <FormField
+        label="Location"
+        field="sellerLocation"
+        value={location?.address ?? ""}
+        onChange={(v) => setLoc((v as string) || "")}
+      />
+
+      {/* Price Range */}
+      <FormField
+        label="Price Range"
+        field="priceRange"
+        value={priceRange}
+        onChange={(v) => setField("priceRange", v)}
+      />
+
+      {/* Cuisine */}
+      <FormField
+        label="Cuisine Type"
+        field="cuisineType"
+        value={cuisineType}
+        onChange={(v) => setField("cuisineType", v)}
+      />
+
+      {/* Opening Hours */}
+      <FormField
+        label="Opening Hours"
+        field="openingHours"
+        value={openingHours}
+        onChange={(v) => setField("openingHours", v)}
+      />
+
+      {/* Delivery */}
+      <SelectField
+        label="Delivery Option"
+        field="deliveryOption"
+        value={deliveryOption}
+        onChange={(v) => setField("deliveryOption", v)}
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+          { value: "thirdparty", label: "Available via Swiggy / Zomato" },
+        ]}
+      />
+
+      {/* Website */}
+      <FormField
+        label="Website"
+        field="website"
+        type="url"
+        value={website}
+        onChange={(v) => setField("website", v)}
+      />
+
+      {/* Menu Link */}
+      <FormField
+        label="Menu Link"
+        field="menuLink"
+        type="url"
+        value={menuLink}
+        onChange={(v) => setField("menuLink", v)}
+      />
+
+      {/* Rating */}
+      <FormField
+        label="Average Rating"
+        field="averageRating"
+        type="number"
+        value={averageRating}
+        onChange={(v) => setField("averageRating", v)}
+      />
+
+      {/* Contact */}
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormField
-          label="Service / Restaurant Name"
-          field="name"
-          placeholder="Name of the restaurant or food service"
+          label="Contact Name"
+          field="sellerName"
+          value={sellerInfo?.name ?? ""}
+          onChange={(v) => setSeller("name", (v as string) || "")}
           required
         />
-
-        {/* Internal Category */}
-        <SelectField
-          label="Category"
-          field="foodCategory"
-          placeholder="Select Category"
-          options={[
-            { value: "restaurant", label: "Restaurant" },
-            { value: "cafe", label: "Cafe" },
-            { value: "delivery", label: "Food Delivery" },
-            { value: "catering", label: "Catering" },
-            { value: "streetfood", label: "Street Food" },
-            { value: "other", label: "Other" },
-          ]}
-        />
-
-        {/* Description */}
         <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Details about the food, service, or ambiance"
+          label="Contact Email"
+          field="sellerEmail"
+          type="email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(v) => setSeller("email", (v as string) || "")}
         />
-
-        {/* Location (stored at location.address) */}
         <FormField
-          label="Location"
-          field="__ignore_location__"
-          placeholder="City, Area, or Address"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
+          label="Contact Phone"
+          field="sellerPhone"
+          type="tel"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(v) => setSeller("phone", (v as string) || "")}
+          required
         />
+      </div> */}
 
-        {/* Price Range */}
-        <FormField
-          label="Price Range"
-          field="priceRange"
-          placeholder="e.g. ₹200 - ₹500 per person"
-        />
-
-        {/* Cuisine Type */}
-        <FormField
-          label="Cuisine Type"
-          field="cuisineType"
-          placeholder="e.g. Italian, Chinese, Indian"
-        />
-
-        {/* Opening Hours */}
-        <FormField
-          label="Opening Hours"
-          field="openingHours"
-          placeholder="e.g. 10 AM - 11 PM"
-        />
-
-        {/* Delivery Option */}
-        <SelectField
-          label="Delivery Option"
-          field="deliveryOption"
-          placeholder="Select Option"
-          options={[
-            { value: "yes", label: "Yes" },
-            { value: "no", label: "No" },
-            { value: "thirdparty", label: "Available via Swiggy / Zomato" },
-          ]}
-        />
-
-        {/* Website */}
-        <FormField
-          label="Website"
-          field="website"
-          type="url"
-          placeholder="https://restaurant.com"
-        />
-
-        {/* Menu Link */}
-        <FormField
-          label="Menu Link (optional)"
-          field="menuLink"
-          type="url"
-          placeholder="https://restaurant.com/menu"
-        />
-
-        {/* Average Rating */}
-        <FormField
-          label="Average Rating"
-          field="averageRating"
-          type="number"
-          placeholder="e.g. 4.5"
-        />
-
-        {/* Contact Info (sellerInfo) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Contact Person"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="Email Address"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="Phone Number"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

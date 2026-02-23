@@ -1,154 +1,246 @@
 "use client";
 
-import { useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function HomeLivingForm() {
-  const { formData, updateFormData } = usePostFormStore();
+  const formRef = useRef<HTMLFormElement | null>(null);
 
-  // Set default category & subcategory
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
+
+  const category = store.category;
+  const subcategory = store.subcategory;
+
+  const name = store.name ?? store.itemName ?? "";
+  const brandName = store.brandName ?? "";
+  const categoryType = store.categoryType ?? "";
+  const condition = store.condition ?? "";
+  const material = store.material ?? "";
+  const dimensions = store.dimensions ?? "";
+  const color = store.color ?? "";
+  const weight = store.weight ?? "";
+  const warranty = store.warranty ?? "";
+  const usageDuration = store.usageDuration ?? "";
+  const price = store.price ?? store.salePrice ?? "";
+  const deliveryOption = store.deliveryOption ?? "";
+  const mediaUrl = store.mediaUrl ?? "";
+  const description = store.description ?? "";
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    if (!formData.category) updateFormData("category", "For Sale");
-    if (!formData.subcategory) updateFormData("subcategory", "Home & Living");
-  }, [formData, updateFormData]);
+    if (!category) setField("category", "For Sale");
+    if (!subcategory) setField("subcategory", "Home & Living");
+  }, [category, subcategory, setField]);
 
-  // Handle nested seller info
-  const handleSellerInfoChange = (field: string, value: string) => {
-    updateFormData("sellerInfo", {
-      ...formData.sellerInfo,
-      [field]: value,
-    });
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
   };
 
-  // Handle nested location
-  const handleLocationChange = (field: string, value: string) => {
-    updateFormData("location", {
-      ...formData.location,
-      [field]: value,
-    });
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    setField("sellerInfo", { ...sellerInfo, [k]: v ?? "" });
+  };
+
+  const setLoc = (k: "city" | "state" | "zipcode", v?: string) => {
+    setField("location", { ...location, [k]: v ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Item name required";
+    if (!condition) mapped.condition = "Condition required";
+    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
   };
 
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Home & Living</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Home & Living</h2>
 
-        <div className="space-y-4">
-          {/* Category (readonly) */}
-          <FormField label="Category" field="category" value="For Sale" disabled />
+      <FormField
+        label="Item Name"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-          {/* Subcategory (readonly) */}
-          <FormField label="Subcategory" field="subcategory" value="Home & Living" disabled />
+      <FormField
+        label="Brand Name"
+        field="brandName"
+        value={brandName}
+        onChange={(v) => setField("brandName", v)}
+      />
 
-          {/* Item Name */}
-          <FormField label="Item Name" field="itemName" placeholder="e.g. Sofa, Dining Table, Lamp" />
+      <SelectField
+        label="Category Type"
+        field="categoryType"
+        value={categoryType}
+        onChange={(v) => setField("categoryType", v)}
+        options={[
+          { value: "furniture", label: "Furniture" },
+          { value: "home-decor", label: "Home Decor" },
+          { value: "appliances", label: "Appliances" },
+          { value: "kitchenware", label: "Kitchenware" },
+          { value: "other", label: "Other" },
+        ]}
+      />
 
-          {/* Brand Name */}
-          <FormField label="Brand Name" field="brandName" placeholder="Brand or Manufacturer" />
+      <SelectField
+        label="Condition"
+        field="condition"
+        value={condition}
+        onChange={(v) => setField("condition", v)}
+        options={[
+          { value: "new", label: "New" },
+          { value: "used", label: "Used" },
+          { value: "refurbished", label: "Refurbished" },
+        ]}
+        required
+      />
 
-          {/* Category Type */}
-          <SelectField
-            label="Category Type"
-            field="categoryType"
-            options={[
-              { value: "furniture", label: "Furniture" },
-              { value: "home-decor", label: "Home Decor" },
-              { value: "appliances", label: "Appliances" },
-              { value: "kitchenware", label: "Kitchenware" },
-              { value: "other", label: "Other" },
-            ]}
-          />
+      <FormField label="Material" field="material" value={material} onChange={(v) => setField("material", v)} />
+      <FormField label="Dimensions" field="dimensions" value={dimensions} onChange={(v) => setField("dimensions", v)} />
+      <FormField label="Color" field="color" value={color} onChange={(v) => setField("color", v)} />
+      <FormField label="Weight" field="weight" value={weight} onChange={(v) => setField("weight", v)} />
+      <FormField label="Warranty" field="warranty" value={warranty} onChange={(v) => setField("warranty", v)} />
+      <FormField label="Usage Duration" field="usageDuration" value={usageDuration} onChange={(v) => setField("usageDuration", v)} />
 
-          {/* Condition */}
-          <SelectField
-            label="Condition"
-            field="condition"
-            options={[
-              { value: "new", label: "New" },
-              { value: "used", label: "Used" },
-              { value: "refurbished", label: "Refurbished" },
-            ]}
-          />
+      <FormField
+        label="Price"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
 
-          <FormField label="Material" field="material" placeholder="e.g. Wood, Metal, Fabric" />
-          <FormField label="Dimensions (L x W x H)" field="dimensions" placeholder="e.g. 6ft x 3ft x 2.5ft" />
-          <FormField label="Color" field="color" placeholder="e.g. Black, Beige, Oak" />
-          <FormField label="Weight" field="weight" placeholder="e.g. 25kg" />
-          <FormField label="Warranty" field="warranty" placeholder="e.g. 1 Year" />
-          <FormField label="Usage Duration (if used)" field="usageDuration" placeholder="e.g. 6 months, 2 years" />
-          <FormField label="Price" field="price" placeholder="e.g. ₹15,000" />
+      <SelectField
+        label="Delivery Option"
+        field="deliveryOption"
+        value={deliveryOption}
+        onChange={(v) => setField("deliveryOption", v)}
+        options={[
+          { value: "pickup", label: "Pickup Only" },
+          { value: "delivery", label: "Home Delivery Available" },
+          { value: "both", label: "Pickup & Delivery" },
+        ]}
+      />
 
-          {/* Delivery Option */}
-          <SelectField
-            label="Delivery / Pickup Option"
-            field="deliveryOption"
-            options={[
-              { value: "pickup", label: "Pickup Only" },
-              { value: "delivery", label: "Home Delivery Available" },
-              { value: "both", label: "Pickup & Delivery" },
-            ]}
-          />
+      <FormField label="Media URL" field="mediaUrl" value={mediaUrl} onChange={(v) => setField("mediaUrl", v)} />
 
-          {/* Media */}
-          <FormField label="Image / Media URL" field="mediaUrl" placeholder="https://example.com/item-image.jpg" />
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
 
-          {/* Description */}
-          <FormField label="Description" field="description" placeholder="Provide details about the item" type="textarea" />
+      {/* Location */}
+      {/* <h3 className="text-lg font-semibold">Location</h3>
+      <FormField
+        label="City"
+        field="city"
+        value={location?.city ?? ""}
+        onChange={(v) => setLoc("city", v as string)}
+      />
+      <FormField
+        label="State"
+        field="state"
+        value={location?.state ?? ""}
+        onChange={(v) => setLoc("state", v as string)}
+      />
+      <FormField
+        label="Zipcode"
+        field="zipcode"
+        value={location?.zipcode ?? ""}
+        onChange={(v) => setLoc("zipcode", v as string)}
+      /> */}
 
-          {/* Location */}
-          <h3 className="text-lg font-semibold mt-6 mb-2">Location</h3>
-          <FormField
-            label="City"
-            field="location.city"
-            value={formData.location?.city || ""}
-            onChange={(val) => handleLocationChange("city", val as string)}
-            placeholder="Enter City"
-          />
-          <FormField
-            label="State"
-            field="location.state"
-            value={formData.location?.state || ""}
-            onChange={(val) => handleLocationChange("state", val as string)}
-            placeholder="Enter State"
-          />
-          <FormField
-            label="Zipcode"
-            field="location.zipcode"
-            value={formData.location?.zipcode || ""}
-            onChange={(val) => handleLocationChange("zipcode", val as string)}
-            placeholder="Enter Zipcode"
-          />
+      {/* Seller */}
+      {/* <h3 className="text-lg font-semibold">Seller Information</h3>
+      <FormField
+        label="Name"
+        field="sellerName"
+        value={sellerInfo?.name ?? ""}
+        onChange={(v) => setSeller("name", v as string)}
+        required
+      />
+      <FormField
+        label="Email"
+        field="sellerEmail"
+        type="email"
+        value={sellerInfo?.email ?? ""}
+        onChange={(v) => setSeller("email", v as string)}
+      />
+      <FormField
+        label="Phone"
+        field="sellerPhone"
+        type="tel"
+        value={sellerInfo?.phone ?? ""}
+        onChange={(v) => setSeller("phone", v as string)}
+        required
+      /> */}
 
-          {/* Seller Info */}
-          <h3 className="text-lg font-semibold mt-6 mb-2">Seller Information</h3>
-          <FormField
-            label="Name"
-            field="sellerInfo.name"
-            value={formData.sellerInfo?.name || ""}
-            onChange={(val) => handleSellerInfoChange("name", val as string)}
-            placeholder="Contact Person"
-          />
-          <FormField
-            label="Email"
-            field="sellerInfo.email"
-            type="email"
-            value={formData.sellerInfo?.email || ""}
-            onChange={(val) => handleSellerInfoChange("email", val as string)}
-            placeholder="Email Address"
-          />
-          <FormField
-            label="Phone"
-            field="sellerInfo.phone"
-            type="tel"
-            value={formData.sellerInfo?.phone || ""}
-            onChange={(val) => handleSellerInfoChange("phone", val as string)}
-            placeholder="Phone Number"
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

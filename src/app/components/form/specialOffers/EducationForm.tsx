@@ -1,150 +1,224 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function EducationLearningForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default the main category/subcategory for this form
-  React.useEffect(() => {
-    if (!store.category) setField("category", "Services");
-    if (!store.subcategory) setField("subcategory", "Education & Learning");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested objects
+  const name = store.name ?? "";
+  const institutionName = store.institutionName ?? "";
+  const educationCategory = store.educationCategory ?? "";
+  const mode = store.mode ?? "";
+  const duration = store.duration ?? "";
+  const price = store.price ?? store.salePrice ?? "";
+  const description = store.description ?? "";
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Default category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "Services");
+    if (!subcategory)
+      setField("subcategory", "Education & Learning");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Course title required";
+    if (price && !isPositive(price))
+      mapped.price = "Invalid fee amount";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // Clean persist
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Education & Learning</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Education & Learning</h2>
 
-        {/* Category / Subcategory (read-only-ish fields, still editable if needed) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Services" required />
-          <FormField
-            label="Subcategory"
-            field="subcategory"
-            placeholder="Education & Learning"
-            required
-          />
-        </div>
+      {/* Course Title */}
+      <FormField
+        label="Course / Program Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Course / Program Title → map to shared "name" */}
+      {/* Institution */}
+      <FormField
+        label="Institution / Provider"
+        field="institutionName"
+        value={institutionName}
+        onChange={(v) => setField("institutionName", v)}
+      />
+
+      {/* Education Category */}
+      <SelectField
+        label="Education Category"
+        field="educationCategory"
+        value={educationCategory}
+        onChange={(v) => setField("educationCategory", v)}
+        options={[
+          { value: "school", label: "School / Academic" },
+          { value: "college", label: "College / University" },
+          { value: "vocational", label: "Vocational / Skill-based" },
+          { value: "online-course", label: "Online Course" },
+          { value: "other", label: "Other" },
+        ]}
+      />
+
+      {/* Mode */}
+      <SelectField
+        label="Mode"
+        field="mode"
+        value={mode}
+        onChange={(v) => setField("mode", v)}
+        options={[
+          { value: "online", label: "Online" },
+          { value: "offline", label: "Offline" },
+          { value: "hybrid", label: "Hybrid" },
+        ]}
+      />
+
+      {/* Duration */}
+      <FormField
+        label="Duration"
+        field="duration"
+        value={duration}
+        onChange={(v) => setField("duration", v)}
+      />
+
+      {/* Fees */}
+      <FormField
+        label="Fees / Tuition (₹)"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+      />
+
+      {/* Description */}
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
+
+      {/* Location */}
+      {/* <FormField
+        label="Location"
+        field="__ignore_location__"
+        value={location?.address ?? ""}
+        onChange={(v) => setLoc((v as string) || "")}
+      /> */}
+
+      {/* Contact */}
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormField
-          label="Course / Program Title"
-          field="name"
-          placeholder="e.g., Data Science Bootcamp"
+          label="Contact Name"
+          field="sellerName"
+          value={sellerInfo?.name ?? ""}
+          onChange={(v) => setSeller("name", (v as string) || "")}
           required
         />
-
-        {/* Institution / Provider */}
         <FormField
-          label="Institution / Provider"
-          field="institutionName"
-          placeholder="Organization or Institution Name"
+          label="Contact Email"
+          field="sellerEmail"
+          type="email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(v) => setSeller("email", (v as string) || "")}
         />
-
-        {/* Internal education category (avoid clashing with main 'category') */}
-        <SelectField
-          label="Education Category"
-          field="educationCategory"
-          placeholder="Select Category"
-          options={[
-            { value: "school", label: "School / Academic" },
-            { value: "college", label: "College / University" },
-            { value: "vocational", label: "Vocational / Skill-based" },
-            { value: "online-course", label: "Online Course" },
-            { value: "other", label: "Other" },
-          ]}
-        />
-
-        {/* Mode */}
-        <SelectField
-          label="Mode"
-          field="mode"
-          placeholder="Select Mode"
-          options={[
-            { value: "online", label: "Online" },
-            { value: "offline", label: "Offline" },
-            { value: "hybrid", label: "Hybrid" },
-          ]}
-        />
-
-        {/* Duration */}
         <FormField
-          label="Duration"
-          field="duration"
-          placeholder="e.g., 3 months, 6 weeks, 1 year"
+          label="Contact Phone"
+          field="sellerPhone"
+          type="tel"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(v) => setSeller("phone", (v as string) || "")}
+          required
         />
+      </div> */}
 
-        {/* Fees → store as numeric 'price' for currency formatting in preview */}
-        <FormField
-          label="Fees / Tuition (INR)"
-          field="price"
-          type="number"
-          placeholder="e.g., 20000"
-        />
-
-        {/* Description */}
-        <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Provide details about the course or program"
-        />
-
-        {/* Location (stored under location.address) */}
-        <FormField
-          label="Location"
-          field="__ignore_location__"
-          placeholder="City, State or Online"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
-        />
-
-        {/* Contact Info (sellerInfo) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Contact Person"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="Email Address"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="Phone Number"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

@@ -1,46 +1,126 @@
 // src/app/components/form/pets/LostFoundForm.tsx
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
+import { toast } from "sonner";
 
 export default function PetLostFoundForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Controlled values from the store
-  const subcategory = usePostFormStore((s) => s.subcategory); // keep as "Lost & Found"
-  const name = usePostFormStore((s) => s.name);
-  const description = usePostFormStore((s) => s.description);
-  const location = usePostFormStore((s) => s.location);
-  const sellerInfo = usePostFormStore((s) => s.sellerInfo);
+  const subcategory = store.subcategory;
+  const reportType = (store as any).reportType ?? "lost";
+  const name = store.name ?? "";
+  const description = store.description ?? "";
+  const petType = (store as any).petType ?? "";
+  const breed = (store as any).breed ?? "";
+  const color = (store as any).color ?? "";
+  const age = (store as any).age ?? "";
+  const lfDate = (store as any).lfDate ?? "";
+  const lastSeenLocation =
+    (store as any).lastSeenLocation ??
+    store.location?.address ??
+    "";
 
-  // Pet-specific
-  const reportType = usePostFormStore((s) => (s as any).reportType); // "lost" | "found"
-  const petType = usePostFormStore((s) => (s as any).petType);
-  const breed = usePostFormStore((s) => (s as any).breed);
-  const color = usePostFormStore((s) => (s as any).color);
-  const age = usePostFormStore((s) => (s as any).age);
-  const lastSeenDate = usePostFormStore((s) => (s as any).lastSeenDate);
+  const sellerInfo = store.sellerInfo ?? {};
 
-  // Ensure category/subcategory are set for this form
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // preset category/subcategory
   useEffect(() => {
     setField("category", "Pets");
     if (!subcategory) setField("subcategory", "Lost & Found");
     if (!reportType) setField("reportType", "lost");
   }, [setField, subcategory, reportType]);
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-center">Pet Lost &amp; Found</h2>
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
 
-      {/* Report Type + Subcategory (fixed to Lost & Found) */}
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${first}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!reportType)
+      mapped.reportType = "Report type required";
+
+    if (!name.trim())
+      mapped.name = "Title required";
+
+    if (!petType.trim())
+      mapped.petType = "Pet type required";
+
+    if (!lfDate)
+      mapped.lfDate = "Date required";
+
+    if (!lastSeenLocation.trim())
+      mapped.lastSeenLocation = "Location required";
+
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // persist cleaned values
+    setField("name", name.trim());
+    setField("description", description.trim());
+    setField("lfDate", lfDate);
+    setField("lastSeenLocation", lastSeenLocation.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
+  return (
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto"
+    >
+      <h2 className="text-2xl font-semibold text-center">
+        Pet Lost &amp; Found
+      </h2>
+
+      {/* Report Type */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SelectField
           label="Report Type"
           field="reportType"
-          value={reportType ?? "lost"}
+          value={reportType}
           onChange={(v) => setField("reportType", v)}
           options={[
             { value: "lost", label: "Lost" },
@@ -48,12 +128,15 @@ export default function PetLostFoundForm() {
           ]}
           required
         />
+
         <SelectField
           label="Post Type"
           field="subcategory"
           value={subcategory ?? "Lost & Found"}
           onChange={(v) => setField("subcategory", v)}
-          options={[{ value: "Lost & Found", label: "Lost & Found" }]}
+          options={[
+            { value: "Lost & Found", label: "Lost & Found" },
+          ]}
           required
         />
       </div>
@@ -62,36 +145,34 @@ export default function PetLostFoundForm() {
       <FormField
         label="Title"
         field="name"
-        value={name ?? ""}
+        value={name}
         onChange={(v) => setField("name", v)}
-        placeholder='e.g. "Lost Golden Retriever near City Park"'
         required
       />
+
       <FormField
         label="Description"
         field="description"
         type="textarea"
-        value={description ?? ""}
+        value={description}
         onChange={(v) => setField("description", v)}
-        placeholder="Special markings, collar details, microchip, behavior…"
       />
 
-      {/* Pet details */}
+      {/* Pet Details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Pet Type"
           field="petType"
-          value={petType ?? ""}
+          value={petType}
           onChange={(v) => setField("petType", v)}
-          placeholder="Dog / Cat / Bird…"
           required
         />
+
         <FormField
           label="Breed"
           field="breed"
-          value={breed ?? ""}
+          value={breed}
           onChange={(v) => setField("breed", v)}
-          placeholder="Breed (if known)"
         />
       </div>
 
@@ -99,71 +180,68 @@ export default function PetLostFoundForm() {
         <FormField
           label="Color"
           field="color"
-          value={color ?? ""}
+          value={color}
           onChange={(v) => setField("color", v)}
-          placeholder="e.g. Brown with white patch"
         />
+
         <FormField
           label="Age"
           field="age"
-          value={age ?? ""}
+          value={age}
           onChange={(v) => setField("age", v)}
-          placeholder="e.g. ~2 years"
         />
       </div>
 
-      {/* When & Where */}
+      {/* Date & Location */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Last Seen / Found Date"
-          field="lastSeenDate"
+          field="lfDate"
           type="date"
-          value={lastSeenDate ?? ""}
-          onChange={(v) => setField("lastSeenDate", v)}
+          value={lfDate}
+          onChange={(v) => setField("lfDate", v)}
+          required
         />
+
         <FormField
-          label="Location"
-          field="location.address"
-          value={location?.address ?? ""}
-          onChange={(v) => setField("location", { ...(location || {}), address: v })}
-          placeholder="Street / Area, City"
+          label="Last Seen Location"
+          field="lastSeenLocation"
+          value={lastSeenLocation}
+          onChange={(v) => setField("lastSeenLocation", v)}
           required
         />
       </div>
 
-      {/* Contact Details (nested sellerInfo like the rest of the app) */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Information</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="sellerInfo.name"
-            value={sellerInfo?.name ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, name: v })}
-            placeholder="Your name"
-            required
-          />
-          <FormField
-            label="Phone Number"
-            field="sellerInfo.phone"
-            type="tel"
-            value={sellerInfo?.phone ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, phone: v })}
-            placeholder="Phone number"
-            required
-          />
-          <FormField
-            label="Email"
-            field="sellerInfo.email"
-            type="email"
-            value={sellerInfo?.email ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, email: v })}
-            placeholder="Email address"
-          />
-        </div>
-      </div>
+      {/* Contact Info */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
+          required
+        />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          type="tel"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
+        />
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
+        />
+      </div> */}
 
-      {/* Images: use your shared uploader (writes to `images` in the store) */}
-    </div>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

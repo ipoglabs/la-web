@@ -3,74 +3,61 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
 import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import { toast } from "sonner";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-export default function ForStudentForm() {
+export default function HolidayRentalForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const setField = usePostFormStore((s) => s.setField);
-
   const store = usePostFormStore();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   /** ---------- OPTIONS ---------- */
 
-  const propertyTypeOptions = [
-    { value: "Hostel", label: "Hostel" },
-    { value: "PG", label: "PG" },
-    { value: "SharedApartment", label: "Shared Apartment" },
-    { value: "StudentApartment", label: "Student Apartment" },
-    { value: "CoLiving", label: "Co-living Space" },
+  const holidayTypes = [
+    { value: "Villa", label: "Villa" },
+    { value: "BeachHouse", label: "Beach House" },
+    { value: "Cottage", label: "Cottage" },
+    { value: "Resort", label: "Resort" },
+    { value: "GuestHouse", label: "Guest House" },
+    { value: "FarmStay", label: "Farm Stay" },
+    { value: "Treehouse", label: "Treehouse" },
+    { value: "Other", label: "Other" },
   ];
 
-  const occupancyOptions = [
-    { value: "Single", label: "Single" },
-    { value: "Double", label: "Double Sharing" },
-    { value: "Triple", label: "Triple Sharing" },
-    { value: "Dorm", label: "Dormitory" },
-  ];
-
-  const genderOptions = [
-    { value: "Boys", label: "Boys" },
-    { value: "Girls", label: "Girls" },
-    { value: "CoEd", label: "Co-ed" },
-  ];
-
-  const facilitiesOptions = useMemo(
+  const amenityOptions = useMemo(
     () => [
       "WiFi",
-      "Study Table & Chair",
-      "Laundry Service",
-      "Housekeeping",
-      "Common Kitchen",
-      "Meals Included",
-      "Gym/Fitness",
-      "Common Room",
+      "Swimming Pool",
       "Air Conditioning",
-      "Security/CCTV",
-      "Power Backup",
-      "RO Water",
+      "Free Parking",
+      "BBQ Grill",
+      "Outdoor Dining",
+      "Private Beach",
+      "Kitchen",
+      "Washing Machine",
+      "TV",
+      "Garden",
+      "Fireplace",
+      "Pet Friendly",
     ],
     []
   );
 
-  /** ✅ NEW (from config) */
-  const amenitiesOptions = useMemo(
+  const ruleOptions = useMemo(
     () => [
-      "Lift",
-      "Parking",
-      "Garden",
-      "Terrace",
-      "Balcony",
-      "24x7 Security",
+      "Smoking Allowed",
+      "Pets Allowed",
+      "Parties Allowed",
+      "Children Friendly",
     ],
     []
   );
@@ -115,15 +102,20 @@ export default function ForStudentForm() {
 
     if (!store.name) mapped.name = "Please enter title";
     if (!store.description) mapped.description = "Please enter description";
+    if (!store.holidayType)
+      mapped.holidayType = "Select property type";
 
-    if (!store.propertyType)
-      mapped.propertyType = "Select property type";
+    if (!isPositive(store.guests))
+      mapped.guests = "Guests must be greater than 0";
 
-    if (!store.occupancy)
-      mapped.occupancy = "Select occupancy type";
+    if (!isPositive(store.beds))
+      mapped.beds = "Beds must be greater than 0";
 
-    if (!isPositive(store.rentPrice))
-      mapped.rentPrice = "Enter valid rent";
+    if (!isPositive(store.baths))
+      mapped.baths = "Baths must be greater than 0";
+
+    if (!isPositive(store.rateNightly))
+      mapped.rateNightly = "Nightly rate must be greater than 0";
 
     if (Object.keys(mapped).length > 0) {
       setErrors(mapped);
@@ -165,16 +157,16 @@ export default function ForStudentForm() {
         />
       </FormFieldContainer>
 
-      {/* Property Type */}
-      <FormFieldContainer label="Property Type" error={errors.propertyType}>
+      {/* Holiday Type */}
+      <FormFieldContainer label="Holiday Property Type" error={errors.holidayType}>
         <select
-          name="propertyType"
-          value={store.propertyType || ""}
-          onChange={(e) => setAndClear("propertyType", e.target.value)}
+          name="holidayType"
+          value={store.holidayType || ""}
+          onChange={(e) => setAndClear("holidayType", e.target.value)}
           className="w-full border p-2 rounded-md"
         >
           <option value="">Select</option>
-          {propertyTypeOptions.map((o) => (
+          {holidayTypes.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
@@ -182,32 +174,24 @@ export default function ForStudentForm() {
         </select>
       </FormFieldContainer>
 
-      {/* Occupancy */}
-      <FormFieldContainer label="Occupancy" error={errors.occupancy}>
-        <select
-          name="occupancy"
-          value={store.occupancy || ""}
-          onChange={(e) => setAndClear("occupancy", e.target.value)}
-          className="w-full border p-2 rounded-md"
-        >
-          <option value="">Select</option>
-          {occupancyOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </FormFieldContainer>
-
-      {/* Beds / Baths */}
-      <FormFieldWrapper className="grid grid-cols-2 gap-4">
+      {/* Capacity */}
+      <FormFieldWrapper className="grid grid-cols-3 gap-4">
         <Input
+          name="guests"
+          type="number"
+          placeholder="Guests"
+          value={store.guests || ""}
+          onChange={(e) => setAndClear("guests", e.target.value)}
+        />
+        <Input
+          name="beds"
           type="number"
           placeholder="Beds"
           value={store.beds || ""}
           onChange={(e) => setAndClear("beds", e.target.value)}
         />
         <Input
+          name="baths"
           type="number"
           placeholder="Baths"
           value={store.baths || ""}
@@ -215,55 +199,48 @@ export default function ForStudentForm() {
         />
       </FormFieldWrapper>
 
-      {/* Gender */}
-      <FormFieldContainer label="Gender Preference">
-        <select
-          value={store.gender_pref || ""}
-          onChange={(e) => setAndClear("gender_pref", e.target.value)}
-          className="w-full border p-2 rounded-md"
-        >
-          <option value="">Select</option>
-          {genderOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </FormFieldContainer>
-
-      {/* Facilities */}
-      <FormFieldContainer label="Facilities">
-        <CheckboxGroupField
-          field="facilities"
-          options={facilitiesOptions}
-          cols={3}
+      {/* Rates */}
+      <FormFieldWrapper className="grid grid-cols-3 gap-4">
+        <Input
+          name="rateNightly"
+          type="number"
+          placeholder="Nightly ₹"
+          value={store.rateNightly || ""}
+          onChange={(e) => setAndClear("rateNightly", e.target.value)}
         />
-      </FormFieldContainer>
+        <Input
+          name="rateWeekly"
+          type="number"
+          placeholder="Weekly ₹"
+          value={store.rateWeekly || ""}
+          onChange={(e) => setAndClear("rateWeekly", e.target.value)}
+        />
+        <Input
+          name="rateMonthly"
+          type="number"
+          placeholder="Monthly ₹"
+          value={store.rateMonthly || ""}
+          onChange={(e) => setAndClear("rateMonthly", e.target.value)}
+        />
+      </FormFieldWrapper>
 
-      {/* ✅ NEW: Amenities */}
+      {/* Amenities */}
       <FormFieldContainer label="Amenities">
         <CheckboxGroupField
           field="amenities"
-          options={amenitiesOptions}
+          options={amenityOptions}
           cols={3}
         />
       </FormFieldContainer>
 
-      {/* Pricing */}
-      <FormFieldWrapper className="grid grid-cols-2 gap-4">
-        <Input
-          type="number"
-          placeholder="Rent"
-          value={store.rentPrice || ""}
-          onChange={(e) => setAndClear("rentPrice", e.target.value)}
+      {/* House Rules */}
+      <FormFieldContainer label="House Rules">
+        <CheckboxGroupField
+          field="house_rules"
+          options={ruleOptions}
+          cols={2}
         />
-        <Input
-          type="number"
-          placeholder="Deposit"
-          value={store.deposit || ""}
-          onChange={(e) => setAndClear("deposit", e.target.value)}
-        />
-      </FormFieldWrapper>
+      </FormFieldContainer>
 
       {/* Hidden submit */}
       <button type="submit" className="hidden" />

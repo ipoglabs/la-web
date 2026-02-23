@@ -1,163 +1,248 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function BooksMusicMediaForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Ensure category/subcategory (For Sale → Books & Media)
-  React.useEffect(() => {
-    if (!store.category) setField("category", "For Sale");
-    if (!store.subcategory) setField("subcategory", "Books & Media");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested objects
+  const name = store.name ?? "";
+  const mediaType = (store as any).mediaType ?? "";
+  const condition = (store as any).condition ?? "";
+  const authorArtist = (store as any).authorArtist ?? "";
+  const genre = (store as any).genre ?? "";
+  const price = (store as any).price ?? store.salePrice ?? "";
+  const negotiable = (store as any).negotiable ?? "";
+  const description = store.description ?? "";
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // preset category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "For Sale");
+    if (!subcategory) setField("subcategory", "Books & Media");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
-  // Images
-  const onImagesChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    const files = Array.from(e.target.files ?? []);
-    setField("images", [...(store.images ?? []), ...files]);
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Title required";
+    if (!mediaType) mapped.mediaType = "Media type required";
+    if (!condition) mapped.condition = "Condition required";
+    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Seller name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Seller phone required";
+    if (!sellerInfo?.email?.trim())
+      mapped.sellerEmail = "Seller email required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // clean persist
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
   };
 
   return (
-    <Card className="max-w-3xl mx-auto mt-6 shadow-lg rounded-2xl">
-      <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Books · Music · Media</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">
+        Books · Music · Media
+      </h2>
 
-        {/* Category/Subcategory (bound to shared store) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="For Sale" required />
-          <FormField label="Subcategory" field="subcategory" placeholder="Books & Media" required />
-        </div>
+      {/* Title */}
+      <FormField
+        label="Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Basic */}
+      {/* Media Type */}
+      <SelectField
+        label="Item Type"
+        field="mediaType"
+        value={mediaType}
+        onChange={(v) => setField("mediaType", v)}
+        options={[
+          { value: "book", label: "Book" },
+          { value: "music", label: "Music (CD/Vinyl/Digital)" },
+          { value: "movie", label: "Movie / DVD / Blu-ray" },
+          { value: "game", label: "Game" },
+          { value: "other", label: "Other Media" },
+        ]}
+        required
+      />
+
+      {/* Condition */}
+      <SelectField
+        label="Condition"
+        field="condition"
+        value={condition}
+        onChange={(v) => setField("condition", v)}
+        options={[
+          { value: "new", label: "New" },
+          { value: "like-new", label: "Like New" },
+          { value: "used", label: "Used" },
+          { value: "collectible", label: "Collectible" },
+        ]}
+        required
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
-          label="Title"
-          field="name"
-          placeholder="e.g., Harry Potter, The Beatles – Abbey Road, PS4 Game"
+          label="Author / Artist"
+          field="authorArtist"
+          value={authorArtist}
+          onChange={(v) => setField("authorArtist", v)}
+        />
+        <FormField
+          label="Genre"
+          field="genre"
+          value={genre}
+          onChange={(v) => setField("genre", v)}
+        />
+      </div>
+
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
+
+      {/* Price */}
+      <FormField
+        label="Price (₹)"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
+
+      <SelectField
+        label="Negotiable"
+        field="negotiable"
+        value={negotiable}
+        onChange={(v) => setField("negotiable", v)}
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ]}
+      />
+
+      {/* Location */}
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
+        required
+      />
+
+      {/* Seller Info */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
           required
         />
-
-        <SelectField
-          label="Item Type"
-          field="mediaType"
-          placeholder="Select type"
-          options={[
-            { value: "book", label: "Book" },
-            { value: "music", label: "Music (CD/Vinyl/Digital)" },
-            { value: "movie", label: "Movie / DVD / Blu-ray" },
-            { value: "game", label: "Game" },
-            { value: "other", label: "Other Media" },
-          ]}
-        />
-
-        <SelectField
-          label="Condition"
-          field="condition"
-          placeholder="Select condition"
-          options={[
-            { value: "new", label: "New" },
-            { value: "like-new", label: "Like New" },
-            { value: "used", label: "Used" },
-            { value: "collectible", label: "Collectible" },
-          ]}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Author / Artist"
-            field="authorArtist"
-            placeholder="e.g., J.K. Rowling / The Beatles"
-          />
-          <FormField
-            label="Genre"
-            field="genre"
-            placeholder="e.g., Fiction, Rock, Action"
-          />
-        </div>
-
-        <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Add details like edition, year, publisher/label, region, special features…"
-        />
-
-        {/* Pricing */}
-        <FormField
-          label="Price (₹)"
-          field="salePrice"            // map price → salePrice for consistency
-          type="number"
-          inputMode="decimal"
-          placeholder="e.g., 499"
-          min={0}
-          hint="Use whole numbers; you can mark negotiable in the next field."
-        />
-
-        <SelectField
-          label="Negotiable"
-          field="negotiable"
-          placeholder="Select"
-          options={[
-            { value: "yes", label: "Yes" },
-            { value: "no", label: "No" },
-          ]}
-        />
-
-        {/* Location (store.location.address) */}
-        <FormField
-          label="Location"
-          field="__ignore_location__"
-          placeholder="City / Area"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Contact Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
           required
         />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
+        />
+      </div>
 
-        {/* Contact */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Your name"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="you@example.com"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="+91 9876543210"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

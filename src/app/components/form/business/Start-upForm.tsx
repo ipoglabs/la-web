@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,73 +10,141 @@ export default function StartupSupportForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Set default category/subcategory
+  /* ---------------- DEFAULT CATEGORY ---------------- */
+
   React.useEffect(() => {
     if (!store.category) setField("category", "Business");
-    if (!store.subcategory) setField("subcategory", "Startup Support");
+    if (!store.subcategory) setField("subcategory", "startup");
   }, [store.category, store.subcategory, setField]);
 
-  // Helper for seller info
+  /* ---------------- HELPERS ---------------- */
+
   const setSeller = (key: "name" | "phone" | "email", value?: string) => {
     const cur = store.sellerInfo || {};
     setField("sellerInfo", { ...cur, [key]: value ?? "" });
   };
 
+  const setLocationAddress = (address?: string) => {
+    const cur = store.location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  /* ---------------- UI ---------------- */
+
   return (
     <Card className="max-w-2xl mx-auto mt-6 shadow-lg rounded-2xl">
       <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Startup Support Request</h2>
+        <h2 className="text-2xl font-bold">
+          Startup Support Listing
+        </h2>
 
-        <FormField label="Startup / Business Name" field="startupName" required />
+        {/* Category / Subcategory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Category"
+            field="category"
+            placeholder="Business"
+            required
+          />
+          <FormField
+            label="Subcategory"
+            field="subcategory"
+            placeholder="Startup Support"
+            required
+          />
+        </div>
+
+        {/* Title */}
         <FormField
-          label="Founder Name"
-          field="founderName"
-          value={store.sellerInfo?.name ?? ""}
-          onChange={(v) => setSeller("name", v as string)}
+          label="Startup / Service Title"
+          field="name"
+          placeholder="e.g., Seeking Seed Funding for Fintech Startup"
           required
         />
+
+        {/* Service Type */}
         <FormField
-          label="Email"
-          field="__ignore_seller_email__"
-          value={store.sellerInfo?.email ?? ""}
-          onChange={(v) => setSeller("email", v as string)}
-          required
-        />
-        <FormField
-          label="Phone"
-          field="__ignore_seller_phone__"
-          value={store.sellerInfo?.phone ?? ""}
-          onChange={(v) => setSeller("phone", v as string)}
+          label="Service Type"
+          field="serviceType"
+          placeholder="e.g., Funding, Mentorship, Incubation"
           required
         />
 
-        <SelectField
-          label="Type of Support Needed"
-          field="supportType"
-          options={[
-            { value: "funding", label: "Funding / Investment" },
-            { value: "mentorship", label: "Mentorship" },
-            { value: "incubation", label: "Incubation / Accelerator Program" },
-            { value: "advisory", label: "Business Advisory" },
-            { value: "networking", label: "Networking & Partnerships" },
-          ]}
+        {/* Availability */}
+        <FormField
+          label="Availability"
+          field="availability"
+          placeholder="e.g., Immediate, Flexible"
         />
 
-        <SelectField
-          label="Business Stage"
-          field="businessStage"
-          options={[
-            { value: "idea", label: "Idea Stage" },
-            { value: "early", label: "Early Stage" },
-            { value: "growth", label: "Growth Stage" },
-            { value: "scaling", label: "Scaling Stage" },
-          ]}
+        {/* Price (if applicable) */}
+        <FormField
+          label="Price / Funding Required (₹)"
+          field="price"
+          type="number"
+          inputMode="decimal"
+          placeholder="Enter amount (if applicable)"
         />
 
-        <FormField label="Industry" field="industry" placeholder="E.g. Fintech, Healthtech, Edtech" />
-        <FormField label="Business Description" field="description" type="textarea" required />
-        <FormField label="Additional Notes" field="notes" type="textarea" />
+        {/* Location (nested) */}
+        <FormField
+          label="Location"
+          field="__ignore_location__"
+          placeholder="Enter city or startup base location"
+          value={store.location?.address ?? ""}
+          onChange={(v) =>
+            setLocationAddress((v as string) || "")
+          }
+          required
+        />
 
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Describe your startup, stage, goals, and support needed"
+          required
+        />
+
+        {/* Contact Section */}
+        {/* <div className="pt-4 border-t space-y-4">
+          <h3 className="text-lg font-semibold">
+            Contact Information
+          </h3>
+
+          <FormField
+            label="Founder / Contact Name"
+            field="__ignore_seller_name__"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) =>
+              setSeller("name", v as string)
+            }
+            required
+          />
+
+          <FormField
+            label="Email"
+            field="__ignore_seller_email__"
+            type="email"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) =>
+              setSeller("email", v as string)
+            }
+            required
+          />
+
+          <FormField
+            label="Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) =>
+              setSeller("phone", v as string)
+            }
+            required
+          />
+        </div> */}
       </CardContent>
     </Card>
   );

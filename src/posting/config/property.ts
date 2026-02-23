@@ -2,7 +2,10 @@ import type { FieldSpec } from "./types";
 
 export const propertyConfig: Record<string, FieldSpec[]> = {
   "to buy": [
-    { key: "salePrice", type: "currency", label: "Sale Price (₹)" },
+    
+    { key: "name", type: "string", label: "Listing Title", required: true },
+    { key: "description", type: "string", label: "Description", required: true },
+    { key: "salePrice", type: "currency", label: "Sale Price (₹)", required: true },
     { key: "builtup_area", type: "number", label: "Built-up Area (sq ft)" },
     { key: "carpet_area", type: "number", label: "Carpet Area (sq ft)" },
     { key: "beds", type: "number", label: "Beds" },

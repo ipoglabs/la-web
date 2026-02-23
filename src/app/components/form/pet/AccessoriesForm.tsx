@@ -1,24 +1,117 @@
-// src/app/components/form/pets/PetAccessoriesForm.tsx
+// src/app/components/form/pets/AccessoriesForm.tsx
 "use client";
 
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { useMemo } from "react";
+import { toast } from "sonner";
 
 export default function PetAccessoriesForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  const name = usePostFormStore((s) => s.name);
-  const description = usePostFormStore((s) => s.description);
-  const category = usePostFormStore((s) => (s as any).petCategory);
-  const brand = usePostFormStore((s) => (s as any).brand);
-  const condition = usePostFormStore((s) => (s as any).condition);
-  const salePrice = usePostFormStore((s) => s.salePrice);
-  const location = usePostFormStore((s) => s.location?.address ?? "");
-  const sellerInfo = usePostFormStore((s) => s.sellerInfo);
+  // preset category/subcategory
+  useEffect(() => {
+    setField("category", "Pets");
+    setField("subcategory", "Accessories");
+  }, [setField]);
 
-  // Predefined options
+  const accessoryName = (store as any).accessoryName ?? "";
+  const partsCategory = (store as any).partsCategory ?? "";
+  const brand = (store as any).brand ?? "";
+  const condition = (store as any).condition ?? "";
+  const price = (store as any).price ?? store.salePrice ?? "";
+  const description = store.description ?? "";
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${first}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v); // backend safe
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+
+  const setLoc = (address?: string) => {
+    const cur = location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!accessoryName.trim())
+      mapped.accessoryName = "Accessory name required";
+
+    if (!partsCategory)
+      mapped.partsCategory = "Category required";
+
+    if (!condition)
+      mapped.condition = "Condition required";
+
+    if (!isPositive(price))
+      mapped.price = "Invalid price";
+
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    if (!location?.address?.trim())
+      mapped.location = "Location required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // persist cleaned values
+    setField("accessoryName", accessoryName.trim());
+    setField("name", accessoryName.trim()); // for preview title reuse
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
+  // Options
   const categories = useMemo(
     () => [
       { value: "food", label: "Food" },
@@ -41,16 +134,22 @@ export default function PetAccessoriesForm() {
   );
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-center">Post Pet Accessories</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto"
+    >
+      <h2 className="text-2xl font-semibold text-center">
+        Post Pet Accessories
+      </h2>
 
       {/* Accessory Name */}
       <FormField
         label="Accessory Name"
-        field="name"
-        value={name ?? ""}
-        onChange={(v) => setField("name", v)}
-        placeholder="e.g., Dog Leash, Cat Scratching Post"
+        field="accessoryName"
+        value={accessoryName}
+        onChange={(v) => setField("accessoryName", v)}
         required
       />
 
@@ -58,18 +157,17 @@ export default function PetAccessoriesForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SelectField
           label="Category"
-          field="petCategory"
-          value={category ?? ""}
-          onChange={(v) => setField("petCategory", v)}
+          field="partsCategory"
+          value={partsCategory}
+          onChange={(v) => setField("partsCategory", v)}
           options={categories}
           required
         />
         <FormField
           label="Brand"
           field="brand"
-          value={brand ?? ""}
+          value={brand}
           onChange={(v) => setField("brand", v)}
-          placeholder="e.g., Pedigree, Royal Canin, Whiskas"
         />
       </div>
 
@@ -78,18 +176,17 @@ export default function PetAccessoriesForm() {
         <SelectField
           label="Condition"
           field="condition"
-          value={condition ?? ""}
+          value={condition}
           onChange={(v) => setField("condition", v)}
           options={conditions}
           required
         />
         <FormField
           label="Price (₹)"
-          field="salePrice"
+          field="price"
           type="number"
-          value={salePrice ?? ""}
-          onChange={(v) => setField("salePrice", v)}
-          placeholder="Enter price"
+          value={price}
+          onChange={(v) => handlePrice(String(v))}
           required
         />
       </div>
@@ -99,52 +196,49 @@ export default function PetAccessoriesForm() {
         label="Description"
         field="description"
         type="textarea"
-        value={description ?? ""}
+        value={description}
         onChange={(v) => setField("description", v)}
-        placeholder="Describe size, usage, condition, etc."
       />
 
       {/* Location */}
-      <FormField
-        label="Location"
-        field="location.address"
-        value={location}
-        onChange={(v) => setField("location", { ...(usePostFormStore.getState().location || {}), address: v })}
-        placeholder="City / Area"
-        required
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
       />
 
       {/* Seller Info */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="sellerInfo.name"
-            value={sellerInfo?.name ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, name: v })}
-            placeholder="Your Name"
-            required
-          />
-          <FormField
-            label="Email"
-            field="sellerInfo.email"
-            type="email"
-            value={sellerInfo?.email ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, email: v })}
-            placeholder="Email address"
-          />
-          <FormField
-            label="Phone"
-            field="sellerInfo.phone"
-            type="tel"
-            value={sellerInfo?.phone ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, phone: v })}
-            placeholder="Phone number"
-            required
-          />
-        </div>
-      </div>
-    </div>
+      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
+          required
+        />
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
+        />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          type="tel"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
+        />
+      </div> */}
+
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

@@ -1,190 +1,243 @@
-// src/app/components/form/pets/PetAdoptionForm.tsx
 "use client";
 
-import { useEffect, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
+import { toast } from "sonner";
 
 export default function PetAdoptionForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Optional: preset category/subcategory for this form
+  // preset category/subcategory
   useEffect(() => {
     setField("category", "Pets");
     setField("subcategory", "Adoption");
   }, [setField]);
 
-  // read from store (controlled)
-  const name = usePostFormStore((s) => s.name); // Pet name as "Title"
-  const description = usePostFormStore((s) => s.description);
+  const petName = (store as any).petName ?? store.name ?? "";
+  const petType = (store as any).petType ?? "";
+  const breed = (store as any).breed ?? "";
+  const ageText = (store as any).ageText ?? "";
+  const gender = (store as any).gender ?? "";
+  const vaccination = (store as any).vaccination ?? "";
+  const size = (store as any).size ?? "";
+  const price = (store as any).price ?? store.salePrice ?? "";
+  const description = store.description ?? "";
 
-  const petType = usePostFormStore((s) => (s as any).petType);
-  const breed = usePostFormStore((s) => (s as any).breed);
-  const age = usePostFormStore((s) => (s as any).age);
-  const gender = usePostFormStore((s) => (s as any).gender);
-  const vaccination = usePostFormStore((s) => (s as any).vaccination);
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
 
-  // Use salePrice for “Adoption Fee” to reuse currency formatting & preview
-  const salePrice = usePostFormStore((s) => s.salePrice);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const location = usePostFormStore((s) => s.location);
-  const sellerInfo = usePostFormStore((s) => s.sellerInfo);
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
 
-  const petTypeOptions = useMemo(
-    () => [
-      { value: "dog", label: "Dog" },
-      { value: "cat", label: "Cat" },
-      { value: "bird", label: "Bird" },
-      { value: "rabbit", label: "Rabbit" },
-      { value: "other", label: "Other" },
-    ],
-    []
-  );
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
 
-  const genderOptions = useMemo(
-    () => [
-      { value: "male", label: "Male" },
-      { value: "female", label: "Female" },
-    ],
-    []
-  );
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${first}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
 
-  const vaccinationOptions = useMemo(
-    () => [
-      { value: "vaccinated", label: "Vaccinated" },
-      { value: "partially_vaccinated", label: "Partially Vaccinated" },
-      { value: "not_vaccinated", label: "Not Vaccinated" },
-    ],
-    []
-  );
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v); // preview/backend safe
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+
+  const setLoc = (address?: string) => {
+    const cur = location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!petName.trim()) mapped.petName = "Pet name required";
+    if (!petType) mapped.petType = "Pet type required";
+    if (!isPositive(price)) mapped.price = "Invalid adoption fee";
+
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    if (!location?.address?.trim())
+      mapped.location = "Location required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // persist cleaned values
+    setField("petName", petName.trim());
+    setField("name", petName.trim()); // optional: for preview title reuse
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-center">Post Pet for Adoption</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto"
+    >
+      <h2 className="text-2xl font-semibold text-center">
+        Post Pet for Adoption
+      </h2>
 
-      {/* Title (Pet Name) */}
       <FormField
         label="Pet Name"
-        field="name"
-        value={name ?? ""}
-        onChange={(v) => setField("name", v)}
-        placeholder="e.g. Bella"
+        field="petName"
+        value={petName}
+        onChange={(v) => setField("petName", v)}
         required
       />
 
-      {/* Type / Breed */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SelectField
           label="Pet Type"
           field="petType"
-          value={petType ?? ""}
+          value={petType}
           onChange={(v) => setField("petType", v)}
-          options={petTypeOptions}
-          required
+          options={[
+            { value: "dog", label: "Dog" },
+            { value: "cat", label: "Cat" },
+            { value: "bird", label: "Bird" },
+            { value: "rabbit", label: "Rabbit" },
+            { value: "other", label: "Other" },
+          ]}
         />
         <FormField
           label="Breed"
           field="breed"
-          value={breed ?? ""}
+          value={breed}
           onChange={(v) => setField("breed", v)}
-          placeholder="e.g. Labrador / Persian"
         />
       </div>
 
-      {/* Age / Gender */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label="Age"
-          field="age"
-          value={age ?? ""}
-          onChange={(v) => setField("age", v)}
-          placeholder="e.g. 2 years"
+          field="ageText"
+          value={ageText}
+          onChange={(v) => setField("ageText", v)}
         />
         <SelectField
           label="Gender"
           field="gender"
-          value={gender ?? ""}
+          value={gender}
           onChange={(v) => setField("gender", v)}
-          options={genderOptions}
+          options={[
+            { value: "male", label: "Male" },
+            { value: "female", label: "Female" },
+          ]}
         />
       </div>
 
-      {/* Vaccination / Adoption Fee */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SelectField
-          label="Vaccination Status"
+          label="Vaccination"
           field="vaccination"
-          value={vaccination ?? ""}
+          value={vaccination}
           onChange={(v) => setField("vaccination", v)}
-          options={vaccinationOptions}
+          options={[
+            { value: "vaccinated", label: "Vaccinated" },
+            { value: "partial", label: "Partially Vaccinated" },
+            { value: "not_vaccinated", label: "Not Vaccinated" },
+          ]}
         />
         <FormField
-          label="Adoption Fee (₹)"
-          field="salePrice"
-          type="number"
-          value={salePrice ?? ""}
-          onChange={(v) => setField("salePrice", v)}
-          placeholder="Enter fee or leave blank"
+          label="Size"
+          field="size"
+          value={size}
+          onChange={(v) => setField("size", v)}
+          placeholder="Small / Medium / Large"
         />
       </div>
 
-      {/* Description */}
+      <FormField
+        label="Adoption Fee (₹)"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+      />
+
       <FormField
         label="Additional Information"
         field="description"
         type="textarea"
-        value={description ?? ""}
+        value={description}
         onChange={(v) => setField("description", v)}
-        placeholder="Behavior, health, special needs, etc."
       />
 
-      {/* Location (works with your global map picker; this is a simple fallback) */}
-      <FormField
-        label="Location"
-        field="location.address"
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
         value={location?.address ?? ""}
-        onChange={(v) =>
-          setField("location", { ...(location || {}), address: v })
-        }
-        placeholder="City, State"
-        required
+        onChange={(e) => setLoc(e.target.value)}
       />
 
-      {/* Contact Details (nested sellerInfo) */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="sellerInfo.name"
-            value={sellerInfo?.name ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, name: v })}
-            placeholder="Owner / Foster Name"
-            required
-          />
-          <FormField
-            label="Email"
-            field="sellerInfo.email"
-            type="email"
-            value={sellerInfo?.email ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, email: v })}
-            placeholder="Email address"
-          />
-          <FormField
-            label="Phone"
-            field="sellerInfo.phone"
-            type="tel"
-            value={sellerInfo?.phone ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, phone: v })}
-            placeholder="Phone number"
-            required
-          />
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
+          required
+        />
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
+        />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          type="tel"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
+        />
       </div>
 
-      {/* Images: rely on your shared uploader elsewhere that writes to `images` */}
-      {/* If you need a quick input here, add a component that sets `images` in the store. */}
-    </div>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

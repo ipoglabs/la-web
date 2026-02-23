@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+
+import React, { useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 interface PostFooterProps {
@@ -10,8 +11,8 @@ interface PostFooterProps {
   nextLabel?: string;
   submitLabel?: string;
 
-  steps?: string[];      // defaults below
-  basePath?: string;     // defaults to "/post"
+  steps?: string[];
+  basePath?: string;
 
   onBack?: () => void;
   onNext?: () => void;
@@ -19,6 +20,8 @@ interface PostFooterProps {
   onSubmit?: () => void;
 
   isNextDisabled?: boolean;
+
+  showProgress?: boolean; // NEW
 }
 
 const REAL_STEPS = [
@@ -47,6 +50,7 @@ export default function PostFooter(props: PostFooterProps) {
     onSubmit,
 
     isNextDisabled = false,
+    showProgress = true,
   } = props;
 
   const router = useRouter();
@@ -57,25 +61,19 @@ export default function PostFooter(props: PostFooterProps) {
   const mutedBtn = `${baseBtn} bg-slate-200/80 text-foreground hover:bg-slate-300/80`;
   const darkBtn = `${baseBtn} bg-slate-950 text-white hover:bg-slate-800`;
 
-  // --- Robust current step detection: get the FIRST segment after basePath
-  // e.g. pathname = "/post/upload-photo" -> relative = "/upload-photo" -> segment = "upload-photo"
-  const normalize = (p: string) => (p.endsWith("/") ? p.slice(0, -1) : p);
-  const normBase = normalize(basePath);
-  const normPath = normalize(pathname);
+  // Robust step detection
+  const currentStepIndex = useMemo(() => {
+    const segments = pathname.split("/").filter(Boolean);
+    const postIndex = segments.indexOf("post");
 
-  let currentSegment = "";
-  if (normPath === normBase) {
-    currentSegment = ""; // you're at /post
-  } else if (normPath.startsWith(normBase + "/")) {
-    const relative = normPath.slice((normBase + "/").length); // "upload-photo/xyz" or "upload-photo"
-    currentSegment = relative.split("/")[0] || "";
-  }
+    if (postIndex === -1) return -1;
 
-  const currentStep = steps.indexOf(currentSegment);
-  const firstStep = steps[0];
-  const lastStepIndex = steps.length - 1;
+    const step = segments[postIndex + 1] || "";
+    return steps.indexOf(step);
+  }, [pathname, steps]);
 
-  /** LEFT: Cancel or Back */
+  const totalSteps = steps.length;
+
   const handleLeftBtnClick = () => {
     if (showCancel) {
       if (onCancel) return onCancel();
@@ -86,64 +84,82 @@ export default function PostFooter(props: PostFooterProps) {
     if (showBack) {
       if (onBack) return onBack();
 
-      if (currentStep === -1) {
+      if (currentStepIndex > 0) {
+        router.push(`${basePath}/${steps[currentStepIndex - 1]}`);
+      } else {
         router.push(basePath);
-        return;
       }
-      if (currentStep > 0) {
-        router.push(`${basePath}/${steps[currentStep - 1]}`);
-        return;
-      }
-      // at first step -> go base
-      router.push(basePath);
     }
   };
 
-  /** RIGHT: Next or Submit */
   const handleRightBtnClick = () => {
     if (showSubmit) {
       if (onSubmit) return onSubmit();
-      // default submit target (adjust if you have a real publish route)
-      router.push(`${basePath}/congratulations`);
+      router.push(`${basePath}/congratulation`);
       return;
     }
 
     if (showNext) {
       if (onNext) return onNext();
 
-      if (currentStep === -1) {
-        // not on any step -> start at first
-        router.push(`${basePath}/${firstStep}`);
-        return;
-      }
-      if (currentStep < lastStepIndex) {
-        router.push(`${basePath}/${steps[currentStep + 1]}`);
+      if (currentStepIndex < totalSteps - 1) {
+        router.push(`${basePath}/${steps[currentStepIndex + 1]}`);
       }
     }
   };
 
-  return (
-    <footer className="rounded-full w-full px-4 py-4 bg-background border border-gray-100 flex items-center justify-between shadow-sm">
-      <div className="flex-1 flex justify-start">
-        {(showCancel || showBack) && (
-          <button type="button" onClick={handleLeftBtnClick} className={mutedBtn}>
-            {showCancel ? "Cancel" : "Back"}
-          </button>
-        )}
-      </div>
+  const progressPercent =
+    currentStepIndex >= 0
+      ? ((currentStepIndex + 1) / totalSteps) * 100
+      : 0;
 
-      <div className="flex-1 flex justify-end">
-        {(showSubmit || showNext) && (
-          <button
-            type="button"
-            onClick={handleRightBtnClick}
-            className={darkBtn}
-            disabled={showNext && isNextDisabled}
-          >
-            {showSubmit ? submitLabel : nextLabel}
-          </button>
-        )}
-      </div>
-    </footer>
+  return (
+    <div className="w-full">
+      {showProgress && currentStepIndex >= 0 && (
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-gray-500 mb-1">
+            <span>
+              Step {currentStepIndex + 1} / {totalSteps}
+            </span>
+            <span className="capitalize">
+              {steps[currentStepIndex]?.replace("-", " ")}
+            </span>
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-slate-950 transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <footer className="rounded-full w-full px-4 py-4 bg-background border border-gray-100 flex items-center justify-between shadow-sm">
+        <div className="flex-1 flex justify-start">
+          {(showCancel || showBack) && (
+            <button
+              type="button"
+              onClick={handleLeftBtnClick}
+              className={mutedBtn}
+            >
+              {showCancel ? "Cancel" : "Back"}
+            </button>
+          )}
+        </div>
+
+        <div className="flex-1 flex justify-end">
+          {(showSubmit || showNext) && (
+            <button
+              type="button"
+              onClick={handleRightBtnClick}
+              className={darkBtn}
+              disabled={showNext && isNextDisabled}
+            >
+              {showSubmit ? submitLabel : nextLabel}
+            </button>
+          )}
+        </div>
+      </footer>
+    </div>
   );
 }

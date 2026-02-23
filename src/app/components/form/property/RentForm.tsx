@@ -1,194 +1,259 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useMemo, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
-import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
+import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
+import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
+import { toast } from "sonner";
+
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
+const PROPERTY_TYPES = [
+  { value: "Apartment", label: "Apartment" },
+  { value: "IndependentHouse", label: "Independent House" },
+  { value: "Villa", label: "Villa" },
+  { value: "Studio", label: "Studio" },
+  { value: "Other", label: "Other" },
+];
+
+const FURNISHING = [
+  { value: "Furnished", label: "Furnished" },
+  { value: "Semi-furnished", label: "Semi-furnished" },
+  { value: "Unfurnished", label: "Unfurnished" },
+];
 
 export default function RentPropertyForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const setField = usePostFormStore((s) => s.setField);
-  // ✅ pull sellerInfo from the store
-  const sellerInfo = usePostFormStore((s) => s.sellerInfo) || {
-    name: "",
-    email: "",
-    phone: "",
+
+  const name = usePostFormStore((s) => s.name) ?? "";
+  const description = usePostFormStore((s) => s.description) ?? "";
+
+  const rentPrice = usePostFormStore((s) => (s as any).rentPrice) ?? "";
+  const deposit = usePostFormStore((s) => (s as any).deposit) ?? "";
+  const maintenance = usePostFormStore((s) => (s as any).maintenance) ?? "";
+
+  const beds = usePostFormStore((s) => (s as any).beds) ?? "";
+  const baths = usePostFormStore((s) => (s as any).baths) ?? "";
+
+  const furnishing = usePostFormStore((s) => (s as any).furnishing) ?? "";
+  const propertyType = usePostFormStore((s) => (s as any).propertyType) ?? "";
+
+  const leaseTerm = usePostFormStore((s) => (s as any).leaseTerm) ?? "";
+  const available_from = usePostFormStore((s) => (s as any).available_from) ?? "";
+
+  const amenities =
+    (usePostFormStore((s) => (s as any).amenities) as string[]) ?? [];
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const amenityOptions = useMemo(
+    () => [
+      "Parking",
+      "Lift",
+      "Power Backup",
+      "Gym",
+      "Swimming Pool",
+      "Garden",
+      "Security",
+      "Water Supply",
+      "Club House",
+      "Balcony",
+    ],
+    []
+  );
+
+  const isPositive = (v: unknown) => {
+    if (v === null || v === undefined || v === "") return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
   };
 
-  // If you want to auto-set category/subcategory, do it here (optional):
-  // useEffect(() => {
-  //   setField("category", "Property");
-  //   setField("subcategory", "To Rent");
-  // }, [setField]);
+  const isNonNegative = (v: unknown) => {
+    if (v === null || v === undefined || v === "") return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
 
-  const amenityOptions = [
-    "Parking",
-    "Lift",
-    "Power Backup",
-    "Gym",
-    "Swimming Pool",
-    "Garden",
-    "Security",
-    "Water Supply",
-    "Club House",
-    "Balcony",
-  ];
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+    window.dispatchEvent(
+      new CustomEvent("rentpropertyform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${first}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const title = name.trim();
+    const desc = description.trim();
+
+    const mapped: Record<string, string> = {};
+
+    if (!title) mapped.name = "Please enter a listing title.";
+    if (!desc) mapped.description = "Please add description.";
+    if (!propertyType) mapped.propertyType = "Select property type.";
+    if (!isPositive(rentPrice))
+      mapped.rentPrice = "Rent must be greater than 0.";
+
+    if (deposit && !isNonNegative(deposit))
+      mapped.deposit = "Deposit must be 0 or more.";
+
+    if (maintenance && !isNonNegative(maintenance))
+      mapped.maintenance = "Maintenance must be 0 or more.";
+
+    if (beds && !isPositive(beds))
+      mapped.beds = "Beds must be greater than 0.";
+
+    if (baths && !isPositive(baths))
+      mapped.baths = "Baths must be greater than 0.";
+
+    if (leaseTerm && !isPositive(leaseTerm))
+      mapped.leaseTerm = "Lease term must be greater than 0.";
+
+    if (Object.keys(mapped).length > 0) {
+      setErrors(mapped);
+      scrollToFirstError(mapped);
+      toast.error("Please fix the highlighted fields.");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", title);
+    setField("description", desc);
+
+    setErrors({});
+    dispatchValidated(true);
+  };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-center">Post a Rental Property</h2>
+    <form
+      id="rentPropertyForm"
+      data-post-form="true"
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="w-full max-w-xl space-y-6"
+    >
+      {/* Title */}
+      <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name}>
+        <Input
+          id="name"
+          name="name"
+          value={name}
+          onChange={(e) => setField("name", e.target.value)}
+          className={cx(errors.name && "border-red-500")}
+        />
+      </FormFieldContainer>
+
+      {/* Description */}
+      <FormFieldContainer label="Description" htmlFor="description" error={errors.description}>
+        <Textarea
+          id="description"
+          name="description"
+          value={description}
+          onChange={(e) => setField("description", e.target.value)}
+        />
+      </FormFieldContainer>
 
       {/* Property Type */}
-      <SelectField
-        label="Property Type"
-        field="propertyType"
-        options={[
-          { value: "Apartment" },
-          { value: "IndependentHouse", label: "Independent House" },
-          { value: "Villa" },
-          { value: "House" },
-          { value: "Studio" },
-          { value: "Other" },
-        ]}
-        required
-      />
+      <FormFieldContainer label="Property Type" htmlFor="propertyType" error={errors.propertyType}>
+        <select
+          id="propertyType"
+          name="propertyType"
+          value={propertyType}
+          onChange={(e) => setField("propertyType", e.target.value)}
+          className="w-full border px-3 py-2 rounded"
+        >
+          <option value="">Select</option>
+          {PROPERTY_TYPES.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </FormFieldContainer>
 
-      {/* Title & Description */}
-      <FormField
-        label="Listing Title"
-        field="name"
-        placeholder="e.g. Spacious 2BHK for rent in Anna Nagar"
-        required
-      />
-      <FormField
-        label="Description"
-        field="description"
-        type="textarea"
-        placeholder="Describe the property, highlights, nearby amenities…"
-      />
+      {/* Rent */}
+      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FormFieldContainer label="Rent (₹)" htmlFor="rentPrice" error={errors.rentPrice}>
+          <Input
+            id="rentPrice"
+            name="rentPrice"
+            type="number"
+            value={rentPrice as any}
+            onChange={(e) => setField("rentPrice", e.target.value)}
+          />
+        </FormFieldContainer>
 
-      {/* Rent / Deposit */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Monthly Rent (₹)"
-          field="rentPrice"
-          type="number"
-          placeholder="15000"
-          required
-        />
-        <FormField
-          label="Deposit / Advance (₹)"
-          field="deposit"
-          type="number"
-          placeholder="50000"
-        />
-      </div>
+        <FormFieldContainer label="Deposit" htmlFor="deposit">
+          <Input
+            id="deposit"
+            name="deposit"
+            type="number"
+            value={deposit as any}
+            onChange={(e) => setField("deposit", e.target.value)}
+          />
+        </FormFieldContainer>
 
-      {/* Beds / Baths */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Bedrooms" field="beds" type="number" placeholder="2" />
-        <FormField label="Bathrooms" field="baths" type="number" placeholder="2" />
-      </div>
+        <FormFieldContainer label="Maintenance" htmlFor="maintenance">
+          <Input
+            id="maintenance"
+            name="maintenance"
+            type="number"
+            value={maintenance as any}
+            onChange={(e) => setField("maintenance", e.target.value)}
+          />
+        </FormFieldContainer>
+      </FormFieldWrapper>
 
-      {/* Furnishing / Lease Term / Available From */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SelectField
-          label="Furnishing"
-          field="furnishing"
-          options={[
-            { value: "Furnished" },
-            { value: "Semi-furnished", label: "Semi-furnished" },
-            { value: "Unfurnished" },
-          ]}
-        />
-        <FormField
-          label="Lease Term (months)"
-          field="leaseTerm"
-          type="number"
-          placeholder="11"
-        />
-        <FormField label="Available From" field="available_from" type="date" />
-      </div>
+      {/* Beds/Baths */}
+      <FormFieldWrapper className="grid grid-cols-2 gap-4">
+        <FormFieldContainer label="Beds" htmlFor="beds">
+          <Input
+            id="beds"
+            name="beds"
+            type="number"
+            value={beds as any}
+            onChange={(e) => setField("beds", e.target.value)}
+          />
+        </FormFieldContainer>
 
-      {/* (Optional) Occupancy / Gender Preference */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SelectField
-          label="Occupancy"
-          field="occupancy"
-          options={[
-            { value: "Any" },
-            { value: "Family" },
-            { value: "Bachelors" },
-            { value: "Company Lease" },
-          ]}
-        />
-        <SelectField
-          label="Gender Preference"
-          field="gender_pref"
-          options={[{ value: "Any" }, { value: "Male" }, { value: "Female" }]}
-        />
-      </div>
+        <FormFieldContainer label="Baths" htmlFor="baths">
+          <Input
+            id="baths"
+            name="baths"
+            type="number"
+            value={baths as any}
+            onChange={(e) => setField("baths", e.target.value)}
+          />
+        </FormFieldContainer>
+      </FormFieldWrapper>
 
-      {/* Amenities (array) */}
-      <CheckboxGroupField
-        label="Amenities"
-        field="amenities"
-        options={amenityOptions}
-        cols={3}
-      />
+      {/* Amenities */}
+      <FormFieldContainer label="Amenities">
+        <CheckboxGroupField field="amenities" options={amenityOptions} cols={3} />
+      </FormFieldContainer>
 
-      {/* ✅ Contact Details (writes a single sellerInfo object in the store) */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Details</h3>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Contact Name</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              placeholder="Host/Owner Name"
-              value={sellerInfo.name || ""}
-              onChange={(e) =>
-                setField("sellerInfo", { ...sellerInfo, name: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              type="email"
-              placeholder="Email address"
-              value={sellerInfo.email || ""}
-              onChange={(e) =>
-                setField("sellerInfo", { ...sellerInfo, email: e.target.value })
-              }
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Phone</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              type="tel"
-              placeholder="Phone number"
-              value={sellerInfo.phone || ""}
-              onChange={(e) =>
-                setField("sellerInfo", { ...sellerInfo, phone: e.target.value })
-              }
-              required
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Location input is handled globally via your picker (location.address/lat/lng).
-          If you want a simple manual address field, you can add:
-      <FormField label="Address" field="location.address" placeholder="City, Area, Pincode" />
-      */}
-    </div>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

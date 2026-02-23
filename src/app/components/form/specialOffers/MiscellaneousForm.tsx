@@ -1,150 +1,220 @@
 "use client";
 
-import { useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function MiscellaneousForm() {
-  const { formData, updateFormData } = usePostFormStore();
+  const formRef = useRef<HTMLFormElement | null>(null);
 
-  // Set default category & subcategory
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
+
+  const category = store.category;
+  const subcategory = store.subcategory;
+
+  const name = store.name ?? "";
+  const condition = store.condition ?? "";
+  const brand = store.brand ?? "";
+  const model = store.model ?? "";
+  const usageDuration = store.usageDuration ?? "";
+  const age = store.age ?? "";
+  const exchangeOption = store.exchangeOption ?? "";
+  const price = store.price ?? store.salePrice ?? "";
+  const deliveryOption = store.deliveryOption ?? "";
+  const mediaUrl = store.mediaUrl ?? "";
+  const description = store.description ?? "";
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    if (!formData.category) updateFormData("category", "For Sale");
-    if (!formData.subcategory) updateFormData("subcategory", "Miscellaneous");
-  }, [formData, updateFormData]);
+    if (!category) setField("category", "For Sale");
+    if (!subcategory) setField("subcategory", "Miscellaneous");
+  }, [category, subcategory, setField]);
 
-  // Helpers for nested objects (only needed when you want custom logic)
-  const handleSellerInfoChange = (key: string, value?: string | number) => {
-    updateFormData("sellerInfo", { ...formData.sellerInfo, [key]: value ?? "" });
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
   };
-  const handleLocationChange = (key: string, value?: string | number) => {
-    updateFormData("location", { ...formData.location, [key]: value ?? "" });
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    setField("sellerInfo", { ...sellerInfo, [k]: v ?? "" });
+  };
+
+  const setLoc = (k: "city" | "state" | "zipcode", v?: string) => {
+    setField("location", { ...location, [k]: v ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Title required";
+    if (!condition) mapped.condition = "Condition required";
+    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!description.trim()) mapped.description = "Description required";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
   };
 
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Miscellaneous</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Miscellaneous</h2>
 
-        <div className="space-y-4">
-          {/* Category (readonly) */}
-          <FormField label="Category" field="category" value="For Sale" disabled />
+      <FormField
+        label="Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-          {/* Subcategory (readonly) */}
-          <FormField label="Subcategory" field="subcategory" value="Miscellaneous" disabled />
+      <SelectField
+        label="Condition"
+        field="condition"
+        value={condition}
+        onChange={(v) => setField("condition", v)}
+        options={[
+          { value: "new", label: "New" },
+          { value: "used", label: "Used" },
+          { value: "refurbished", label: "Refurbished" },
+        ]}
+        required
+      />
 
-          {/* Title -> store as "name" for backend consistency */}
-          <FormField label="Title" field="name" placeholder="Listing Title" required />
+      <FormField label="Brand" field="brand" value={brand} onChange={(v) => setField("brand", v)} />
+      <FormField label="Model" field="model" value={model} onChange={(v) => setField("model", v)} />
+      <FormField label="Usage Duration" field="usageDuration" value={usageDuration} onChange={(v) => setField("usageDuration", v)} />
+      <FormField label="Age" field="age" value={age} onChange={(v) => setField("age", v)} />
 
-          {/* Condition */}
-          <SelectField
-            label="Condition"
-            field="condition"
-            options={[
-              { value: "new", label: "New" },
-              { value: "used", label: "Used" },
-              { value: "refurbished", label: "Refurbished" },
-            ]}
-          />
+      <SelectField
+        label="Exchange Option"
+        field="exchangeOption"
+        value={exchangeOption}
+        onChange={(v) => setField("exchangeOption", v)}
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ]}
+      />
 
-          {/* Brand / Model / Usage / Age */}
-          <FormField label="Brand (if applicable)" field="brand" placeholder="e.g. Philips, Sony" />
-          <FormField label="Model" field="model" placeholder="Model name or number" />
-          <FormField label="Usage Duration (if used)" field="usageDuration" placeholder="e.g. 6 months, 2 years" />
-          <FormField label="Age of Item" field="age" placeholder="e.g. 1 year old" />
+      <FormField
+        label="Price"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
 
-          {/* Exchange Option */}
-          <SelectField
-            label="Exchange/Trade Option"
-            field="exchangeOption"
-            options={[
-              { value: "yes", label: "Yes" },
-              { value: "no", label: "No" },
-            ]}
-          />
+      <SelectField
+        label="Delivery Option"
+        field="deliveryOption"
+        value={deliveryOption}
+        onChange={(v) => setField("deliveryOption", v)}
+        options={[
+          { value: "pickup", label: "Pickup Only" },
+          { value: "delivery", label: "Delivery Available" },
+          { value: "both", label: "Pickup & Delivery" },
+        ]}
+      />
 
-          {/* Price */}
-          <FormField label="Price" field="price" type="number" placeholder="e.g. ₹5,000" />
+      <FormField label="Media URL" field="mediaUrl" value={mediaUrl} onChange={(v) => setField("mediaUrl", v)} />
 
-          {/* Delivery Option */}
-          <SelectField
-            label="Delivery / Pickup Option"
-            field="deliveryOption"
-            options={[
-              { value: "pickup", label: "Pickup Only" },
-              { value: "delivery", label: "Delivery Available" },
-              { value: "both", label: "Pickup & Delivery" },
-            ]}
-          />
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+        required
+      />
 
-          {/* Media URL (optional) */}
-          <FormField label="Image / Media URL" field="mediaUrl" placeholder="https://example.com/item-image.jpg" />
+      {/* Location */}
+      {/* <h3 className="text-lg font-semibold">Location</h3>
+      <FormField label="City" field="city" value={location?.city ?? ""} onChange={(v) => setLoc("city", v as string)} />
+      <FormField label="State" field="state" value={location?.state ?? ""} onChange={(v) => setLoc("state", v as string)} />
+      <FormField label="Zipcode" field="zipcode" value={location?.zipcode ?? ""} onChange={(v) => setLoc("zipcode", v as string)} /> */}
 
-          {/* Description */}
-          <FormField
-            label="Description"
-            field="description"
-            type="textarea"
-            placeholder="Provide details about the item or service"
-            required
-          />
+      {/* Seller Info */}
+      {/* <h3 className="text-lg font-semibold">Seller Information</h3>
+      <FormField
+        label="Name"
+        field="sellerName"
+        value={sellerInfo?.name ?? ""}
+        onChange={(v) => setSeller("name", v as string)}
+        required
+      />
+      <FormField
+        label="Email"
+        field="sellerEmail"
+        type="email"
+        value={sellerInfo?.email ?? ""}
+        onChange={(v) => setSeller("email", v as string)}
+      />
+      <FormField
+        label="Phone"
+        field="sellerPhone"
+        type="tel"
+        value={sellerInfo?.phone ?? ""}
+        onChange={(v) => setSeller("phone", v as string)}
+        required
+      /> */}
 
-          {/* Location */}
-          <h3 className="text-lg font-semibold mt-6 mb-2">Location</h3>
-          <FormField
-            label="City"
-            field="location.city"
-            value={formData.location?.city ?? ""}
-            onChange={(val) => handleLocationChange("city", val as string)}
-            placeholder="Enter City"
-          />
-          <FormField
-            label="State"
-            field="location.state"
-            value={formData.location?.state ?? ""}
-            onChange={(val) => handleLocationChange("state", val as string)}
-            placeholder="Enter State"
-          />
-          <FormField
-            label="Zipcode"
-            field="location.zipcode"
-            value={formData.location?.zipcode ?? ""}
-            onChange={(val) => handleLocationChange("zipcode", val as string)}
-            placeholder="Enter Zipcode"
-          />
-
-          {/* Seller Info */}
-          <h3 className="text-lg font-semibold mt-6 mb-2">Seller Information</h3>
-          <FormField
-            label="Name"
-            field="sellerInfo.name"
-            value={formData.sellerInfo?.name ?? ""}
-            onChange={(val) => handleSellerInfoChange("name", val as string)}
-            placeholder="Contact Person"
-            required
-          />
-          <FormField
-            label="Email"
-            field="sellerInfo.email"
-            type="email"
-            value={formData.sellerInfo?.email ?? ""}
-            onChange={(val) => handleSellerInfoChange("email", val as string)}
-            placeholder="Email Address"
-            required
-          />
-          <FormField
-            label="Phone"
-            field="sellerInfo.phone"
-            type="tel"
-            value={formData.sellerInfo?.phone ?? ""}
-            onChange={(val) => handleSellerInfoChange("phone", val as string)}
-            placeholder="Phone Number"
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

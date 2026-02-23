@@ -1,25 +1,64 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
+import { toast } from "sonner";
 
 export default function MotorcycleSaleForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const setField = usePostFormStore((s) => s.setField);
-  const sellerInfo = usePostFormStore((s) => s.sellerInfo) || {};
 
-  // If you want to auto-set category/subcategory for this page, uncomment:
-  // useEffect(() => {
-  //   setField("category", "Vehicles");
-  //   setField("subcategory", "Motorcycle");
-  // }, [setField]);
+  // ✅ Store values
+  const name = usePostFormStore((s) => s.name) ?? "";
+  const description = usePostFormStore((s) => s.description) ?? "";
 
-  // Optional features as a comma-list -> array
-  const featuresStore = usePostFormStore((s) => s.features);
+  const make = usePostFormStore((s) => (s as any).make) ?? "";
+  const model = usePostFormStore((s) => (s as any).model) ?? "";
+  const year = usePostFormStore((s) => (s as any).year) ?? "";
+  const kms = usePostFormStore((s) => (s as any).kms) ?? "";
+  const engineCapacity = usePostFormStore((s) => (s as any).engineCapacity) ?? "";
+  const fuelType = usePostFormStore((s) => (s as any).fuelType) ?? "";
+  const transmission = usePostFormStore((s) => (s as any).transmission) ?? "";
+  const condition = usePostFormStore((s) => (s as any).condition) ?? "";
+  const ownerType = usePostFormStore((s) => (s as any).ownerType) ?? "";
+  const registrationNumber = usePostFormStore((s) => (s as any).registrationNumber) ?? "";
+  const insuranceValidTill = usePostFormStore((s) => (s as any).insuranceValidTill) ?? "";
+  const serviceHistory = usePostFormStore((s) => (s as any).serviceHistory) ?? "";
+  const color = usePostFormStore((s) => (s as any).color) ?? "";
+  const salePrice = usePostFormStore((s) => (s as any).salePrice) ?? "";
+
+  const featuresStore = usePostFormStore((s) => (s as any).features) ?? [];
+
   const [featuresText, setFeaturesText] = useState(
     Array.isArray(featuresStore) ? featuresStore.join(", ") : ""
   );
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isPositive = (v: unknown) => {
+    if (v === null || v === undefined || v === "") return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
   const commitFeatures = () => {
     const arr = featuresText
       .split(",")
@@ -28,186 +67,199 @@ export default function MotorcycleSaleForm() {
     setField("features", arr);
   };
 
+  // ✅ keep salePrice and legacy price in sync (same as Car form)
+  const handlePrice = (v: string) => {
+    setField("salePrice", v);
+    setField("price", v); // <-- IMPORTANT for preview/legacy compatibility
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Title is required";
+    if (!make) mapped.make = "Make is required";
+    if (!model) mapped.model = "Model is required";
+    if (!isPositive(year)) mapped.year = "Valid year required";
+    if (!isPositive(salePrice)) mapped.salePrice = "Price must be > 0";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // ✅ persist cleaned values
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    // ensure features stored as array
+    commitFeatures();
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
   return (
-    <div className="space-y-6">
+    <form
+      id="motorcycleForm"
+      data-post-form="true"
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="space-y-6 w-full max-w-xl"
+    >
       <h2 className="text-2xl font-semibold text-center">Motorcycle for Sale</h2>
 
-      {/* Title / Description */}
+      {/* Title */}
       <FormField
         label="Ad Title"
         field="name"
-        placeholder="e.g. Yamaha R15 V4 for Sale"
+        value={name}
+        onChange={(v) => setField("name", v)}
         required
       />
+
       <FormField
         label="Description"
         field="description"
         type="textarea"
-        placeholder="Provide additional details about the motorcycle"
+        value={description}
+        onChange={(v) => setField("description", v)}
       />
 
       {/* Make / Model */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Make" field="make" placeholder="e.g. Yamaha" required />
-        <FormField label="Model" field="model" placeholder="e.g. R15 V4" required />
-      </div>
-
-      {/* Year / Mileage (kms) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField label="Year" field="year" type="number" placeholder="e.g. 2022" required />
+      <div className="grid grid-cols-2 gap-4">
         <FormField
-          label="Mileage (km)"
-          field="kms"
-          type="number"
-          placeholder="e.g. 15000"
+          label="Make"
+          field="make"
+          value={make}
+          onChange={(v) => setField("make", v)}
+          required
+        />
+        <FormField
+          label="Model"
+          field="model"
+          value={model}
+          onChange={(v) => setField("model", v)}
+          required
         />
       </div>
 
-      {/* Engine Capacity */}
+      {/* Year / KMs */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          label="Year"
+          field="year"
+          type="number"
+          value={year}
+          onChange={(v) => setField("year", v)}
+          required
+        />
+        <FormField
+          label="KMs Driven"
+          field="kms"
+          type="number"
+          value={kms}
+          onChange={(v) => setField("kms", v)}
+        />
+      </div>
+
+      {/* Engine */}
       <FormField
         label="Engine Capacity (cc)"
         field="engineCapacity"
         type="number"
-        placeholder="e.g. 155"
+        value={engineCapacity}
+        onChange={(v) => setField("engineCapacity", v)}
       />
 
       {/* Fuel / Transmission */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <SelectField
           label="Fuel Type"
           field="fuelType"
-          options={[
-            { value: "Petrol" },
-            { value: "Electric" },
-          ]}
+          options={[{ value: "Petrol" }, { value: "Electric" }]}
         />
         <SelectField
           label="Transmission"
           field="transmission"
-          options={[
-            { value: "Manual" },
-            { value: "Automatic" },
-          ]}
+          options={[{ value: "Manual" }, { value: "Automatic" }]}
         />
       </div>
 
-      {/* Condition / Owner Type */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Condition / Owner */}
+      <div className="grid grid-cols-2 gap-4">
         <SelectField
           label="Condition"
           field="condition"
-          options={[
-            { value: "New" },
-            { value: "Used" },
-          ]}
+          options={[{ value: "New" }, { value: "Used" }]}
         />
         <SelectField
-          label="Ownership"
+          label="Owner Type"
           field="ownerType"
-          options={[
-            { value: "First Owner" },
-            { value: "Second Owner" },
-            { value: "Third Owner" },
-            { value: "Other" },
-          ]}
+          options={[{ value: "First Owner" }, { value: "Second Owner" }]}
         />
       </div>
 
-      {/* Optional registration / insurance / service history */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Registration */}
+      <div className="grid grid-cols-2 gap-4">
         <FormField
           label="Registration Number"
           field="registrationNumber"
-          placeholder="e.g. TN-01-AB-1234"
+          value={registrationNumber}
+          onChange={(v) => setField("registrationNumber", v)}
         />
         <FormField
           label="Insurance Valid Till"
           field="insuranceValidTill"
           type="date"
+          value={insuranceValidTill}
+          onChange={(v) => setField("insuranceValidTill", v)}
         />
       </div>
+
       <FormField
         label="Service History"
         field="serviceHistory"
-        placeholder="Full / Partial / None"
+        value={serviceHistory}
+        onChange={(v) => setField("serviceHistory", v)}
       />
 
-      {/* Price & (optional) Color */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FormField
-          label="Price (₹)"
-          field="salePrice"            // ← stored as salePrice in your model
-          type="number"
-          placeholder="e.g. 150000"
-          required
-        />
-        <FormField label="Color" field="color" placeholder="e.g. Blue" />
-      </div>
+      {/* Price */}
+      <FormField
+        label="Price (₹)"
+        field="salePrice"
+        type="number"
+        value={salePrice}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
 
-      {/* Optional Features */}
-      <div className="space-y-1">
-        <label className="text-sm font-medium">Features (optional)</label>
+      <FormField
+        label="Color"
+        field="color"
+        value={color}
+        onChange={(v) => setField("color", v)}
+      />
+
+      {/* Features */}
+      <div>
+        <label className="text-sm font-medium">Features</label>
         <input
+          name="featuresText"
           className="w-full border rounded px-3 py-2"
-          placeholder="e.g. ABS, Slipper Clutch, LED Headlamps"
           value={featuresText}
           onChange={(e) => setFeaturesText(e.target.value)}
           onBlur={commitFeatures}
+          placeholder="ABS, LED lights, Bluetooth"
         />
-        <p className="text-xs text-gray-500">
-          Tip: comma-separate features; they’ll be saved as a list.
-        </p>
       </div>
 
-      {/* Contact (writes into nested sellerInfo) */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Name</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              placeholder="Your Name"
-              value={sellerInfo?.name || ""}
-              onChange={(e) =>
-                setField("sellerInfo", { ...sellerInfo, name: e.target.value })
-              }
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Phone</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              type="tel"
-              placeholder="+91 9XXXXXXXXX"
-              value={sellerInfo?.phone || ""}
-              onChange={(e) =>
-                setField("sellerInfo", { ...sellerInfo, phone: e.target.value })
-              }
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              className="w-full border rounded px-3 py-2"
-              type="email"
-              placeholder="email@example.com"
-              value={sellerInfo?.email || ""}
-              onChange={(e) =>
-                setField("sellerInfo", { ...sellerInfo, email: e.target.value })
-              }
-              required
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Location:
-          Your global location picker writes to location.address/lat/lng.
-          Optionally add a manual fallback address field like below. */}
-      {/* <FormField label="Location" field="location.address" placeholder="City / State" /> */}
-    </div>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

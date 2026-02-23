@@ -1,75 +1,212 @@
-// src/app/components/form/pets/PetWantedForm.tsx
+// src/app/components/form/pets/WantedForm.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
+import { toast } from "sonner";
 
 export default function PetWantedForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // core controlled values
-  const category     = usePostFormStore((s) => s.category);
-  const subcategory  = usePostFormStore((s) => s.subcategory);
-  const name         = usePostFormStore((s) => s.name);
-  const description  = usePostFormStore((s) => s.description);
-  const budgetAmount = usePostFormStore((s) => (s as any).budgetAmount);
-  const location     = usePostFormStore((s) => s.location);
-  const sellerInfo   = usePostFormStore((s) => s.sellerInfo);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // wanted-specific fields
-  const wantedPetType     = usePostFormStore((s) => (s as any).wantedPetType);
-  const breedPreference   = usePostFormStore((s) => (s as any).breedPreference);
-  const agePreference     = usePostFormStore((s) => (s as any).agePreference);
-  const genderPreference  = usePostFormStore((s) => (s as any).genderPreference);
-  const sizePreference    = usePostFormStore((s) => (s as any).sizePreference);
-  const preferredLocations= usePostFormStore((s) => (s as any).preferred_locations);
+  const name = store.name ?? "";
+  const description = store.description ?? "";
 
-  // preset cat/subcat once
+  const wantedPetType = (store as any).wantedPetType ?? "";
+  const breedPreference = (store as any).breedPreference ?? "";
+  const agePreference = (store as any).agePreference ?? "";
+  const genderPreference = (store as any).genderPreference ?? "";
+  const sizePreference = (store as any).sizePreference ?? "";
+
+  const price =
+    (store as any).price ??
+    (store as any).budget ??
+    store.salePrice ??
+    "";
+
+  const preferredLocations =
+    (store as any).preferred_locations ?? [];
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] =
+    useState<Record<string, string>>({});
+
+  const [locationsText, setLocationsText] = useState(
+    Array.isArray(preferredLocations)
+      ? preferredLocations.join(", ")
+      : ""
+  );
+
+  // preset category/subcategory
   useEffect(() => {
     if (!category) setField("category", "Pets");
-    if (!subcategory) setField("subcategory", "Wanted");
+    if (!subcategory)
+      setField("subcategory", "Wanted");
   }, [category, subcategory, setField]);
 
-  // local text ↔ array for preferred_locations
-  const [locationsText, setLocationsText] = useState(
-    Array.isArray(preferredLocations) ? preferredLocations.join(", ") : ""
-  );
+  const isPositive = (v: unknown) => {
+    if (!v) return true; // optional
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", {
+        detail: { ok },
+      })
+    );
+  };
+
+  const scrollToFirstError = (
+    mapped: Record<string, string>
+  ) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
   const commitPreferredLocations = () => {
-    const arr = locationsText.split(",").map(s => s.trim()).filter(Boolean);
+    const arr = locationsText
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     setField("preferred_locations", arr);
   };
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-center">🐾 Pet Wanted</h2>
+  const setSeller = (
+    k: "name" | "email" | "phone",
+    v?: string
+  ) => {
+    const cur = sellerInfo || {};
+    setField("sellerInfo", {
+      ...cur,
+      [k]: v ?? "",
+    });
+  };
 
-      {/* Title / Description */}
+  const setLoc = (address?: string) => {
+    const cur = location || {};
+    setField("location", {
+      ...cur,
+      address: address ?? "",
+    });
+  };
+
+  const onSubmit = (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim())
+      mapped.name = "Title required";
+
+    if (!wantedPetType)
+      mapped.wantedPetType =
+        "Pet type required";
+
+    if (!isPositive(price))
+      mapped.price = "Invalid budget";
+
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName =
+        "Contact name required";
+
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone =
+        "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error(
+        "Please fix highlighted fields"
+      );
+      dispatchValidated(false);
+      return;
+    }
+
+    // persist cleaned values
+    setField("name", name.trim());
+    setField(
+      "description",
+      description.trim()
+    );
+
+    commitPreferredLocations();
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
+  return (
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto"
+    >
+      <h2 className="text-2xl font-semibold text-center">
+        Pet Wanted
+      </h2>
+
       <FormField
         label="Title"
         field="name"
-        value={name ?? ""}
-        onChange={(v) => setField("name", v)}
-        placeholder="e.g. Looking for a Labrador puppy"
+        value={name}
+        onChange={(v) =>
+          setField("name", v)
+        }
         required
       />
+
       <FormField
         label="Additional Information"
         field="description"
         type="textarea"
-        value={description ?? ""}
-        onChange={(v) => setField("description", v)}
-        placeholder="Temperament, apartment friendly, good with kids, etc."
+        value={description}
+        onChange={(v) =>
+          setField("description", v)
+        }
       />
 
-      {/* Wanted specifics */}
+      {/* Wanted Details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SelectField
           label="Type of Pet Wanted"
           field="wantedPetType"
-          value={wantedPetType ?? ""}
-          onChange={(v) => setField("wantedPetType", v)}
+          value={wantedPetType}
+          onChange={(v) =>
+            setField("wantedPetType", v)
+          }
           options={[
             { value: "dog", label: "Dog" },
             { value: "cat", label: "Cat" },
@@ -79,12 +216,14 @@ export default function PetWantedForm() {
           ]}
           required
         />
+
         <FormField
           label="Breed Preference"
           field="breedPreference"
-          value={breedPreference ?? ""}
-          onChange={(v) => setField("breedPreference", v)}
-          placeholder="e.g. Labrador, Persian, Indie"
+          value={breedPreference}
+          onChange={(v) =>
+            setField("breedPreference", v)
+          }
         />
       </div>
 
@@ -92,26 +231,39 @@ export default function PetWantedForm() {
         <FormField
           label="Preferred Age"
           field="agePreference"
-          value={agePreference ?? ""}
-          onChange={(v) => setField("agePreference", v)}
-          placeholder="Puppy/Kitten, 1–2 years, Senior"
+          value={agePreference}
+          onChange={(v) =>
+            setField("agePreference", v)
+          }
         />
+
         <SelectField
           label="Gender Preference"
           field="genderPreference"
-          value={genderPreference ?? ""}
-          onChange={(v) => setField("genderPreference", v)}
+          value={genderPreference}
+          onChange={(v) =>
+            setField(
+              "genderPreference",
+              v
+            )
+          }
           options={[
             { value: "male", label: "Male" },
             { value: "female", label: "Female" },
             { value: "any", label: "Any" },
           ]}
         />
+
         <SelectField
           label="Size Preference"
           field="sizePreference"
-          value={sizePreference ?? ""}
-          onChange={(v) => setField("sizePreference", v)}
+          value={sizePreference}
+          onChange={(v) =>
+            setField(
+              "sizePreference",
+              v
+            )
+          }
           options={[
             { value: "small", label: "Small" },
             { value: "medium", label: "Medium" },
@@ -121,72 +273,88 @@ export default function PetWantedForm() {
         />
       </div>
 
-      {/* Locations / Budget */}
+      {/* Locations & Budget */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <label className="text-sm font-medium">Preferred Locations</label>
+        <div>
+          <label className="text-sm font-medium">
+            Preferred Locations
+          </label>
           <input
             className="w-full border rounded px-3 py-2"
-            placeholder="Comma-separated: Anna Nagar, T Nagar"
+            placeholder="Comma separated"
             value={locationsText}
-            onChange={(e) => setLocationsText(e.target.value)}
-            onBlur={commitPreferredLocations}
+            onChange={(e) =>
+              setLocationsText(
+                e.target.value
+              )
+            }
+            onBlur={
+              commitPreferredLocations
+            }
           />
-          <p className="text-xs text-gray-500">Saved as a list for filtering.</p>
         </div>
+
         <FormField
-          label="Budget (₹, optional)"
-          field="budgetAmount"
+          label="Budget (₹)"
+          field="price"
           type="number"
-          value={budgetAmount ?? ""}
-          onChange={(v) => setField("budgetAmount", v)}
-          placeholder="Max budget"
+          value={price}
+          onChange={(v) =>
+            handlePrice(String(v))
+          }
         />
       </div>
 
-      {/* Location (single primary address to match your model) */}
-      <FormField
-        label="Primary Location"
-        field="location.address"
+      {/* Primary Location */}
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Primary Location"
         value={location?.address ?? ""}
-        onChange={(v) => setField("location", { ...(location || {}), address: v })}
-        placeholder="City / Area"
+        onChange={(e) =>
+          setLoc(e.target.value)
+        }
       />
 
-      {/* Contact Details */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="sellerInfo.name"
-            value={sellerInfo?.name ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, name: v })}
-            placeholder="Your Name"
-            required
-          />
-          <FormField
-            label="Phone"
-            field="sellerInfo.phone"
-            type="tel"
-            value={sellerInfo?.phone ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, phone: v })}
-            placeholder="+91 9XXXXXXXXX"
-            required
-          />
-          <FormField
-            label="Email"
-            field="sellerInfo.email"
-            type="email"
-            value={sellerInfo?.email ?? ""}
-            onChange={(v) => setField("sellerInfo", { ...sellerInfo, email: v })}
-            placeholder="you@example.com"
-            required
-          />
-        </div>
-      </div>
+      {/* Contact */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) =>
+            setSeller("name", e.target.value)
+          }
+          required
+        />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          type="tel"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) =>
+            setSeller("phone", e.target.value)
+          }
+          required
+        />
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) =>
+            setSeller("email", e.target.value)
+          }
+        />
+      </div> */}
 
-      {/* Images not required for Wanted posts; your shared uploader can still be used if desired */}
-    </div>
+      <button
+        type="submit"
+        className="sr-only"
+      />
+    </form>
   );
 }

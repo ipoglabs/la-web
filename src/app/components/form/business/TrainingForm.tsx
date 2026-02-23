@@ -1,57 +1,148 @@
-'use client';
+"use client";
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function TrainingOpportunitiesForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Set default category/subcategory
+  /* ---------------- DEFAULT CATEGORY ---------------- */
+
   React.useEffect(() => {
-    if (!store.category) setField("category", "Education / Training");
-    if (!store.subcategory) setField("subcategory", "Training Opportunities");
+    if (!store.category) setField("category", "Business");
+    if (!store.subcategory) setField("subcategory", "training");
   }, [store.category, store.subcategory, setField]);
+
+  /* ---------------- HELPERS ---------------- */
+
+  const setSeller = (key: "name" | "phone" | "email", value?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [key]: value ?? "" });
+  };
+
+  const setLocationAddress = (address?: string) => {
+    const cur = store.location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  /* ---------------- UI ---------------- */
 
   return (
     <Card className="max-w-3xl mx-auto mt-6 shadow-lg rounded-2xl">
       <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Training Opportunities</h2>
+        <h2 className="text-2xl font-bold">
+          Training Opportunity
+        </h2>
 
-        <FormField label="Training Title" field="title" required />
-        <SelectField
+        {/* Category / Subcategory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Category"
+            field="category"
+            placeholder="Business"
+            required
+          />
+          <FormField
+            label="Subcategory"
+            field="subcategory"
+            placeholder="Training"
+            required
+          />
+        </div>
+
+        {/* Title */}
+        <FormField
+          label="Training Title"
+          field="name"
+          placeholder="e.g., Advanced React Workshop"
+          required
+        />
+
+        {/* Service Type */}
+        <FormField
           label="Training Type"
-          field="trainingType"
-          options={[
-            { value: "workshop", label: "Workshop" },
-            { value: "course", label: "Course" },
-            { value: "webinar", label: "Webinar" },
-            { value: "seminar", label: "Seminar" },
-            { value: "certification", label: "Certification Program" },
-          ]}
+          field="serviceType"
+          placeholder="e.g., Workshop, Course, Webinar"
+          required
         />
-        <SelectField
-          label="Mode"
-          field="mode"
-          options={[
-            { value: "online", label: "Online" },
-            { value: "offline", label: "Offline" },
-            { value: "hybrid", label: "Hybrid" },
-          ]}
+
+        {/* Availability */}
+        <FormField
+          label="Availability"
+          field="availability"
+          placeholder="e.g., Weekends, Online, Flexible"
         />
-        <FormField label="Training Provider" field="provider" required />
-        <FormField label="Duration" field="duration" placeholder="e.g. 6 weeks, 3 days" />
-        <FormField label="Location" field="location" placeholder="City or Online" />
-        <FormField label="Start Date" field="startDate" type="date" />
-        <FormField label="End Date" field="endDate" type="date" />
-        <FormField label="Price" field="price" placeholder="e.g. $200 or Free" />
-        <FormField label="Description" field="description" type="textarea"  />
-        <FormField label="Contact Email" field="contactEmail" type="email" required />
-        <FormField label="Contact Phone" field="contactPhone" type="tel" />
-        <FormField label="Website / Registration Link" field="website" />
+
+        {/* Price */}
+        <FormField
+          label="Price (₹)"
+          field="price"
+          type="number"
+          inputMode="decimal"
+          placeholder="Enter price or 0 if free"
+        />
+
+        {/* Location (nested) */}
+        <FormField
+          label="Location"
+          field="__ignore_location__"
+          placeholder="City or Online"
+          value={store.location?.address ?? ""}
+          onChange={(v) =>
+            setLocationAddress((v as string) || "")
+          }
+          required
+        />
+
+        {/* Description */}
+        <FormField
+          label="Description"
+          field="description"
+          type="textarea"
+          placeholder="Describe the training, topics covered, duration, and benefits"
+          required
+        />
+
+        {/* Contact Section */}
+        {/* <div className="pt-4 border-t space-y-4">
+          <h3 className="text-lg font-semibold">
+            Contact Information
+          </h3>
+
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) =>
+              setSeller("name", v as string)
+            }
+            required
+          />
+
+          <FormField
+            label="Email"
+            field="__ignore_seller_email__"
+            type="email"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) =>
+              setSeller("email", v as string)
+            }
+            required
+          />
+
+          <FormField
+            label="Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) =>
+              setSeller("phone", v as string)
+            }
+          />
+        </div> */}
       </CardContent>
     </Card>
   );

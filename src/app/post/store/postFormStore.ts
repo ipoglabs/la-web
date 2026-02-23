@@ -1,162 +1,157 @@
-// src/app/post/store/postFormStore.ts
 "use client";
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  decodeIdbRef,
+  encodeIdbRef,
+  idbGet,
+  idbSet,
+  makeImageKey,
+  blobToFile,
+  idbDel,
+} from "../wizard/imagePersistence";
 
 export type SellerInfo = { name: string; email: string; phone: string };
 export type Location = { address: string; lat?: number; lng?: number };
 
 export type PostFormState = {
-  /* Core fields captured across steps */
   category: string;
   subcategory: string;
   name: string;
   description: string;
   sellerInfo: SellerInfo;
+
+  /** In-memory runtime images (File | url string) */
   images: (File | string)[];
+
+  /** Persisted image refs (url strings + idb refs) */
+  imageRefs: string[];
+
   location: Location;
   facilities: string[];
 
-  /* ---- Edit mode wiring ---- */
-  /** true when editing an existing post (loaded via /post/edit/[id]) */
   editMode?: boolean;
-  /** the DB id of the post being edited */
   postId?: string;
 
-  /* generic extras from forms (vehicles/jobs/pets/services/etc.) */
-  // You can keep this index signature for flexibility:
   [key: string]: any;
 
-  /* Mutators */
-  /** set any top-level field (replace semantics) */
   setField: (key: string, value: any) => void;
-  /** bulk-merge a slice of state (great for edit hydration) */
   setBulk: (data: Partial<PostFormState>) => void;
-  /** convenience for setting multiple primitives at once */
-  setMany: (data: Partial<PostFormState>) => void;
-
-  /** toggle a facility in the facilities[] list */
-  toggleFacility: (facility: string) => void;
-
-  /** nested helpers */
-  updateSellerInfo: (patch: Partial<SellerInfo>) => void;
-  updateLocation: (patch: Partial<Location>) => void;
-
-  /** image helpers */
-  setImages: (imgs: (File | string)[]) => void;
-  addImage: (img: File | string) => void;
-  removeImage: (index: number) => void;
-
-  /** reset the whole wizard back to defaults */
   reset: () => void;
+
+  /** Images API */
+  addFiles: (files: FileList | File[]) => Promise<void>;
+  removeImage: (index: number) => Promise<void>;
+  setImagesFromRefs: () => Promise<void>;
 };
 
-const defaultState: Omit<
-  PostFormState,
-  | "setField"
-  | "setBulk"
-  | "setMany"
-  | "toggleFacility"
-  | "updateSellerInfo"
-  | "updateLocation"
-  | "setImages"
-  | "addImage"
-  | "removeImage"
-  | "reset"
-> = {
+const defaultState = {
   category: "",
   subcategory: "",
   name: "",
   description: "",
   sellerInfo: { name: "", email: "", phone: "" },
   images: [],
+  imageRefs: [],
   location: { address: "" },
   facilities: [],
-
-  // edit wiring defaults
   editMode: false,
-  postId: undefined,
+  postId: undefined as string | undefined,
 };
 
 export const usePostFormStore = create<PostFormState>()(
   persist(
-    (set, get) =>
-      ({
-        ...defaultState,
+    (set, get) => ({
+      ...defaultState,
 
-        setField: (key, value) =>
-          set((s) => ({
-            ...s,
-            [key]: value,
-          })),
+      setField: (key, value) => set((s) => ({ ...s, [key]: value })),
+      setBulk: (data) => set((s) => ({ ...s, ...data })),
 
-        setBulk: (data) =>
-          set((s) => ({
-            ...s,
-            ...data,
-          })),
+      reset: () => set(() => ({ ...defaultState })),
 
-        setMany: (data) =>
-          set((s) => ({
-            ...s,
-            ...data,
-          })),
+      /** Persist local files to IDB; keep urls as-is */
+      addFiles: async (files) => {
+        const arr = Array.from(files || []);
+        if (!arr.length) return;
 
-        toggleFacility: (facility) =>
-          set((s) => ({
-            facilities: s.facilities.includes(facility)
-              ? s.facilities.filter((f) => f !== facility)
-              : [...s.facilities, facility],
-          })),
+        const refs: string[] = [];
+        for (const f of arr) {
+          if (!(f instanceof File)) continue;
+          if (!f.size || !f.type?.startsWith("image/")) continue;
 
-        updateSellerInfo: (patch) =>
-          set((s) => ({
-            sellerInfo: { ...s.sellerInfo, ...patch },
-          })),
+          const key = makeImageKey(f);
+          await idbSet(key, f);
+          refs.push(encodeIdbRef(key, f.name));
+        }
 
-        updateLocation: (patch) =>
-          set((s) => ({
-            location: { ...s.location, ...patch },
-          })),
+        set((s) => ({
+          imageRefs: [...(s.imageRefs || []), ...refs],
+        }));
 
-        setImages: (imgs) => set(() => ({ images: imgs })),
-        addImage: (img) => set((s) => ({ images: [...s.images, img] })),
-        removeImage: (index) =>
-          set((s) => ({
-            images: s.images.filter((_, i) => i !== index),
-          })),
+        // rehydrate runtime images from refs
+        await get().setImagesFromRefs();
+      },
 
-        reset: () => set(() => ({ ...defaultState })),
-      } as PostFormState),
+      removeImage: async (index) => {
+        const state = get();
+        const refs = [...(state.imageRefs || [])];
+        const removed = refs[index];
+        if (!removed) return;
 
+        // delete IDB entry if it is idb ref
+        const parsed = decodeIdbRef(removed);
+        if (parsed) await idbDel(parsed.key);
+
+        refs.splice(index, 1);
+        set(() => ({ imageRefs: refs }));
+        await get().setImagesFromRefs();
+      },
+
+      /** Build runtime images[] from imageRefs[] */
+      setImagesFromRefs: async () => {
+        const refs = get().imageRefs || [];
+        const runtime: (File | string)[] = [];
+
+        for (const r of refs) {
+          const parsed = decodeIdbRef(r);
+          if (!parsed) {
+            runtime.push(r); // hosted url string
+            continue;
+          }
+          const blob = await idbGet(parsed.key);
+          if (blob) runtime.push(blobToFile(blob, parsed.filename));
+        }
+
+        set(() => ({ images: runtime }));
+      },
+    }),
     {
       name: "post-form-store",
-      // Persist progress across refresh, but avoid storing File objects
-      partialize: (state) => {
-        const safeImages = state.images.filter(
-          (i): i is string => typeof i === "string"
-        );
+      partialize: (state) => ({
+        // core
+        category: state.category,
+        subcategory: state.subcategory,
+        name: state.name,
+        description: state.description,
+        sellerInfo: state.sellerInfo,
+        location: state.location,
+        facilities: state.facilities,
 
-        return {
-          // core
-          category: state.category,
-          subcategory: state.subcategory,
-          name: state.name,
-          description: state.description,
-          sellerInfo: state.sellerInfo,
-          images: safeImages, // only string URLs are persisted
-          location: state.location,
-          facilities: state.facilities,
+        // edit
+        editMode: state.editMode,
+        postId: state.postId,
 
-          // edit wiring
-          editMode: state.editMode,
-          postId: state.postId,
+        // images persisted as refs only (urls + idb refs)
+        imageRefs: state.imageRefs,
 
-          // any extra primitive fields you set during forms will also persist
-          // because of the index signature; add them here explicitly if needed
-          // e.g. price: state.price, make: state.make, etc.
-        } as Partial<PostFormState>;
+        // if your forms set additional primitives, add them explicitly here if needed
+      }),
+      onRehydrateStorage: () => async (state) => {
+        // after rehydrate, rebuild runtime images[] from refs
+        if (state?.setImagesFromRefs) {
+          await state.setImagesFromRefs();
+        }
       },
     }
   )

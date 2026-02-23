@@ -1,141 +1,219 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function ElectronicsGadgetsForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default the main category/subcategory for this form
-  React.useEffect(() => {
-    if (!store.category) setField("category", "For Sale");
-    if (!store.subcategory) setField("subcategory", "Electronics & Gadgets");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested objects
+  const name = store.name ?? "";
+  const brand = store.brand ?? "";
+  const electronicsCategory = store.electronicsCategory ?? "";
+  const condition = store.condition ?? "";
+  const price = store.salePrice ?? store.price ?? "";
+  const description = store.description ?? "";
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Default category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "For Sale");
+    if (!subcategory)
+      setField("subcategory", "Electronics & Gadgets");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("salePrice", v);
+    setField("price", v);
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Product name required";
+    if (!condition) mapped.condition = "Condition required";
+    if (!isPositive(price)) mapped.salePrice = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // Clean persist
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Electronics & Gadgets</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Electronics & Gadgets</h2>
 
-        {/* Category / Subcategory (kept visible & editable for consistency) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="For Sale" required />
-          <FormField
-            label="Subcategory"
-            field="subcategory"
-            placeholder="Electronics & Gadgets"
-            required
-          />
-        </div>
+      {/* Product Name */}
+      <FormField
+        label="Product Name"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Product Name → shared "name" */}
+      {/* Brand */}
+      <FormField
+        label="Brand"
+        field="brand"
+        value={brand}
+        onChange={(v) => setField("brand", v)}
+      />
+
+      {/* Product Type */}
+      <SelectField
+        label="Product Type"
+        field="electronicsCategory"
+        value={electronicsCategory}
+        onChange={(v) => setField("electronicsCategory", v)}
+        options={[
+          { value: "mobile", label: "Mobile Phones" },
+          { value: "laptop", label: "Laptops" },
+          { value: "tv", label: "Televisions" },
+          { value: "camera", label: "Cameras" },
+          { value: "audio", label: "Audio Devices" },
+          { value: "accessories", label: "Accessories" },
+          { value: "other", label: "Other" },
+        ]}
+      />
+
+      {/* Condition */}
+      <SelectField
+        label="Condition"
+        field="condition"
+        value={condition}
+        onChange={(v) => setField("condition", v)}
+        options={[
+          { value: "new", label: "New" },
+          { value: "used", label: "Used" },
+          { value: "refurbished", label: "Refurbished" },
+        ]}
+        required
+      />
+
+      {/* Price */}
+      <FormField
+        label="Price (₹)"
+        field="salePrice"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
+
+      {/* Description */}
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
+
+      {/* Location */}
+      {/* <FormField
+        label="Location"
+        field="sellerLocation"
+        value={location?.address ?? ""}
+        onChange={(v) => setLoc((v as string) || "")}
+      /> */}
+
+      {/* Contact */}
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormField
-          label="Product Name"
-          field="name"
-          placeholder="e.g., iPhone 14, Samsung TV"
+          label="Contact Name"
+          field="sellerName"
+          value={sellerInfo?.name ?? ""}
+          onChange={(v) => setSeller("name", (v as string) || "")}
           required
         />
-
-        {/* Brand */}
-        <FormField label="Brand" field="brand" placeholder="Brand name" />
-
-        {/* Internal product category (avoid clashing with main 'category') */}
-        <SelectField
-          label="Product Type"
-          field="electronicsCategory"
-          placeholder="Select Category"
-          options={[
-            { value: "mobile", label: "Mobile Phones" },
-            { value: "laptop", label: "Laptops" },
-            { value: "tv", label: "Televisions" },
-            { value: "camera", label: "Cameras" },
-            { value: "audio", label: "Audio Devices" },
-            { value: "accessories", label: "Accessories" },
-            { value: "other", label: "Other" },
-          ]}
-        />
-
-        {/* Condition */}
-        <SelectField
-          label="Condition"
-          field="condition"
-          placeholder="Select Condition"
-          options={[
-            { value: "new", label: "New" },
-            { value: "used", label: "Used" },
-            { value: "refurbished", label: "Refurbished" },
-          ]}
-        />
-
-        {/* Price → store as numeric salePrice for INR formatting in preview */}
         <FormField
-          label="Price (INR)"
-          field="salePrice"
-          type="number"
-          placeholder="e.g., 20000"
+          label="Contact Email"
+          field="sellerEmail"
+          type="email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(v) => setSeller("email", (v as string) || "")}
         />
-
-        {/* Description */}
         <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Details about the product"
+          label="Contact Phone"
+          field="sellerPhone"
+          type="tel"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(v) => setSeller("phone", (v as string) || "")}
+          required
         />
+      </div> */}
 
-        {/* Location (stored at location.address) */}
-        <FormField
-          label="Location"
-          field="__ignore_location__"
-          placeholder="City, State"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
-        />
-
-        {/* Contact Info (sellerInfo) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Contact Person"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="Email Address"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="Phone Number"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

@@ -1,67 +1,145 @@
-'use client';
+"use client";
 
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function ClassesCoursesForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Set default category and subcategory
+  /* ---------------- DEFAULT CATEGORY ---------------- */
+
   React.useEffect(() => {
-    if (!store.category) setField("category", "Classes & Courses");
-    if (!store.subcategory) setField("subcategory", "General Classes");
+    if (!store.category) setField("category", "Community");
+    if (!store.subcategory) setField("subcategory", "courses");
   }, [store.category, store.subcategory, setField]);
+
+  /* ---------------- HELPERS ---------------- */
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = store.sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+
+  const setLoc = (address?: string) => {
+    const cur = store.location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  /* ---------------- UI ---------------- */
 
   return (
     <Card className="max-w-2xl mx-auto mt-6 shadow-lg rounded-2xl">
-      <CardContent className="p-6 space-y-4">
-        <h2 className="text-2xl font-bold mb-4">Post a Class / Course</h2>
+      <CardContent className="p-6 space-y-6">
+        <h2 className="text-2xl font-bold">Post a Course</h2>
 
+        {/* Category / Subcategory */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            label="Category"
+            field="category"
+            placeholder="Community"
+            required
+          />
+          <FormField
+            label="Subcategory"
+            field="subcategory"
+            placeholder="Courses"
+            required
+          />
+        </div>
+
+        {/* Title */}
         <FormField
-          label="Class / Course Title"
-          field="title"
+          label="Course Title"
+          field="name"
           placeholder="e.g., Python Programming Bootcamp"
           required
         />
 
-        <SelectField
-          label="Category"
-          field="subcategory"
-          options={[
-            { value: "academic", label: "Academic" },
-            { value: "skill-development", label: "Skill Development" },
-            { value: "arts", label: "Arts & Creativity" },
-            { value: "sports", label: "Sports & Fitness" },
-            { value: "other", label: "Other" },
-          ]}
+        {/* Qualification (matches config) */}
+        <FormField
+          label="Qualification"
+          field="qualification"
+          placeholder="e.g., Certificate, Diploma, Degree"
+          required
         />
 
+        {/* Duration */}
+        <FormField
+          label="Duration"
+          field="durationText"
+          placeholder="e.g., 3 months, 10 sessions"
+          required
+        />
+
+        {/* Fee */}
+        <FormField
+          label="Fee (₹)"
+          field="price"
+          type="number"
+          inputMode="decimal"
+          placeholder="Enter course fee"
+        />
+
+        {/* Description */}
         <FormField
           label="Description"
           field="description"
           type="textarea"
-          placeholder="Provide details about the class or course"
+          placeholder="Provide full course details"
           required
         />
 
-        <FormField label="Location" field="location" placeholder="Venue / City / Online" />
-        <FormField label="Start Date" field="startDate" type="date" />
-        <FormField label="End Date" field="endDate" type="date" />
-        <FormField label="Duration" field="duration" placeholder="e.g., 3 months, 10 sessions" />
-        <FormField label="Schedule" field="schedule" placeholder="e.g., Mon & Wed 6-8 PM" />
-        <FormField label="Fees" field="fees" placeholder="e.g., ₹5000 for full course" />
-        <FormField label="Contact Person" field="contactName" placeholder="Name of contact person" />
-        <FormField label="Contact Email" field="contactEmail" type="email" placeholder="Email Address" />
-        <FormField label="Contact Phone" field="contactPhone" placeholder="Phone Number" />
-        <FormField
-          label="Registration / Signup Link"
-          field="link"
-          placeholder="Website / Zoom / Event Link"
-        />
+        {/* Location (nested) */}
+        {/* <FormField
+          label="Location"
+          field="__ignore_location__"
+          placeholder="Venue / City / Online"
+          value={store.location?.address ?? ""}
+          onChange={(v) => setLoc((v as string) || "")}
+        /> */}
+
+        {/* Contact Section */}
+        {/* <div className="pt-4 border-t space-y-4">
+          <h3 className="text-lg font-semibold">
+            Instructor / Contact Details
+          </h3>
+
+          <FormField
+            label="Contact Name"
+            field="__ignore_seller_name__"
+            value={store.sellerInfo?.name ?? ""}
+            onChange={(v) =>
+              setSeller("name", (v as string) || "")
+            }
+            required
+          />
+
+          <FormField
+            label="Contact Email"
+            field="__ignore_seller_email__"
+            type="email"
+            value={store.sellerInfo?.email ?? ""}
+            onChange={(v) =>
+              setSeller("email", (v as string) || "")
+            }
+          />
+
+          <FormField
+            label="Contact Phone"
+            field="__ignore_seller_phone__"
+            type="tel"
+            value={store.sellerInfo?.phone ?? ""}
+            onChange={(v) =>
+              setSeller("phone", (v as string) || "")
+            }
+          />
+        </div> */}
+
+        {/* Preview handles submission */}
       </CardContent>
     </Card>
   );

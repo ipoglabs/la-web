@@ -1,135 +1,216 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function B2BServiceForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Ensure category/subcategory
-  React.useEffect(() => {
-    if (!store.category) setField("category", "B2B");
-    if (!store.subcategory) setField("subcategory", "Services");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested
+  const name = store.name ?? "";
+  const industry = (store as any).industry ?? "";
+  const company = (store as any).company ?? "";
+  const description = store.description ?? "";
+  const website = (store as any).website ?? "";
+  const price = (store as any).price ?? store.salePrice ?? "";
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // preset category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "Business");
+    if (!subcategory) setField("subcategory", "B2B");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return true; // optional price allowed
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Service title required";
+    if (!industry) mapped.industry = "Industry required";
+    if (!company.trim()) mapped.company = "Company name required";
+    if (!description.trim()) mapped.description = "Description required";
+    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact person required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+    if (!sellerInfo?.email?.trim())
+      mapped.sellerEmail = "Email required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
 
   return (
-    <Card className="max-w-3xl mx-auto mt-8 shadow-lg rounded-2xl">
-      <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Post a B2B Service</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">
+        Post a B2B Service
+      </h2>
 
-        {/* Category/Subcategory (bound to store) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="B2B" required />
-          <FormField label="Subcategory" field="subcategory" placeholder="Services" required />
-        </div>
+      <FormField
+        label="Service Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        <FormField
-          label="Service Title"
-          field="name"
-          placeholder="e.g. Bulk Manufacturing Service"
+      <SelectField
+        label="Industry"
+        field="industry"
+        value={industry}
+        onChange={(v) => setField("industry", v)}
+        options={[
+          { value: "manufacturing", label: "Manufacturing" },
+          { value: "logistics", label: "Logistics & Supply Chain" },
+          { value: "wholesale", label: "Wholesale Trade" },
+          { value: "consulting", label: "Consulting" },
+          { value: "it-services", label: "IT & Tech Services" },
+          { value: "other", label: "Other" },
+        ]}
+        required
+      />
+
+      <FormField
+        label="Business Name"
+        field="company"
+        value={company}
+        onChange={(v) => setField("company", v)}
+        required
+      />
+
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+        required
+      />
+
+      <FormField
+        label="Price / Rate (₹)"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+      />
+
+      <FormField
+        label="Website"
+        field="website"
+        value={website}
+        onChange={(v) => setField("website", v)}
+      />
+
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
+        required
+      />
+
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Person"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
           required
         />
-
-        <SelectField
-          label="Category (Industry)"
-          field="industry"
-          placeholder="Select industry"
-          options={[
-            { value: "manufacturing", label: "Manufacturing" },
-            { value: "logistics", label: "Logistics & Supply Chain" },
-            { value: "wholesale", label: "Wholesale Trade" },
-            { value: "consulting", label: "Consulting" },
-            { value: "it-services", label: "IT & Tech Services" },
-            { value: "other", label: "Other" },
-          ]}
-        />
-
-        <FormField
-          label="Business Name"
-          field="company"
-          placeholder="Enter your company name"
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
           required
         />
-
-        <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Provide details about your service..."
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
           required
         />
+      </div> */}
 
-        <FormField
-          label="Price / Rate (₹)"
-          field="salePrice"
-          type="number"
-          inputMode="decimal"
-          placeholder="e.g. Starting from 5000"
-        />
-
-        <FormField
-          label="Website (optional)"
-          field="website"
-          type="text"
-          placeholder="https://example.com"
-        />
-
-        {/* Location */}
-        <FormField
-          label="Location"
-          field="__ignore_location__"
-          placeholder="City / Area"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
-          required
-        />
-
-        {/* Contact */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Person"
-            field="__ignore_seller_name__"
-            placeholder="Full Name"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="+91 9876543210"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="you@example.com"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-        </div>
-
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

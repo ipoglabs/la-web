@@ -1,164 +1,220 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function BankingFinancialForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default the category/subcategory for this form
-  React.useEffect(() => {
-    if (!store.category) setField("category", "Business");
-    if (!store.subcategory) setField("subcategory", "Banking & Finance");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested values
+  const name = store.name ?? "";
+  const dealType = store.dealType ?? "";
+  const institutionName = store.institutionName ?? "";
+  const description = store.description ?? "";
+  const interestRate = store.interestRate ?? "";
+  const tenure = store.tenure ?? "";
+  const minAmount = store.minAmount ?? "";
+  const maxAmount = store.maxAmount ?? "";
+  const eligibility = store.eligibility ?? "";
+  const documents = store.documents ?? "";
+  const validUntil = store.validUntil ?? "";
+
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Default category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "Business");
+    if (!subcategory) setField("subcategory", "Banking & Finance");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
-  const setLoc = (address?: string) => {
-    const cur = store.location || {};
-    setField("location", { ...cur, address: address ?? "" });
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Offer title required";
+    if (!description.trim()) mapped.description = "Description required";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    if (minAmount && !isPositive(minAmount))
+      mapped.minAmount = "Invalid minimum amount";
+
+    if (maxAmount && !isPositive(maxAmount))
+      mapped.maxAmount = "Invalid maximum amount";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // Clean persist
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
   };
 
   return (
-    <Card className="max-w-3xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Banking & Financial Deals</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Banking & Financial Deals</h2>
 
-        {/* Category / Subcategory */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Business" required />
-          <FormField
-            label="Subcategory"
-            field="subcategory"
-            placeholder="Banking & Finance"
-            required
-          />
-        </div>
+      {/* Offer Title */}
+      <FormField
+        label="Deal / Offer Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Deal / Offer Title → use shared name */}
+      {/* Deal Type */}
+      <SelectField
+        label="Deal Type"
+        field="dealType"
+        value={dealType}
+        onChange={(v) => setField("dealType", v)}
+        options={[
+          { value: "loan", label: "Loan" },
+          { value: "credit-card", label: "Credit Card" },
+          { value: "investment", label: "Investment" },
+          { value: "insurance", label: "Insurance" },
+          { value: "savings", label: "Savings / Deposit" },
+          { value: "other", label: "Other" },
+        ]}
+      />
+
+      {/* Institution */}
+      <FormField
+        label="Bank / Financial Institution"
+        field="institutionName"
+        value={institutionName}
+        onChange={(v) => setField("institutionName", v)}
+      />
+
+      {/* Description */}
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+        required
+      />
+
+      {/* Financial Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
-          label="Deal / Offer Title"
-          field="name"
-          placeholder="Title of the banking or financial deal"
-          required
-        />
-
-        {/* Deal Type */}
-        <SelectField
-          label="Deal Type"
-          field="dealType"
-          placeholder="Select deal type"
-          options={[
-            { value: "loan", label: "Loan" },
-            { value: "credit-card", label: "Credit Card" },
-            { value: "investment", label: "Investment" },
-            { value: "insurance", label: "Insurance" },
-            { value: "savings", label: "Savings / Deposit" },
-            { value: "other", label: "Other" },
-          ]}
-        />
-
-        {/* Bank / Institution */}
-        <FormField
-          label="Bank / Financial Institution"
-          field="institutionName"
-          placeholder="Name of the bank or financial institution"
-        />
-
-        {/* Description */}
-        <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Details about the deal or offer"
-          required
-        />
-
-        {/* Financial Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Interest Rate / Returns"
-            field="interestRate"
-            placeholder="e.g., 8% p.a."
-          />
-          <FormField
-            label="Tenure / Duration"
-            field="tenure"
-            placeholder="e.g., 5 years"
-          />
-        </div>
-
-        {/* Amount Range (store numeric if possible) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Minimum Amount (INR)"
-            field="minAmount"
-            type="number"
-            placeholder="e.g., 50000"
-          />
-          <FormField
-            label="Maximum Amount (INR)"
-            field="maxAmount"
-            type="number"
-            placeholder="e.g., 1000000"
-          />
-        </div>
-
-        {/* Eligibility & Documents */}
-        <FormField
-          label="Eligibility Criteria"
-          field="eligibility"
-          type="textarea"
-          placeholder="e.g., Minimum salary ₹25,000/month, Age 21–60 years"
+          label="Interest Rate / Returns"
+          field="interestRate"
+          value={interestRate}
+          onChange={(v) => setField("interestRate", v)}
         />
         <FormField
-          label="Required Documents"
-          field="documents"
-          type="textarea"
-          placeholder="e.g., PAN Card, Aadhaar, Salary Slip"
+          label="Tenure / Duration"
+          field="tenure"
+          value={tenure}
+          onChange={(v) => setField("tenure", v)}
         />
+      </div>
 
-        {/* Valid Until */}
-        <FormField label="Valid Until" field="validUntil" type="date" />
+      {/* Amount Range */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          label="Minimum Amount (₹)"
+          field="minAmount"
+          type="number"
+          value={minAmount}
+          onChange={(v) => setField("minAmount", v)}
+        />
+        <FormField
+          label="Maximum Amount (₹)"
+          field="maxAmount"
+          type="number"
+          value={maxAmount}
+          onChange={(v) => setField("maxAmount", v)}
+        />
+      </div>
 
+      {/* Eligibility & Docs */}
+      <FormField
+        label="Eligibility Criteria"
+        field="eligibility"
+        type="textarea"
+        value={eligibility}
+        onChange={(v) => setField("eligibility", v)}
+      />
 
-        {/* Contact Info (maps to sellerInfo) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Contact person"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="Email address"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="Phone number"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <FormField
+        label="Required Documents"
+        field="documents"
+        type="textarea"
+        value={documents}
+        onChange={(v) => setField("documents", v)}
+      />
+
+      {/* Valid Until */}
+      <FormField
+        label="Valid Until"
+        field="validUntil"
+        type="date"
+        value={validUntil}
+        onChange={(v) => setField("validUntil", v)}
+      />
+
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

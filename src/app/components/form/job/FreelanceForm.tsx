@@ -1,70 +1,138 @@
+// src/app/components/form/job/JobFreelanceForm.tsx
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
+import { toast } from "sonner";
 
 export default function JobFreelanceForm() {
-  const setField = usePostFormStore((s) => s.setField);
-  const skillsValue = usePostFormStore((s) => s.skills);
-  const budgetType = usePostFormStore((s) => s.budgetType);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
-  // Preset employmentType
+  const setField = usePostFormStore((s) => s.setField);
+
+  // store values
+  const name = usePostFormStore((s) => s.name) ?? "";
+  const description = usePostFormStore((s) => s.description) ?? "";
+  const company = usePostFormStore((s) => (s as any).company) ?? "";
+  const workMode = usePostFormStore((s) => (s as any).workMode) ?? "";
+  const projectType = usePostFormStore((s) => (s as any).projectType) ?? "";
+  const budgetType = usePostFormStore((s) => (s as any).budgetType) ?? "";
+  const budgetAmount = usePostFormStore((s) => (s as any).budgetAmount) ?? "";
+  const contractDuration = usePostFormStore((s) => (s as any).contractDuration) ?? "";
+  const applyLink = usePostFormStore((s) => (s as any).applyLink) ?? "";
+  const skills = (usePostFormStore((s) => (s as any).skills) ?? []) as string[];
+
+  const sellerInfo = usePostFormStore((s) => s.sellerInfo) || {
+    name: "",
+    email: "",
+    phone: "",
+  };
+
+  const [skillsText, setSkillsText] = useState(skills.join(", "));
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // ✅ set employment type
   useEffect(() => {
     setField("employmentType", "Freelance");
   }, [setField]);
 
-  // Comma list → array
-  const [skillsText, setSkillsText] = useState(
-    Array.isArray(skillsValue) ? skillsValue.join(", ") : ""
-  );
+  // convert skills → array
   const onSkillsBlur = () => {
     const arr = skillsText
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
+
     setField("skills", arr);
   };
 
   const showBudgetAmount = useMemo(
-    () => budgetType && (budgetType === "fixed" || budgetType === "hourly"),
+    () => budgetType === "fixed" || budgetType === "hourly",
     [budgetType]
   );
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-center">Post Freelance / Gig</h2>
+  const isPositive = (v: any) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
+  };
 
-      {/* Title / Description */}
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok } }));
+    window.dispatchEvent(new CustomEvent("jobfreelanceform:validated", { detail: { ok } }));
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Project title is required";
+    if (!company.trim()) mapped.company = "Company is required";
+
+    if (showBudgetAmount && !isPositive(budgetAmount)) {
+      mapped.budgetAmount = "Budget must be greater than 0";
+    }
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      toast.error("Please fix the highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    dispatchValidated(true);
+  };
+
+  return (
+    <form
+      id="jobFreelanceForm"
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="space-y-6 w-full max-w-xl"
+    >
+      <h2 className="text-2xl font-semibold text-center">
+        Post Freelance / Gig
+      </h2>
+
+      {/* Title */}
       <FormField
         label="Project Title"
         field="name"
-        placeholder="e.g. Website Development"
+        value={name}
+        onChange={(v) => setField("name", v)}
         required
       />
+
       <FormField
         label="Project Description"
         field="description"
         type="textarea"
-        placeholder="Brief the scope, deliverables, tools…"
+        value={description}
+        onChange={(v) => setField("description", v)}
       />
 
-      {/* Client / Work Mode */}
+      {/* Company / Work Mode */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
-          label="Client / Company"
+          label="Company"
           field="company"
-          placeholder="e.g. ABC Solutions"
+          value={company}
+          onChange={(v) => setField("company", v)}
           required
         />
+
         <SelectField
           label="Work Mode"
           field="workMode"
           options={[
-            { value: "onsite", label: "On-site" },
-            { value: "remote", label: "Remote" },
-            { value: "hybrid", label: "Hybrid" },
+            { value: "onsite" },
+            { value: "remote" },
+            { value: "hybrid" },
           ]}
         />
       </div>
@@ -75,17 +143,19 @@ export default function JobFreelanceForm() {
           label="Project Type"
           field="projectType"
           options={[
-            { value: "web-development", label: "Web Development" },
-            { value: "graphic-design", label: "Graphic Design" },
-            { value: "content-writing", label: "Content Writing" },
-            { value: "marketing", label: "Marketing" },
-            { value: "other", label: "Other" },
+            { value: "web-development" },
+            { value: "design" },
+            { value: "writing" },
+            { value: "marketing" },
+            { value: "other" },
           ]}
         />
+
         <FormField
-          label="Project Duration / Deadline"
-          field="duration"
-          placeholder="e.g. 2 months, by Dec 2025"
+          label="Contract Duration"
+          field="contractDuration"
+          value={contractDuration}
+          onChange={(v) => setField("contractDuration", v)}
         />
       </div>
 
@@ -95,67 +165,70 @@ export default function JobFreelanceForm() {
           label="Budget Type"
           field="budgetType"
           options={[
-            { value: "fixed", label: "Fixed Price" },
-            { value: "hourly", label: "Hourly Rate" },
+            { value: "fixed" },
+            { value: "hourly" },
           ]}
         />
+
         {showBudgetAmount && (
           <FormField
-            label={budgetType === "hourly" ? "Hourly Rate (₹)" : "Budget Amount (₹)"}
+            label="Budget Amount (₹)"
             field="budgetAmount"
             type="number"
-            placeholder={budgetType === "hourly" ? "e.g. 800" : "e.g. 50000"}
+            value={budgetAmount}
+            onChange={(v) => setField("budgetAmount", v)}
           />
         )}
       </div>
 
-      {/* Skills (comma-separated -> array) */}
-      <div className="space-y-1">
-        <label className="text-sm font-medium">Required Skills</label>
+      {/* Skills */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Skills</label>
         <input
-          className="border rounded w-full py-2 px-3"
-          placeholder="e.g. React, Photoshop, SEO"
+          className="w-full border rounded px-3 py-2"
           value={skillsText}
           onChange={(e) => setSkillsText(e.target.value)}
           onBlur={onSkillsBlur}
         />
-        <p className="text-xs text-gray-500">
-          Tip: comma-separate skills; we’ll save them as a list.
-        </p>
       </div>
 
-      {/* Optional apply link */}
+      {/* Apply link */}
       <FormField
-        label="Apply Link / Website"
+        label="Apply Link"
         field="applyLink"
-        placeholder="https://client.com/job/project-id"
+        value={applyLink}
+        onChange={(v) => setField("applyLink", v)}
       />
 
-      {/* Contact Details */}
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="text-lg font-semibold">Contact Details</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="sellerInfo.name"
-            placeholder="Contact Person"
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="sellerInfo.email"
-            type="email"
-            placeholder="contact@email.com"
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="sellerInfo.phone"
-            placeholder="+91 9XXXXXXXXX"
-            required
-          />
-        </div>
-      </div>
-    </div>
+      {/* Contact */}
+      {/* <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4">
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Name"
+          value={sellerInfo.name}
+          onChange={(e) =>
+            setField("sellerInfo", { ...sellerInfo, name: e.target.value })
+          }
+        />
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Email"
+          value={sellerInfo.email}
+          onChange={(e) =>
+            setField("sellerInfo", { ...sellerInfo, email: e.target.value })
+          }
+        />
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Phone"
+          value={sellerInfo.phone}
+          onChange={(e) =>
+            setField("sellerInfo", { ...sellerInfo, phone: e.target.value })
+          }
+        />
+      </div> */}
+
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

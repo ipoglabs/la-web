@@ -1,83 +1,227 @@
-'use client'
+"use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function BabyKidsForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Set default category/subcategory
-  React.useEffect(() => {
-    if (!store.category) setField("category", "For Sale");
-    if (!store.subcategory) setField("subcategory", "Baby & Kids");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
+
+  const name = store.name ?? "";
+  const condition = (store as any).condition ?? "";
+  const ageRange = (store as any).ageRange ?? "";
+  const brand = (store as any).brand ?? "";
+  const price = (store as any).price ?? store.salePrice ?? "";
+  const description = store.description ?? "";
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // preset category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "For Sale");
+    if (!subcategory)
+      setField("subcategory", "Baby & Kids");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+
+  const setLoc = (address?: string) => {
+    const cur = location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Title required";
+    if (!condition) mapped.condition = "Condition required";
+    if (!ageRange) mapped.ageRange = "Age range required";
+    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Seller name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Seller phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // clean persist
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
 
   return (
-    <Card className="max-w-2xl mx-auto my-6 shadow-lg rounded-2xl">
-      <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Post Baby & Kids Item</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">
+        Post Baby & Kids Item
+      </h2>
 
-        {/* Category / Subcategory */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="For Sale" required />
-          <FormField label="Subcategory" field="subcategory" placeholder="Baby & Kids" required />
-        </div>
+      {/* Title */}
+      <FormField
+        label="Ad Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Ad Title */}
-        <FormField label="Ad Title" field="title" placeholder="e.g., Baby Stroller, Kids Toy, Crib" required />
+      {/* Condition */}
+      <SelectField
+        label="Condition"
+        field="condition"
+        value={condition}
+        onChange={(v) => setField("condition", v)}
+        options={[
+          { value: "new", label: "New" },
+          { value: "like-new", label: "Like New" },
+          { value: "good", label: "Good" },
+          { value: "fair", label: "Fair" },
+        ]}
+        required
+      />
 
-        {/* Condition */}
-        <SelectField
-          label="Condition"
-          field="condition"
-          placeholder="Select condition"
-          options={[
-            { value: "new", label: "New" },
-            { value: "like-new", label: "Like New" },
-            { value: "good", label: "Good" },
-            { value: "fair", label: "Fair" },
-          ]}
+      {/* Age Range */}
+      <SelectField
+        label="Suitable Age Range"
+        field="ageRange"
+        value={ageRange}
+        onChange={(v) => setField("ageRange", v)}
+        options={[
+          { value: "0-6-months", label: "0-6 Months" },
+          { value: "6-12-months", label: "6-12 Months" },
+          { value: "1-3-years", label: "1-3 Years" },
+          { value: "3-5-years", label: "3-5 Years" },
+          { value: "5-plus", label: "5+ Years" },
+        ]}
+        required
+      />
+
+      {/* Brand */}
+      <FormField
+        label="Brand"
+        field="brand"
+        value={brand}
+        onChange={(v) => setField("brand", v)}
+      />
+
+      {/* Price */}
+      <FormField
+        label="Price (₹)"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
+
+      {/* Location */}
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
+      />
+
+      {/* Description */}
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
+
+      {/* Seller Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Seller Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
+          required
         />
-
-        {/* Age Range */}
-        <SelectField
-          label="Suitable Age Range"
-          field="ageRange"
-          placeholder="Select age range"
-          options={[
-            { value: "0-6-months", label: "0-6 Months" },
-            { value: "6-12-months", label: "6-12 Months" },
-            { value: "1-3-years", label: "1-3 Years" },
-            { value: "3-5-years", label: "3-5 Years" },
-            { value: "5-plus", label: "5+ Years" },
-          ]}
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
         />
+      </div>
 
-        {/* Brand */}
-        <FormField label="Brand (optional)" field="brand" placeholder="e.g., Chicco, Fisher-Price" />
+      <input
+        name="sellerEmail"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Email"
+        type="email"
+        value={sellerInfo?.email ?? ""}
+        onChange={(e) => setSeller("email", e.target.value)}
+      />
 
-        {/* Price */}
-        <FormField label="Price (INR)" field="price" type="number" placeholder="Enter price" required />
-
-        {/* Location */}
-        <FormField label="Location" field="location" placeholder="City / Area" required />
-
-        {/* Description */}
-        <FormField label="Description" field="description" type="textarea" placeholder="Provide details about the item"  required />
-
-        {/* Seller Information */}
-        <h3 className="text-xl font-semibold mt-6">Seller Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Name" field="sellerInfo.name" placeholder="Your Name" required />
-          <FormField label="Phone Number" field="sellerInfo.phone" placeholder="Enter phone number" required />
-        </div>
-        <FormField label="Email Address (optional)" field="sellerInfo.email" type="email" placeholder="Enter email" />
-
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

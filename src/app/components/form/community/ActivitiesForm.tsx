@@ -3,46 +3,57 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function ChildFamilyActivitiesForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Ensure category/subcategory (Community & Events → Child & Family Activities)
+  /* ---------------- DEFAULT CATEGORY ---------------- */
+
   React.useEffect(() => {
-    if (!store.category) setField("category", "Community & Events");
-    if (!store.subcategory) setField("subcategory", "Child & Family Activities");
+    if (!store.category) setField("category", "Community");
+    if (!store.subcategory) setField("subcategory", "activities");
   }, [store.category, store.subcategory, setField]);
 
-  // Nested helpers
+  /* ---------------- HELPERS ---------------- */
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
     const cur = store.sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
     const cur = store.location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  /* ---------------- UI ---------------- */
+
   return (
     <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
       <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Child & Family Activities</h2>
+        <h2 className="text-2xl font-bold">
+          Child & Family Activity
+        </h2>
 
         {/* Category / Subcategory */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Community & Events" required />
+          <FormField
+            label="Category"
+            field="category"
+            placeholder="Community"
+            required
+          />
           <FormField
             label="Subcategory"
             field="subcategory"
-            placeholder="Child & Family Activities"
+            placeholder="Activities"
             required
           />
         </div>
 
-        {/* Title → name */}
+        {/* Title */}
         <FormField
           label="Activity Title"
           field="name"
@@ -50,43 +61,21 @@ export default function ChildFamilyActivitiesForm() {
           required
         />
 
-        {/* Activity Category */}
-        <SelectField
-          label="Activity Category"
-          field="activityCategory"
-          placeholder="Select Category"
-          options={[
-            { value: "sports", label: "Sports" },
-            { value: "arts", label: "Arts & Crafts" },
-            { value: "education", label: "Educational" },
-            { value: "other", label: "Other" },
-          ]}
-        />
-
-        {/* Description */}
+        {/* Description (matches config) */}
         <FormField
-          label="Description"
+          label="Activity Details"
           field="description"
           type="textarea"
-          placeholder="Describe the activity, schedule, and special instructions"
+          placeholder="Describe the activity, schedule, and instructions"
           required
         />
 
-        {/* Age Group */}
-        <SelectField
-          label="Age Group"
-          field="ageGroup"
-          placeholder="Select Age Group"
-          options={[
-            { value: "0-3", label: "0–3 years" },
-            { value: "4-7", label: "4–7 years" },
-            { value: "8-12", label: "8–12 years" },
-            { value: "13+", label: "13+ years" },
-          ]}
+        {/* Date (matches config key) */}
+        <FormField
+          label="Date"
+          field="date"
+          type="date"
         />
-
-        {/* Date */}
-        <FormField label="Event Date" field="eventDate" type="date" />
 
         {/* Location (nested) */}
         <FormField
@@ -95,45 +84,46 @@ export default function ChildFamilyActivitiesForm() {
           placeholder="City / Venue / Online"
           value={store.location?.address ?? ""}
           onChange={(v) => setLoc((v as string) || "")}
+          required
         />
 
-        {/* Website / Link */}
-        <FormField
-          label="Related Link"
-          field="website"
-          type="text"
-          placeholder="Website / Activity link (https://...)"
-          hint="Optional"
-        />
+        {/* Contact Section */}
+        {/* <div className="pt-4 border-t space-y-4">
+          <h3 className="text-lg font-semibold">
+            Contact Information
+          </h3>
 
-        {/* Contact Info (nested seller_info) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             label="Contact Person"
             field="__ignore_seller_name__"
-            placeholder="Name of contact person"
             value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
+            onChange={(v) =>
+              setSeller("name", (v as string) || "")
+            }
           />
+
           <FormField
-            label="Contact Email"
+            label="Email"
             field="__ignore_seller_email__"
             type="email"
-            placeholder="Email address"
             value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
+            onChange={(v) =>
+              setSeller("email", (v as string) || "")
+            }
           />
+
           <FormField
-            label="Contact Phone"
+            label="Phone"
             field="__ignore_seller_phone__"
             type="tel"
-            placeholder="Phone number"
             value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
+            onChange={(v) =>
+              setSeller("phone", (v as string) || "")
+            }
           />
-        </div>
+        </div> */}
 
-        {/* No submit here — your Preview page handles submission */}
+        {/* No submit button — Preview page handles submission */}
       </CardContent>
     </Card>
   );

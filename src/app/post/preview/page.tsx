@@ -1,4 +1,3 @@
-// src/app/post/preview/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -6,23 +5,23 @@ import { useRouter } from "next/navigation";
 
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
-import ReviewDetailsSection from "../components/ReviewSectionMap";
-
+import PostHeader from "../components/PostHeader";
 import { usePostFormStore } from "../store/postFormStore";
+import { useWizardGuard } from "../wizard/guard";
 
 import { addPost } from "@/app/actions/addPost";
-import { updatePost } from "@/app/actions/updatePost";
 import { buildPostFormData } from "@/lib/buildPostFormData";
-import { useAuthStore } from "@/store/authStore";
-import { Input } from "@/components/ui/input";
 
-// ✅ NEW: config-driven preview fields
+import { Input } from "@/components/ui/input";
+import { useAuthStore } from "@/store/authStore";
+
 import { getSpecs } from "@/posting/config/getSpecs";
 import type { FieldSpec } from "@/posting/config/types";
 
-/** ---------- helpers ---------- */
+/* ---------------- FORMAT HELPERS ---------------- */
+
 function fmtCurrency(v: unknown) {
-  if (v === null || v === undefined || v === "") return undefined;
+  if (v === null || v === undefined || v === "") return "—";
   const n = Number(v);
   if (Number.isNaN(n)) return String(v);
   return new Intl.NumberFormat(undefined, {
@@ -33,63 +32,48 @@ function fmtCurrency(v: unknown) {
 }
 
 function fmtDate(v: unknown) {
-  if (!v) return undefined;
+  if (!v) return "—";
   const d = new Date(String(v));
   if (isNaN(d.getTime())) return String(v);
   return d.toLocaleDateString();
 }
 
 function renderByType(spec: FieldSpec, value: any): string {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "")
+    return "—";
 
-  // array
-  if (spec.type === "array") {
-    return Array.isArray(value) ? (value.length ? value.join(", ") : "—") : "—";
-  }
+  if (spec.type === "array")
+    return Array.isArray(value)
+      ? value.length
+        ? value.join(", ")
+        : "—"
+      : "—";
 
-  // currency
-  if (spec.type === "currency") return fmtCurrency(value) ?? "—";
+  if (spec.type === "currency") return fmtCurrency(value);
+  if (spec.type === "date") return fmtDate(value);
 
-  // date
-  if (spec.type === "date") return fmtDate(value) ?? "—";
-
-  // boolean
   if (spec.type === "boolean") {
-    if (value === true || value === "true" || value === 1 || value === "1") return "Yes";
-    if (value === false || value === "false" || value === 0 || value === "0") return "No";
+    if (value === true || value === "true" || value === 1) return "Yes";
+    if (value === false || value === "false" || value === 0) return "No";
     return String(value);
   }
 
-  // number
   if (spec.type === "number") {
     const n = Number(value);
     if (!Number.isFinite(n)) return String(value);
     return spec.unit ? `${n} ${spec.unit}` : String(n);
   }
 
-  // string fallback
   return String(value);
 }
 
-/** ---------- contact helpers ---------- */
+/* ---------------- CONTACT SECTION ---------------- */
 
 type SellerInfo = {
   name: string;
   email: string;
   phone: string;
 };
-
-// match your DB/user shape: firstName, lastName, email, primaryNumber, username
-function extractUserContact(u: any): SellerInfo {
-  if (!u) return { name: "", email: "", phone: "" };
-
-  const name =
-    `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.username || "";
-  const email = u.email || "";
-  const phone = u.primaryNumber || u.phone || "";
-
-  return { name, email, phone };
-}
 
 function AdvertiserContactSection({
   sellerInfo,
@@ -101,182 +85,175 @@ function AdvertiserContactSection({
   return (
     <section className="pt-2 pb-6">
       <h3 className="text-sm font-semibold text-gray-900 mb-3">
-        Advertiser Name and Contacts
+        Advertiser Contact Details
       </h3>
 
-      <div className="space-y-2 text-xs sm:text-sm">
-        {/* Name row */}
-        <div className="grid grid-cols-2 gap-4 items-start">
+      <div className="space-y-2 text-sm">
+        <div className="grid grid-cols-2 gap-4">
           <p className="text-gray-600">Name</p>
-          <p className="text-gray-900 break-words">
-            {sellerInfo.name || "—"}
-          </p>
+          <p className="text-gray-900">{sellerInfo.name || "—"}</p>
         </div>
 
-        {/* Email row */}
-        <div className="grid grid-cols-2 gap-4 items-start">
+        <div className="grid grid-cols-2 gap-4">
           <p className="text-gray-600">Email</p>
-          <p className="text-gray-900 break-words">
-            {sellerInfo.email || "—"}
-          </p>
+          <p className="text-gray-900">{sellerInfo.email || "—"}</p>
         </div>
 
-        {/* Phone row (editable) */}
-        <div className="grid grid-cols-2 gap-4 items-start">
-          <p className="text-gray-600">Primary Phone</p>
-          <div>
-            <Input
-              value={sellerInfo.phone}
-              onChange={(e) => onPhoneChange(e.target.value)}
-              className="h-8 text-xs sm:text-sm"
-              placeholder="Enter phone number"
-            />
-            <p className="mt-1 text-[11px] text-gray-400">
-              This number will be shown in your advertisement.
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 items-center">
+          <p className="text-gray-600">Phone</p>
+          <Input
+            value={sellerInfo.phone}
+            onChange={(e) => onPhoneChange(e.target.value)}
+            className="h-8"
+            placeholder="Enter phone number"
+          />
         </div>
       </div>
     </section>
   );
 }
 
-/** ---------- main component ---------- */
+/* ---------------- MAIN PAGE ---------------- */
 
-export default function ReviewDetails() {
+export default function PreviewPage() {
+  useWizardGuard("preview");
+
   const router = useRouter();
-
   const data = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
-
   const user = useAuthStore((s) => s.user);
-  const setAuth = useAuthStore((s) => s.setAuth);
 
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
 
-  const isEdit =
-    data.editMode === true &&
-    typeof data.postId === "string" &&
-    data.postId.trim().length > 0;
+  /* ---------------- AUTO FILL SELLER ---------------- */
 
-  const postId = isEdit ? (data.postId as string) : undefined;
+  useEffect(() => {
+    if (!user) return;
 
-  // ✅ safer "has": works for arrays/numbers/booleans too
-  const has = (k: string) => {
-    const v = (data as any)[k];
-    if (v === undefined || v === null) return false;
-    if (Array.isArray(v)) return v.length > 0;
-    if (typeof v === "string") return v.trim().length > 0;
-    return true;
-  };
+    const fullName = [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
-  // Normalize sellerInfo from store
+    if (!data.sellerInfo?.name) {
+      setField("sellerInfo", {
+        name: fullName,
+        email: user.email,
+        phone:
+          data.sellerInfo?.phone || user.primaryNumber || "",
+      });
+    }
+  }, [user]);
+
   const sellerInfo: SellerInfo = {
     name: data.sellerInfo?.name || "",
     email: data.sellerInfo?.email || "",
     phone: data.sellerInfo?.phone || "",
   };
 
-  /** ---------- 1) hydrate auth store from /api/auth/me if empty ---------- */
-  useEffect(() => {
-    if (user) return;
+  /* ---------------- VALIDATION ---------------- */
 
-    (async () => {
-      try {
-        console.log("🌐 [Preview] Fetching /api/auth/me to hydrate auth store");
-        const res = await fetch("/api/auth/me", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          console.warn("⚠️ [Preview] /api/auth/me returned status", res.status);
-          return;
-        }
-
-        const json = await res.json();
-        console.log("✅ [Preview] /api/auth/me payload =", json);
-
-        if (!json.user) {
-          console.warn("⚠️ [Preview] /api/auth/me had no user");
-          return;
-        }
-
-        setAuth("", json.user);
-        console.log("✅ [Preview] authStore hydrated from /api/auth/me");
-      } catch (e) {
-        console.error("❌ [Preview] Failed to hydrate auth store:", e);
-      }
-    })();
-  }, [user, setAuth]);
-
-  /** ---------- 2) auto-inject contact from auth user (once / when available) ---------- */
-  useEffect(() => {
-    console.log("🔎 [Preview] authStore.user =", user);
-    console.log("🔎 [Preview] postForm.sellerInfo BEFORE =", data.sellerInfo);
-
-    if (!user) {
-      console.log("⚠️ [Preview] No user in auth store (yet).");
-      return;
-    }
-
-    const fromProfile = extractUserContact(user);
-    console.log("✅ [Preview] Extracted contact from user =", fromProfile);
-
-    if (!fromProfile.name && !fromProfile.email && !fromProfile.phone) {
-      console.log("⚠️ [Preview] extractUserContact returned empty.");
-      return;
-    }
-
-    const current = data.sellerInfo || { name: "", email: "", phone: "" };
-
-    const next: SellerInfo = {
-      name: current.name || fromProfile.name,
-      email: current.email || fromProfile.email,
-      phone: current.phone || fromProfile.phone,
-    };
-
-    console.log("🧩 [Preview] Merging sellerInfo:", { current, next });
-
-    if (
-      next.name !== current.name ||
-      next.email !== current.email ||
-      next.phone !== current.phone
-    ) {
-      setField("sellerInfo", next);
-    }
-  }, [user, data.sellerInfo, setField]);
-
-  /** ---------- required fields check ---------- */
   const missing = useMemo(() => {
     const m: string[] = [];
-    if (!data.name) m.push("Title");
-    if (!data.description) m.push("Description");
+
+    if (!data.name?.trim()) m.push("Title");
+    if (!data.description?.trim()) m.push("Description");
     if (!data.category) m.push("Category");
     if (!data.subcategory) m.push("Subcategory");
-    if (!sellerInfo.name) m.push("Contact Name");
-    if (!sellerInfo.email) m.push("Contact Email");
-    if (!sellerInfo.phone) m.push("Contact Phone");
-    return m;
-  }, [
-    data.name,
-    data.description,
-    data.category,
-    data.subcategory,
-    sellerInfo.name,
-    sellerInfo.email,
-    sellerInfo.phone,
-  ]);
+    if (!data.location?.address?.trim()) m.push("Location");
+    if (!sellerInfo.phone?.trim()) m.push("Phone");
 
-  /** ---------- submit (add | update) ---------- */
+    return m;
+  }, [data, sellerInfo]);
+
+  /* ---------------- IMAGES ---------------- */
+
+  const [imgUrls, setImgUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const urls = (data.images || []).map((img: File | string) =>
+      img instanceof File ? URL.createObjectURL(img) : img
+    );
+
+    setImgUrls(urls);
+
+    return () => {
+      urls.forEach((u, i) => {
+        if (data.images?.[i] instanceof File)
+          URL.revokeObjectURL(u);
+      });
+    };
+  }, [data.images]);
+
+  /* ---------------- SPECS ---------------- */
+
+  const specs = useMemo(() => {
+    if (!data.category || !data.subcategory) return [];
+    return getSpecs(data.category, data.subcategory);
+  }, [data.category, data.subcategory]);
+
+  const advRows = useMemo(() => {
+    const rows: { label: string; value: string }[] = [];
+
+    rows.push({ label: "Category", value: data.category || "—" });
+    rows.push({
+      label: "Subcategory",
+      value: data.subcategory || "—",
+    });
+    rows.push({ label: "Title", value: data.name || "—" });
+    rows.push({
+      label: "Description",
+      value: data.description || "—",
+    });
+
+    for (const spec of specs) {
+      const v = (data as any)[spec.key];
+
+      if (v === undefined || v === null || v === "") continue;
+
+      rows.push({
+        label: spec.label,
+        value: renderByType(spec, v),
+      });
+    }
+
+    return rows;
+  }, [data, specs]);
+
+  /* ---------------- SUBMIT ---------------- */
+
   const handleSubmit = async () => {
     setClientError(null);
 
-    console.log("📝 [Preview] isEdit =", isEdit, "postId =", postId);
-
     if (missing.length) {
       setClientError(`Please fill: ${missing.join(", ")}`);
+      return;
+    }
+
+    // 🔥 trigger sub-form validation
+    const forms = document.querySelectorAll<HTMLFormElement>(
+      "form[data-post-form='true']"
+    );
+
+    let validationPassed = false;
+
+    const listener = (e: any) => {
+      validationPassed = e.detail?.ok === true;
+    };
+
+    window.addEventListener("postform:validated", listener, {
+      once: true,
+    });
+
+    forms.forEach((f) => f.requestSubmit());
+
+    await new Promise((r) => setTimeout(r, 100));
+
+    window.removeEventListener("postform:validated", listener);
+
+    if (!validationPassed) {
+      setClientError("Please complete required fields.");
       return;
     }
 
@@ -287,224 +264,132 @@ export default function ReviewDetails() {
       sellerInfo,
     });
 
-    let res;
-    if (isEdit && postId) {
-      console.log("🔧 [Preview] Calling updatePost with id =", postId);
-      res = await updatePost(postId, fd);
-    } else {
-      console.log("➕ [Preview] Calling addPost (create new)");
-      res = await addPost(fd);
-    }
+    const res = await addPost(fd);
 
     setLoading(false);
 
     if (!res || (res as any).ok === false) {
-      console.error("❌ [Preview] submit error:", res);
-      const msg =
-        (res as any)?.error ||
-        "Submit failed. Please check required fields and try again.";
-      setClientError(msg);
+      setClientError(
+        (res as any)?.error || "Submit failed."
+      );
       return;
     }
 
-    const newId = (res as any).id as string | undefined;
-
-    if (!isEdit) {
-      // reset create mode flags if needed
-      setField("editMode", false);
-      setField("postId", undefined as unknown as string);
-
-      // 👉 redirect to congratulations page (with id in query if you want)
-      const target = newId
-        ? `/congratulation?postId=${encodeURIComponent(newId)}`
-        : "/congratulation";
-
-      router.push(target);
-    } else {
-      // 👉 for edit keep your old behaviour
-      if (postId) {
-        router.push(`/post-details/${postId}`);
-      } else if (newId) {
-        router.push(`/post-details/${newId}`);
-      } else {
-        router.push("/my-ads"); // fallback
-      }
-    }
+    router.push("/congratulation");
   };
 
-  /** ---------- build sections ---------- */
-
-  const categorySection = [
-    {
-      title: "Main / Sub Category",
-      value: `${data.category || "—"}${data.subcategory ? ` → ${data.subcategory}` : ""}`,
-      type: "text" as const,
-    },
-  ];
-
-  const advDetails: Array<{
-    title: string;
-    value: string;
-    type?: "text" | "bullets";
-    noWrap?: boolean;
-  }> = [];
-
-  advDetails.push(
-    { title: "Title", value: String(data.name || "—"), noWrap: true },
-    { title: "Description", value: String(data.description || "—"), noWrap: true }
-  );
-
-  const keyFeatures =
-    (Array.isArray((data as any).keyFeatures) && (data as any).keyFeatures.join(", ")) ||
-    (typeof (data as any).keyFeatures === "string" && (data as any).keyFeatures) ||
-    "";
-
-  if (keyFeatures) {
-    advDetails.push({
-      title: "Key Features",
-      value: keyFeatures,
-      type: "bullets",
-      noWrap: true,
-    });
-  }
-
-  // ✅ config-driven fields (category + subcategory decides which fields show)
-  const specs = useMemo(() => {
-    if (!data.category || !data.subcategory) return [];
-    return getSpecs(data.category, data.subcategory);
-  }, [data.category, data.subcategory]);
-
-  for (const spec of specs) {
-    if (has(spec.key)) {
-      advDetails.push({
-        title: spec.label,
-        value: renderByType(spec, (data as any)[spec.key]),
-      });
-    }
-  }
-
-  const hasAddress = (data.location?.address || "").trim().length > 0;
-  const coords =
-    typeof data.location?.lat === "number" &&
-    typeof data.location?.lng === "number"
-      ? `${data.location.lat.toFixed(6)}°, ${data.location.lng.toFixed(6)}°`
-      : "";
-
-  const locationProvider: Array<{ title: string; value: string; type?: "text" }> = [];
-  if (hasAddress) {
-    locationProvider.push({
-      title: "Address",
-      value: data.location?.address || "—",
-      type: "text",
-    });
-  }
-  if (coords) {
-    locationProvider.push({
-      title: "Coordinates",
-      value: coords,
-      type: "text",
-    });
-  }
-
-  const mapData =
-    typeof data.location?.lat === "number" &&
-    typeof data.location?.lng === "number"
-      ? { lat: data.location.lat, lng: data.location.lng }
-      : null;
-
-  const imageProvider =
-    Array.isArray(data.images) && data.images.length
-      ? data.images.map((img: File | string) => ({
-          imageUrl: img instanceof File ? URL.createObjectURL(img) : (img as string),
-        }))
-      : [];
-
-  const debugJson = useMemo(() => {
-    try {
-      return JSON.stringify({ ...data, sellerInfo }, null, 2);
-    } catch {
-      return "—";
-    }
-  }, [data, sellerInfo]);
+  /* ---------------- UI ---------------- */
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="w-full max-w-xl mx-auto px-6 pt-10 pb-16">
-        <div className="text-center mb-8">
+    <>
+      <PostHeader />
+
+      <main className="min-h-screen bg-gray-50">
+        <div className="w-full max-w-xl mx-auto px-6 pt-10 pb-16">
+
           <PageHeader
             title="Review Details"
-            description="Take a moment to review all the information you’ve provided. Make sure everything looks good before you submit your advertisement."
+            description="Review everything before submitting."
           />
-        </div>
 
-        {clientError && (
-          <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded mb-6">
-            {clientError}
-          </div>
-        )}
+          {clientError && (
+            <div className="text-red-600 bg-red-50 p-3 rounded mb-4">
+              {clientError}
+            </div>
+          )}
 
-        <ReviewDetailsSection
-          title="Selected Category"
-          dataProvider={categorySection}
-          routeBackTo="/post/select-category"
-        />
+          {/* Advertisement */}
+          <section className="bg-white border rounded p-4">
+            <h3 className="font-semibold mb-3">Advertisement</h3>
 
-        <ReviewDetailsSection
-          title="Advertisement Details"
-          dataProvider={advDetails}
-          routeBackTo="/post/details"
-        />
+            {advRows.map((r, i) => (
+              <div key={i} className="grid grid-cols-2 gap-2 text-sm">
+                <div className="text-gray-600">{r.label}</div>
+                <div>{r.value}</div>
+              </div>
+            ))}
+          </section>
 
-        {(hasAddress || mapData) && (
-          <ReviewDetailsSection
-            title="Selected Location"
-            dataProvider={locationProvider}
-            mapData={mapData || undefined}
-            routeBackTo="/post/pick-location"
-          />
-        )}
+          {/* Images */}
+          {imgUrls.length > 0 && (
+            <section className="bg-white border rounded p-4 mt-4">
+              <h3 className="font-semibold mb-3">Photos</h3>
 
-        {imageProvider.length > 0 && (
-          <ReviewDetailsSection
-            title="Uploaded Photos"
-            imageProvider={imageProvider}
-            routeBackTo="/post/upload-photo"
-          />
-        )}
+              <div className="grid grid-cols-3 gap-2">
+                {imgUrls.map((u, i) => (
+                  <img
+                    key={i}
+                    src={u}
+                    className="h-24 w-full object-cover rounded"
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-        <AdvertiserContactSection
-          sellerInfo={sellerInfo}
-          onPhoneChange={(phone) => setField("sellerInfo", { ...sellerInfo, phone })}
-        />
+          {/* Location */}
+          <section className="bg-white border rounded p-4 mt-4">
+            <h3 className="font-semibold mb-3">Location</h3>
 
-        <details className="group mt-4">
-          <summary className="cursor-pointer text-sm text-gray-600">
-            Debug JSON
-          </summary>
-          <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
-            {debugJson}
-          </pre>
-        </details>
+            {data.location?.address ? (
+              <div className="text-sm space-y-1">
+                <p>{data.location.address}</p>
 
-        <div className="mt-6">
+                {data.location.city && (
+                  <p className="text-gray-500">
+                    {data.location.city},{" "}
+                    {data.location.state}
+                  </p>
+                )}
+
+                {data.location.pincode && (
+                  <p className="text-gray-500">
+                    PIN: {data.location.pincode}
+                  </p>
+                )}
+
+                {data.location.lat &&
+                  data.location.lng && (
+                    <a
+                      href={`https://www.google.com/maps?q=${data.location.lat},${data.location.lng}`}
+                      target="_blank"
+                      className="text-blue-600 text-xs underline"
+                    >
+                      View on Map
+                    </a>
+                  )}
+              </div>
+            ) : (
+              <p className="text-gray-400">
+                No location selected
+              </p>
+            )}
+          </section>
+
+          {/* Contact */}
+          <section className="bg-white border rounded p-4 mt-4">
+            <AdvertiserContactSection
+              sellerInfo={sellerInfo}
+              onPhoneChange={(phone) =>
+                setField("sellerInfo", {
+                  ...sellerInfo,
+                  phone,
+                })
+              }
+            />
+          </section>
+
           <PostFooter
-            showBack={false}
-            showNext={false}
-            showSubmit={true}
-            onSubmit={handleSubmit}
+            showBack
+            showSubmit
             submitting={loading}
-            submitLabel={
-              loading
-                ? isEdit
-                  ? "Saving..."
-                  : "Submitting..."
-                : isEdit
-                ? "Save Changes"
-                : "Submit Post"
+            onBack={() =>
+              router.push("/post/pick-location")
             }
+            onSubmit={handleSubmit}
           />
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

@@ -1,266 +1,269 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
+import FormField from "@/app/components/form/fields/FormField";
+import SelectField from "@/app/components/form/fields/SelectField";
+import { toast } from "sonner";
 
 export default function HolidayOffersForm() {
-  const [formData, setFormData] = useState({
-    offerTitle: "",
-    providerName: "",
-    category: "",
-    startDate: "",
-    endDate: "",
-    location: "",
-    price: "",
-    discount: "",
-    couponCode: "",
-    bookingLink: "",
-    maxParticipants: "",
-    audience: "",
-    mediaUrl: "",
-    description: "",
-    terms: "",
-    contactName: "",
-    contactEmail: "",
-    contactPhone: "",
-  });
+  const formRef = useRef<HTMLFormElement | null>(null);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
+
+  const category = store.category;
+  const subcategory = store.subcategory;
+
+  const name = store.name ?? "";
+  const providerName = store.providerName ?? "";
+  const holidayCategory = store.holidayCategory ?? "";
+  const startDate = store.startDate ?? "";
+  const endDate = store.endDate ?? "";
+  const location = store.location ?? {};
+  const price = store.price ?? store.salePrice ?? "";
+  const discount = store.discount ?? "";
+  const couponCode = store.couponCode ?? "";
+  const bookingLink = store.bookingLink ?? "";
+  const maxParticipants = store.maxParticipants ?? "";
+  const audience = store.audience ?? "";
+  const mediaUrl = store.mediaUrl ?? "";
+  const description = store.description ?? "";
+  const terms = store.terms ?? "";
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!category) setField("category", "Special Offers");
+    if (!subcategory) setField("subcategory", "Holiday");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
+  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
+    const cur = sellerInfo || {};
+    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+  };
+
+  const setLoc = (address?: string) => {
+    const cur = location || {};
+    setField("location", { ...cur, address: address ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Offer title required";
+    if (price && !isPositive(price))
+      mapped.price = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
   };
 
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent>
-        <h2 className="text-2xl font-bold mb-6">Holiday & Seasonal Offers</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Holiday & Seasonal Offers</h2>
 
-        <div className="space-y-4">
-          {/* Offer Title */}
-          <div>
-            <Label>Offer Title</Label>
-            <Input
-              name="offerTitle"
-              value={formData.offerTitle}
-              onChange={handleChange}
-              placeholder="e.g. Summer Special Package"
-              required
-            />
-          </div>
+      <FormField
+        label="Offer Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-          {/* Provider Name */}
-          <div>
-            <Label>Provider / Company Name</Label>
-            <Input
-              name="providerName"
-              value={formData.providerName}
-              onChange={handleChange}
-              placeholder="Organization or Company Name"
-            />
-          </div>
+      <FormField
+        label="Provider / Company Name"
+        field="providerName"
+        value={providerName}
+        onChange={(v) => setField("providerName", v)}
+      />
 
-          {/* Category */}
-          <div>
-            <Label>Category</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange("category", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="holiday-packages">
-                  Holiday Packages
-                </SelectItem>
-                <SelectItem value="seasonal-sale">Seasonal Sale</SelectItem>
-                <SelectItem value="special-offers">Special Offers</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <SelectField
+        label="Category"
+        field="holidayCategory"
+        value={holidayCategory}
+        onChange={(v) => setField("holidayCategory", v)}
+        options={[
+          { value: "holiday-packages", label: "Holiday Packages" },
+          { value: "seasonal-sale", label: "Seasonal Sale" },
+          { value: "special-offers", label: "Special Offers" },
+          { value: "other", label: "Other" },
+        ]}
+      />
 
-          {/* Start & End Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Start Date</Label>
-              <Input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label>End Date</Label>
-              <Input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          label="Start Date"
+          field="startDate"
+          type="date"
+          value={startDate}
+          onChange={(v) => setField("startDate", v)}
+        />
+        <FormField
+          label="End Date"
+          field="endDate"
+          type="date"
+          value={endDate}
+          onChange={(v) => setField("endDate", v)}
+        />
+      </div>
 
-          {/* Location */}
-          <div>
-            <Label>Location</Label>
-            <Input
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              placeholder="City, State or Online"
-            />
-          </div>
+      <FormField
+        label="Location"
+        field="sellerLocation"
+        value={location?.address ?? ""}
+        onChange={(v) => setLoc((v as string) || "")}
+      />
 
-          {/* Price */}
-          <div>
-            <Label>Price / Cost</Label>
-            <Input
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              placeholder="e.g. ₹15,000, Free"
-            />
-          </div>
+      <FormField
+        label="Price / Cost"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+      />
 
-          {/* Discount */}
-          <div>
-            <Label>Discount / Deal</Label>
-            <Input
-              name="discount"
-              value={formData.discount}
-              onChange={handleChange}
-              placeholder="e.g. 20% off, Buy 1 Get 1"
-            />
-          </div>
+      <FormField
+        label="Discount / Deal"
+        field="discount"
+        value={discount}
+        onChange={(v) => setField("discount", v)}
+      />
 
-          {/* Coupon Code */}
-          <div>
-            <Label>Coupon Code / Voucher</Label>
-            <Input
-              name="couponCode"
-              value={formData.couponCode}
-              onChange={handleChange}
-              placeholder="e.g. SUMMER2025"
-            />
-          </div>
+      <FormField
+        label="Coupon Code"
+        field="couponCode"
+        value={couponCode}
+        onChange={(v) => setField("couponCode", v)}
+      />
 
-          {/* Booking / Registration Link */}
-          <div>
-            <Label>Booking / Registration Link</Label>
-            <Input
-              type="url"
-              name="bookingLink"
-              value={formData.bookingLink}
-              onChange={handleChange}
-              placeholder="https://book-now.com/offer"
-            />
-          </div>
+      <FormField
+        label="Booking Link"
+        field="bookingLink"
+        type="url"
+        value={bookingLink}
+        onChange={(v) => setField("bookingLink", v)}
+      />
 
-          {/* Max Participants */}
-          <div>
-            <Label>Max Participants / Availability</Label>
-            <Input
-              type="number"
-              name="maxParticipants"
-              value={formData.maxParticipants}
-              onChange={handleChange}
-              placeholder="e.g. 100 slots"
-            />
-          </div>
+      <FormField
+        label="Max Participants"
+        field="maxParticipants"
+        type="number"
+        value={maxParticipants}
+        onChange={(v) => setField("maxParticipants", v)}
+      />
 
-          {/* Target Audience */}
-          <div>
-            <Label>Target Audience</Label>
-            <Input
-              name="audience"
-              value={formData.audience}
-              onChange={handleChange}
-              placeholder="e.g. Families, Couples, Students"
-            />
-          </div>
+      <FormField
+        label="Target Audience"
+        field="audience"
+        value={audience}
+        onChange={(v) => setField("audience", v)}
+      />
 
-          {/* Media */}
-          <div>
-            <Label>Image / Media URL</Label>
-            <Input
-              type="url"
-              name="mediaUrl"
-              value={formData.mediaUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/offer-banner.jpg"
-            />
-          </div>
+      <FormField
+        label="Media URL"
+        field="mediaUrl"
+        type="url"
+        value={mediaUrl}
+        onChange={(v) => setField("mediaUrl", v)}
+      />
 
-          {/* Description */}
-          <div>
-            <Label>Description</Label>
-            <Textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Provide details about the offer"
-            />
-          </div>
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
 
-          {/* Terms & Conditions */}
-          <div>
-            <Label>Terms & Conditions</Label>
-            <Textarea
-              name="terms"
-              value={formData.terms}
-              onChange={handleChange}
-              placeholder="Mention important terms of the offer"
-            />
-          </div>
+      <FormField
+        label="Terms & Conditions"
+        field="terms"
+        type="textarea"
+        value={terms}
+        onChange={(v) => setField("terms", v)}
+      />
 
-          {/* Contact Info */}
-          <div>
-            <Label>Contact Name</Label>
-            <Input
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleChange}
-              placeholder="Contact Person"
-            />
-          </div>
-          <div>
-            <Label>Contact Email</Label>
-            <Input
-              type="email"
-              name="contactEmail"
-              value={formData.contactEmail}
-              onChange={handleChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div>
-            <Label>Contact Phone</Label>
-            <Input
-              type="tel"
-              name="contactPhone"
-              value={formData.contactPhone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FormField
+          label="Contact Name"
+          field="sellerName"
+          value={sellerInfo?.name ?? ""}
+          onChange={(v) => setSeller("name", (v as string) || "")}
+          required
+        />
+        <FormField
+          label="Contact Email"
+          field="sellerEmail"
+          type="email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(v) => setSeller("email", (v as string) || "")}
+        />
+        <FormField
+          label="Contact Phone"
+          field="sellerPhone"
+          type="tel"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(v) => setSeller("phone", (v as string) || "")}
+          required
+        />
+      </div> */}
+
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

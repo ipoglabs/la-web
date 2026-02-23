@@ -1,170 +1,238 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function EquipmentSuppliesForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Ensure category/subcategory (For Sale → Equipment & Supplies)
-  React.useEffect(() => {
-    if (!store.category) setField("category", "For Sale");
-    if (!store.subcategory) setField("subcategory", "Equipment & Supplies");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Nested helpers
+  const name = store.name ?? "";
+  const itemCategory = (store as any).itemCategory ?? "";
+  const condition = store.condition ?? "";
+  const quantity = (store as any).quantity ?? "";
+  const brand = store.brand ?? "";
+  const model = (store as any).model ?? "";
+  const description = store.description ?? "";
+  const price = (store as any).price ?? store.salePrice ?? "";
+
+  const location = store.location ?? {};
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // preset category/subcategory
+  useEffect(() => {
+    if (!category) setField("category", "Business");
+    if (!subcategory) setField("subcategory", "Equipment");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Title required";
+    if (!itemCategory) mapped.itemCategory = "Item category required";
+    if (!condition) mapped.condition = "Condition required";
+    if (!isPositive(price)) mapped.price = "Valid price required";
+    if (!description.trim()) mapped.description = "Description required";
+    if (!location?.address?.trim())
+      mapped.location = "Location required";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <Card className="shadow-lg rounded-2xl">
-        <CardContent className="p-6 space-y-6">
-          <h2 className="text-2xl font-bold">Equipment & Supplies Listing</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-3xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">
+        Equipment & Supplies Listing
+      </h2>
 
-          {/* Category/Subcategory (read-only-ish fields bound to store) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Category" field="category" placeholder="For Sale" required />
-            <FormField
-              label="Subcategory"
-              field="subcategory"
-              placeholder="Equipment & Supplies"
-              required
-            />
-          </div>
+      <FormField
+        label="Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-          {/* Title → name */}
-          <FormField
-            label="Title"
-            field="name"
-            placeholder="e.g., Industrial Generator for Sale"
-            required
-          />
+      <SelectField
+        label="Item Category"
+        field="itemCategory"
+        value={itemCategory}
+        onChange={(v) => setField("itemCategory", v)}
+        options={[
+          { value: "machinery", label: "Machinery" },
+          { value: "tools", label: "Tools" },
+          { value: "office_supplies", label: "Office Supplies" },
+          { value: "construction_equipment", label: "Construction Equipment" },
+          { value: "other", label: "Other" },
+        ]}
+        required
+      />
 
-          {/* Category (item type) */}
-          <SelectField
-            label="Item Category"
-            field="itemCategory"
-            placeholder="Select Category"
-            options={[
-              { value: "machinery", label: "Machinery" },
-              { value: "tools", label: "Tools" },
-              { value: "office_supplies", label: "Office Supplies" },
-              { value: "construction_equipment", label: "Construction Equipment" },
-              { value: "other", label: "Other" },
-            ]}
-          />
+      <SelectField
+        label="Condition"
+        field="condition"
+        value={condition}
+        onChange={(v) => setField("condition", v)}
+        options={[
+          { value: "new", label: "New" },
+          { value: "used", label: "Used" },
+          { value: "refurbished", label: "Refurbished" },
+        ]}
+        required
+      />
 
-          {/* Condition */}
-          <SelectField
-            label="Condition"
-            field="condition"
-            placeholder="Select Condition"
-            options={[
-              { value: "new", label: "New" },
-              { value: "used", label: "Used" },
-              { value: "refurbished", label: "Refurbished" },
-            ]}
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          label="Price (₹)"
+          field="price"
+          type="number"
+          value={price}
+          onChange={(v) => handlePrice(String(v))}
+          required
+        />
+        <FormField
+          label="Quantity"
+          field="quantity"
+          type="number"
+          value={quantity}
+          onChange={(v) => setField("quantity", v)}
+        />
+      </div>
 
-          {/* Price / Quantity */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              label="Price (₹)"
-              field="salePrice"
-              type="number"
-              inputMode="decimal"
-              placeholder="Enter price"
-              required
-            />
-            <FormField
-              label="Quantity"
-              field="quantity"
-              type="number"
-              inputMode="numeric"
-              placeholder="Enter available units"
-            />
-          </div>
+      <FormField
+        label="Brand"
+        field="brand"
+        value={brand}
+        onChange={(v) => setField("brand", v)}
+      />
 
-          {/* Location (nested) */}
-          <FormField
-            label="Location"
-            field="__ignore_location__"
-            placeholder="e.g., Chennai, Tamil Nadu"
-            value={store.location?.address ?? ""}
-            onChange={(v) => setLoc((v as string) || "")}
-            required
-          />
+      <FormField
+        label="Model"
+        field="model"
+        value={model}
+        onChange={(v) => setField("model", v)}
+      />
 
-          {/* Seller Type (kept as a free field; add to schema if you want to persist) */}
-          <SelectField
-            label="Seller Type"
-            field="sellerType"
-            placeholder="Select Seller Type"
-            options={[
-              { value: "individual", label: "Individual" },
-              { value: "business", label: "Business" },
-              { value: "dealer", label: "Dealer" },
-            ]}
-          />
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+        required
+      />
 
-          {/* Brand / Model */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="Brand" field="brand" placeholder="e.g., Caterpillar, Bosch" />
-            <FormField label="Model" field="model" placeholder="e.g., X200 Heavy Duty" />
-          </div>
+      <input
+        name="location"
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
+        required
+      />
 
-          {/* Description */}
-          <FormField
-            label="Description"
-            field="description"
-            type="textarea"
-            placeholder="Provide details about the equipment/supplies"
-            required
-          />
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
+          required
+        />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
+        />
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
+        />
+      </div> */}
 
-          {/* Contact Info (nested seller_info) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              label="Contact Name"
-              field="__ignore_seller_name__"
-              placeholder="Contact person"
-              value={store.sellerInfo?.name ?? ""}
-              onChange={(v) => setSeller("name", (v as string) || "")}
-              required
-            />
-            <FormField
-              label="Contact Phone"
-              field="__ignore_seller_phone__"
-              type="tel"
-              placeholder="Phone number"
-              value={store.sellerInfo?.phone ?? ""}
-              onChange={(v) => setSeller("phone", (v as string) || "")}
-              required
-            />
-            <FormField
-              label="Contact Email"
-              field="__ignore_seller_email__"
-              type="email"
-              placeholder="Email address"
-              value={store.sellerInfo?.email ?? ""}
-              onChange={(v) => setSeller("email", (v as string) || "")}
-            />
-          </div>
-
-          {/* No submit button here—use your Preview page flow to submit */}
-        </CardContent>
-      </Card>
-    </div>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

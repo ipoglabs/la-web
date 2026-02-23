@@ -1,193 +1,230 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect, useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function TravelTourismForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
+
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Default main category/subcategory
-  React.useEffect(() => {
-    if (!store.category) setField("category", "For Sale");
-    if (!store.subcategory) setField("subcategory", "Travel & Tourism");
-  }, [store.category, store.subcategory, setField]);
+  const category = store.category;
+  const subcategory = store.subcategory;
 
-  // Helpers for nested objects
+  const tourTitle = store.tourTitle ?? "";
+  const tourType = store.tourType ?? "";
+  const description = store.description ?? "";
+  const startDate = store.startDate ?? "";
+  const endDate = store.endDate ?? "";
+  const duration = store.duration ?? "";
+  const itinerary = store.itinerary ?? "";
+  const inclusions = store.inclusions ?? "";
+  const exclusions = store.exclusions ?? "";
+  const accommodation = store.accommodation ?? "";
+  const transport = store.transport ?? "";
+  const groupSize = store.groupSize ?? "";
+  const bookingDeadline = store.bookingDeadline ?? "";
+  const price = store.price ?? store.salePrice ?? "";
+  const specialOffers = store.specialOffers ?? "";
+  const cancellationPolicy = store.cancellationPolicy ?? "";
+  const sellerInfo = store.sellerInfo ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!category) setField("category", "For Sale");
+    if (!subcategory) setField("subcategory", "Travel & Tourism");
+  }, [category, subcategory, setField]);
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el =
+      formRef.current?.querySelector<HTMLElement>(
+        `[name="${first}"]`
+      );
+
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v);
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
-    setField("sellerInfo", { ...cur, [k]: v ?? "" });
+    setField("sellerInfo", { ...sellerInfo, [k]: v ?? "" });
+  };
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!tourTitle.trim()) mapped.tourTitle = "Tour title required";
+    if (!tourType) mapped.tourType = "Tour type required";
+    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    setField("tourTitle", tourTitle.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
   };
 
   return (
-    <Card className="max-w-2xl mx-auto p-6 shadow-lg rounded-2xl">
-      <CardContent className="space-y-6">
-        <h2 className="text-2xl font-bold">Travel & Tourism</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="space-y-6 max-w-2xl mx-auto p-6"
+    >
+      <h2 className="text-2xl font-bold">Travel & Tourism</h2>
 
-        {/* Category / Subcategory */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="For Sale" required />
-          <FormField
-            label="Subcategory"
-            field="subcategory"
-            placeholder="Travel & Tourism"
-            required
-          />
-        </div>
+      <FormField
+        label="Tour / Package Title"
+        field="tourTitle"
+        value={tourTitle}
+        onChange={(v) => setField("tourTitle", v)}
+        required
+      />
 
-        {/* Tour Title */}
-        <FormField
-          label="Tour / Package Title"
-          field="tourTitle"
-          placeholder="Title of the tour or package"
-          required
-        />
+      <SelectField
+        label="Tour Type"
+        field="tourType"
+        value={tourType}
+        onChange={(v) => setField("tourType", v)}
+        options={[
+          { value: "domestic", label: "Domestic" },
+          { value: "international", label: "International" },
+          { value: "adventure", label: "Adventure" },
+          { value: "cruise", label: "Cruise" },
+          { value: "honeymoon", label: "Honeymoon" },
+          { value: "other", label: "Other" },
+        ]}
+        required
+      />
 
-        {/* Tour Type */}
-        <SelectField
-          label="Tour Type"
-          field="tourType"
-          placeholder="Select Tour Type"
-          options={[
-            { value: "domestic", label: "Domestic" },
-            { value: "international", label: "International" },
-            { value: "adventure", label: "Adventure" },
-            { value: "cruise", label: "Cruise" },
-            { value: "honeymoon", label: "Honeymoon" },
-            { value: "other", label: "Other" },
-          ]}
-        />
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+      />
 
-        {/* Description */}
-        <FormField
-          label="Description"
-          field="description"
-          type="textarea"
-          placeholder="Details about the tour or package"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Start Date" field="startDate" type="date" value={startDate} onChange={(v) => setField("startDate", v)} />
+        <FormField label="End Date" field="endDate" type="date" value={endDate} onChange={(v) => setField("endDate", v)} />
+      </div>
 
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
-          <FormField label="Start Date" field="startDate" type="date" />
-          <FormField label="End Date" field="endDate" type="date" />
-        </div>
+      <FormField label="Duration" field="duration" value={duration} onChange={(v) => setField("duration", v)} />
+      <FormField label="Itinerary / Highlights" field="itinerary" type="textarea" value={itinerary} onChange={(v) => setField("itinerary", v)} />
+      <FormField label="Inclusions" field="inclusions" type="textarea" value={inclusions} onChange={(v) => setField("inclusions", v)} />
+      <FormField label="Exclusions" field="exclusions" type="textarea" value={exclusions} onChange={(v) => setField("exclusions", v)} />
 
-        {/* Duration */}
-        <FormField label="Duration" field="duration" placeholder="e.g. 5 Days / 4 Nights" />
+      <SelectField
+        label="Accommodation Type"
+        field="accommodation"
+        value={accommodation}
+        onChange={(v) => setField("accommodation", v)}
+        options={[
+          { value: "hotel", label: "Hotel" },
+          { value: "resort", label: "Resort" },
+          { value: "hostel", label: "Hostel" },
+          { value: "camp", label: "Camp" },
+          { value: "other", label: "Other" },
+        ]}
+      />
 
-        {/* Itinerary */}
-        <FormField
-          label="Itinerary / Highlights"
-          field="itinerary"
-          type="textarea"
-          placeholder="Key attractions / day-wise plan"
-        />
+      <SelectField
+        label="Transport Mode"
+        field="transport"
+        value={transport}
+        onChange={(v) => setField("transport", v)}
+        options={[
+          { value: "flight", label: "Flight" },
+          { value: "train", label: "Train" },
+          { value: "bus", label: "Bus" },
+          { value: "cruise", label: "Cruise" },
+          { value: "own", label: "Own Transport" },
+        ]}
+      />
 
-        {/* Inclusions */}
-        <FormField
-          label="Inclusions"
-          field="inclusions"
-          type="textarea"
-          placeholder="Meals, Hotel, Transport, Guide, etc."
-        />
+      <FormField label="Group Size" field="groupSize" value={groupSize} onChange={(v) => setField("groupSize", v)} />
+      <FormField label="Booking Deadline" field="bookingDeadline" type="date" value={bookingDeadline} onChange={(v) => setField("bookingDeadline", v)} />
 
-        {/* Exclusions */}
-        <FormField
-          label="Exclusions"
-          field="exclusions"
-          type="textarea"
-          placeholder="Not included in the package"
-        />
+      <FormField
+        label="Price"
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
 
-        {/* Accommodation */}
-        <SelectField
-          label="Accommodation Type"
-          field="accommodation"
-          placeholder="Select Accommodation"
-          options={[
-            { value: "hotel", label: "Hotel" },
-            { value: "resort", label: "Resort" },
-            { value: "hostel", label: "Hostel" },
-            { value: "camp", label: "Camp" },
-            { value: "other", label: "Other" },
-          ]}
-        />
+      <FormField label="Special Offers" field="specialOffers" value={specialOffers} onChange={(v) => setField("specialOffers", v)} />
+      <FormField label="Cancellation Policy" field="cancellationPolicy" type="textarea" value={cancellationPolicy} onChange={(v) => setField("cancellationPolicy", v)} />
 
-        {/* Transport */}
-        <SelectField
-          label="Transport Mode"
-          field="transport"
-          placeholder="Select Transport"
-          options={[
-            { value: "flight", label: "Flight" },
-            { value: "train", label: "Train" },
-            { value: "bus", label: "Bus" },
-            { value: "cruise", label: "Cruise" },
-            { value: "own", label: "Own Transport" },
-          ]}
-        />
+      {/* <h3 className="text-lg font-semibold">Seller Information</h3>
 
-        {/* Group Size */}
-        <FormField
-          label="Group Size / Capacity"
-          field="groupSize"
-          placeholder="e.g. Max 20 people"
-        />
+      <FormField
+        label="Contact Name"
+        field="sellerName"
+        value={sellerInfo?.name ?? ""}
+        onChange={(v) => setSeller("name", v as string)}
+        required
+      />
 
-        {/* Booking Deadline */}
-        <FormField label="Booking Deadline" field="bookingDeadline" type="date" />
+      <FormField
+        label="Contact Email"
+        field="sellerEmail"
+        type="email"
+        value={sellerInfo?.email ?? ""}
+        onChange={(v) => setSeller("email", v as string)}
+      />
 
-        {/* Price */}
-        <FormField label="Price / Package Cost" field="price" placeholder="Cost of the tour/package" />
+      <FormField
+        label="Contact Phone"
+        field="sellerPhone"
+        type="tel"
+        value={sellerInfo?.phone ?? ""}
+        onChange={(v) => setSeller("phone", v as string)}
+        required
+      /> */}
 
-        {/* Special Offers */}
-        <FormField
-          label="Special Offers / Discounts"
-          field="specialOffers"
-          placeholder="e.g. Early bird discount"
-        />
-
-        {/* Cancellation Policy */}
-        <FormField
-          label="Cancellation Policy"
-          field="cancellationPolicy"
-          type="textarea"
-          placeholder="e.g. 50% refund before 7 days"
-        />
-
-        {/* Contact Info */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Contact Person"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="Email Address"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Contact Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="Phone Number"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }

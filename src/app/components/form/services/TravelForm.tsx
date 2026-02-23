@@ -1,148 +1,241 @@
 "use client";
 
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useRef, useState } from "react";
+import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import SelectField from "@/app/components/form/fields/SelectField";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { toast } from "sonner";
 
 export default function TravelServiceForm() {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
-  // Ensure category/subcategory for Services → Travel
-  React.useEffect(() => {
-    if (!store.category) setField("category", "Services");
-    if (!store.subcategory) setField("subcategory", "Travel");
-  }, [store.category, store.subcategory, setField]);
+  const name = store.name ?? "";
+  const destination = (store as any).destination ?? "";
+  const packageDetails = (store as any).packageDetails ?? "";
+  const durationText = (store as any).durationText ?? "";
+  const agencyName = (store as any).agencyName ?? "";
+  const availability = (store as any).availability ?? "";
+  const serviceType = (store as any).serviceType ?? "";
+  const price = (store as any).price ?? "";
+  const description = store.description ?? "";
 
-  // Helpers for nested objects
+  const sellerInfo = store.sellerInfo ?? {};
+  const location = store.location ?? {};
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isPositive = (v: unknown) => {
+    if (!v) return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
+  };
+
+  const dispatchValidated = (ok: boolean) => {
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok } })
+    );
+  };
+
+  const scrollToFirstError = (mapped: Record<string, string>) => {
+    const first = Object.keys(mapped)[0];
+    if (!first) return;
+
+    const el = formRef.current?.querySelector<HTMLElement>(
+      `[name="${first}"]`
+    );
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
+  };
+
+  const handlePrice = (v: string) => {
+    setField("price", v);
+    setField("salePrice", v); // backend consistency
+  };
+
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = store.sellerInfo || {};
+    const cur = sellerInfo || {};
     setField("sellerInfo", { ...cur, [k]: v ?? "" });
   };
+
   const setLoc = (address?: string) => {
-    const cur = store.location || {};
+    const cur = location || {};
     setField("location", { ...cur, address: address ?? "" });
   };
 
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const mapped: Record<string, string> = {};
+
+    if (!name.trim()) mapped.name = "Title required";
+    if (!serviceType) mapped.serviceType = "Service type required";
+    if (!destination.trim()) mapped.destination = "Destination required";
+    if (!packageDetails.trim())
+      mapped.packageDetails = "Package details required";
+    if (!durationText.trim()) mapped.durationText = "Duration required";
+    if (!isPositive(price)) mapped.price = "Valid price required";
+
+    if (!sellerInfo?.name?.trim())
+      mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.email?.trim())
+      mapped.sellerEmail = "Email required";
+    if (!sellerInfo?.phone?.trim())
+      mapped.sellerPhone = "Phone required";
+
+    setErrors(mapped);
+
+    if (Object.keys(mapped).length > 0) {
+      scrollToFirstError(mapped);
+      toast.error("Please fix highlighted fields");
+      dispatchValidated(false);
+      return;
+    }
+
+    // persist cleaned values
+    setField("name", name.trim());
+    setField("description", description.trim());
+
+    setErrors({});
+    dispatchValidated(true);
+  };
+
   return (
-    <Card className="max-w-3xl mx-auto my-10 shadow-lg rounded-2xl">
-      <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">Post Travel Service</h2>
+    <form
+      ref={formRef}
+      data-post-form="true"
+      onSubmit={onSubmit}
+      className="max-w-3xl mx-auto my-8 space-y-6"
+    >
+      <h2 className="text-2xl font-semibold text-center">
+        Post Travel Service
+      </h2>
 
-        {/* Category / Subcategory (kept visible for clarity, stored in global store) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField label="Category" field="category" placeholder="Services" required />
-          <FormField label="Subcategory" field="subcategory" placeholder="Travel" required />
-        </div>
+      {/* Service Type */}
+      <SelectField
+        label="Service Type"
+        field="serviceType"
+        value={serviceType}
+        onChange={(v) => setField("serviceType", v)}
+        options={[
+          { value: "tour", label: "Tour" },
+          { value: "package", label: "Package" },
+          { value: "guide", label: "Guide" },
+          { value: "transport", label: "Transport" },
+          { value: "other", label: "Other" },
+        ]}
+      />
 
-        {/* Service Type */}
-        <SelectField
-          label="Service Type"
-          field="serviceType"
-          placeholder="Select service type"
-          options={[
-            { value: "tour", label: "Tour" },
-            { value: "package", label: "Package" },
-            { value: "guide", label: "Guide" },
-            { value: "transport", label: "Transport" },
-            { value: "other", label: "Other" },
-          ]}
-        />
+      {/* Title */}
+      <FormField
+        label="Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", v)}
+        required
+      />
 
-        {/* Title -> name */}
+      {/* Destination */}
+      <FormField
+        label="Destination"
+        field="destination"
+        value={destination}
+        onChange={(v) => setField("destination", v)}
+      />
+
+      {/* Package Details */}
+      <FormField
+        label="Package Details"
+        field="packageDetails"
+        type="textarea"
+        value={packageDetails}
+        onChange={(v) => setField("packageDetails", v)}
+      />
+
+      {/* Duration / Availability / Price */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <FormField
-          label="Title"
-          field="name"
-          placeholder="e.g., Goa Holiday Package, Manali Trip, Airport Cab"
+          label="Duration"
+          field="durationText"
+          value={durationText}
+          onChange={(v) => setField("durationText", v)}
+        />
+        <FormField
+          label="Availability"
+          field="availability"
+          value={availability}
+          onChange={(v) => setField("availability", v)}
+        />
+        <FormField
+          label="Price (₹)"
+          field="price"
+          type="number"
+          value={price}
+          onChange={(v) => handlePrice(String(v))}
           required
         />
+      </div>
 
-        {/* Destination */}
-        <FormField
-          label="Destination"
-          field="destination"
-          placeholder="e.g., Goa, Paris, Manali"
-        />
+      {/* Agency Name */}
+      <FormField
+        label="Agency Name"
+        field="agencyName"
+        value={agencyName}
+        onChange={(v) => setField("agencyName", v)}
+      />
 
-        {/* Duration + Availability + Price */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Duration"
-            field="duration"
-            placeholder="e.g., 5 Days / 4 Nights"
-          />
-          <FormField
-            label="Availability"
-            field="availability"
-            placeholder="e.g., Year-round / Seasonal / Weekends"
-          />
-          <FormField
-            label="Price (INR)"
-            field="price"
-            type="number"
-            placeholder="e.g., 25000"
-          />
-        </div>
+      {/* Description */}
+      <FormField
+        label="Description"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+        required
+      />
 
-        {/* Agency Name (optional) */}
-        <FormField
-          label="Agency / Provider Name"
-          field="agencyName"
-          placeholder="Enter agency or provider name"
-        />
+      {/* Location */}
+      <input
+        name="location"
+        className="border rounded w-full px-3 py-2"
+        placeholder="Service Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
+      />
 
-        {/* Description */}
-        <FormField
-          label="Package / Service Details"
-          field="description"
-          type="textarea"
-          placeholder="Include inclusions (hotel, flight, sightseeing), exclusions, itinerary, terms…"
+      {/* Contact */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">
+        <input
+          name="sellerName"
+          className="border rounded px-3 py-2"
+          placeholder="Contact Name"
+          value={sellerInfo?.name ?? ""}
+          onChange={(e) => setSeller("name", e.target.value)}
           required
         />
-
-        {/* Location (stored in location.address) */}
-        <FormField
-          label="Service Location"
-          field="__ignore_location__"
-          placeholder="City / Pickup area (or 'Online')"
-          value={store.location?.address ?? ""}
-          onChange={(v) => setLoc((v as string) || "")}
+        <input
+          name="sellerEmail"
+          className="border rounded px-3 py-2"
+          type="email"
+          placeholder="Email"
+          value={sellerInfo?.email ?? ""}
+          onChange={(e) => setSeller("email", e.target.value)}
+          required
         />
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          type="tel"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+          required
+        />
+      </div>
 
-        {/* Contact Info -> sellerInfo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            label="Contact Name"
-            field="__ignore_seller_name__"
-            placeholder="Your name"
-            value={store.sellerInfo?.name ?? ""}
-            onChange={(v) => setSeller("name", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Email"
-            field="__ignore_seller_email__"
-            type="email"
-            placeholder="you@example.com"
-            value={store.sellerInfo?.email ?? ""}
-            onChange={(v) => setSeller("email", (v as string) || "")}
-            required
-          />
-          <FormField
-            label="Phone"
-            field="__ignore_seller_phone__"
-            type="tel"
-            placeholder="+91 9876543210"
-            value={store.sellerInfo?.phone ?? ""}
-            onChange={(v) => setSeller("phone", (v as string) || "")}
-            required
-          />
-        </div>
-
-        {/* No local submit — user proceeds via the global Preview → Submit flow */}
-      </CardContent>
-    </Card>
+      {/* hidden submit for global flow */}
+      <button type="submit" className="sr-only" />
+    </form>
   );
 }
