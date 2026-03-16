@@ -22,10 +22,10 @@ export type PostFormState = {
   description: string;
   sellerInfo: SellerInfo;
 
-  /** In-memory runtime images (File | url string) */
+  /** Runtime images (not persisted) */
   images: (File | string)[];
 
-  /** Persisted image refs (url strings + idb refs) */
+  /** Persisted image references */
   imageRefs: string[];
 
   location: Location;
@@ -40,7 +40,6 @@ export type PostFormState = {
   setBulk: (data: Partial<PostFormState>) => void;
   reset: () => void;
 
-  /** Images API */
   addFiles: (files: FileList | File[]) => Promise<void>;
   removeImage: (index: number) => Promise<void>;
   setImagesFromRefs: () => Promise<void>;
@@ -52,10 +51,13 @@ const defaultState = {
   name: "",
   description: "",
   sellerInfo: { name: "", email: "", phone: "" },
+
   images: [],
   imageRefs: [],
+
   location: { address: "" },
   facilities: [],
+
   editMode: false,
   postId: undefined as string | undefined,
 };
@@ -65,23 +67,34 @@ export const usePostFormStore = create<PostFormState>()(
     (set, get) => ({
       ...defaultState,
 
-      setField: (key, value) => set((s) => ({ ...s, [key]: value })),
-      setBulk: (data) => set((s) => ({ ...s, ...data })),
+      setField: (key, value) =>
+        set((s) => ({
+          ...s,
+          [key]: value,
+        })),
+
+      setBulk: (data) =>
+        set((s) => ({
+          ...s,
+          ...data,
+        })),
 
       reset: () => set(() => ({ ...defaultState })),
 
-      /** Persist local files to IDB; keep urls as-is */
+      /** Save uploaded files to IndexedDB */
       addFiles: async (files) => {
         const arr = Array.from(files || []);
         if (!arr.length) return;
 
         const refs: string[] = [];
+
         for (const f of arr) {
           if (!(f instanceof File)) continue;
           if (!f.size || !f.type?.startsWith("image/")) continue;
 
           const key = makeImageKey(f);
           await idbSet(key, f);
+
           refs.push(encodeIdbRef(key, f.name));
         }
 
@@ -89,7 +102,6 @@ export const usePostFormStore = create<PostFormState>()(
           imageRefs: [...(s.imageRefs || []), ...refs],
         }));
 
-        // rehydrate runtime images from refs
         await get().setImagesFromRefs();
       },
 
@@ -97,29 +109,34 @@ export const usePostFormStore = create<PostFormState>()(
         const state = get();
         const refs = [...(state.imageRefs || [])];
         const removed = refs[index];
+
         if (!removed) return;
 
-        // delete IDB entry if it is idb ref
         const parsed = decodeIdbRef(removed);
         if (parsed) await idbDel(parsed.key);
 
         refs.splice(index, 1);
+
         set(() => ({ imageRefs: refs }));
+
         await get().setImagesFromRefs();
       },
 
-      /** Build runtime images[] from imageRefs[] */
+      /** Rebuild runtime images from persisted refs */
       setImagesFromRefs: async () => {
         const refs = get().imageRefs || [];
         const runtime: (File | string)[] = [];
 
         for (const r of refs) {
           const parsed = decodeIdbRef(r);
+
           if (!parsed) {
-            runtime.push(r); // hosted url string
+            runtime.push(r);
             continue;
           }
+
           const blob = await idbGet(parsed.key);
+
           if (blob) runtime.push(blobToFile(blob, parsed.filename));
         }
 
@@ -128,27 +145,17 @@ export const usePostFormStore = create<PostFormState>()(
     }),
     {
       name: "post-form-store",
-      partialize: (state) => ({
-        // core
-        category: state.category,
-        subcategory: state.subcategory,
-        name: state.name,
-        description: state.description,
-        sellerInfo: state.sellerInfo,
-        location: state.location,
-        facilities: state.facilities,
 
-        // edit
-        editMode: state.editMode,
-        postId: state.postId,
+      /**
+       * Persist everything except runtime images.
+       * Images are reconstructed from imageRefs.
+       */
+      partialize: (state) => {
+        const { images, ...persisted } = state;
+        return persisted;
+      },
 
-        // images persisted as refs only (urls + idb refs)
-        imageRefs: state.imageRefs,
-
-        // if your forms set additional primitives, add them explicitly here if needed
-      }),
       onRehydrateStorage: () => async (state) => {
-        // after rehydrate, rebuild runtime images[] from refs
         if (state?.setImagesFromRefs) {
           await state.setImagesFromRefs();
         }

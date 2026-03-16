@@ -14,16 +14,27 @@ const AddressSchema = new mongoose.Schema(
 
 const AuditSchema = new mongoose.Schema(
   {
+    action: { type: String },
     IPAddress: { type: String, trim: true },
     Device: { type: String, trim: true },
-    others: { type: String, trim: true },
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+    at: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+const ReportSchema = new mongoose.Schema(
+  {
+    reason: { type: String, trim: true },
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+    at: { type: Date, default: Date.now },
   },
   { _id: false }
 );
 
 const UserSchema = new mongoose.Schema(
   {
-    // ✅ Incremental public ID
+    // incremental public ID
     userId: { type: String, required: true, unique: true, index: true },
 
     firstName: { type: String, required: true },
@@ -31,15 +42,12 @@ const UserSchema = new mongoose.Schema(
     dateOfBirth: { type: Date, required: true },
     gender: { type: String },
 
-    // 🌍 Identity
     nationality: { type: String, trim: true },
     residence: { type: String, trim: true },
 
-    // 📍 Address (structured)
-    locality: { type: String, required: true, trim: true }, // legacy / display
+    locality: { type: String, required: true, trim: true },
     address: AddressSchema,
 
-    // 📧 Email
     email: {
       type: String,
       required: true,
@@ -47,17 +55,17 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+
     isEmailVerified: { type: Boolean, default: false },
 
-    // 📞 Phone
     primaryNumber: { type: String, required: true, unique: true, trim: true },
     isPrimaryNumberVerified: { type: Boolean, default: false },
 
     secondaryNumber1: { type: String, trim: true },
     secondaryNumber2: { type: String, trim: true },
 
-    // 🔐 Auth
     password: { type: String, required: true },
+
     role: { type: String, required: true },
 
     provider: {
@@ -66,24 +74,37 @@ const UserSchema = new mongoose.Schema(
       default: "credentials",
     },
 
-    // 🧾 Account state
     accountStatus: {
       type: String,
       enum: ["Pending", "Active", "Suspended"],
       default: "Pending",
     },
+
     isNewUser: { type: Boolean, default: true },
 
-    // ✅ Consents
     isTermsAndConditionAccepted: { type: Boolean, default: false },
     isPrivacyAndPolicyAccepted: { type: Boolean, default: false },
     isCookiesPolicyAccepted: { type: Boolean, default: false },
 
-    // 📊 Marketing
     marketingOptIn: { type: Boolean, default: false },
 
-    // 🕵️ Audit / Device
-    audit: AuditSchema,
+    // moderation
+    isSuspended: { type: Boolean, default: false, index: true },
+    reported: { type: Boolean, default: false, index: true },
+
+    reports: {
+      type: [ReportSchema],
+      default: [],
+    },
+
+    reportClearedAt: Date,
+    reportClearedBy: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+
+    // audit history
+    audit: {
+      type: [AuditSchema],
+      default: [],
+    },
 
     image: { type: String },
   },

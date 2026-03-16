@@ -103,36 +103,44 @@ export default function CommercialForm() {
   /** ---------- SUBMIT ---------- */
 
   const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const mapped: Record<string, string> = {};
+  const mapped: Record<string, string> = {};
 
-    if (!store.name) mapped.name = "Title required";
-    if (!store.description) mapped.description = "Description required";
-    if (!store.propertyType) mapped.propertyType = "Select property type";
-    if (!isPositive(store.rentPrice)) mapped.rentPrice = "Invalid rent";
+  if (!store.name) mapped.name = "Title required";
+  if (!store.description) mapped.description = "Description required";
+  if (!store.propertyType) mapped.propertyType = "Select property type";
+  if (!isPositive(store.rentPrice)) mapped.rentPrice = "Invalid rent";
 
-    if (store.deposit && !isNonNegative(store.deposit))
-      mapped.deposit = "Invalid deposit";
+  if (store.deposit && !isNonNegative(store.deposit))
+    mapped.deposit = "Invalid deposit";
 
-    if (store.maintenance && !isNonNegative(store.maintenance))
-      mapped.maintenance = "Invalid maintenance";
+  if (store.maintenance && !isNonNegative(store.maintenance))
+    mapped.maintenance = "Invalid maintenance";
 
-    if (Object.keys(mapped).length > 0) {
-      setErrors(mapped);
-      scrollToFirstError(mapped);
-      toast.error("Fix highlighted fields");
-      return;
-    }
+  if (Object.keys(mapped).length > 0) {
+    setErrors(mapped);
+    scrollToFirstError(mapped);
+    toast.error("Fix highlighted fields");
 
-    setErrors({});
-    window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok: true } }));
-  };
+    window.dispatchEvent(
+      new CustomEvent("postform:validated", { detail: { ok: false } })
+    );
+
+    return;
+  }
+
+  setErrors({});
+
+  window.dispatchEvent(
+    new CustomEvent("postform:validated", { detail: { ok: true } })
+  );
+};
 
   /** ---------- UI ---------- */
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={onSubmit} data-post-form="true" className="space-y-6">
 
       {/* Title */}
       <FormFieldContainer label="Title" error={errors.name}>

@@ -162,7 +162,7 @@ export default function PreviewPage() {
     if (!data.category) m.push("Category");
     if (!data.subcategory) m.push("Subcategory");
     if (!data.location?.address?.trim()) m.push("Location");
-    if (!sellerInfo.phone?.trim()) m.push("Phone");
+   if (!sellerInfo.phone && !user?.primaryNumber) m.push("Phone");
 
     return m;
   }, [data, sellerInfo]);
@@ -224,38 +224,46 @@ export default function PreviewPage() {
   /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async () => {
-    setClientError(null);
+  setClientError(null);
 
-    if (missing.length) {
-      setClientError(`Please fill: ${missing.join(", ")}`);
-      return;
-    }
+  console.log("POST STORE DATA:", data);
+  console.log("SELLER INFO:", sellerInfo);
+  console.log("MISSING FIELDS:", missing);
+
+  if (missing.length) {
+    setClientError(`Please fill: ${missing.join(", ")}`);
+    return;
+  }
 
     // 🔥 trigger sub-form validation
     const forms = document.querySelectorAll<HTMLFormElement>(
-      "form[data-post-form='true']"
-    );
+  "form[data-post-form='true']"
+);
 
-    let validationPassed = false;
+let validationPassed = false;
 
-    const listener = (e: any) => {
-      validationPassed = e.detail?.ok === true;
-    };
+if (forms.length === 0) {
+  validationPassed = true;
+} else {
+  const listener = (e: any) => {
+    validationPassed = e.detail?.ok === true;
+  };
 
-    window.addEventListener("postform:validated", listener, {
-      once: true,
-    });
+  window.addEventListener("postform:validated", listener, {
+    once: true,
+  });
 
-    forms.forEach((f) => f.requestSubmit());
+  forms.forEach((f) => f.requestSubmit());
 
-    await new Promise((r) => setTimeout(r, 100));
+  await new Promise((r) => setTimeout(r, 100));
 
-    window.removeEventListener("postform:validated", listener);
+  window.removeEventListener("postform:validated", listener);
+}
 
-    if (!validationPassed) {
-      setClientError("Please complete required fields.");
-      return;
-    }
+if (!validationPassed) {
+  setClientError("Please complete required fields.");
+  return;
+}
 
     setLoading(true);
 

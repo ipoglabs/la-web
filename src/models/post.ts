@@ -375,7 +375,57 @@ const PostSchema = new Schema<IPost>(
 
     // Service wanted
     urgency: String,
+
+    // Service wanted
+urgency: String,
+
+/* 🔴 Moderation */
+
+    reported: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    reports: [
+      {
+        reason: { type: String },
+
+        by: {
+          type: Schema.Types.ObjectId,
+          ref: "AdminUser",
+        },
+
+        at: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
+    reportedAt: Date,
+
+    reportedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "AdminUser",
+    },
+
+    isSuspended: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    suspendedAt: Date,
+
+    suspendedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "AdminUser",
+    },
+
   },
+
+  
   { timestamps: true }
 );
 
