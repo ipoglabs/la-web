@@ -1,14 +1,11 @@
-// src/app/actions/getMyPosts.ts
 "use server";
 
 import connectDB from "@/config/database";
 import Post from "@/models/post";
 import { Types } from "mongoose";
-import { toClientPost } from "@/lib/serialize";
 
 type Params = { ownerId?: string; email?: string };
 
-// escape regex special chars
 function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -16,61 +13,42 @@ function escapeRegex(s: string) {
 export async function getMyPosts({ ownerId, email }: Params = {}) {
   await connectDB();
 
-  const or: any[] = [];
-
-  if (ownerId && Types.ObjectId.isValid(ownerId)) {
-    or.push({ ownerId: new Types.ObjectId(ownerId) });
+  if (!ownerId || !Types.ObjectId.isValid(ownerId)) {
+    return [];
   }
 
+  const ownerObjectId = new Types.ObjectId(ownerId);
+
+  let query: any = { ownerId: ownerObjectId };
+
+  // fallback for old data
   if (email) {
-    const safe = escapeRegex(String(email).trim());
-    or.push({
-      $and: [
-        { "seller_info.email": { $type: "string" } },
-        { "seller_info.email": new RegExp(`^${safe}$`, "i") },
+    const safe = escapeRegex(email.trim());
+
+    query = {
+      $or: [
+        { ownerId: ownerObjectId },
+        {
+          $and: [
+            { ownerId: { $exists: false } },
+            { "seller_info.email": new RegExp(`^${safe}$`, "i") },
+          ],
+        },
       ],
-    });
+    };
   }
 
-  if (or.length === 0) return [];
+  const rows = await Post.find(query).sort({ updatedAt: -1 }).lean();
 
-  // ✅ select the fields your My Ads UI needs (status + lastBumpedAt are required for bump UI)
-  const rows = await Post.find({ $or: or })
-    .sort({ updatedAt: -1 })
-    .select([
-      "_id",
-      "name",
-      "category",
-      "subcategory",
-      "images",
-      "updatedAt",
-      "status",
-      "lastBumpedAt",
-    ])
-    .lean();
-
-  // Keep your existing serializer, but ensure status/lastBumpedAt/thumb exist
-  return rows.map((r: any) => {
-    const base: any = toClientPost(r);
-
-    // Fallbacks in case serializer doesn't include them
-    if (base.status === undefined) base.status = r.status;
-    if (base.lastBumpedAt === undefined)
-      base.lastBumpedAt = r.lastBumpedAt ? new Date(r.lastBumpedAt).toISOString() : null;
-
-    // If your UI expects thumb, ensure it exists
-    if (base.thumb === undefined) {
-      base.thumb = Array.isArray(r.images) && r.images.length > 0 ? r.images[0] : null;
-    }
-
-    // If your UI expects id, ensure it exists (many serializers already do)
-    if (base.id === undefined) base.id = r._id?.toString?.() || String(r._id);
-
-    // Ensure updatedAt is a string if your UI uses it as string
-    if (base.updatedAt === undefined && r.updatedAt) {
-      base.updatedAt = new Date(r.updatedAt).toISOString();
-    }
-
-    return base;
-  });
+  return rows.map((r: any) => ({
+    id: r._id.toString(),
+    name: r.name,
+    category: r.category,
+    subcategory: r.subcategory,
+    status: r.status ?? "pending",
+    images: Array.isArray(r.images) ? r.images : [],
+    updatedAt: r.updatedAt?.toISOString?.() || null,
+    lastBumpedAt: r.lastBumpedAt?.toISOString?.() || null,
+    thumb: r.images?.[0] || null,
+  }));
 }

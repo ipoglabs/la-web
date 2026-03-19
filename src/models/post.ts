@@ -16,6 +16,7 @@ export interface IPost {
 
   /** NEW: owner link (for "My Ads") */
   ownerId?: mongoose.Types.ObjectId;
+  adsId?: string;
 
   /** NEW: lifecycle fields */
   status?: "pending" | "active" | "off" | "expired" | "deleted";
@@ -203,6 +204,7 @@ const PostSchema = new Schema<IPost>(
 
     /** NEW: owner & lifecycle */
     ownerId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    adsId: { type: String, unique: true, index: true }, 
     status: {
       type: String,
       enum: ["pending", "active", "off", "expired", "deleted"],

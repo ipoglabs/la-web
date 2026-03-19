@@ -1,4 +1,3 @@
-// src/app/post-details/[id]/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
@@ -8,148 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import AppHeader from "@/app/components/AppHeader/appHeader";
 import AppFooter from "@/app/components/AppFooter/appFooter";
-import { normalizeCategory, normalizeSubcategory } from "@/posting/config/normalize";
+import {
+  normalizeCategory,
+  normalizeSubcategory,
+} from "@/posting/config/normalize";
 import { CATEGORY_CONFIG } from "@/posting/config/categoryConfig";
 
-
-// ---- Labels (shared with Preview) ----
-const LABELS: Record<string, string> = {
-  // core
-  name: "Title",
-  description: "Description",
-  category: "Category",
-  subcategory: "Subcategory",
-
-  // property/common
-  propertyType: "Type",
-  beds: "Beds",
-  baths: "Baths",
-  rentPrice: "Rent",
-  salePrice: "Sale Price",
-  deposit: "Deposit",
-  occupancy: "Occupancy",
-  gender_pref: "Gender Preference",
-  facilities: "Facilities",
-  amenities: "Amenities",
-
-  // commercial / extras
-  builtup_area: "Built-up Area (sq ft)",
-  carpet_area: "Carpet Area (sq ft)",
-  floor: "Floor",
-  totalFloors: "Total Floors",
-  furnishing: "Furnishing",
-  washrooms: "Washrooms",
-  pantry: "Pantry",
-  parkingSpaces: "Parking Spaces",
-  maintenance: "Maintenance",
-  available_from: "Available From",
-  leaseTerm: "Lease Term (months)",
-  powerBackup: "Power Backup",
-
-  // room rental
-  type: "Room Type",
-  rent: "Monthly Rent",
-  preferred_tenants: "Preferred Tenants",
-  rules: "Rules",
-
-  // holiday rental
-  holidayType: "Holiday Property Type",
-  guests: "Guests",
-  house_rules: "House Rules",
-  rateNightly: "Nightly Rate",
-  rateWeekly: "Weekly Rate",
-  rateMonthly: "Monthly Rate",
-
-  // property sale extras
-  plot_area: "Plot Area (sq.ft.)",
-  negotiable: "Price Negotiable",
-  ownership: "Ownership Type",
-  age: "Age of Property",
-
-  // jobs (employer posts)
-  jobType: "Job Type",
-  company: "Company",
-  salary: "Salary",
-  experience: "Experience",
-  skills: "Skills",
-  benefits: "Benefits",
-  workMode: "Work Mode",
-  hourlyRate: "Hourly Rate",
-  deadline: "Application Deadline",
-  startDate: "Start Date",
-  endDate: "End Date",
-
-  // jobs → wanted (candidate posts)
-  candidateName: "Candidate Name",
-  employmentType: "Employment Type",
-  preferred_locations: "Preferred Locations",
-
-  // vehicles (common)
-  make: "Make",
-  model: "Model",
-  year: "Year",
-  kms: "Kilometers",
-  fuelType: "Fuel Type",
-  transmission: "Transmission",
-  bodyType: "Body Type",
-  color: "Color",
-  condition: "Condition",
-  ownerType: "Owner Type",
-  registrationNumber: "Registration Number",
-  insuranceValidTill: "Insurance Valid Till",
-  serviceHistory: "Service History",
-  features: "Features",
-
-  // motorcycle extras
-  engineCapacity: "Engine Capacity (cc)",
-
-  // van/truck extras
-  seatingCapacity: "Seating Capacity",
-
-  // parts & accessories
-  partsCategory: "Parts Category",
-  brand: "Brand",
-  compatibility: "Compatibility",
-
-  // pets → adoption
-  petName: "Pet Name",
-  petType: "Pet Type",
-  breed: "Breed",
-  ageText: "Age",
-  gender: "Gender",
-  vaccination: "Vaccination",
-  size: "Size",
-
-  // pets → wanted
-  wantedPetType: "Wanted Pet Type",
-  breedPreference: "Breed Preference",
-  agePreference: "Age Preference",
-  genderPreference: "Gender Preference",
-  sizePreference: "Size Preference",
-  budget: "Budget",
-
-  // pets → accessories
-  accessoryName: "Accessory Name",
-
-  // pets → lost & found
-  reportType: "Report Type",
-  lastSeenLocation: "Last Seen / Found Location",
-  lfDate: "Date",
-
-  // pets → services
-  serviceType: "Service Type",
-  serviceProviderName: "Provider Name",
-  availability: "Availability",
-
-  // misc
-  price: "Price",
-  maxBudget: "Max Budget",
-  budgetAmount: "Budget",
-  stipendAmount: "Stipend",
-};
+/* ---------------- HELPERS ---------------- */
 
 function fmtCurrency(v: unknown) {
-  if (v === null || v === undefined || v === "") return undefined;
+  if (!v) return "—";
   const n = Number(v);
   if (Number.isNaN(n)) return String(v);
   return new Intl.NumberFormat(undefined, {
@@ -158,57 +25,39 @@ function fmtCurrency(v: unknown) {
     maximumFractionDigits: 0,
   }).format(n);
 }
+
 function fmtDate(v: unknown) {
-  if (!v) return undefined;
+  if (!v) return "—";
   const d = new Date(String(v));
-  if (isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString();
+  return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString();
 }
+
+function formatLabel(key: string) {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function renderValue(key: string, value: any): string {
-  // currency-ish
-  if (
-    [
-      "rentPrice",
-      "salePrice",
-      "deposit",
-      "maintenance",
-      "price",
-      "rent",
-      "rateNightly",
-      "rateWeekly",
-      "rateMonthly",
-      "salary",
-      "hourlyRate",
-      "budgetAmount",
-      "stipendAmount",
-      "budget",
-      "maxBudget",
-    ].includes(key)
-  ) {
-    return fmtCurrency(value) ?? "—";
-  }
-
-  // date-ish
-  if (
-    ["available_from", "deadline", "startDate", "endDate", "insuranceValidTill", "lfDate"].includes(
-      key
-    )
-  ) {
-    return fmtDate(value) ?? "—";
-  }
-
-  // vehicles niceties
-  if (key === "kms" && value !== undefined && value !== null && value !== "") {
-    return `${value} km`;
-  }
-  if (key === "engineCapacity" && value !== undefined && value !== null && value !== "") {
-    return `${value} cc`;
-  }
+  if (value === null || value === undefined || value === "") return "—";
 
   if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
-  if (value === null || value === undefined || value === "") return "—";
+
+  if (
+    ["rentPrice", "salePrice", "deposit", "salary", "price"].includes(key)
+  ) {
+    return fmtCurrency(value);
+  }
+
+  if (["available_from", "startDate", "endDate"].includes(key)) {
+    return fmtDate(value);
+  }
+
   return String(value);
 }
+
+/* ---------------- TYPES ---------------- */
 
 type Post = {
   _id: string;
@@ -222,389 +71,230 @@ type Post = {
   [k: string]: any;
 };
 
-// ---------- Preview key sets ----------
-
-// Base keys shown for “property-ish” posts (same as Preview)
-const BASE_PREVIEW_KEYS: string[] = [
-  "propertyType",
-  "beds",
-  "baths",
-  "rentPrice",
-  "deposit",
-  "occupancy",
-  "gender_pref",
-  "facilities",
-];
-
-// Commercial adds:
-const COMMERCIAL_PREVIEW_KEYS: string[] = [
-  "builtup_area",
-  "carpet_area",
-  "floor",
-  "totalFloors",
-  "furnishing",
-  "washrooms",
-  "pantry",
-  "parkingSpaces",
-  "maintenance",
-  "available_from",
-  "leaseTerm",
-  "powerBackup",
-];
-
-// Holiday Rental adds:
-const HOLIDAY_PREVIEW_KEYS: string[] = [
-  "holidayType",
-  "guests",
-  "house_rules",
-  "rateNightly",
-  "rateWeekly",
-  "rateMonthly",
-];
-
-// Room Rental adds:
-const ROOM_RENTAL_PREVIEW_KEYS: string[] = [
-  "type",
-  "rent",
-  "preferred_tenants",
-  "amenities",
-  "rules",
-];
-
-// Property Sale adds:
-const PROPERTY_SALE_PREVIEW_KEYS: string[] = [
-  "salePrice",
-  "plot_area",
-  "negotiable",
-  "ownership",
-  "age",
-];
-
-// Jobs → Full Time (and similar employer posts)
-const JOB_FULLTIME_PREVIEW_KEYS: string[] = [
-  "jobType",
-  "company",
-  "salary",
-  "experience",
-  "skills",
-  "benefits",
-  "workMode",
-  "hourlyRate",
-  "deadline",
-  "startDate",
-  "endDate",
-];
-
-// Jobs → Wanted (candidate posts)
-const JOB_WANTED_PREVIEW_KEYS: string[] = [
-  "candidateName",
-  "employmentType",
-  "preferred_locations",
-  "available_from",
-  "salary",
-  "skills",
-  "experience",
-];
-
-// Vehicles → common (car/van/truck + many work for motorcycle too)
-const VEHICLE_COMMON_KEYS: string[] = [
-  "salePrice",
-  "make",
-  "model",
-  "year",
-  "kms",
-  "fuelType",
-  "transmission",
-  "bodyType",
-  "color",
-  "condition",
-  "ownerType",
-  "registrationNumber",
-  "insuranceValidTill",
-  "serviceHistory",
-  "features",
-];
-
-// Vehicles → motorcycle extras
-const MOTORCYCLE_PREVIEW_KEYS: string[] = ["engineCapacity"];
-
-// Vehicles → van/truck extras
-const VAN_TRUCK_PREVIEW_KEYS: string[] = ["seatingCapacity"];
-
-// Parts & Accessories
-const PARTS_PREVIEW_KEYS: string[] = [
-  "partsCategory",
-  "brand",
-  "condition",
-  "compatibility",
-  "salePrice",
-];
-
-// ---------- PETS preview key sets ----------
-const PETS_ADOPTION_KEYS: string[] = [
-  "petName",
-  "petType",
-  "breed",
-  "ageText",
-  "gender",
-  "vaccination",
-  "size",
-  "salePrice", // adoption fee (if any)
-];
-
-const PETS_WANTED_KEYS: string[] = [
-  "wantedPetType",
-  "breedPreference",
-  "agePreference",
-  "genderPreference",
-  "sizePreference",
-  "budget",
-];
-
-const PETS_ACCESSORIES_KEYS: string[] = [
-  "accessoryName",
-  "partsCategory", // reuse as category for accessories
-  "brand",
-  "condition",
-  "salePrice",
-];
-
-const PETS_LOST_FOUND_KEYS: string[] = [
-  "reportType",
-  "petType",
-  "breed",
-  "color",
-  "ageText",
-  "lastSeenLocation",
-  "lfDate",
-];
-
-const PETS_SERVICES_KEYS: string[] = [
-  "serviceType",
-  "serviceProviderName",
-  "experience",
-  "availability",
-  "salePrice",
-];
+/* ---------------- MAIN ---------------- */
 
 export default function PostDetailPageClient() {
   const params = useParams();
+
   const id = useMemo(() => {
-    const raw = (params?.id ?? "") as string | string[];
-    return Array.isArray(raw) ? raw[0] : raw;
+    return params?.id as string;
   }, [params]);
 
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
 
+  /* ---------------- FETCH ---------------- */
+
   useEffect(() => {
     if (!id) return;
+
     const fetchPost = async () => {
       try {
-        const res = await fetch(`/api/post-details/${id}`, { cache: "no-store" });
+        const res = await fetch(`/api/post-details/${id}`, {
+          cache: "no-store",
+        });
+
         if (!res.ok) throw new Error("Post not found");
-        const data: Post = await res.json();
+
+        const resJson = await res.json();
+
+        // ✅ SAFE PARSE
+        const data = resJson?.data || resJson;
+
+        if (!data) throw new Error("Invalid response");
+
         setPost(data);
-      } catch (err) {
-        console.error("Fetch error:", err);
+      } catch (e) {
+        console.error("❌ Fetch error:", e);
+        setPost(null);
       } finally {
         setLoading(false);
       }
     };
+
     fetchPost();
   }, [id]);
 
-  // Keys for the Details section (mirror Preview) based on category/subcategory
+  /* ---------------- KEYS ---------------- */
+
   const previewKeys = useMemo(() => {
-    if (!post) return [] as string[];
-    const keys = new Set<string>();
+    if (!post) return [];
 
-    const normCat = normalizeCategory(post.category || "");
+    const normCat = normalizeCategory(post.category);
     const normSub = normalizeSubcategory(post.subcategory || "");
-    const subRaw = (post.subcategory || "").toLowerCase();
 
-    if (normCat === "property") {
-      BASE_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      if (normSub === "commercial") COMMERCIAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      if (normSub === "holiday rental") HOLIDAY_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      if (normSub === "room rental") ROOM_RENTAL_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      if (normSub === "property sale" || normSub === "to buy") {
-        PROPERTY_SALE_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      }
-    } else if (normCat === "job") {
-      if (normSub === "wanted") {
-        JOB_WANTED_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      } else {
-        JOB_FULLTIME_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      }
-    } else if (normCat === "vehicles") {
-      if (normSub === "parts & accessories" || normSub === "parts" || normSub === "accessories") {
-        PARTS_PREVIEW_KEYS.forEach((k) => keys.add(k));
-      } else {
-        VEHICLE_COMMON_KEYS.forEach((k) => keys.add(k));
-        if (normSub === "motorcycle" || normSub === "bike") {
-          MOTORCYCLE_PREVIEW_KEYS.forEach((k) => keys.add(k));
-        }
-        if (normSub === "van" || normSub === "truck") {
-          VAN_TRUCK_PREVIEW_KEYS.forEach((k) => keys.add(k));
-        }
-      }
-    } else if (normCat === "pet") {
-      // adopt/wanted/accessories/lost & found/services
-      if (subRaw.includes("adoption")) PETS_ADOPTION_KEYS.forEach((k) => keys.add(k));
-      if (subRaw.includes("wanted")) PETS_WANTED_KEYS.forEach((k) => keys.add(k));
-      if (subRaw.includes("accessor")) PETS_ACCESSORIES_KEYS.forEach((k) => keys.add(k));
-      if (subRaw.includes("lost") || subRaw.includes("found"))
-        PETS_LOST_FOUND_KEYS.forEach((k) => keys.add(k));
-      if (subRaw.includes("service")) PETS_SERVICES_KEYS.forEach((k) => keys.add(k));
+    const categoryConfig = CATEGORY_CONFIG[normCat];
+
+    // ❌ No config → fallback ALL keys
+    if (!categoryConfig) {
+      console.warn("⚠️ No category config → fallback");
+      return Object.keys(post);
     }
 
-    // Only keep keys that actually exist on the post to avoid lots of “—”
-    return Array.from(keys).filter((k) => post[k] !== undefined);
+    // ✅ Find matching subcategory config
+    const matchedKey = Object.keys(categoryConfig).find(
+      (key) => normalizeSubcategory(key) === normSub
+    );
+
+    const config = matchedKey ? categoryConfig[matchedKey] : null;
+
+    // ❌ No config match → fallback
+    if (!config) {
+      console.warn("⚠️ No subcategory config → fallback");
+
+      return Object.keys(post).filter(
+        (k) =>
+          ![
+            "_id",
+            "__v",
+            "images",
+            "seller_info",
+            "location",
+            "createdAt",
+            "updatedAt",
+          ].includes(k)
+      );
+    }
+
+    return config.map((f: any) => f.key);
   }, [post]);
 
-  // Use normalized category + subcategory for CATEGORY_CONFIG
-  const configuredKeys = useMemo(() => {
-    if (!post?.category || !post?.subcategory) return [] as string[];
-    const normCat = normalizeCategory(post.category);
-    const normSub = normalizeSubcategory(post.subcategory);
-    const spec = CATEGORY_CONFIG[normCat]?.[normSub];
-    return Array.isArray(spec) ? spec.map((f) => f.key) : [];
-  }, [post]);
-
-  // Extra fields present on the doc that are part of spec but not in the preview list
-  const extraConfiguredKeys = useMemo(() => {
-    if (!post) return [] as string[];
-    const core = new Set([
-      "_id",
-      "name",
-      "description",
-      "images",
-      "category",
-      "subcategory",
-      "location",
-      "seller_info",
-      "createdAt",
-      "updatedAt",
-      "__v",
-    ]);
-    const previewSet = new Set(previewKeys);
-    return configuredKeys
-      .filter((k) => !core.has(k) && !previewSet.has(k))
-      .filter((k) => post[k] !== null && post[k] !== undefined && post[k] !== "");
-  }, [post, configuredKeys, previewKeys]);
+  /* ---------------- DEBUG ---------------- */
 
   const debugJson = useMemo(() => {
-    try {
-      return JSON.stringify(post, null, 2);
-    } catch {
-      return "—";
-    }
+    return JSON.stringify(post, null, 2);
   }, [post]);
 
-  if (loading) return <div className="p-6 text-center">Loading post...</div>;
-  if (!post) return <div className="p-6 text-center text-red-600">Post not found</div>;
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+
+  if (!post)
+    return (
+      <div className="p-6 text-center text-red-500">
+        Post not found or deleted
+      </div>
+    );
 
   return (
     <>
       <AppHeader />
+
       <div className="max-w-3xl mx-auto my-8 px-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">{post.name}</CardTitle>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Badge variant="outline">{post.category}</Badge>
-              {post.subcategory && <Badge variant="secondary">{post.subcategory}</Badge>}
+            <CardTitle>{post.name || "Untitled"}</CardTitle>
+
+            <div className="flex gap-2 mt-2 flex-wrap">
+              <Badge>{post.category}</Badge>
+              {post.subcategory && <Badge>{post.subcategory}</Badge>}
             </div>
           </CardHeader>
 
           <Separator />
 
           <CardContent className="space-y-6 mt-4">
-            {/* Basic Info */}
-            <section className="space-y-1 border-b pb-4">
-              <h3 className="text-lg font-semibold">Basic Info</h3>
-              <p>
-                <b>Category:</b> {post.category}
-                {post.subcategory ? ` → ${post.subcategory}` : ""}
-              </p>
-              <p><b>Title:</b> {post.name || "—"}</p>
-              {post.description ? <p><b>Description:</b> {post.description}</p> : null}
+
+            {/* BASIC */}
+            <section>
+              <h3 className="font-semibold">Basic</h3>
+              <p><b>Title:</b> {post.name}</p>
+
+              {post.description && (
+                <p className="whitespace-pre-line">
+                  <b>Description:</b> {post.description}
+                </p>
+              )}
+
+              <div className="text-xs text-black-500">
+              {post.adsId}
+                 </div>
             </section>
 
-            {/* Details (mirrors Preview) */}
+            {/* DETAILS */}
             {previewKeys.length > 0 && (
-              <section className="space-y-1 border-b pb-4">
-                <h3 className="text-lg font-semibold">Details</h3>
-                {previewKeys.map((key) => (
-                  <p key={key}>
-                    <b>{LABELS[key] ?? key}:</b> {renderValue(key, post[key])}
-                  </p>
-                ))}
+              <section>
+                <h3 className="font-semibold">Details</h3>
+
+                {previewKeys.map((key) => {
+                  const value = post[key];
+
+                  if (
+                    value === undefined ||
+                    value === null ||
+                    value === "" ||
+                    (Array.isArray(value) && value.length === 0)
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <p key={key}>
+                      <b>{formatLabel(key)}:</b>{" "}
+                      {renderValue(key, value)}
+                    </p>
+                  );
+                })}
               </section>
             )}
 
-            {/* More Details (spec extras not shown above) */}
-            {extraConfiguredKeys.length > 0 && (
-              <section className="space-y-1 border-b pb-4">
-                <h3 className="text-lg font-semibold">More Details</h3>
-                {extraConfiguredKeys.map((key) => (
-                  <p key={key}>
-                    <b>{LABELS[key] ?? key}:</b> {renderValue(key, post[key])}
-                  </p>
-                ))}
-              </section>
-            )}
-
-            {/* Contact Details */}
-            {(post.seller_info?.name ||
-              post.seller_info?.email ||
-              post.seller_info?.phone) && (
-              <section className="space-y-1 border-b pb-4">
-                <h3 className="text-lg font-semibold">Contact Details</h3>
-                <p><b>Name:</b> {post.seller_info?.name || "—"}</p>
-                <p><b>Email:</b> {post.seller_info?.email || "—"}</p>
-                <p><b>Phone:</b> {post.seller_info?.phone || "—"}</p>
-              </section>
-            )}
-
-            {/* Location */}
-            <section className="space-y-1 border-b pb-4">
-              <h3 className="text-lg font-semibold">Location</h3>
-              <p><b>Address:</b> {post.location?.address || "—"}</p>
+            {/* CONTACT */}
+            <section>
+              <h3 className="font-semibold">Contact</h3>
+              <p><b>Name:</b> {post.seller_info?.name || "—"}</p>
+              <p><b>Email:</b> {post.seller_info?.email || "—"}</p>
+              <p><b>Phone:</b> {post.seller_info?.phone || "—"}</p>
             </section>
 
-            {/* Images */}
-            {Array.isArray(post.images) && post.images.length > 0 && (
-              <section className="space-y-2 border-b pb-4">
-                <h3 className="text-lg font-semibold">Images</h3>
-                <div className="flex flex-wrap gap-3">
-                  {post.images.map((url: string, i: number) => (
+            {/* LOCATION */}
+            <section>
+              <h3 className="font-semibold">Location</h3>
+              <p>{post.location?.address || "—"}</p>
+
+              {post.location?.lat && post.location?.lng && (
+                <iframe
+                  className="w-full h-64 mt-2 rounded"
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${post.location.lat},${post.location.lng}&z=15&output=embed`}
+                />
+              )}
+            </section>
+
+            {/* IMAGES */}
+            {post.images?.length > 0 && (
+              <section>
+                <h3 className="font-semibold">Images</h3>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {post.images.map((img, i) => (
                     <img
                       key={i}
-                      src={url}
-                      alt={`image-${i}`}
-                      className="w-32 h-32 object-cover rounded"
+                      src={img}
+                      alt={`img-${i}`}
+                      loading="lazy"
+                      className="w-full h-32 object-cover rounded"
                     />
                   ))}
                 </div>
+                <div className="text-xs text-black-1000 mt-1">
+  {post.adsId}
+</div>
               </section>
             )}
 
-            {/* Debug JSON */}
-            <section>
-              <details className="group">
-                <summary className="cursor-pointer text-sm text-gray-600">
-                  Debug JSON
-                </summary>
-                <pre className="mt-2 text-xs bg-slate-50 border border-slate-200 p-2 rounded overflow-auto">
-                  {debugJson}
-                </pre>
-              </details>
-            </section>
+            {/* DEBUG */}
+            <details>
+              <summary className="cursor-pointer text-sm text-gray-500">
+                Debug
+              </summary>
+
+              <pre className="text-xs mt-2 bg-gray-100 p-2 rounded overflow-auto">
+                {debugJson}
+              </pre>
+            </details>
+
           </CardContent>
         </Card>
       </div>
+
       <AppFooter />
     </>
   );

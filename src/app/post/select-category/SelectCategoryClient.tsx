@@ -6,12 +6,21 @@ import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 import { usePostFormStore } from "../store/postFormStore";
 
-// your existing categories
 import { categoryIN } from "@/static/data";
 
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,14 +53,13 @@ function Combobox({
             type="button"
             variant="outline"
             role="combobox"
-            aria-expanded={open}
             className="w-full justify-between"
             disabled={disabled}
           >
             <span className={cn("truncate", !selected && "text-muted-foreground")}>
               {selected || placeholder || "Select an option"}
             </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
 
@@ -63,14 +71,16 @@ function Combobox({
                 {items.map((item) => (
                   <CommandItem
                     key={item.value}
-                    value={item.label}
                     onSelect={() => {
                       onSelect(item.value);
                       setOpen(false);
                     }}
                   >
                     <Check
-                      className={cn("mr-2 h-4 w-4", value === item.value ? "opacity-100" : "opacity-0")}
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === item.value ? "opacity-100" : "opacity-0"
+                      )}
                     />
                     {item.label}
                   </CommandItem>
@@ -86,19 +96,57 @@ function Combobox({
 
 export default function SelectCategoryClient() {
   const router = useRouter();
+
   const setField = usePostFormStore((s) => s.setField);
+  const reset = usePostFormStore((s) => s.reset);
 
   const categories = useMemo(() => categoryIN.data, []);
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
 
   const currentCategory = categories.find((c) => c.id === selectedCategoryId) ?? null;
   const canContinue = Boolean(currentCategory && selectedSubCategory);
 
+  /* ---------------- CATEGORY CHANGE (KEY FIX) ---------------- */
+
+  const handleCategorySelect = async (val: string) => {
+    const id = Number(val);
+    if (Number.isNaN(id)) return;
+
+    // 🧠 Skip if same category
+    if (selectedCategoryId === id) return;
+
+    // 🔥 Only ask confirm if data already exists
+    const store = usePostFormStore.getState();
+    const hasData =
+      store.name ||
+      store.description ||
+      store.imageRefs.length > 0 ||
+      store.location?.address;
+
+    if (hasData) {
+      const confirmReset = confirm(
+        "Changing category will clear all entered details. Continue?"
+      );
+      if (!confirmReset) return;
+    }
+
+    // 🔥 RESET STORE (keeps sellerInfo)
+    await reset();
+
+    setSelectedCategoryId(id);
+    setSelectedSubCategory(null);
+  };
+
+  /* ---------------- NEXT ---------------- */
+
   const handleNext = () => {
     if (!canContinue) return;
+
     setField("category", currentCategory!.name);
     setField("subcategory", selectedSubCategory!);
+
     router.push("/post/details");
   };
 
@@ -110,20 +158,19 @@ export default function SelectCategoryClient() {
       />
 
       <div className="w-full max-w-xs space-y-4 mt-6">
+        {/* CATEGORY */}
         <Combobox
           label="Category"
           placeholder="Choose a category"
           value={selectedCategoryId?.toString() ?? ""}
-          onSelect={(val) => {
-            const id = Number(val);
-            if (!Number.isNaN(id)) {
-              setSelectedCategoryId(id);
-              setSelectedSubCategory(null);
-            }
-          }}
-          items={categories.map((c) => ({ value: String(c.id), label: c.name }))}
+          onSelect={handleCategorySelect}
+          items={categories.map((c) => ({
+            value: String(c.id),
+            label: c.name,
+          }))}
         />
 
+        {/* SUBCATEGORY */}
         <Combobox
           label="Sub-category"
           placeholder={selectedCategoryId ? "Choose sub-category" : "Select category first"}

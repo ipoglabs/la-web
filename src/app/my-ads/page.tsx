@@ -1,10 +1,12 @@
-// src/app/my-ads/page.tsx
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import ClientList from "./ClientList";
 import { getMyPosts } from "@/app/actions/getMyPosts";
 import { verifyToken } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function extractEmailFromDecoded(decoded: any): string | undefined {
   if (!decoded || typeof decoded !== "object") return undefined;
@@ -30,67 +32,78 @@ function extractUserIdFromDecoded(decoded: any): string | undefined {
 }
 
 export default async function MyAdsPage() {
-  const cookieStore = cookies();
-  const hdrs = headers();
+  let raw = "";
 
-  let raw = cookieStore.get("session")?.value || hdrs.get("authorization") || "";
-  if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
+  try {
+    const cookieStore = await cookies();
+    const hdrs = await headers();
 
-  const decoded = raw ? verifyToken(raw) : null;
+    raw =
+      cookieStore?.get("token")?.value ||
+      cookieStore?.get("session")?.value ||
+      hdrs?.get("authorization") ||
+      "";
+  } catch (e) {
+    console.error("❌ Cookie/Header read failed:", e);
+  }
+
+  if (raw?.startsWith("Bearer ")) {
+    raw = raw.slice(7).trim();
+  }
+
+  let decoded: any = null;
+
+  try {
+    decoded = raw ? verifyToken(raw) : null;
+  } catch (e) {
+    console.error("❌ Token decode failed:", e);
+  }
+
   const email = extractEmailFromDecoded(decoded);
   const ownerId = extractUserIdFromDecoded(decoded);
 
   if (!ownerId && !email) {
     return (
       <main className="max-w-4xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">My Ads</h1>
-          <Link href="/post/select-category">
-            <Button>New Post</Button>
-          </Link>
-        </div>
+        <h1 className="text-2xl font-semibold">My Ads</h1>
 
-        <div className="border rounded-md p-4 text-slate-700 bg-slate-50">
-          You are not logged in or your session expired.
-          <br />
-          <span className="text-sm">
-            Please{" "}
-            <Link href="/login" className="underline">
-              log in
-            </Link>{" "}
-            again.
-          </span>
+        <div className="border rounded-md p-4 bg-slate-50">
+          You are not logged in.{" "}
+          <Link href="/login" className="underline">
+            Login
+          </Link>
         </div>
       </main>
     );
   }
 
-  const rows = await getMyPosts({ ownerId, email });
+  let rows: any[] = [];
+
+  try {
+    const data = await getMyPosts({ ownerId, email });
+    rows = Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("❌ getMyPosts failed:", e);
+    rows = [];
+  }
+
+  // ✅ DEBUG: SERVER LOG
+  console.log(
+    "✅ SERVER - DB STATUS:",
+    rows.map((r) => ({ id: r.id, status: r.status }))
+  );
 
   return (
     <main className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between">
         <h1 className="text-2xl font-semibold">My Ads</h1>
         <Link href="/post/select-category">
           <Button>New Post</Button>
         </Link>
       </div>
 
-      {!rows || rows.length === 0 ? (
-        <p className="text-slate-600">
-          No ads found
-          {email ? (
-            <>
-              {" "}
-              for <b>{email}</b>
-            </>
-          ) : null}
-          .{" "}
-          <Link href="/post/select-category" className="underline">
-            Create your first ad
-          </Link>
-          .
-        </p>
+      {rows.length === 0 ? (
+        <p>No ads found.</p>
       ) : (
         <ClientList
           initialRows={rows}

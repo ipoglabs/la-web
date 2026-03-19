@@ -83,46 +83,48 @@ export default function PreviewPage() {
   const [clientError, setClientError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
 
- useEffect(() => {
-  if (!user) return;
+  /* ---------------- SELLER AUTO-FILL ---------------- */
 
-  const existing = usePostFormStore.getState().sellerInfo;
+  useEffect(() => {
+    if (!user) return;
 
-  const fullName = [user.firstName, user.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+    const existing = usePostFormStore.getState().sellerInfo;
 
-  setField("sellerInfo", {
-    name: existing?.name || fullName,
-    email: existing?.email || user.email,
-    phone:
-      existing?.phone ||
-      user.primaryNumber ||
-      user.phone ||
-      user.mobile ||
-      "",
-  });
-}, [user, setField]); // ✅ IMPORTANT
+    const fullName = [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
- const sellerInfo = useMemo(() => ({
-  name:
-    data.sellerInfo?.name ||
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
-    "",
+    setField("sellerInfo", {
+      name: existing?.name || fullName,
+      email: existing?.email || user.email,
+      phone:
+        existing?.phone ||
+        user.primaryNumber ||
+        user.phone ||
+        user.mobile ||
+        "",
+    });
+  }, [user, setField]);
 
-  email:
-    data.sellerInfo?.email ||
-    user?.email ||
-    "",
+  const sellerInfo = useMemo(
+    () => ({
+      name:
+        data.sellerInfo?.name ||
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+        "",
+      email: data.sellerInfo?.email || user?.email || "",
+      phone:
+        data.sellerInfo?.phone ||
+        user?.primaryNumber ||
+        user?.phone ||
+        user?.mobile ||
+        "",
+    }),
+    [data.sellerInfo, user]
+  );
 
-  phone:
-    data.sellerInfo?.phone ||
-    user?.primaryNumber ||
-    user?.phone ||
-    user?.mobile ||
-    "",
-}), [data.sellerInfo, user]);
+  /* ---------------- VALIDATION ---------------- */
 
   const missing = useMemo(() => {
     const m: string[] = [];
@@ -136,6 +138,8 @@ export default function PreviewPage() {
 
     return m;
   }, [data, sellerInfo]);
+
+  /* ---------------- IMAGES ---------------- */
 
   const [imgUrls, setImgUrls] = useState<string[]>([]);
 
@@ -154,6 +158,8 @@ export default function PreviewPage() {
       });
     };
   }, [data.images]);
+
+  /* ---------------- SPECS ---------------- */
 
   const specs = useMemo(() => {
     if (!data.category || !data.subcategory) return [];
@@ -175,14 +181,7 @@ export default function PreviewPage() {
 
     for (const spec of specs) {
       const v = (data as any)[spec.key];
-      if (
-        v === undefined ||
-        v === null ||
-        v === "" ||
-        (Array.isArray(v) && v.length === 0)
-      ) {
-        continue;
-      }
+      if (!v || (Array.isArray(v) && v.length === 0)) continue;
 
       groups.categorySpecific.push({
         title: spec.label,
@@ -193,36 +192,68 @@ export default function PreviewPage() {
     return groups;
   }, [data, specs]);
 
-  const handleSubmit = async () => {
-    setClientError(null);
+  /* ---------------- NAVIGATION GUARD ---------------- */
 
-    if (missing.length) {
-      setClientError(`Please fill: ${missing.join(", ")}`);
+  const confirmNavigation = (path: string) => {
+    if (
+      confirm(
+        "If you change category, some entered details may be lost. Continue?"
+      )
+    ) {
+      window.scrollTo(0, 0);
+      router.push(path);
+    }
+  };
+
+  /* ---------------- SUBMIT ---------------- */
+
+  const handleSubmit = async () => {
+  setClientError(null);
+
+  if (missing.length) {
+    setClientError(`Please fill: ${missing.join(", ")}`);
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const fd = buildPostFormData({
+      ...data,
+      sellerInfo,
+    });
+
+    const res = await addPost(fd);
+
+    if (!res || (res as any).ok === false) {
+      setClientError((res as any)?.error || "Submit failed.");
       return;
     }
 
-    setLoading(true);
+    // ✅ CLEAR EVERYTHING EXCEPT SELLER
+    await usePostFormStore.getState().reset();
 
-    try {
-      const fd = buildPostFormData({
-        ...data,
-        sellerInfo,
-      });
+    router.push("/congratulation");
 
-      const res = await addPost(fd);
+  } catch (error: any) {
+    setClientError(error?.message || "Submit failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      if (!res || (res as any).ok === false) {
-        setClientError((res as any)?.error || "Submit failed.");
-        return;
-      }
+  const handleChangeNavigation = (path: string) => {
+  // ✅ reset edit mode safely
+  usePostFormStore.setState({
+    editMode: false,
+    postId: undefined,
+  });
 
-      router.push("/congratulation");
-    } catch (error: any) {
-      setClientError(error?.message || "Submit failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  window.scrollTo(0, 0);
+  router.push(path);
+};
+
+  /* ---------------- UI ---------------- */
 
   return (
     <>
@@ -235,9 +266,9 @@ export default function PreviewPage() {
             description="Review everything before submitting."
           />
 
+          {/* Debug */}
           <div className="flex justify-end mb-2">
             <button
-              type="button"
               onClick={() => setShowDebug((s) => !s)}
               className="text-xs bg-black text-white px-3 py-1 rounded"
             >
@@ -246,20 +277,9 @@ export default function PreviewPage() {
           </div>
 
           {showDebug && (
-            <div className="bg-black text-green-400 text-xs p-4 rounded mb-4 overflow-auto">
-              <pre>
-                {JSON.stringify(
-                  {
-                    sellerInfo,
-                    storeSellerInfo: data.sellerInfo,
-                    authUserPrimaryNumber: user?.primaryNumber,
-                    authUser: user,
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-            </div>
+            <pre className="bg-black text-green-400 text-xs p-4 rounded mb-4 overflow-auto">
+              {JSON.stringify({ sellerInfo, data, user }, null, 2)}
+            </pre>
           )}
 
           {clientError && (
@@ -268,52 +288,70 @@ export default function PreviewPage() {
             </div>
           )}
 
-          <ReviewDetailsSection
-            title="Category"
-            dataProvider={[
-              {
-                title: "Category",
-                value: `${data.category} ➝ ${data.subcategory}`,
-              },
-            ]}
-          />
+          {/* CATEGORY */}
+         <ReviewDetailsSection
+  title="Category"
+  routeBackTo="/select-category"
+  onChange={handleChangeNavigation}
+  dataProvider={[
+    {
+      title: "Category",
+      value: `${data.category} ➝ ${data.subcategory}`,
+    },
+  ]}
+/>
 
-          <ReviewDetailsSection
-            title="Basic Details"
-            dataProvider={groupedFields.basic}
-          />
+          {/* BASIC */}
+         <ReviewDetailsSection
+  title="Basic Details"
+  routeBackTo="/details"
+  onChange={handleChangeNavigation}
+  dataProvider={groupedFields.basic}
+/>
 
+          {/* ADDITIONAL */}
           {groupedFields.categorySpecific.length > 0 && (
-            <ReviewDetailsSection
-              title="Additional Details"
-              dataProvider={groupedFields.categorySpecific}
-            />
+           <ReviewDetailsSection
+  title="Additional Details"
+  routeBackTo="/post/details"
+  onChange={handleChangeNavigation}
+  dataProvider={groupedFields.categorySpecific}
+/>
           )}
 
+          {/* LOCATION */}
           <ReviewDetailsSection
-            title="Location"
-            mapData={
-              data.location?.lat && data.location?.lng
-                ? { lat: data.location.lat, lng: data.location.lng }
-                : null
-            }
-            dataProvider={[
-              {
-                title: "Address",
-                value: data.location?.address || "—",
-              },
-            ]}
-          />
+  title="Location"
+  routeBackTo="/pick-location"
+  onChange={handleChangeNavigation}
+  mapData={
+    data.location?.lat && data.location?.lng
+      ? { lat: data.location.lat, lng: data.location.lng }
+      : null
+  }
+  dataProvider={[
+    {
+      title: "Address",
+      value: data.location?.address || "—",
+    },
+  ]}
+/>
 
+          {/* PHOTOS */}
           {imgUrls.length > 0 && (
             <ReviewDetailsSection
-              title="Photos"
-              imageProvider={imgUrls.map((u) => ({ imageUrl: u }))}
-            />
+  title="Photos"
+  routeBackTo="/upload-photo"
+  onChange={handleChangeNavigation}
+  imageProvider={imgUrls.map((u) => ({ imageUrl: u }))}
+/>
           )}
 
+          {/* CONTACT (NO CHANGE) */}
           <ReviewDetailsSection
             title="Contact"
+            hideChange
+            showAutoFillHint
             dataProvider={[
               { title: "Name", value: sellerInfo.name || "—" },
               { title: "Email", value: sellerInfo.email || "—" },

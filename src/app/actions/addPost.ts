@@ -1,16 +1,15 @@
-// src/app/actions/addPost.ts
 "use server";
 
 import connectDB from "@/config/database";
 import Post from "@/models/post";
+import { generateAdsId } from "@/lib/generateAdsId";
 import cloudinary from "@/config/cloudinary";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
 import mongoose from "mongoose";
+import { getSession } from "@/lib/auth"; // ✅ FIX
 
 type LocationData = { address?: string; lat?: number; lng?: number };
 
-// --- helpers -------------------------------------------------
+// ---------- helpers ----------
 function safeParse<T = any>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;
@@ -18,17 +17,20 @@ function safeParse<T = any>(val: string, fallback: T): T {
     return fallback;
   }
 }
+
 const pullString = (v: FormDataEntryValue | null | undefined) => {
   const s = (v as string | null) ?? "";
   const t = s?.trim?.() ?? s;
   return t || undefined;
 };
+
 const pullNumber = (v: FormDataEntryValue | null | undefined) => {
   const s = pullString(v);
   if (!s) return undefined;
   const n = Number(s);
   return Number.isNaN(n) ? undefined : n;
 };
+
 const pullArray = (v: FormDataEntryValue | null | undefined) => {
   const s = pullString(v);
   if (!s) return [];
@@ -39,18 +41,12 @@ const pullArray = (v: FormDataEntryValue | null | undefined) => {
     .map((x) => x.trim())
     .filter(Boolean);
 };
+
 function normalizeEmail(e?: string) {
   return e ? String(e).trim().toLowerCase() : undefined;
 }
-function validObjectIdFrom(anyId: unknown): mongoose.Types.ObjectId | undefined {
-  // Accept only plain strings; ignore Buffer/objects to prevent cast errors
-  if (typeof anyId !== "string") return undefined;
-  const s = anyId.trim();
-  if (!mongoose.Types.ObjectId.isValid(s)) return undefined;
-  return new mongoose.Types.ObjectId(s);
-}
 
-// -------------------------------------------------------------
+// ---------------------------------------
 
 export async function addPost(
   formData: FormData
@@ -58,70 +54,69 @@ export async function addPost(
   try {
     await connectDB();
 
-    // --- Read identity from cookie (token) ---
-    const cookieStore = cookies();
-    let raw = cookieStore.get("token")?.value;
-    if (raw?.startsWith("Bearer ")) raw = raw.slice("Bearer ".length).trim();
+    // 🔥 ✅ FIXED AUTH
+    const session = getSession();
 
-    const decoded = raw ? verifyToken(raw) : null;
+    console.log("🔐 SESSION:", session);
 
-    // ownerId: only if JWT has a *string* id and it is a valid ObjectId
-    const ownerId = validObjectIdFrom((decoded as any)?.id || (decoded as any)?.userId);
+    if (!session || !session.userId) {
+      return { ok: false, error: "Unauthorized user" };
+    }
 
-    // ownerEmail fallback (normalized)
-    const ownerEmail =
-      normalizeEmail((decoded as any)?.email) ||
-      normalizeEmail((decoded as any)?.user?.email) ||
-      (typeof (decoded as any)?.sub === "string" && (decoded as any).sub.includes("@")
-        ? normalizeEmail((decoded as any).sub)
-        : undefined);
+    if (!mongoose.Types.ObjectId.isValid(session.userId)) {
+      return { ok: false, error: "Invalid userId" };
+    }
 
-    // --- Core fields ---
+    const ownerId = new mongoose.Types.ObjectId(session.userId);
+
+    const ownerEmail = normalizeEmail(session.email);
+
+    console.log("🆔 Creating post for:", ownerId.toString());
+
+    // ---------- Core ----------
     const name =
-      ((formData.get("name") as string) ?? "").trim() ||
-      ((formData.get("jobTitle") as string) ?? "").trim() ||
-      ((formData.get("projectTitle") as string) ?? "").trim();
+      pullString(formData.get("name")) ||
+      pullString(formData.get("jobTitle")) ||
+      pullString(formData.get("projectTitle"));
 
-    const description = ((formData.get("description") as string) ?? "").trim();
-    const category = ((formData.get("category") as string) ?? "").trim();
-    const subcategory = ((formData.get("subcategory") as string) ?? "").trim();
+    const description = pullString(formData.get("description"));
+    const category = pullString(formData.get("category"));
+    const subcategory = pullString(formData.get("subcategory"));
 
     const locationRaw = (formData.get("locationData") as string) || "";
-    const location: LocationData = locationRaw ? safeParse<LocationData>(locationRaw, {}) : {};
+    const location: LocationData = locationRaw
+      ? safeParse(locationRaw, {})
+      : {};
 
-    // Seller info — default to token email when missing (normalized)
     const seller_info = {
       name:
         pullString(formData.get("seller_info.name")) ||
         pullString(formData.get("sellerInfo.name")) ||
-        pullString(formData.get("contactName")) ||
         "",
       email:
         normalizeEmail(
           pullString(formData.get("seller_info.email")) ||
-            pullString(formData.get("sellerInfo.email")) ||
-            pullString(formData.get("contactEmail")) ||
-            pullString(formData.get("email"))
+            pullString(formData.get("sellerInfo.email"))
         ) ||
         ownerEmail ||
         "",
       phone:
         pullString(formData.get("seller_info.phone")) ||
         pullString(formData.get("sellerInfo.phone")) ||
-        pullString(formData.get("contactPhone")) ||
-        pullString(formData.get("contactNumber")) ||
         "",
     };
 
-    // --- Images (URLs + Files) ---
+    // ---------- Images ----------
     const imageUrlEntries = (formData.getAll("imageUrl") as string[]) || [];
     const imageFiles = (formData.getAll("images") as File[]) || [];
     const images: string[] = [...imageUrlEntries];
 
     for (const file of imageFiles) {
       if (!(file instanceof File) || !file.size || !file.type?.startsWith("image/")) continue;
+
       const buffer = await file.arrayBuffer();
       const base64 = Buffer.from(new Uint8Array(buffer)).toString("base64");
+
       try {
         const result = await cloudinary.uploader.upload(
           `data:${file.type};base64,${base64}`,
@@ -133,13 +128,13 @@ export async function addPost(
       }
     }
 
-    // Reusable arrays
+    // ---------- Arrays ----------
     const facilities = pullArray(formData.get("facilities"));
     const amenities = pullArray(formData.get("amenities"));
 
-    // ===== Build postData =====
+    // ---------- DATA ----------
     const postData: Record<string, any> = {
-      ownerId, // attach owner if present
+      ownerId,
       category,
       subcategory,
       name,
@@ -147,6 +142,8 @@ export async function addPost(
       location,
       seller_info,
       images,
+      facilities,
+      amenities,
 
       // Property / Commercial
       propertyType: pullString(formData.get("propertyType")),
@@ -293,13 +290,7 @@ export async function addPost(
       urgency: pullString(formData.get("urgency")),
     };
 
-    // Map generic "price" into salePrice if absent
-    if (postData.salePrice === undefined) {
-      const svcPrice = pullNumber(formData.get("price"));
-      if (svcPrice !== undefined) postData.salePrice = svcPrice;
-    }
-
-    // --- Required checks ---
+    // ---------- Validation ----------
     const errors: string[] = [];
     if (!postData.name) errors.push("Title is required");
     if (!postData.description) errors.push("Description is required");
@@ -310,16 +301,23 @@ export async function addPost(
     if (!postData.seller_info?.phone) errors.push("Contact phone is required");
 
     if (errors.length) {
-      console.error("Validation errors:", errors, { postData });
       return { ok: false, error: errors.join(" • ") };
     }
 
-    const newPost = new Post(postData);
-    await newPost.save();
+
+        // 🔥 generate auto id
+        const adsId = await generateAdsId();
+
+        const newPost = new Post({
+          ...postData,
+          adsId,
+        });
+
+        await newPost.save();
 
     return { ok: true, id: String(newPost._id) };
   } catch (e: any) {
-    console.error("addPost fatal error:", e);
-    return { ok: false, error: e?.message || "Unknown server error in addPost" };
+    console.error("addPost error:", e);
+    return { ok: false, error: e?.message || "Server error" };
   }
 }

@@ -1,21 +1,39 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI!;
-if (!MONGODB_URI) throw new Error('MONGODB_URI missing in env');
+if (!MONGODB_URI) throw new Error("MONGODB_URI missing in env");
 
-let isConnected = false;
+// 🔥 GLOBAL CACHE (WORKS IN NEXT.JS)
+let cached = (global as any).mongoose;
 
-const connectDB = async () => {
-  if (isConnected) return;
+if (!cached) {
+  cached = (global as any).mongoose = {
+    conn: null,
+    promise: null,
+  };
+}
 
-  try {
-    const db = await mongoose.connect(MONGODB_URI);
-    isConnected = db.connections[0].readyState === 1;
-    console.log('✅ MongoDB connected');
-  } catch (error: any) {
-    console.error('❌ MongoDB error:', error.message);
-    throw new Error('MongoDB failed');
+async function connectDB() {
+  // ✅ already connected
+  if (cached.conn) {
+    return cached.conn;
   }
-};
+
+  // ✅ create connection once
+  if (!cached.promise) {
+    console.log("🚀 Creating MongoDB connection...");
+
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+    });
+  }
+
+  // ✅ wait for connection
+  cached.conn = await cached.promise;
+
+  console.log("✅ MongoDB connected (cached)");
+
+  return cached.conn;
+}
 
 export default connectDB;
