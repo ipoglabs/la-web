@@ -18,10 +18,18 @@ export function buildPostFormData(data: StoreState) {
   fd.append("seller_info.email", data.sellerInfo?.email || "");
   fd.append("seller_info.phone", data.sellerInfo?.phone || "");
 
-  (data.images || []).forEach((img: any, i: number) => {
-    if (img instanceof File) fd.append("images", img, img.name || `image-${i}.jpg`);
-    else if (typeof img === "string") fd.append("imageUrl", img);
-  });
+ (data.images || []).forEach((img: any, i: number) => {
+  if (img instanceof File) {
+    const file = new File([img], img.name || `image-${i}.jpg`, {
+      type: img.type,
+      lastModified: Date.now(),
+    });
+
+    fd.append("images", file);
+  } else if (typeof img === "string") {
+    fd.append("imageUrl", img);
+  }
+});
 
   const normCat = normalizeCategory(data.category);
   const normSub = normalizeSubcategory(data.subcategory);

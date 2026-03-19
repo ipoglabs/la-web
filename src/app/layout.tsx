@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import { Toaster } from "sonner";
-import { cn } from "@/lib/utils"; // Shadcn UI's class merge util
+import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
+import SiteGate from "@/app/components/SiteGate";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +22,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={cn("bg-white min-h-screen text-slate-900", inter.className)}>
         <Toaster position="top-center" richColors />
-        {children}
+
+        <SiteGate>
+          {children}
+        </SiteGate>
+
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ export default async function ProfilePage() {
     return (
       <main className="max-w-3xl mx-auto p-6">
         <h1 className="text-2xl font-semibold mb-4">My Profile</h1>
+
         <div className="border rounded p-4 bg-slate-50">
           You are not logged in.
           <div className="mt-3">
@@ -54,15 +55,17 @@ export default async function ProfilePage() {
               <p className="text-xs text-slate-500">Email</p>
               <p className="font-medium">{user.email}</p>
             </div>
+
             <div>
               <p className="text-xs text-slate-500">Primary Number</p>
-              <p className="font-medium">{user.primaryNumber}</p>
+              <p className="font-medium">{user.primaryNumber || "—"}</p>
             </div>
 
             <div>
               <p className="text-xs text-slate-500">Secondary Number 1</p>
               <p className="font-medium">{user.secondaryNumber1 || "—"}</p>
             </div>
+
             <div>
               <p className="text-xs text-slate-500">Secondary Number 2</p>
               <p className="font-medium">{user.secondaryNumber2 || "—"}</p>
@@ -72,6 +75,7 @@ export default async function ProfilePage() {
               <p className="text-xs text-slate-500">Date of Birth</p>
               <p className="font-medium">{user.dateOfBirth || "—"}</p>
             </div>
+
             <div>
               <p className="text-xs text-slate-500">Gender</p>
               <p className="font-medium">{user.gender || "—"}</p>
@@ -81,6 +85,7 @@ export default async function ProfilePage() {
               <p className="text-xs text-slate-500">Nationality</p>
               <p className="font-medium">{user.nationality || "—"}</p>
             </div>
+
             <div>
               <p className="text-xs text-slate-500">Residency</p>
               <p className="font-medium">{user.residency || "—"}</p>
@@ -88,7 +93,9 @@ export default async function ProfilePage() {
 
             <div className="md:col-span-2">
               <p className="text-xs text-slate-500">Marketing Opt-in</p>
-              <p className="font-medium">{user.marketingOptIn ? "Subscribed" : "Not subscribed"}</p>
+              <p className="font-medium">
+                {user.marketingOptIn ? "Subscribed" : "Not subscribed"}
+              </p>
             </div>
           </div>
         </CardContent>

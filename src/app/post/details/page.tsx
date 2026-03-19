@@ -155,21 +155,30 @@ export default function DetailsPage() {
 
   const user = useAuthStore((s) => s.user);
 
-  // ✅ AUTO-FILL SELLER
-  useEffect(() => {
-    if (!user) return;
+ // ✅ AUTO-FILL SELLER (SAFE MERGE — FINAL FIX)
+useEffect(() => {
+  if (!user) return;
 
-    const fullName = [user.firstName, user.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+  const existing = usePostFormStore.getState().sellerInfo;
 
-    setField("sellerInfo", {
-      name: fullName,
-      email: user.email,
-      phone: user.primaryNumber,
-    });
-  }, [user, setField]);
+  const fullName = [user.firstName, user.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  setField("sellerInfo", {
+    name: existing?.name || fullName,
+    email: existing?.email || user.email,
+
+    // 🔥 FIX: DO NOT OVERRIDE EXISTING
+    phone:
+      existing?.phone ||
+      user.primaryNumber ||
+      user.phone ||
+      user.mobile ||
+      "",
+  });
+}, [user, setField]);
 
   // ✅ IMPORT KEY (FIXED)
   const importKey = useMemo(() => {

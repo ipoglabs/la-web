@@ -1,8 +1,7 @@
-// src/app/congratulation/page.tsx
 import { Suspense } from "react";
 import CongratulationClient from "./CongratulationClient";
 
-export const dynamic = "force-dynamic"; // optional, but safe for searchParams
+export const dynamic = "force-dynamic";
 
 export default function CongratulationPage() {
   return (

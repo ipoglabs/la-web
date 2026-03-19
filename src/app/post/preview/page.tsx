@@ -6,22 +6,22 @@ import { useRouter } from "next/navigation";
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 import PostHeader from "../components/PostHeader";
+import ReviewDetailsSection from "../components/ReviewSection";
+
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
 
 import { addPost } from "@/app/actions/addPost";
 import { buildPostFormData } from "@/lib/buildPostFormData";
 
-import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
-
 import { getSpecs } from "@/posting/config/getSpecs";
 import type { FieldSpec } from "@/posting/config/types";
 
-/* ---------------- FORMAT HELPERS ---------------- */
+/* ---------------- HELPERS ---------------- */
 
 function fmtCurrency(v: unknown) {
-  if (v === null || v === undefined || v === "") return "—";
+  if (!v) return "—";
   const n = Number(v);
   if (Number.isNaN(n)) return String(v);
   return new Intl.NumberFormat(undefined, {
@@ -34,125 +34,95 @@ function fmtCurrency(v: unknown) {
 function fmtDate(v: unknown) {
   if (!v) return "—";
   const d = new Date(String(v));
-  if (isNaN(d.getTime())) return String(v);
-  return d.toLocaleDateString();
+  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString();
 }
 
 function renderByType(spec: FieldSpec, value: any): string {
-  if (value === null || value === undefined || value === "")
+  if (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    (Array.isArray(value) && value.length === 0)
+  ) {
     return "—";
+  }
 
-  if (spec.type === "array")
-    return Array.isArray(value)
-      ? value.length
-        ? value.join(", ")
-        : "—"
-      : "—";
+  if (spec.type === "array") {
+    return Array.isArray(value) ? value.join(", ") : "—";
+  }
 
   if (spec.type === "currency") return fmtCurrency(value);
   if (spec.type === "date") return fmtDate(value);
 
   if (spec.type === "boolean") {
-    if (value === true || value === "true" || value === 1) return "Yes";
-    if (value === false || value === "false" || value === 0) return "No";
-    return String(value);
+    if (value === true || value === "true") return "Yes";
+    if (value === false || value === "false") return "No";
   }
 
   if (spec.type === "number") {
     const n = Number(value);
-    if (!Number.isFinite(n)) return String(value);
+    if (Number.isNaN(n)) return "—";
     return spec.unit ? `${n} ${spec.unit}` : String(n);
   }
 
   return String(value);
 }
 
-/* ---------------- CONTACT SECTION ---------------- */
-
-type SellerInfo = {
-  name: string;
-  email: string;
-  phone: string;
-};
-
-function AdvertiserContactSection({
-  sellerInfo,
-  onPhoneChange,
-}: {
-  sellerInfo: SellerInfo;
-  onPhoneChange: (phone: string) => void;
-}) {
-  return (
-    <section className="pt-2 pb-6">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">
-        Advertiser Contact Details
-      </h3>
-
-      <div className="space-y-2 text-sm">
-        <div className="grid grid-cols-2 gap-4">
-          <p className="text-gray-600">Name</p>
-          <p className="text-gray-900">{sellerInfo.name || "—"}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <p className="text-gray-600">Email</p>
-          <p className="text-gray-900">{sellerInfo.email || "—"}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 items-center">
-          <p className="text-gray-600">Phone</p>
-          <Input
-            value={sellerInfo.phone}
-            onChange={(e) => onPhoneChange(e.target.value)}
-            className="h-8"
-            placeholder="Enter phone number"
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------------- MAIN PAGE ---------------- */
+/* ---------------- MAIN ---------------- */
 
 export default function PreviewPage() {
-  useWizardGuard("preview");
+  useWizardGuard("preview", { allowRefresh: true });
 
   const router = useRouter();
+
   const data = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
   const user = useAuthStore((s) => s.user);
 
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
-  /* ---------------- AUTO FILL SELLER ---------------- */
+ useEffect(() => {
+  if (!user) return;
 
-  useEffect(() => {
-    if (!user) return;
+  const existing = usePostFormStore.getState().sellerInfo;
 
-    const fullName = [user.firstName, user.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+  const fullName = [user.firstName, user.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
-    if (!data.sellerInfo?.name) {
-      setField("sellerInfo", {
-        name: fullName,
-        email: user.email,
-        phone:
-          data.sellerInfo?.phone || user.primaryNumber || "",
-      });
-    }
-  }, [user]);
+  setField("sellerInfo", {
+    name: existing?.name || fullName,
+    email: existing?.email || user.email,
+    phone:
+      existing?.phone ||
+      user.primaryNumber ||
+      user.phone ||
+      user.mobile ||
+      "",
+  });
+}, [user, setField]); // ✅ IMPORTANT
 
-  const sellerInfo: SellerInfo = {
-    name: data.sellerInfo?.name || "",
-    email: data.sellerInfo?.email || "",
-    phone: data.sellerInfo?.phone || "",
-  };
+ const sellerInfo = useMemo(() => ({
+  name:
+    data.sellerInfo?.name ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    "",
 
-  /* ---------------- VALIDATION ---------------- */
+  email:
+    data.sellerInfo?.email ||
+    user?.email ||
+    "",
+
+  phone:
+    data.sellerInfo?.phone ||
+    user?.primaryNumber ||
+    user?.phone ||
+    user?.mobile ||
+    "",
+}), [data.sellerInfo, user]);
 
   const missing = useMemo(() => {
     const m: string[] = [];
@@ -162,12 +132,10 @@ export default function PreviewPage() {
     if (!data.category) m.push("Category");
     if (!data.subcategory) m.push("Subcategory");
     if (!data.location?.address?.trim()) m.push("Location");
-   if (!sellerInfo.phone && !user?.primaryNumber) m.push("Phone");
+    if (!sellerInfo.phone?.trim()) m.push("Phone");
 
     return m;
   }, [data, sellerInfo]);
-
-  /* ---------------- IMAGES ---------------- */
 
   const [imgUrls, setImgUrls] = useState<string[]>([]);
 
@@ -179,126 +147,120 @@ export default function PreviewPage() {
     setImgUrls(urls);
 
     return () => {
-      urls.forEach((u, i) => {
-        if (data.images?.[i] instanceof File)
-          URL.revokeObjectURL(u);
+      urls.forEach((url, index) => {
+        if (data.images?.[index] instanceof File) {
+          URL.revokeObjectURL(url);
+        }
       });
     };
   }, [data.images]);
-
-  /* ---------------- SPECS ---------------- */
 
   const specs = useMemo(() => {
     if (!data.category || !data.subcategory) return [];
     return getSpecs(data.category, data.subcategory);
   }, [data.category, data.subcategory]);
 
-  const advRows = useMemo(() => {
-    const rows: { label: string; value: string }[] = [];
+  const groupedFields = useMemo(() => {
+    const groups: Record<string, any[]> = {
+      basic: [],
+      categorySpecific: [],
+    };
 
-    rows.push({ label: "Category", value: data.category || "—" });
-    rows.push({
-      label: "Subcategory",
-      value: data.subcategory || "—",
-    });
-    rows.push({ label: "Title", value: data.name || "—" });
-    rows.push({
-      label: "Description",
+    groups.basic.push({ title: "Title", value: data.name || "—" });
+    groups.basic.push({
+      title: "Description",
       value: data.description || "—",
+      noWrap: true,
     });
 
     for (const spec of specs) {
       const v = (data as any)[spec.key];
+      if (
+        v === undefined ||
+        v === null ||
+        v === "" ||
+        (Array.isArray(v) && v.length === 0)
+      ) {
+        continue;
+      }
 
-      if (v === undefined || v === null || v === "") continue;
-
-      rows.push({
-        label: spec.label,
+      groups.categorySpecific.push({
+        title: spec.label,
         value: renderByType(spec, v),
       });
     }
 
-    return rows;
+    return groups;
   }, [data, specs]);
 
-  /* ---------------- SUBMIT ---------------- */
-
   const handleSubmit = async () => {
-  setClientError(null);
+    setClientError(null);
 
-  console.log("POST STORE DATA:", data);
-  console.log("SELLER INFO:", sellerInfo);
-  console.log("MISSING FIELDS:", missing);
-
-  if (missing.length) {
-    setClientError(`Please fill: ${missing.join(", ")}`);
-    return;
-  }
-
-    // 🔥 trigger sub-form validation
-    const forms = document.querySelectorAll<HTMLFormElement>(
-  "form[data-post-form='true']"
-);
-
-let validationPassed = false;
-
-if (forms.length === 0) {
-  validationPassed = true;
-} else {
-  const listener = (e: any) => {
-    validationPassed = e.detail?.ok === true;
-  };
-
-  window.addEventListener("postform:validated", listener, {
-    once: true,
-  });
-
-  forms.forEach((f) => f.requestSubmit());
-
-  await new Promise((r) => setTimeout(r, 100));
-
-  window.removeEventListener("postform:validated", listener);
-}
-
-if (!validationPassed) {
-  setClientError("Please complete required fields.");
-  return;
-}
-
-    setLoading(true);
-
-    const fd = buildPostFormData({
-      ...data,
-      sellerInfo,
-    });
-
-    const res = await addPost(fd);
-
-    setLoading(false);
-
-    if (!res || (res as any).ok === false) {
-      setClientError(
-        (res as any)?.error || "Submit failed."
-      );
+    if (missing.length) {
+      setClientError(`Please fill: ${missing.join(", ")}`);
       return;
     }
 
-    router.push("/congratulation");
-  };
+    setLoading(true);
 
-  /* ---------------- UI ---------------- */
+    try {
+      const fd = buildPostFormData({
+        ...data,
+        sellerInfo,
+      });
+
+      const res = await addPost(fd);
+
+      if (!res || (res as any).ok === false) {
+        setClientError((res as any)?.error || "Submit failed.");
+        return;
+      }
+
+      router.push("/congratulation");
+    } catch (error: any) {
+      setClientError(error?.message || "Submit failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
       <PostHeader />
 
-      <main className="min-h-screen bg-gray-50">
-        <div className="w-full max-w-xl mx-auto px-6 pt-10 pb-16">
-
+      <main className="min-h-screen flex flex-col items-center bg-gray-50 p-8">
+        <div className="w-full max-w-xl">
           <PageHeader
             title="Review Details"
             description="Review everything before submitting."
           />
+
+          <div className="flex justify-end mb-2">
+            <button
+              type="button"
+              onClick={() => setShowDebug((s) => !s)}
+              className="text-xs bg-black text-white px-3 py-1 rounded"
+            >
+              Debug
+            </button>
+          </div>
+
+          {showDebug && (
+            <div className="bg-black text-green-400 text-xs p-4 rounded mb-4 overflow-auto">
+              <pre>
+                {JSON.stringify(
+                  {
+                    sellerInfo,
+                    storeSellerInfo: data.sellerInfo,
+                    authUserPrimaryNumber: user?.primaryNumber,
+                    authUser: user,
+                  },
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
+          )}
 
           {clientError && (
             <div className="text-red-600 bg-red-50 p-3 rounded mb-4">
@@ -306,94 +268,65 @@ if (!validationPassed) {
             </div>
           )}
 
-          {/* Advertisement */}
-          <section className="bg-white border rounded p-4">
-            <h3 className="font-semibold mb-3">Advertisement</h3>
+          <ReviewDetailsSection
+            title="Category"
+            dataProvider={[
+              {
+                title: "Category",
+                value: `${data.category} ➝ ${data.subcategory}`,
+              },
+            ]}
+          />
 
-            {advRows.map((r, i) => (
-              <div key={i} className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-600">{r.label}</div>
-                <div>{r.value}</div>
-              </div>
-            ))}
-          </section>
+          <ReviewDetailsSection
+            title="Basic Details"
+            dataProvider={groupedFields.basic}
+          />
 
-          {/* Images */}
-          {imgUrls.length > 0 && (
-            <section className="bg-white border rounded p-4 mt-4">
-              <h3 className="font-semibold mb-3">Photos</h3>
-
-              <div className="grid grid-cols-3 gap-2">
-                {imgUrls.map((u, i) => (
-                  <img
-                    key={i}
-                    src={u}
-                    className="h-24 w-full object-cover rounded"
-                  />
-                ))}
-              </div>
-            </section>
+          {groupedFields.categorySpecific.length > 0 && (
+            <ReviewDetailsSection
+              title="Additional Details"
+              dataProvider={groupedFields.categorySpecific}
+            />
           )}
 
-          {/* Location */}
-          <section className="bg-white border rounded p-4 mt-4">
-            <h3 className="font-semibold mb-3">Location</h3>
+          <ReviewDetailsSection
+            title="Location"
+            mapData={
+              data.location?.lat && data.location?.lng
+                ? { lat: data.location.lat, lng: data.location.lng }
+                : null
+            }
+            dataProvider={[
+              {
+                title: "Address",
+                value: data.location?.address || "—",
+              },
+            ]}
+          />
 
-            {data.location?.address ? (
-              <div className="text-sm space-y-1">
-                <p>{data.location.address}</p>
-
-                {data.location.city && (
-                  <p className="text-gray-500">
-                    {data.location.city},{" "}
-                    {data.location.state}
-                  </p>
-                )}
-
-                {data.location.pincode && (
-                  <p className="text-gray-500">
-                    PIN: {data.location.pincode}
-                  </p>
-                )}
-
-                {data.location.lat &&
-                  data.location.lng && (
-                    <a
-                      href={`https://www.google.com/maps?q=${data.location.lat},${data.location.lng}`}
-                      target="_blank"
-                      className="text-blue-600 text-xs underline"
-                    >
-                      View on Map
-                    </a>
-                  )}
-              </div>
-            ) : (
-              <p className="text-gray-400">
-                No location selected
-              </p>
-            )}
-          </section>
-
-          {/* Contact */}
-          <section className="bg-white border rounded p-4 mt-4">
-            <AdvertiserContactSection
-              sellerInfo={sellerInfo}
-              onPhoneChange={(phone) =>
-                setField("sellerInfo", {
-                  ...sellerInfo,
-                  phone,
-                })
-              }
+          {imgUrls.length > 0 && (
+            <ReviewDetailsSection
+              title="Photos"
+              imageProvider={imgUrls.map((u) => ({ imageUrl: u }))}
             />
-          </section>
+          )}
+
+          <ReviewDetailsSection
+            title="Contact"
+            dataProvider={[
+              { title: "Name", value: sellerInfo.name || "—" },
+              { title: "Email", value: sellerInfo.email || "—" },
+              { title: "Phone", value: sellerInfo.phone || "—" },
+            ]}
+            isLastItem
+          />
 
           <PostFooter
             showBack
             showSubmit
             submitting={loading}
-            onBack={() =>
-              router.push("/post/pick-location")
-            }
+            onBack={() => router.push("/post/pick-location")}
             onSubmit={handleSubmit}
           />
         </div>

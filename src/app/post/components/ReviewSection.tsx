@@ -83,11 +83,18 @@ function ReviewDetailsSection({
       )}
 
       {/* Section: Map Placeholder (conditionally rendered) */}
-      {mapData && (
-        <div className="w-full h-64 bg-gray-200 border border-gray-300 flex items-center justify-center mb-6">
-          <span className="text-gray-500">Map Placeholder</span>
-        </div>
-      )}
+     {mapData && (
+  <div className="w-full h-64 mb-6 rounded overflow-hidden border border-gray-300">
+    <iframe
+      width="100%"
+      height="100%"
+      loading="lazy"
+      style={{ border: 0 }}
+      referrerPolicy="no-referrer-when-downgrade"
+      src={`https://maps.google.com/maps?q=${mapData.lat},${mapData.lng}&z=15&output=embed`}
+    />
+  </div>
+)}
 
       {routeBackTo && (
         <button

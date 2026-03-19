@@ -1,4 +1,3 @@
-// src/app/congratulation/CongratulationClient.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -11,16 +10,18 @@ type PostLocation = {
 type PostData = {
   _id: string;
   name?: string;
-  title?: string; // in case your API uses title
+  title?: string;
+  category?: string;
+  subcategory?: string;
   salePrice?: number;
   rentPrice?: number;
   price?: number;
+  images?: string[];
   location?: PostLocation;
 };
 
-// simple formatter – adjust currency if needed
 function formatPrice(v?: number) {
-  if (v === null || v === undefined || Number.isNaN(v)) return "";
+  if (!v) return "";
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -34,133 +35,107 @@ export default function CongratulationClient() {
   const postId = searchParams.get("postId");
 
   const [post, setPost] = useState<PostData | null>(null);
-  const [loading, setLoading] = useState<boolean>(!!postId);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!postId) return;
+    if (!postId) {
+      setLoading(false);
+      return;
+    }
 
-    let cancelled = false;
-
-    (async () => {
+    async function loadPost() {
       try {
-        setLoading(true);
-        setError(null);
-
-        // ✅ use your existing API: /api/post-details/[id]
         const res = await fetch(`/api/post-details/${postId}`, {
-          method: "GET",
+          cache: "no-store",
         });
 
-        if (!res.ok) {
-          console.error("Failed to load post:", res.status, res.statusText);
-          if (!cancelled) {
-            setError(
-              "We couldn’t load your ad details, but your submission was received."
-            );
-          }
-          return;
-        }
-
         const json = await res.json();
-        const p: PostData = (json.post ?? json.data ?? json) as PostData;
-
-        if (!cancelled) {
-          setPost(p);
-        }
-      } catch (e) {
-        console.error("Error loading post:", e);
-        if (!cancelled) {
-          setError(
-            "We couldn’t load your ad details, but your submission was received."
-          );
-        }
+        setPost(json.data);
+      } catch (err) {
+        console.error("Failed to load post", err);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
-    })();
+    }
 
-    return () => {
-      cancelled = true;
-    };
+    loadPost();
   }, [postId]);
 
-  const title = useMemo(
-    () => post?.name || post?.title || "Your advertisement",
-    [post]
-  );
+  const title = useMemo(() => {
+    return post?.name || post?.title || "Your advertisement";
+  }, [post]);
 
   const priceText = useMemo(() => {
     const raw =
       post?.salePrice ??
       post?.rentPrice ??
-      post?.price ??
-      undefined;
+      post?.price;
 
-    if (raw === undefined) return "";
     return formatPrice(raw);
   }, [post]);
 
-  const locationText = useMemo(
-    () => post?.location?.address || "",
-    [post]
-  );
-
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold mb-2">Congratulations!</h1>
+
+      <h1 className="text-3xl font-bold mb-2">
+        Congratulations!
+      </h1>
 
       {loading && (
-        <p className="text-gray-500 mb-4 text-sm">
-          Saving your advertisement and preparing a quick summary…
+        <p className="text-gray-500 mb-6">
+          Preparing your advertisement summary...
         </p>
       )}
 
-      {error && (
-        <p className="text-red-600 mb-4 text-sm">{error}</p>
-      )}
+      {!loading && post && (
+        <div className="w-full max-w-3xl flex flex-col sm:flex-row items-center gap-4 bg-white border border-gray-200 rounded-lg shadow mb-6 px-4 py-4">
 
-      {/* Advertisement Summary Card */}
-      <div className="w-full max-w-3xl flex flex-col sm:flex-row items-center gap-4 bg-white border border-gray-200 rounded-lg shadow mb-6 px-4 py-3">
-        <img
-          src="https://via.placeholder.com/80?text=Ad"
-          alt="Ad Preview"
-          className="w-20 h-20 rounded object-cover border border-gray-300"
-        />
+          {/* Image Preview */}
+          <img
+            src={post.images?.[0] || "https://via.placeholder.com/80"}
+            alt="Ad preview"
+            className="w-24 h-24 rounded object-cover border"
+          />
 
-        <div className="flex-1">
-          <div className="font-semibold text-lg text-gray-800">
-            {title}
-          </div>
+          {/* Ad Details */}
+          <div className="flex-1">
 
-          <div className="text-sm text-gray-600 mt-1">
-            {priceText ? (
-              <span>{priceText}</span>
-            ) : (
-              <span className="text-gray-400">Price not specified</span>
+            {/* Title */}
+            <div className="font-semibold text-lg text-gray-800">
+              {title}
+            </div>
+
+            {/* Category */}
+            <div className="text-sm text-gray-500 mt-1">
+              {post.category} • {post.subcategory}
+            </div>
+
+            {/* Price */}
+            {priceText && (
+              <div className="text-sm text-gray-700 mt-1">
+                {priceText}
+              </div>
+            )}
+
+            {/* Location */}
+            {post.location?.address && (
+              <div className="text-xs text-gray-500 mt-1">
+                {post.location.address}
+              </div>
             )}
           </div>
 
-          <div className="text-xs text-gray-500 mt-1">
-            {locationText ? (
-              <span>{locationText}</span>
-            ) : (
-              <span className="text-gray-400">
-                Location not specified
-              </span>
-            )}
-          </div>
+          {/* Status */}
+          <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold border border-yellow-300">
+            PENDING
+          </span>
+
         </div>
-
-        <span className="px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold border border-yellow-300">
-          PENDING
-        </span>
-      </div>
+      )}
 
       <p className="text-gray-600 mb-6 text-lg max-w-xl text-center">
         Your advertisement has been submitted for review! Our team will verify
         your details, and your ad will be live for everyone to see very soon.
-        Thank you for being a valued part of our community!
       </p>
 
       <div className="flex gap-4">
@@ -170,6 +145,7 @@ export default function CongratulationClient() {
         >
           Go to Manage Ads
         </button>
+
         <button
           className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
           onClick={() => router.push("/")}
