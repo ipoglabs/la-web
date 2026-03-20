@@ -19,15 +19,17 @@ export function buildPostFormData(data: StoreState) {
   fd.append("seller_info.phone", data.sellerInfo?.phone || "");
 
  (data.images || []).forEach((img: any, i: number) => {
+  // ✅ NEW FILES
   if (img instanceof File) {
-    const file = new File([img], img.name || `image-${i}.jpg`, {
-      type: img.type,
-      lastModified: Date.now(),
-    });
+    fd.append("images", img); // ❌ remove re-wrapping
+  }
 
-    fd.append("images", file);
-  } else if (typeof img === "string") {
-    fd.append("imageUrl", img);
+  // ✅ EXISTING IMAGES (ONLY REAL URLS)
+  else if (typeof img === "string") {
+    // ignore blob preview URLs
+    if (!img.startsWith("blob:")) {
+      fd.append("imageUrl", img);
+    }
   }
 });
 

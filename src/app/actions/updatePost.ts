@@ -181,6 +181,8 @@ export async function updatePost(
       location,
       images,
 
+      status: "pending",
+
       seller_info: {
         name: seller_info.name ?? current.seller_info?.name,
         email: seller_info.email ?? current.seller_info?.email,

@@ -174,7 +174,7 @@ export default function GeneralInfoPage() {
         </CardHeader>
 
         <CardContent>
-          <Form onSubmit={onSubmit} ref={formRef}>
+          <Form onSubmit={onSubmit} ref={formRef} autoComplete="off">
             <h2 className="hidden text-3xl font-bold text-slate-800 mb-1">Step 1- General Information</h2>
             <p className="hidden text-lg font-light text-slate-700 mb-3">
               Lets get to know you, a few details to personalise your lokalads experience,
@@ -195,6 +195,7 @@ export default function GeneralInfoPage() {
                 <Input
                   id="firstName"
                   name="firstName"
+                  autoComplete="off"
                   value={general.firstName || ""}
                   onChange={(e) => {
                     updateGeneral({ firstName: e.target.value });
@@ -221,6 +222,7 @@ export default function GeneralInfoPage() {
                 <Input
                   id="lastName"
                   name="lastName"
+                  autoComplete="off"
                   value={general.lastName || ""}
                   onChange={(e) => {
                     updateGeneral({ lastName: e.target.value });
@@ -307,6 +309,7 @@ export default function GeneralInfoPage() {
               <Input
                 id="email"
                 name="email"
+                autoComplete="off"
                 type="email"
                 value={general.email || ""}
                 onChange={(e) => {

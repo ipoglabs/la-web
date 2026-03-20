@@ -7,7 +7,7 @@ import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 import PostHeader from "../components/PostHeader";
 import ReviewDetailsSection from "../components/ReviewSection";
-
+import { updatePost } from "@/app/actions/updatePost";
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
 
@@ -218,19 +218,27 @@ export default function PreviewPage() {
   setLoading(true);
 
   try {
+    const store = usePostFormStore.getState();
+
     const fd = buildPostFormData({
-      ...data,
+      ...store,
       sellerInfo,
     });
 
-    const res = await addPost(fd);
+    let res;
+
+    if (store.editMode && store.postId) {
+      res = await updatePost(store.postId, fd);
+    } else {
+      res = await addPost(fd);
+    }
 
     if (!res || (res as any).ok === false) {
       setClientError((res as any)?.error || "Submit failed.");
       return;
     }
 
-    // ✅ CLEAR EVERYTHING EXCEPT SELLER
+    // ✅ reset AFTER success
     await usePostFormStore.getState().reset();
 
     router.push("/congratulation");

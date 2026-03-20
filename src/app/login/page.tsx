@@ -224,7 +224,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
             {/* Email OR Phone */}
             <div>
               <Label htmlFor="identifier" className="text-sm mb-1 text-gray-700 block">
@@ -234,6 +234,7 @@ export default function LoginPage() {
                 id="identifier"
                 name="identifier"
                 type="text"
+                autoComplete="off"
                 placeholder="e.g. you@example.com or +65 9123 4567"
                 required
                 value={formData.identifier}
@@ -253,6 +254,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 name="password"
+                autoComplete="new-password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 required

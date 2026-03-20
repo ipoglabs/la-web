@@ -442,7 +442,7 @@ export default function ProfileSetupPage() {
                 showFocusWithin={isBelowLaptop}
               >
                 <div className="relative">
-                  <Input
+                 <Input
                     id="password"
                     name="password"
                     type={showPwd ? "text" : "password"}
@@ -452,6 +452,7 @@ export default function ProfileSetupPage() {
                       updateProfile({ password: e.target.value });
                       clearFieldError("password");
                     }}
+                    onPaste={(e) => e.preventDefault()}   // ❌ disable paste
                     className={cx("pr-10", !!errors.password && "border-red-500 focus-visible:ring-red-500/20")}
                     aria-invalid={!!errors.password}
                   />
@@ -509,6 +510,7 @@ export default function ProfileSetupPage() {
                       setConfirmPassword(e.target.value); // ✅ no live validation
                       clearFieldError("confirmPassword");
                     }}
+                    onPaste={(e) => e.preventDefault()}   // ❌ disable paste
                     onBlur={() => {
                       setConfirmTouched(true);
                       const msg = validateConfirmPassword(confirmPassword);

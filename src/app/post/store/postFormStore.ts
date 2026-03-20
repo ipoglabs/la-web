@@ -115,21 +115,37 @@ export const usePostFormStore = create<PostFormState>()(
       },
 
       removeImage: async (index) => {
-        const state = get();
-        const refs = [...(state.imageRefs || [])];
-        const removed = refs[index];
+  const state = get();
 
-        if (!removed) return;
+  const refs = [...(state.imageRefs || [])];
+  const runtimeImages = [...(state.images || [])];
 
-        const parsed = decodeIdbRef(removed);
-        if (parsed) await idbDel(parsed.key);
+  const target = runtimeImages[index];
 
-        refs.splice(index, 1);
+  // 🔥 CASE 1: EXISTING IMAGE (URL)
+  if (typeof target === "string" && !target.startsWith("idb:")) {
+    const updatedImages = runtimeImages.filter((_, i) => i !== index);
 
-        set(() => ({ imageRefs: refs }));
+    set(() => ({
+      images: updatedImages,
+    }));
 
-        await get().setImagesFromRefs();
-      },
+    return;
+  }
+
+  // 🔥 CASE 2: IDB IMAGE
+  const removed = refs[index];
+  if (!removed) return;
+
+  const parsed = decodeIdbRef(removed);
+  if (parsed) await idbDel(parsed.key);
+
+  refs.splice(index, 1);
+
+  set(() => ({ imageRefs: refs }));
+
+  await get().setImagesFromRefs();
+},
 
       setImagesFromRefs: async () => {
         const refs = get().imageRefs || [];
