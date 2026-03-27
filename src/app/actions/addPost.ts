@@ -5,12 +5,15 @@ import Post from "@/models/post";
 import { generateAdsId } from "@/lib/generateAdsId";
 import cloudinary from "@/config/cloudinary";
 import mongoose from "mongoose";
-import { getSession } from "@/lib/auth"; // ✅ FIX
+import { getSession } from "@/lib/auth";
 
-type LocationData = { address?: string; lat?: number; lng?: number };
+type LocationData = {
+  address?: string;
+  lat?: number;
+  lng?: number;
+};
 
-// ---------- helpers ----------
-function safeParse<T = any>(val: string, fallback: T): T {
+function safeParse<T = unknown>(val: string, fallback: T): T {
   try {
     return JSON.parse(val) as T;
   } catch {
@@ -18,35 +21,100 @@ function safeParse<T = any>(val: string, fallback: T): T {
   }
 }
 
-const pullString = (v: FormDataEntryValue | null | undefined) => {
-  const s = (v as string | null) ?? "";
-  const t = s?.trim?.() ?? s;
+const pullString = (v: FormDataEntryValue | null | undefined): string | undefined => {
+  const s = typeof v === "string" ? v : "";
+  const t = s.trim();
   return t || undefined;
 };
 
-const pullNumber = (v: FormDataEntryValue | null | undefined) => {
+const pullNumber = (v: FormDataEntryValue | null | undefined): number | undefined => {
   const s = pullString(v);
   if (!s) return undefined;
   const n = Number(s);
   return Number.isNaN(n) ? undefined : n;
 };
 
-const pullArray = (v: FormDataEntryValue | null | undefined) => {
+const pullArray = (v: FormDataEntryValue | null | undefined): string[] => {
   const s = pullString(v);
   if (!s) return [];
-  const parsed = safeParse<any>(s, []);
-  if (Array.isArray(parsed)) return parsed;
-  return String(s)
+
+  const parsed = safeParse<unknown>(s, []);
+  if (Array.isArray(parsed)) {
+    return parsed.map((x) => String(x).trim()).filter(Boolean);
+  }
+
+  return s
     .split(",")
     .map((x) => x.trim())
     .filter(Boolean);
 };
 
-function normalizeEmail(e?: string) {
+function normalizeEmail(e?: string): string | undefined {
   return e ? String(e).trim().toLowerCase() : undefined;
 }
 
-// ---------------------------------------
+function getCountryCodeFromLocation(location: LocationData): string {
+  const address = location?.address?.toLowerCase() || "";
+
+  if (address.includes("india")) return "IND";
+  if (address.includes("singapore")) return "SG";
+  if (
+    address.includes("uae") ||
+    address.includes("united arab emirates") ||
+    address.includes("dubai") ||
+    address.includes("abu dhabi")
+  ) {
+    return "UAE";
+  }
+
+  return "GLB";
+}
+
+function getCountryCode(formData: FormData, location: LocationData): string {
+  const explicitCountry =
+    pullString(formData.get("country")) ||
+    pullString(formData.get("countryCode"));
+
+  if (explicitCountry) {
+    return explicitCountry.toUpperCase();
+  }
+
+  return getCountryCodeFromLocation(location);
+}
+
+async function uploadImages(formData: FormData): Promise<string[]> {
+  const imageUrlEntries = formData
+    .getAll("imageUrl")
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter(Boolean);
+
+  const imageFiles = formData
+    .getAll("images")
+    .filter((item): item is File => item instanceof File);
+
+  const uploadedImages = await Promise.all(
+    imageFiles.map(async (file) => {
+      if (!file.size || !file.type?.startsWith("image/")) return null;
+
+      try {
+        const buffer = await file.arrayBuffer();
+        const base64 = Buffer.from(new Uint8Array(buffer)).toString("base64");
+
+        const result = await cloudinary.uploader.upload(
+          `data:${file.type};base64,${base64}`,
+          { folder: "posts" }
+        );
+
+        return result.secure_url;
+      } catch (error) {
+        console.error("Cloudinary upload failed:", error);
+        return null;
+      }
+    })
+  );
+
+  return [...imageUrlEntries, ...uploadedImages.filter(Boolean)];
+}
 
 export async function addPost(
   formData: FormData
@@ -54,10 +122,7 @@ export async function addPost(
   try {
     await connectDB();
 
-    // 🔥 ✅ FIXED AUTH
     const session = getSession();
-
-    console.log("🔐 SESSION:", session);
 
     if (!session || !session.userId) {
       return { ok: false, error: "Unauthorized user" };
@@ -68,12 +133,8 @@ export async function addPost(
     }
 
     const ownerId = new mongoose.Types.ObjectId(session.userId);
-
     const ownerEmail = normalizeEmail(session.email);
 
-    console.log("🆔 Creating post for:", ownerId.toString());
-
-    // ---------- Core ----------
     const name =
       pullString(formData.get("name")) ||
       pullString(formData.get("jobTitle")) ||
@@ -85,7 +146,7 @@ export async function addPost(
 
     const locationRaw = (formData.get("locationData") as string) || "";
     const location: LocationData = locationRaw
-      ? safeParse(locationRaw, {})
+      ? safeParse<LocationData>(locationRaw, {})
       : {};
 
     const seller_info = {
@@ -106,34 +167,12 @@ export async function addPost(
         "",
     };
 
-    // ---------- Images ----------
-    const imageUrlEntries = (formData.getAll("imageUrl") as string[]) || [];
-    const imageFiles = (formData.getAll("images") as File[]) || [];
-    const images: string[] = [...imageUrlEntries];
+    const images = await uploadImages(formData);
 
-    for (const file of imageFiles) {
-      if (!(file instanceof File) || !file.size || !file.type?.startsWith("image/")) continue;
-
-      const buffer = await file.arrayBuffer();
-      const base64 = Buffer.from(new Uint8Array(buffer)).toString("base64");
-
-      try {
-        const result = await cloudinary.uploader.upload(
-          `data:${file.type};base64,${base64}`,
-          { folder: "posts" }
-        );
-        images.push(result.secure_url);
-      } catch (e) {
-        console.error("Cloudinary upload failed:", e);
-      }
-    }
-
-    // ---------- Arrays ----------
     const facilities = pullArray(formData.get("facilities"));
     const amenities = pullArray(formData.get("amenities"));
 
-    // ---------- DATA ----------
-    const postData: Record<string, any> = {
+    const postData = {
       ownerId,
       category,
       subcategory,
@@ -154,8 +193,6 @@ export async function addPost(
       deposit: pullNumber(formData.get("deposit")),
       occupancy: pullString(formData.get("occupancy")),
       gender_pref: pullString(formData.get("gender_pref")),
-      facilities,
-      amenities,
       builtup_area: pullNumber(formData.get("builtup_area")),
       carpet_area: pullNumber(formData.get("carpet_area")),
       floor: pullNumber(formData.get("floor")),
@@ -271,7 +308,7 @@ export async function addPost(
       serviceProviderName: pullString(formData.get("serviceProviderName")),
       availability: pullString(formData.get("availability")),
 
-      // Services (new blocks)
+      // Services
       educationType: pullString(formData.get("educationType")),
       subject: pullString(formData.get("subject")),
       mode: pullString(formData.get("mode")),
@@ -285,13 +322,15 @@ export async function addPost(
       destination: pullString(formData.get("destination")),
       packageDetails: pullString(formData.get("packageDetails")),
       agencyName: pullString(formData.get("agencyName")),
-      durationText: pullString(formData.get("duration")) || pullString(formData.get("durationText")),
+      durationText:
+        pullString(formData.get("duration")) ||
+        pullString(formData.get("durationText")),
       level: pullString(formData.get("level")),
       urgency: pullString(formData.get("urgency")),
     };
 
-    // ---------- Validation ----------
     const errors: string[] = [];
+
     if (!postData.name) errors.push("Title is required");
     if (!postData.description) errors.push("Description is required");
     if (!postData.category) errors.push("Category is required");
@@ -304,20 +343,24 @@ export async function addPost(
       return { ok: false, error: errors.join(" • ") };
     }
 
+    const countryCode = getCountryCode(formData, location);
+    const adsId = await generateAdsId(countryCode);
 
-        // 🔥 generate auto id
-        const adsId = await generateAdsId();
+    const newPost = new Post({
+      ...postData,
+      adsId,
+    });
 
-        const newPost = new Post({
-          ...postData,
-          adsId,
-        });
-
-        await newPost.save();
+    await newPost.save();
 
     return { ok: true, id: String(newPost._id) };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("addPost error:", e);
-    return { ok: false, error: e?.message || "Server error" };
+
+    if (e instanceof Error) {
+      return { ok: false, error: e.message || "Server error" };
+    }
+
+    return { ok: false, error: "Server error" };
   }
 }

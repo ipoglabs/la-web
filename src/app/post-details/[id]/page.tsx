@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import AppHeader from "@/app/components/AppHeader/appHeader";
 import AppFooter from "@/app/components/AppFooter/appFooter";
+import { Button } from "@/components/ui/button";
 import {
   normalizeCategory,
   normalizeSubcategory,
@@ -175,45 +176,109 @@ export default function PostDetailPageClient() {
     );
 
   return (
-    <>
-      <AppHeader />
+   <>
+  <AppHeader />
 
-      <div className="max-w-3xl mx-auto my-8 px-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>{post.name || "Untitled"}</CardTitle>
+  {/* PAGE BACKGROUND */}
+  <div className="bg-slate-100 min-h-screen py-6">
+    <div className="max-w-screen-2xl mx-auto px-4 md:px-12 lg:px-20 xl:px-28">
 
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <Badge>{post.category}</Badge>
-              {post.subcategory && <Badge>{post.subcategory}</Badge>}
+      <div className="grid md:grid-cols-3 gap-6">
+
+        {/* ================= LEFT COLUMN ================= */}
+        <div className="md:col-span-2 space-y-5">
+
+          {/* TITLE + LOCATION */}
+          <Card className="bg-white border-none shadow-sm rounded-xl p-5">
+            <h1 className="text-xl font-semibold text-slate-800">
+              {post.name || "Untitled"}
+            </h1>
+
+            <div className="flex justify-between items-center mt-2">
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                📍 {post.location?.address || "—"}
+              </div>
+
+              <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-full px-4 py-1 text-sm">
+                Direction
+              </Button>
             </div>
-          </CardHeader>
 
-          <Separator />
+            <div className="flex gap-2 mt-3 flex-wrap">
+              <span className="bg-lime-400 text-lime-900 text-xs px-3 py-1 rounded-full font-medium">
+                {post.category}
+              </span>
 
-          <CardContent className="space-y-6 mt-4">
-
-            {/* BASIC */}
-            <section>
-              <h3 className="font-semibold">Basic</h3>
-              <p><b>Title:</b> {post.name}</p>
-
-              {post.description && (
-                <p className="whitespace-pre-line">
-                  <b>Description:</b> {post.description}
-                </p>
+              {post.subcategory && (
+                <span className="bg-lime-400 text-lime-900 text-xs px-3 py-1 rounded-full font-medium">
+                  {post.subcategory}
+                </span>
               )}
+            </div>
+          </Card>
 
-              <div className="text-xs text-black-500">
-              {post.adsId}
-                 </div>
-            </section>
+          {/* IMAGE + PRICE */}
+          {post.images?.length > 0 && (
+            <Card className="bg-white border-none shadow-sm rounded-xl p-4 space-y-4">
 
-            {/* DETAILS */}
-            {previewKeys.length > 0 && (
-              <section>
-                <h3 className="font-semibold">Details</h3>
+              <div className="w-full h-64 bg-slate-200 rounded-lg overflow-hidden">
+                <img
+                  src={post.images[0]}
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
+              <div className="flex gap-2 overflow-x-auto">
+                {post.images.slice(1).map((img, i) => (
+                  <img
+                    key={i}
+                    src={img}
+                    className="w-16 h-16 object-cover rounded-md border"
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold text-slate-900">
+                  {renderValue("price", post.price)}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button className="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full px-3">
+                    Share
+                  </Button>
+                  <Button className="bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full px-3">
+                    ❤️
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* DESCRIPTION */}
+          <Card className="bg-white border-none shadow-sm rounded-xl p-5">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-base font-semibold text-slate-800">
+                Description
+              </h2>
+              <span className="text-sm text-slate-400">
+                {fmtDate(post.createdAt)}
+              </span>
+            </div>
+
+            <p className="text-sm text-slate-600 whitespace-pre-line">
+              {post.description || "—"}
+            </p>
+          </Card>
+
+          {/* DETAILS */}
+          {previewKeys.length > 0 && (
+            <Card className="bg-white border-none shadow-sm rounded-xl p-5">
+              <h2 className="text-base font-semibold text-slate-800 mb-4">
+                Details
+              </h2>
+
+              <div className="grid grid-cols-2 border rounded-lg overflow-hidden">
                 {previewKeys.map((key) => {
                   const value = post[key];
 
@@ -222,80 +287,107 @@ export default function PostDetailPageClient() {
                     value === null ||
                     value === "" ||
                     (Array.isArray(value) && value.length === 0)
-                  ) {
-                    return null;
-                  }
+                  ) return null;
 
                   return (
-                    <p key={key}>
-                      <b>{formatLabel(key)}:</b>{" "}
-                      {renderValue(key, value)}
-                    </p>
+                    <div key={key} className="contents">
+                      <div className="p-3 bg-slate-100 border text-sm font-medium text-slate-700">
+                        {formatLabel(key)}
+                      </div>
+                      <div className="p-3 border text-sm text-slate-600">
+                        {renderValue(key, value)}
+                      </div>
+                    </div>
                   );
                 })}
-              </section>
+              </div>
+            </Card>
+          )}
+
+          {/* MAP */}
+          <Card className="bg-white border-none shadow-sm rounded-xl p-3">
+            <h3 className="px-3 pt-2 font-semibold text-slate-800">Location</h3>
+
+            {post.location?.lat && post.location?.lng ? (
+              <iframe
+                className="w-full h-64 mt-2 rounded-lg"
+                loading="lazy"
+                src={`https://maps.google.com/maps?q=${post.location.lat},${post.location.lng}&z=15&output=embed`}
+              />
+            ) : (
+              <p className="p-4 text-sm text-slate-500">
+                No location available
+              </p>
             )}
+          </Card>
 
-            {/* CONTACT */}
-            <section>
-              <h3 className="font-semibold">Contact</h3>
-              <p><b>Name:</b> {post.seller_info?.name || "—"}</p>
-              <p><b>Email:</b> {post.seller_info?.email || "—"}</p>
-              <p><b>Phone:</b> {post.seller_info?.phone || "—"}</p>
-            </section>
+          {/* AD ID */}
+          <Card className="bg-white border-none shadow-sm rounded-xl p-4 flex items-center justify-between">
+            <p className="text-sm text-slate-600">
+              Ad ID: <span className="font-bold">{post.adsId}</span>
+            </p>
 
-            {/* LOCATION */}
-            <section>
-              <h3 className="font-semibold">Location</h3>
-              <p>{post.location?.address || "—"}</p>
+            <Button className="bg-rose-500 hover:bg-rose-600 text-white rounded-full px-4">
+              Report
+            </Button>
+          </Card>
 
-              {post.location?.lat && post.location?.lng && (
-                <iframe
-                  className="w-full h-64 mt-2 rounded"
-                  loading="lazy"
-                  src={`https://maps.google.com/maps?q=${post.location.lat},${post.location.lng}&z=15&output=embed`}
-                />
-              )}
-            </section>
+        </div>
 
-            {/* IMAGES */}
-            {post.images?.length > 0 && (
-              <section>
-                <h3 className="font-semibold">Images</h3>
+        {/* ================= RIGHT COLUMN ================= */}
+        <div className="hidden md:block space-y-5">
 
-                <div className="grid grid-cols-3 gap-2">
-                  {post.images.map((img, i) => (
-                    <img
-                      key={i}
-                      src={img}
-                      alt={`img-${i}`}
-                      loading="lazy"
-                      className="w-full h-32 object-cover rounded"
-                    />
-                  ))}
-                </div>
-                <div className="text-xs text-black-1000 mt-1">
-  {post.adsId}
-</div>
-              </section>
-            )}
+          {/* SELLER */}
+          <Card className="bg-white border-none shadow-sm rounded-xl p-5 text-center">
+            <div className="flex flex-col items-center gap-3">
 
-            {/* DEBUG */}
-            <details>
-              <summary className="cursor-pointer text-sm text-gray-500">
-                Debug
-              </summary>
+              <div className="w-24 h-24 rounded-full bg-slate-200" />
 
-              <pre className="text-xs mt-2 bg-gray-100 p-2 rounded overflow-auto">
-                {debugJson}
-              </pre>
-            </details>
+              <h3 className="font-semibold text-slate-800">
+                {post.seller_info?.name || "Seller"}
+              </h3>
 
-          </CardContent>
-        </Card>
+              <p className="text-sm text-slate-500">
+                {post.location?.address || ""}
+              </p>
+
+              <span className="bg-lime-400 text-lime-900 text-xs px-3 py-1 rounded-full font-medium">
+                Verified
+              </span>
+
+              <div className="w-full mt-4 space-y-2">
+                <Button className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full">
+                  Email
+                </Button>
+                <Button className="w-full bg-rose-500 hover:bg-rose-600 text-white rounded-full">
+                  Call
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* CONTACT */}
+          <Card className="bg-white border-none shadow-sm rounded-xl p-5">
+            <h3 className="font-semibold mb-3 text-slate-800">Contact</h3>
+
+            <p className="text-sm text-slate-600">
+              <b>Name:</b> {post.seller_info?.name || "—"}
+            </p>
+            <p className="text-sm text-slate-600">
+              <b>Email:</b> {post.seller_info?.email || "—"}
+            </p>
+            <p className="text-sm text-slate-600">
+              <b>Phone:</b> {post.seller_info?.phone || "—"}
+            </p>
+          </Card>
+
+        </div>
+
       </div>
+    </div>
+  </div>
 
-      <AppFooter />
-    </>
+  <AppFooter />
+</>
   );
 }

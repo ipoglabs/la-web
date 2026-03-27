@@ -410,6 +410,9 @@ export default function ProfileSetupPage() {
                   <Input
                     id="locality"
                     name="locality"
+                    autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
                     placeholder="e.g. Anna Nagar, Chennai"
                     className={cx("w-full", !!errors.locality && "border-red-500 focus-visible:ring-red-500/20")}
                     value={locationQuery}
@@ -445,6 +448,9 @@ export default function ProfileSetupPage() {
                  <Input
                     id="password"
                     name="password"
+                    autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
                     type={showPwd ? "text" : "password"}
                     placeholder="Create a secure password"
                     value={profile.password}

@@ -53,6 +53,49 @@ export default function SelectLocationPage() {
     setQuery(addr);
   };
 
+  const handleUseCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      try {
+        // Reverse geocode
+        const res = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+        );
+
+        const data = await res.json();
+        const address =
+          data.results?.[0]?.formatted_address || "Current Location";
+
+        setField("location", { lat, lng, address });
+        setQuery(address);
+      } catch (err) {
+        console.error(err);
+        setField("location", {
+          lat,
+          lng,
+          address: "Current Location",
+        });
+      }
+    },
+    (error) => {
+      console.error(error);
+      alert("Location permission denied");
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+    }
+  );
+};
+
   // ✅ If location already selected
   const forcedPosition =
     location &&
@@ -107,6 +150,14 @@ export default function SelectLocationPage() {
   </Autocomplete>
 </div>
 
+<div className="absolute top-20 left-4 right-4 z-20 flex justify-end">
+  <button
+    onClick={handleUseCurrentLocation}
+    className="bg-white px-4 py-2 rounded-xl shadow-md border text-sm hover:bg-gray-50"
+  >
+    📍 Use Current Location
+  </button>
+</div>
 
         {/* Map */}
         <div className="w-full h-[400px]">

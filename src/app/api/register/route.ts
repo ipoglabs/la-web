@@ -4,6 +4,7 @@ import User from "@/models/user";
 import { getNextUserId } from "@/lib/sequence";
 import { hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
 
 const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -138,6 +139,16 @@ export async function POST(req: Request) {
 
       provider: "credentials",
     });
+
+    // welcome email (don't await, we don't want to block the response if email fails)
+sendWelcomeEmail({
+  firstName: created.firstName,
+  lastName: created.lastName,
+  email: created.email,
+  phone: created.primaryNumber,
+}).catch((err) => {
+  console.error("Welcome email failed:", err);
+});
 
     const token = signJwt({
       userId: String(created._id),

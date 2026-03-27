@@ -196,6 +196,8 @@ export default function GeneralInfoPage() {
                   id="firstName"
                   name="firstName"
                   autoComplete="off"
+                   autoCorrect="off"
+                  autoCapitalize="off"
                   value={general.firstName || ""}
                   onChange={(e) => {
                     updateGeneral({ firstName: e.target.value });
@@ -223,6 +225,8 @@ export default function GeneralInfoPage() {
                   id="lastName"
                   name="lastName"
                   autoComplete="off"
+                   autoCorrect="off"
+                  autoCapitalize="off"
                   value={general.lastName || ""}
                   onChange={(e) => {
                     updateGeneral({ lastName: e.target.value });
@@ -310,6 +314,8 @@ export default function GeneralInfoPage() {
                 id="email"
                 name="email"
                 autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
                 type="email"
                 value={general.email || ""}
                 onChange={(e) => {
