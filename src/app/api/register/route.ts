@@ -165,6 +165,7 @@ sendWelcomeEmail({
           email: created.email,
           firstName: created.firstName,
           lastName: created.lastName,
+          primaryNumber: created.primaryNumber,
           role: created.role ?? "user",
           locality: created.locality,
           accountStatus: created.accountStatus,
