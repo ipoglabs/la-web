@@ -1,19 +1,23 @@
 "use server";
 
-import { getSession } from "@/lib/auth";
+import mongoose from "mongoose";
+import { cache } from "react";
+
 import connectDB from "@/config/database";
 import User from "@/models/user";
-import mongoose from "mongoose";
+import { getSession } from "@/lib/auth";
 
-export async function getCurrentUser() {
+import type { ProfileUser } from "@/app/profile/types";
+
+export const getCurrentUser = cache(async (): Promise<ProfileUser | null> => {
   await connectDB();
 
-  const session = getSession();
+  const session = await getSession();
   if (!session) return null;
 
   const { userId, email } = session;
 
-  let user = null;
+  let user: any = null;
 
   if (userId && mongoose.Types.ObjectId.isValid(userId)) {
     user = await User.findById(userId).lean();
@@ -24,22 +28,26 @@ export async function getCurrentUser() {
   if (!user) return null;
 
   return {
-    id: String(user._id),
-    firstName: user.firstName,
-    lastName: user.lastName,
+    id: String(user._id ?? user.userId ?? ""),
+    username: user.username || "",
+    firstName: user.firstName || "",
+    lastName: user.lastName || "",
     dateOfBirth: user.dateOfBirth
       ? new Date(user.dateOfBirth).toISOString().slice(0, 10)
       : "",
-    gender: user.gender,
-    nationality: user.nationality,
-    residency: user.residency,
-    email: user.email,
-    username: user.username,
-    primaryNumber: user.primaryNumber,
+    gender: user.gender || "",
+    nationality: user.nationality || "",
+    residency: user.residency || "",
+    email: user.email || "",
+    primaryNumber: user.primaryNumber || "",
     secondaryNumber1: user.secondaryNumber1 || "",
     secondaryNumber2: user.secondaryNumber2 || "",
-    role: user.role,
+    role: user.role || "",
     image: user.image || "",
-    marketingOptIn: !!user.marketingOptIn,
+    marketingOptIn: Boolean(user.marketingOptIn),
+    locality: user.locality || "",
+    address: {
+      postalCode: user.address?.postalCode || "",
+    },
   };
-}
+});
