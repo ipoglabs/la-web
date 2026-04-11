@@ -32,14 +32,23 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
 
       <main className="min-h-screen flex justify-center bg-gray-50 px-4 py-6">
         <div className="w-full max-w-2xl space-y-8">
-          <Section title="Public Profile" hideEdit>
-            <Row
-              label="Public Profile ID"
-              value={user.username || user.id}
-              actionLabel="Edit"
-              onAction={() => setActiveModal("publicProfile")}
-            />
-          </Section>
+         <Section title="Public Profile" hideEdit>
+          <Row
+            label="Profile ID"
+            value={user.id?.trim() || "—"}
+            actionLabel="Edit"
+            onAction={() => setActiveModal("publicProfile")}
+          />
+
+          <Row
+            label="Profile URL"
+            value={
+              user.id
+                ? `lokalads.com/u/${user.id.trim()}`
+                : "—"
+            }
+          />
+        </Section>
 
           <Section title="Basic Info" onEdit={() => setActiveModal("basic")}>
             <Row label="First Name" value={user.firstName} />

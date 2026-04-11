@@ -20,25 +20,26 @@ type Props = {
 export default function PublicProfileEdit({ user, onSuccess }: Props) {
   const router = useRouter();
 
-  const initialValue = useMemo(
-    () => user.username || user.id || "",
-    [user.username, user.id]
-  );
+  /* ================= INITIAL VALUE ================= */
+  const initialValue = useMemo(() => user.id || "", [user.id]);
 
-  const [username, setUsername] = useState(initialValue);
+  const [userId, setUserId] = useState(initialValue);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /* ================= RESET WHEN OPEN ================= */
   useEffect(() => {
-    setUsername(initialValue);
+    setUserId(initialValue);
     setError("");
   }, [initialValue]);
 
+  /* ================= VALIDATION ================= */
   const validate = (value: string) => {
     const trimmed = value.trim();
 
     if (!trimmed) return "Profile ID is required";
     if (trimmed.length > 18) return "Max 18 characters allowed";
+
     if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
       return "Only letters, numbers, and underscore allowed";
     }
@@ -46,10 +47,12 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
     return "";
   };
 
-  const hasChanged = username.trim() !== initialValue.trim();
+  const hasChanged = userId.trim() !== initialValue.trim();
 
+  /* ================= SAVE ================= */
   const handleSave = async () => {
-    const err = validate(username);
+    const err = validate(userId);
+
     if (err) {
       setError(err);
       return;
@@ -61,10 +64,11 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
       setLoading(true);
 
       await updateProfile({
-        username: username.trim(),
+        userId: userId.trim(), // ✅ updated field
       });
 
-      toast.success("Public Profile ID updated");
+      toast.success("Profile ID updated successfully");
+
       router.refresh();
       onSuccess?.();
     } catch (e: any) {
@@ -74,25 +78,28 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
     }
   };
 
+  /* ================= UI ================= */
   return (
     <>
       <FormField label="Public Profile ID" error={error}>
         <Input
-          value={username}
+          value={userId}
           maxLength={18}
           onChange={(e) => {
-            setUsername(e.target.value);
+            setUserId(e.target.value);
             setError("");
           }}
           placeholder="Enter profile ID"
         />
       </FormField>
 
+      {/* PREVIEW */}
       <p className="text-sm text-muted-foreground mt-2">
         Your public profile will be:{" "}
-        <b>lokalads.com/{username.trim() || "your-id"}</b>
+        <b>lokalads.com/u/{userId.trim() || "your-id"}</b>
       </p>
 
+      {/* ACTION */}
       <Button
         type="button"
         className="w-full mt-4"

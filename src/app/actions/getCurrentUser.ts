@@ -28,7 +28,7 @@ export const getCurrentUser = cache(async (): Promise<ProfileUser | null> => {
   if (!user) return null;
 
   return {
-    id: String(user._id ?? user.userId ?? ""),
+    id: user.userId || "", // ✅ FIXED (MOST IMPORTANT)
     username: user.username || "",
     firstName: user.firstName || "",
     lastName: user.lastName || "",
