@@ -1,79 +1,131 @@
 "use server";
 
-import { cookies } from "next/headers";
 import connectDB from "@/config/database";
 import User from "@/models/user";
-import { verifyToken } from "@/lib/auth";
-import cloudinary from "@/config/cloudinary";
-import mongoose from "mongoose";
+import { getSession } from "@/lib/auth";
 
-type UpdatePayload = {
-  firstName?: string;
-  lastName?: string;
-  dateOfBirth?: string; // ISO yyyy-mm-dd
-  gender?: "Male" | "Female" | "Other";
-  nationality?: string;
-  residency?: string;
-  username?: string;
-  primaryNumber?: string;
-  secondaryNumber1?: string;
-  secondaryNumber2?: string;
-  marketingOptIn?: boolean;
-};
-
-export async function updateProfile(form: FormData): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function updateProfile(payload: any) {
   await connectDB();
 
-  const token = cookies().get("token")?.value?.replace(/^Bearer\s+/i, "") || "";
-  const decoded = token ? verifyToken(token) : null;
-  const id = decoded?.id || decoded?.userId;
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized");
 
-  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-    return { ok: false, error: "Not authenticated" };
+  const { userId: sessionUserId, email } = session;
+
+  /* ================= FIND USER ================= */
+  let user: any = null;
+
+  if (sessionUserId) {
+    user = await User.findById(sessionUserId);
+  } else if (email) {
+    user = await User.findOne({ email });
   }
 
-  // Map form fields
-  const payload: UpdatePayload = {
-    firstName: (form.get("firstName") as string) || undefined,
-    lastName: (form.get("lastName") as string) || undefined,
-    dateOfBirth: (form.get("dateOfBirth") as string) || undefined,
-    gender: (form.get("gender") as any) || undefined,
-    nationality: (form.get("nationality") as string) || undefined,
-    residency: (form.get("residency") as string) || undefined,
-    username: (form.get("username") as string) || undefined,
-    primaryNumber: (form.get("primaryNumber") as string) || undefined,
-    secondaryNumber1: (form.get("secondaryNumber1") as string) || undefined,
-    secondaryNumber2: (form.get("secondaryNumber2") as string) || undefined,
-    marketingOptIn: (form.get("marketingOptIn") as string) === "on",
-  };
+  if (!user) throw new Error("User not found");
 
-  // Optional avatar upload
-  let imageUrl: string | undefined;
-  const avatar = form.get("image") as File | null;
-  if (avatar && avatar.size && avatar.type?.startsWith("image/")) {
-    const buf = Buffer.from(await avatar.arrayBuffer());
-    const base64 = `data:${avatar.type};base64,${buf.toString("base64")}`;
-    const uploaded = await cloudinary.uploader.upload(base64, { folder: "avatars" });
-    imageUrl = uploaded.secure_url;
-  }
+  /* ================= VALIDATION ================= */
 
-  // Build update object (avoid overwriting with empties)
-  const $set: Record<string, any> = {};
-  for (const [k, v] of Object.entries(payload)) {
-    if (v !== undefined && v !== null && String(v).length > 0) $set[k] = v;
-  }
-  if (payload.dateOfBirth) $set.dateOfBirth = new Date(payload.dateOfBirth);
-  if (imageUrl) $set.image = imageUrl;
+  // 🔥 USER ID (Public Profile ID)
+  if (payload.userId !== undefined) {
+    const newId = payload.userId.trim();
 
-  try {
-    await User.updateOne({ _id: id }, { $set }).lean();
-    return { ok: true };
-  } catch (e: any) {
-    // handle unique constraints
-    if (e?.code === 11000) {
-      const key = Object.keys(e.keyPattern || {})[0] || "field";
-      return { ok: false, error: `That ${key} is already in use.` };
+    if (!newId) throw new Error("Profile ID is required");
+    if (newId.length > 18) throw new Error("Max 18 characters allowed");
+    if (!/^[a-zA-Z0-9_]+$/.test(newId)) {
+      throw new Error("Only letters, numbers, and underscore allowed");
     }
-    return { ok: false, error: e?.message || "Failed to update profile" };
+
+    const exists = await User.findOne({
+      userId: newId,
+      _id: { $ne: user._id },
+    });
+
+    if (exists) {
+      throw new Error("This Profile ID is already taken");
+    }
+
+    user.userId = newId;
   }
+
+  // 🔥 NAME VALIDATION
+  if (payload.firstName !== undefined) {
+    const v = payload.firstName.trim();
+
+    if (!v) throw new Error("First name is required");
+    if (v.length > 18) throw new Error("Max 18 characters allowed");
+    if (!/^[A-Za-z]+$/.test(v)) {
+      throw new Error("First name must contain only alphabets");
+    }
+
+    user.firstName = v;
+  }
+
+  if (payload.lastName !== undefined) {
+    const v = payload.lastName.trim();
+
+    if (!v) throw new Error("Last name is required");
+    if (v.length > 18) throw new Error("Max 18 characters allowed");
+    if (!/^[A-Za-z]+$/.test(v)) {
+      throw new Error("Last name must contain only alphabets");
+    }
+
+    user.lastName = v;
+  }
+
+  // 🔥 ROLE
+  if (payload.role !== undefined) {
+    if (!payload.role) throw new Error("Role is required");
+
+    user.role = payload.role;
+  }
+
+  // 🔥 ROLE EXTRA (only for other)
+  if (payload.role === "other") {
+    const title = payload.roleTitle?.trim();
+    const desc = payload.roleDescription?.trim();
+
+    if (!title) throw new Error("Role title is required");
+    if (title.length < 2) throw new Error("Role title too short");
+    if (title.length > 80) throw new Error("Max 80 characters allowed");
+
+    if (!desc) throw new Error("Role description is required");
+    if (desc.length < 2) throw new Error("Description too short");
+    if (desc.length > 300) throw new Error("Max 300 characters allowed");
+
+    user.roleTitle = title;
+    user.roleDescription = desc;
+  } else {
+    user.roleTitle = "";
+    user.roleDescription = "";
+  }
+
+  // 🔥 DOB
+  if (payload.dateOfBirth !== undefined) {
+    const dob = new Date(payload.dateOfBirth);
+
+    if (isNaN(dob.getTime())) {
+      throw new Error("Invalid date");
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    if (age < 18) {
+      throw new Error("You must be at least 18 years old");
+    }
+
+    user.dateOfBirth = payload.dateOfBirth;
+  }
+
+  /* ================= SAVE ================= */
+  await user.save();
+
+  return {
+    success: true,
+  };
 }

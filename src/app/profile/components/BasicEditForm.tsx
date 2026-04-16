@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { updateProfile } from "@/app/actions/updateProfile";
+import { basicProfileSchema } from "@/validators/profileBasic";
 
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
@@ -21,17 +22,15 @@ type Props = {
   onSuccess?: () => void;
 };
 
-function cx(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
-}
+const ROLES = [
+  { key: "individual", label: "Individual" },
+  { key: "business", label: "Business" },
+  { key: "agency", label: "Agency" },
+  { key: "other", label: "Other" },
+];
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function todayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function cx(...arr: any[]) {
+  return arr.filter(Boolean).join(" ");
 }
 
 export default function BasicEditForm({ user, onSuccess }: Props) {
@@ -41,40 +40,45 @@ export default function BasicEditForm({ user, onSuccess }: Props) {
     firstName: user.firstName || "",
     lastName: user.lastName || "",
     role: user.role || "",
+    roleTitle: "",
+    roleDescription: "",
     dateOfBirth: user.dateOfBirth || "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  const clearError = (key: string) => {
-    setErrors((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
+  /* ================= VALIDATION ================= */
+  const validateField = (field: string, value: any) => {
+    const result = basicProfileSchema.safeParse({
+      ...formData,
+      [field]: value,
     });
-  };
 
-  const validateName = (value: string, label: string) => {
-    const v = value.trim();
-    if (!v) return `Please enter ${label}`;
-    if (!/^[A-Za-z]+$/.test(v)) return "Only letters A-Z are allowed";
+    if (!result.success) {
+      const issue = result.error.issues.find((e) => e.path[0] === field);
+      return issue?.message;
+    }
     return "";
   };
 
   const validateAll = () => {
-    const nextErrors: Record<string, string> = {};
+    const result = basicProfileSchema.safeParse(formData);
 
-    const firstNameError = validateName(formData.firstName, "first name");
-    const lastNameError = validateName(formData.lastName, "last name");
+    if (!result.success) {
+      const nextErrors: Record<string, string> = {};
+      result.error.issues.forEach((e) => {
+        nextErrors[e.path[0] as string] = e.message;
+      });
+      setErrors(nextErrors);
+      return false;
+    }
 
-    if (firstNameError) nextErrors.firstName = firstNameError;
-    if (lastNameError) nextErrors.lastName = lastNameError;
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
+  /* ================= SUBMIT ================= */
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -84,10 +88,9 @@ export default function BasicEditForm({ user, onSuccess }: Props) {
       setLoading(true);
 
       await updateProfile({
+        ...formData,
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        role: formData.role.trim(),
-        dateOfBirth: formData.dateOfBirth,
       });
 
       toast.success("Profile updated successfully");
@@ -101,57 +104,194 @@ export default function BasicEditForm({ user, onSuccess }: Props) {
   };
 
   return (
-    <Form onSubmit={onSubmit} className="space-y-5">
-      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
-        <FormField label="First Name" error={errors.firstName} className="mb-0">
+    <Form onSubmit={onSubmit} className="space-y-2 px-3">
+
+      {/* NAME */}
+      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <FormField label="First Name" error={errors.firstName}>
           <Input
             value={formData.firstName}
             onChange={(e) => {
               setFormData({ ...formData, firstName: e.target.value });
-              clearError("firstName");
+              setErrors({ ...errors, firstName: "" });
             }}
-            className={cx(errors.firstName && "border-red-500")}
+            onBlur={(e) => {
+              const msg = validateField("firstName", e.target.value);
+              if (msg) setErrors((p) => ({ ...p, firstName: msg }));
+            }}
           />
         </FormField>
 
-        <FormField label="Last Name" error={errors.lastName} className="mb-0">
+        <FormField label="Last Name" error={errors.lastName}>
           <Input
             value={formData.lastName}
             onChange={(e) => {
               setFormData({ ...formData, lastName: e.target.value });
-              clearError("lastName");
+              setErrors({ ...errors, lastName: "" });
             }}
-            className={cx(errors.lastName && "border-red-500")}
+            onBlur={(e) => {
+              const msg = validateField("lastName", e.target.value);
+              if (msg) setErrors((p) => ({ ...p, lastName: msg }));
+            }}
           />
         </FormField>
+
       </FormFieldWrapper>
 
-      <FormHelperText>Use your real name to build trust.</FormHelperText>
+     {/* ================= ROLE =================  */}
+<FormField
+  label="Role"
+  htmlFor="role"
+  error={errors.role || errors.roleTitle || errors.roleDescription}
+>
+  {/* helper text */}
+  <p className="text-xs text-muted-foreground mt-1">
+    Choose how you’ll use Lokalads — roles customise your dashboard and features.
+  </p>
 
-      <FormField label="Role Title">
+  {/* role cards */}
+  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {ROLES.map((r) => {
+      const active = formData.role === r.key;
+
+      return (
+        <button
+          key={r.key}
+          type="button"
+          onClick={() => {
+            setFormData({
+              ...formData,
+              role: r.key,
+              roleTitle: r.key === "other" ? formData.roleTitle : "",
+              roleDescription: r.key === "other" ? formData.roleDescription : "",
+            });
+
+            setErrors((prev) => ({
+              ...prev,
+              role: "",
+              roleTitle: "",
+              roleDescription: "",
+            }));
+          }}
+          className={cx(
+            "rounded-xl border p-4 text-left transition",
+            active
+              ? "border-primary ring-2 ring-primary/30"
+              : "border-input hover:bg-muted/40"
+          )}
+          aria-pressed={active}
+        >
+          <div className="font-medium">{r.label}</div>
+
+          <div className="text-xs text-muted-foreground mt-1">
+            {r.key === "individual" && "Personal buying/selling"}
+            {r.key === "business" && "Shops, SMBs and brands"}
+            {r.key === "agency" && "Manage listings for clients"}
+            {r.key === "other" && "Something else"}
+          </div>
+        </button>
+      );
+    })}
+  </div>
+
+  {/* ================= OTHER ROLE FIELDS ================= */}
+  {formData.role === "other" && (
+    <FormFieldWrapper className="mt-4 grid grid-cols-1 gap-3">
+
+      {/* ROLE TITLE */}
+      <FormField
+        label="Role title"
+        error={errors.roleTitle}
+      >
         <Input
-          value={formData.role}
-          onChange={(e) =>
-            setFormData({ ...formData, role: e.target.value })
-          }
+          placeholder="e.g. Community Moderator, Freelancer"
+          value={formData.roleTitle || ""}
+          maxLength={80}
+          onChange={(e) => {
+            setFormData({ ...formData, roleTitle: e.target.value });
+            setErrors((prev) => ({ ...prev, roleTitle: "" }));
+          }}
+          onBlur={(e) => {
+            const value = e.target.value.trim();
+
+            let msg = "";
+            if (!value) msg = "Role title is required";
+            else if (value.length < 2) msg = "Minimum 2 characters required";
+            else if (value.length > 80) msg = "Max 80 characters allowed";
+
+            if (msg) {
+              setErrors((prev) => ({ ...prev, roleTitle: msg }));
+            }
+          }}
         />
+
+        <FormHelperText>
+          2–80 characters. Allowed special characters: ( , | & )
+        </FormHelperText>
       </FormField>
 
-      <FormField label="Date of Birth">
+      {/* ROLE DESCRIPTION */}
+      <FormField
+        label="Role description"
+        error={errors.roleDescription}
+      >
+        <textarea
+          placeholder="Briefly describe how you plan to use Lokalads"
+          value={formData.roleDescription || ""}
+          maxLength={300}
+          onChange={(e) => {
+            setFormData({ ...formData, roleDescription: e.target.value });
+            setErrors((prev) => ({ ...prev, roleDescription: "" }));
+          }}
+          onBlur={(e) => {
+            const value = e.target.value.trim();
+
+            let msg = "";
+            if (!value) msg = "Description is required";
+            else if (value.length < 2) msg = "Minimum 2 characters required";
+            else if (value.length > 300) msg = "Max 300 characters allowed";
+
+            if (msg) {
+              setErrors((prev) => ({ ...prev, roleDescription: msg }));
+            }
+          }}
+          className={cx(
+            "mt-1 w-full min-h-[80px] rounded-sm border px-3 py-2 text-sm",
+            errors.roleDescription && "border-red-500"
+          )}
+        />
+
+        <FormHelperText>
+          2–300 characters. Numbers and basic punctuation allowed.
+        </FormHelperText>
+      </FormField>
+
+    </FormFieldWrapper>
+  )}
+</FormField>
+
+      {/* DOB */}
+      <FormField label="Date of Birth" error={errors.dateOfBirth}>
         <input
           type="date"
           value={formData.dateOfBirth}
           onChange={(e) =>
             setFormData({ ...formData, dateOfBirth: e.target.value })
           }
-          max={todayISO()}
+          onBlur={(e) => {
+            const msg = validateField("dateOfBirth", e.target.value);
+            if (msg) setErrors((p) => ({ ...p, dateOfBirth: msg }));
+          }}
           className="w-full border rounded px-3 py-2"
         />
       </FormField>
 
+      {/* ACTION */}
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Saving..." : "Save Changes"}
       </Button>
+
     </Form>
   );
 }

@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { updateProfile } from "@/app/actions/updateProfile";
+import { checkUserIdAvailability } from "@/app/actions/profile/checkUserId";
+
+import { userIdSchema } from "@/validators/profile";
 
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
@@ -20,51 +23,84 @@ type Props = {
 export default function PublicProfileEdit({ user, onSuccess }: Props) {
   const router = useRouter();
 
-  /* ================= INITIAL VALUE ================= */
-  const initialValue = useMemo(() => user.id || "", [user.id]);
+  const initialValue = useMemo(() => (user.id || "").trim(), [user.id]);
 
   const [userId, setUserId] = useState(initialValue);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
 
-  /* ================= RESET WHEN OPEN ================= */
   useEffect(() => {
     setUserId(initialValue);
-    setError("");
+    setErrors([]);
   }, [initialValue]);
 
-  /* ================= VALIDATION ================= */
-  const validate = (value: string) => {
-    const trimmed = value.trim();
+  const hasChanged = userId.trim() !== initialValue;
 
-    if (!trimmed) return "Profile ID is required";
-    if (trimmed.length > 18) return "Max 18 characters allowed";
+  /* ================= ZOD VALIDATION (MULTI ERROR) ================= */
+  const validateSync = (value: string) => {
+    const result = userIdSchema.safeParse(value);
 
-    if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-      return "Only letters, numbers, and underscore allowed";
+    if (!result.success) {
+      return result.error.issues.map((e) => e.message);
     }
 
-    return "";
+    return [];
   };
 
-  const hasChanged = userId.trim() !== initialValue.trim();
+  /* ================= ON BLUR UNIQUE CHECK ================= */
+  const handleBlur = async () => {
+    const trimmed = userId.trim();
 
-  /* ================= SAVE ================= */
-  const handleSave = async () => {
-    const err = validate(userId);
+    const syncErrors = validateSync(trimmed);
 
-    if (err) {
-      setError(err);
+    if (syncErrors.length > 0) {
+      setErrors(syncErrors);
       return;
     }
 
     if (!hasChanged) return;
 
     try {
+      setChecking(true);
+
+      const res = await checkUserIdAvailability(trimmed, initialValue);
+
+      if (!res.available) {
+        setErrors(["• This Profile ID is already taken"]);
+      } else {
+        setErrors([]); // ✅ clear if valid
+      }
+    } catch {
+      setErrors(["• Unable to validate. Try again."]);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  /* ================= SAVE ================= */
+  const handleSave = async () => {
+    const trimmed = userId.trim();
+
+    const syncErrors = validateSync(trimmed);
+
+    if (syncErrors.length > 0) {
+      setErrors(syncErrors);
+      return;
+    }
+
+    if (!hasChanged) {
+      toast.info("No changes to update");
+      return;
+    }
+
+    if (errors.length > 0) return;
+
+    try {
       setLoading(true);
 
       await updateProfile({
-        userId: userId.trim(), // ✅ updated field
+        userId: trimmed,
       });
 
       toast.success("Profile ID updated successfully");
@@ -81,21 +117,49 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
   /* ================= UI ================= */
   return (
     <>
-      <FormField label="Public Profile ID" error={error}>
+      <FormField
+        label="Public Profile ID"
+        error={
+          errors.length > 0 ? (
+            <div className="space-y-1">
+              {errors.map((err, idx) => (
+                <div key={idx} className="text-red-500 text-sm">
+                  {err}
+                </div>
+              ))}
+            </div>
+          ) : undefined
+        }
+      >
         <Input
           value={userId}
           maxLength={18}
           onChange={(e) => {
             setUserId(e.target.value);
-            setError("");
+            setErrors([]);
           }}
+          onBlur={handleBlur}
           placeholder="Enter profile ID"
         />
       </FormField>
 
+      {/* STATUS */}
+      {checking && (
+        <p className="text-xs text-muted-foreground mt-1">
+          Checking availability...
+        </p>
+      )}
+
+      {/* SUCCESS STATE */}
+      {!checking && errors.length === 0 && hasChanged && userId && (
+        <p className="text-xs text-green-600 mt-1">
+          ✓ Profile ID is available
+        </p>
+      )}
+
       {/* PREVIEW */}
       <p className="text-sm text-muted-foreground mt-2">
-        Your public profile will be:{" "}
+        Your public profile will be{" "}
         <b>lokalads.com/u/{userId.trim() || "your-id"}</b>
       </p>
 
@@ -103,7 +167,7 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
       <Button
         type="button"
         className="w-full mt-4"
-        disabled={!hasChanged || loading}
+        disabled={!hasChanged || loading || checking}
         onClick={handleSave}
       >
         {loading ? "Saving..." : "Save Changes"}

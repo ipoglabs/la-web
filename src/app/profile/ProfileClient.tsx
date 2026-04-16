@@ -40,14 +40,6 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
             onAction={() => setActiveModal("publicProfile")}
           />
 
-          <Row
-            label="Profile URL"
-            value={
-              user.id
-                ? `lokalads.com/u/${user.id.trim()}`
-                : "—"
-            }
-          />
         </Section>
 
           <Section title="Basic Info" onEdit={() => setActiveModal("basic")}>
@@ -61,10 +53,14 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
             <ContactEditForm user={user} />
           </Section>
 
-          <Section title="Location" onEdit={() => setActiveModal("location")}>
-            <Row label="Country" value={user.nationality} />
-            <Row label="Postal Code" value={user.address?.postalCode} />
-            <Row label="City" value={user.locality} />
+         <Section title="Location" onEdit={() => setActiveModal("location")}>
+            <Row label="Country" value={user.address?.country || user.nationality || "—"} />
+
+            <Row label="State" value={user.address?.state || "—"} />
+
+            <Row label="City" value={user.address?.city || user.locality || "—"} />
+
+            <Row label="Postal Code" value={user.address?.postalCode || "—"} />
           </Section>
 
           <Section title="Account Settings" hideEdit>

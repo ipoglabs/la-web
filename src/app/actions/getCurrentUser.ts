@@ -1,7 +1,6 @@
 "use server";
 
 import mongoose from "mongoose";
-import { cache } from "react";
 
 import connectDB from "@/config/database";
 import User from "@/models/user";
@@ -9,12 +8,12 @@ import { getSession } from "@/lib/auth";
 
 import type { ProfileUser } from "@/app/profile/types";
 
-export const getCurrentUser = cache(async (): Promise<ProfileUser | null> => {
+export async function getCurrentUser(): Promise<ProfileUser | null> {
   await connectDB();
 
   const session = await getSession();
   if (!session) return null;
-
+if (!user || user.isDeleted) return null;
   const { userId, email } = session;
 
   let user: any = null;
@@ -28,7 +27,7 @@ export const getCurrentUser = cache(async (): Promise<ProfileUser | null> => {
   if (!user) return null;
 
   return {
-    id: user.userId || "", // ✅ FIXED (MOST IMPORTANT)
+    id: user.userId || "",
     username: user.username || "",
     firstName: user.firstName || "",
     lastName: user.lastName || "",
@@ -47,7 +46,10 @@ export const getCurrentUser = cache(async (): Promise<ProfileUser | null> => {
     marketingOptIn: Boolean(user.marketingOptIn),
     locality: user.locality || "",
     address: {
+      country: user.address?.country || "",
+      state: user.address?.state || "",
+      city: user.address?.city || "",
       postalCode: user.address?.postalCode || "",
     },
   };
-});
+}

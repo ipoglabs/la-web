@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/shadcn/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { softDeleteAccount } from "@/app/actions/profile/deleteAccount";
+import { toast } from "sonner";
 
 export default function DeleteAccountPage() {
   const router = useRouter();
@@ -14,23 +16,23 @@ export default function DeleteAccountPage() {
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleDelete = async () => {
-    if (!confirmed) return;
+ const handleDelete = async () => {
+  if (!confirmed) return;
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // 👉 call API later
-      await new Promise((res) => setTimeout(res, 1500));
+    await softDeleteAccount(feedback);
 
-      console.log("Account deleted", { feedback });
+    toast.success("Your account has been deleted");
 
-      // redirect after delete
-      router.push("/");
-    } finally {
-      setLoading(false);
-    }
-  };
+    router.push("/"); // or login page
+  } catch (e: any) {
+    toast.error(e?.message || "Failed to delete account");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-6 flex justify-center">

@@ -4,7 +4,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { updateProfile } from "@/app/actions/updateProfile";
+import { updateLocation } from "@/app/actions/profile/updateLocation";
+
+import { COUNTRY_OPTIONS, STATE_MAP } from "@/lib/locationData";
 
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
@@ -24,12 +26,15 @@ export default function LocationEditForm({ user, onSuccess }: Props) {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    nationality: user.nationality || "",
-    postalCode: user.address?.postalCode || "",
-    locality: user.locality || "",
+   country: user.address?.country || "",
+state: user.address?.state || "",
+locality: user.address?.city || "",
+postalCode: user.address?.postalCode || "",
   });
 
   const [loading, setLoading] = useState(false);
+
+  const states = STATE_MAP[formData.country] || [];
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,12 +42,11 @@ export default function LocationEditForm({ user, onSuccess }: Props) {
     try {
       setLoading(true);
 
-      await updateProfile({
-        nationality: formData.nationality.trim(),
+      await updateLocation({
+        country: formData.country,
+        state: formData.state,
         locality: formData.locality.trim(),
-        address: {
-          postalCode: formData.postalCode.trim(),
-        },
+        postalCode: formData.postalCode.trim(),
       });
 
       toast.success("Location updated successfully");
@@ -57,42 +61,69 @@ export default function LocationEditForm({ user, onSuccess }: Props) {
 
   return (
     <Form onSubmit={onSubmit} className="space-y-5">
-      <FormField label="Country / Region" htmlFor="nationality">
-        <Input
-          id="nationality"
-          name="nationality"
-          value={formData.nationality}
+
+      {/* COUNTRY */}
+      <FormField label="Country / Region">
+        <select
+          value={formData.country}
           onChange={(e) =>
-            setFormData({ ...formData, nationality: e.target.value })
+            setFormData({
+              ...formData,
+              country: e.target.value,
+              state: "", // reset state when country changes
+            })
           }
-          placeholder="Enter country"
-        />
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Select country</option>
+          {COUNTRY_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
       </FormField>
 
+      {/* STATE */}
+      <FormField label="State">
+        <select
+          value={formData.state}
+          onChange={(e) =>
+            setFormData({ ...formData, state: e.target.value })
+          }
+          disabled={!formData.country}
+          className="w-full border rounded px-3 py-2"
+        >
+          <option value="">Select state</option>
+          {states.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      {/* POSTAL + CITY */}
       <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
-        <FormField label="Postal Code" htmlFor="postalCode" className="mb-0">
+
+        <FormField label="Postal Code">
           <Input
-            id="postalCode"
-            name="postalCode"
             value={formData.postalCode}
             onChange={(e) =>
               setFormData({ ...formData, postalCode: e.target.value })
             }
-            placeholder="Enter postal code"
           />
         </FormField>
 
-        <FormField label="City" htmlFor="locality" className="mb-0">
+        <FormField label="City">
           <Input
-            id="locality"
-            name="locality"
             value={formData.locality}
             onChange={(e) =>
               setFormData({ ...formData, locality: e.target.value })
             }
-            placeholder="Enter city"
           />
         </FormField>
+
       </FormFieldWrapper>
 
       <Button type="submit" className="w-full mt-4" disabled={loading}>

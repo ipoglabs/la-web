@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+
+import { sendOtp } from "@/app/actions/profile/sendOtp";
+import { verifyOtp as verifyOtpApi } from "@/app/actions/profile/verifyOtp";
+import { updateContact } from "@/app/actions/profile/updateContact";
 
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
@@ -14,12 +18,9 @@ import ResponsiveModal from "./ResponsiveModal";
 
 import type { ProfileUser } from "../types";
 
-/* ================= MOCK DELAY ================= */
-const fakeDelay = (ms = 1000) =>
-  new Promise((res) => setTimeout(res, ms));
 
 /* ================= OTP HOOK ================= */
-function useOtpFlow(initialValue: string) {
+function useOtpFlow(initialValue: string, type: "email" | "phone") {
   const [step, setStep] = useState<"input" | "otp">("input");
   const [value, setValue] = useState(initialValue);
   const [otp, setOtp] = useState("");
@@ -30,44 +31,49 @@ function useOtpFlow(initialValue: string) {
 
   useEffect(() => {
     if (timer === 0) return;
-
-    const t = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-
+    const t = setInterval(() => setTimer((p) => p - 1), 1000);
     return () => clearInterval(t);
   }, [timer]);
 
-  const sendOtp = async () => {
+  const sendOtpHandler = async () => {
+    if (!value.trim()) {
+      setError("Value is required");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      await fakeDelay();
+       await sendOtp({
+      email: value.trim(),
+    });
       setStep("otp");
       setTimer(30);
-    } catch {
-      setError("Failed to send OTP");
+    } catch (e: any) {
+      setError(e?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
   };
 
-  const verifyOtp = async (onSuccess: () => void) => {
+  const verifyOtpHandler = async (onSuccess: () => void) => {
+    if (otp.length !== 6) {
+      setError("OTP must be 6 digits");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      await fakeDelay();
-
-      if (otp.length !== 6) {
-        setError("Invalid OTP");
-        return;
-      }
-
+       await verifyOtpApi({
+      email: value.trim(), // ✅ FIXED
+      otp,
+    });
       onSuccess();
-    } catch {
-      setError("Invalid OTP");
+    } catch (e: any) {
+      setError(e?.message || "Invalid OTP");
     } finally {
       setLoading(false);
     }
@@ -89,21 +95,26 @@ function useOtpFlow(initialValue: string) {
     loading,
     error,
     timer,
-    sendOtp,
-    verifyOtp,
+    sendOtp: sendOtpHandler,
+    verifyOtp: verifyOtpHandler,
     reset,
   };
 }
 
-/* ================= REUSABLE MODAL ================= */
+/* ================= MODAL ================= */
 function ContactFieldEditor({
   open,
   onClose,
   label,
   initialValue,
-  onSave,
+  field,
 }: any) {
-  const flow = useOtpFlow(initialValue);
+
+  const router = useRouter();
+
+  const type = label === "Email" ? "email" : "phone";
+
+  const flow = useOtpFlow(initialValue, type);
 
   useEffect(() => {
     if (open) {
@@ -111,6 +122,22 @@ function ContactFieldEditor({
       flow.setValue(initialValue);
     }
   }, [open, initialValue]);
+
+  const handleSave = async () => {
+  try {
+    await updateContact({
+      field,
+      value: flow.value.trim(), // ✅ ensure trimmed
+    });
+
+    toast.success(`${label} updated successfully`);
+
+    router.refresh();   // ✅ THIS FIXES YOUR ISSUE
+    onClose();
+  } catch (e: any) {
+    toast.error(e?.message || "Update failed");
+  }
+};
 
   return (
     <ResponsiveModal
@@ -120,12 +147,11 @@ function ContactFieldEditor({
     >
       <div className="space-y-5 mt-2">
 
-        {/* ERROR */}
         {flow.error && (
           <p className="text-sm text-red-500">{flow.error}</p>
         )}
 
-        {/* INPUT STEP */}
+        {/* INPUT */}
         {flow.step === "input" && (
           <>
             <Input
@@ -138,9 +164,7 @@ function ContactFieldEditor({
             <Button
               type="button"
               className="w-full"
-              disabled={
-                flow.loading || flow.value.trim() === initialValue
-              }
+              disabled={flow.loading || flow.value.trim() === initialValue}
               onClick={flow.sendOtp}
             >
               {flow.loading ? "Sending..." : "Continue"}
@@ -148,7 +172,7 @@ function ContactFieldEditor({
           </>
         )}
 
-        {/* OTP STEP */}
+        {/* OTP */}
         {flow.step === "otp" && (
           <>
             <p className="text-sm text-muted-foreground">
@@ -167,20 +191,11 @@ function ContactFieldEditor({
               type="button"
               className="w-full"
               disabled={flow.otp.length !== 6 || flow.loading}
-              onClick={() =>
-                flow.verifyOtp(async () => {
-                  await fakeDelay();
-                  await onSave(flow.value);
-
-                  toast.success(`${label} updated`);
-                  onClose();
-                })
-              }
+              onClick={() => flow.verifyOtp(handleSave)}
             >
               {flow.loading ? "Verifying..." : "Verify"}
             </Button>
 
-            {/* RESEND */}
             <Button
               type="button"
               variant="secondary"
@@ -208,22 +223,15 @@ function ContactFieldEditor({
   );
 }
 
-/* ================= MAIN COMPONENT ================= */
+/* ================= MAIN ================= */
 export default function ContactEditForm({
   user,
 }: {
   user: ProfileUser;
 }) {
-  const router = useRouter();
-
   const [active, setActive] = useState<
     null | "email" | "phone" | "secondary1" | "secondary2"
   >(null);
-
-  const handleSave = async (payload: any) => {
-    await fakeDelay();
-    router.refresh();
-  };
 
   return (
     <>
@@ -231,12 +239,12 @@ export default function ContactEditForm({
 
         {/* EMAIL */}
         <FormField label="Email Address">
-          <div className="flex items-end justify-between gap-4">
-            <Input value={user.email} disabled className="flex-1" />
+          <div className="flex justify-between gap-4">
+            <Input value={user.email} disabled />
             <Button
               type="button"
-              variant="outline"
               onClick={() => setActive("email")}
+              variant="outline"
             >
               Edit
             </Button>
@@ -245,126 +253,35 @@ export default function ContactEditForm({
 
         {/* PHONE */}
         <FormField label="Phone Number">
-          <div className="flex items-end justify-between gap-4">
-            <Input value={user.primaryNumber} disabled className="flex-1" />
+          <div className="flex justify-between gap-4">
+            <Input value={user.primaryNumber} disabled />
             <Button
               type="button"
-              variant="outline"
               onClick={() => setActive("phone")}
+              variant="outline"
             >
               Edit
             </Button>
           </div>
         </FormField>
 
-        {/* SECONDARY */}
-        <FormFieldWrapper className="space-y-4">
-
-          {/* Secondary 1 */}
-          <FormField label="Secondary Number 1">
-            <div className="flex items-end justify-between gap-4">
-              {user.secondaryNumber1 ? (
-                <>
-                  <Input value={user.secondaryNumber1} disabled className="flex-1" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setActive("secondary1")}
-                  >
-                    Edit
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="flex-1 text-gray-400 text-sm italic">
-                    Not added
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setActive("secondary1")}
-                  >
-                    Add
-                  </Button>
-                </>
-              )}
-            </div>
-          </FormField>
-
-          {/* Secondary 2 */}
-          <FormField label="Secondary Number 2">
-            <div className="flex items-end justify-between gap-4">
-              {user.secondaryNumber2 ? (
-                <>
-                  <Input value={user.secondaryNumber2} disabled className="flex-1" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setActive("secondary2")}
-                  >
-                    Edit
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="flex-1 text-gray-400 text-sm italic">
-                    Not added
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setActive("secondary2")}
-                  >
-                    Add
-                  </Button>
-                </>
-              )}
-            </div>
-          </FormField>
-
-        </FormFieldWrapper>
       </Form>
 
-      {/* EMAIL */}
+      {/* MODALS */}
       <ContactFieldEditor
         open={active === "email"}
         onClose={() => setActive(null)}
         label="Email"
         initialValue={user.email}
-        onSave={(value: string) => handleSave({ email: value })}
+        field="email"
       />
 
-      {/* PHONE */}
       <ContactFieldEditor
         open={active === "phone"}
         onClose={() => setActive(null)}
         label="Phone"
         initialValue={user.primaryNumber}
-        onSave={(value: string) =>
-          handleSave({ primaryNumber: value })
-        }
-      />
-
-      {/* SECONDARY 1 */}
-      <ContactFieldEditor
-        open={active === "secondary1"}
-        onClose={() => setActive(null)}
-        label="Secondary Number 1"
-        initialValue={user.secondaryNumber1 || ""}
-        onSave={(value: string) =>
-          handleSave({ secondaryNumber1: value })
-        }
-      />
-
-      {/* SECONDARY 2 */}
-      <ContactFieldEditor
-        open={active === "secondary2"}
-        onClose={() => setActive(null)}
-        label="Secondary Number 2"
-        initialValue={user.secondaryNumber2 || ""}
-        onSave={(value: string) =>
-          handleSave({ secondaryNumber2: value })
-        }
+        field="primaryNumber"
       />
     </>
   );

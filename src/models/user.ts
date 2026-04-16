@@ -2,11 +2,9 @@ import mongoose from "mongoose";
 
 const AddressSchema = new mongoose.Schema(
   {
-    street1: { type: String, trim: true },
-    street2: { type: String, trim: true },
-    district: { type: String, trim: true },
-    state: { type: String, trim: true },
     country: { type: String, trim: true },
+    state: { type: String, trim: true },
+    city: { type: String, trim: true },
     postalCode: { type: String, trim: true },
   },
   { _id: false }
@@ -105,6 +103,10 @@ const UserSchema = new mongoose.Schema(
       type: [AuditSchema],
       default: [],
     },
+
+isDeleted: { type: Boolean, default: false, index: true },
+deletedAt: { type: Date },
+deleteFeedback: { type: String, trim: true },
 
     image: { type: String },
   },

@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 import {
@@ -33,14 +32,18 @@ export default function ResponsiveModal({
 }: ResponsiveModalProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
+  const scrollClass =
+    "overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
+
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          {children}
+
+          <div className={scrollClass}>{children}</div>
         </DialogContent>
       </Dialog>
     );
@@ -48,11 +51,12 @@ export default function ResponsiveModal({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="p-4">
+      <DrawerContent className="p-4 max-h-[85vh] flex flex-col">
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>
-        {children}
+
+        <div className={scrollClass}>{children}</div>
       </DrawerContent>
     </Drawer>
   );

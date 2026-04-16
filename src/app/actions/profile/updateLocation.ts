@@ -1,0 +1,58 @@
+"use server";
+
+import connectDB from "@/config/database";
+import User from "@/models/user";
+import { getSession } from "@/lib/auth";
+
+export async function updateLocation({
+  country,
+  state,
+  locality,
+  postalCode,
+}: {
+  country: string;
+  state: string;
+  locality: string;
+  postalCode: string;
+}) {
+  await connectDB();
+
+  const session = await getSession();
+  if (!session) throw new Error("Unauthorized");
+
+  const { userId, email } = session;
+
+  let user: any = null;
+
+  if (userId) {
+    user = await User.findById(userId);
+  } else if (email) {
+    user = await User.findOne({ email });
+  }
+
+  if (!user) throw new Error("User not found");
+
+  /* ================= VALIDATION ================= */
+
+  if (!country) throw new Error("Country is required");
+  if (!state) throw new Error("State is required");
+  if (!locality) throw new Error("City is required");
+  if (!postalCode) throw new Error("Postal code is required");
+
+  /* ================= UPDATE ================= */
+
+  user.nationality = country;
+  user.state = state;
+  user.locality = locality;
+  user.address = {
+  ...(user.address || {}),
+  country,
+  state,
+  city: locality,
+  postalCode,
+};
+
+  await user.save();
+
+  return { success: true };
+}

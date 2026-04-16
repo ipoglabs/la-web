@@ -9,6 +9,7 @@ import { Button } from "@/components/shadcn/button";
 import { FormField } from "@/components/FormField";
 import { FormFieldWrapper } from "@/components/FormFieldWrapper";
 import { FormHelperText } from "@/components/FormHelperText";
+import { updatePassword } from "@/app/actions/profile/updatePassword";
 
 type Props = {
   onSuccess?: () => void;
@@ -74,8 +75,8 @@ export default function ResetPassword({ onSuccess }: Props) {
     try {
       setLoading(true);
 
-      // await resetPassword({ currentPassword, newPassword });
-
+      await updatePassword({currentPassword,newPassword,});
+      
       toast.success("Password updated successfully");
       onSuccess?.();
     } catch (e: any) {
