@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { updateProfile } from "@/app/actions/updateProfile";
 import { basicProfileSchema } from "@/validators/profileBasic";
+import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
@@ -34,6 +35,7 @@ function cx(...arr: any[]) {
 }
 
 export default function BasicEditForm({ user, onSuccess }: Props) {
+  useAutoScrollInput();
   const router = useRouter();
 
   const [formData, setFormData] = useState({

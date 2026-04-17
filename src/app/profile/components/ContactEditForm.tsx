@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { sendOtp } from "@/app/actions/profile/sendOtp";
 import { verifyOtp as verifyOtpApi } from "@/app/actions/profile/verifyOtp";
 import { updateContact } from "@/app/actions/profile/updateContact";
-
+import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
@@ -135,6 +135,7 @@ function ContactFieldEditor({
   initialValue,
   field,
 }: any) {
+  useAutoScrollInput();
   const router = useRouter();
   const type = label === "Email" ? "email" : "phone";
 

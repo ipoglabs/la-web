@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { updateProfile } from "@/app/actions/updateProfile";
 import { checkUserIdAvailability } from "@/app/actions/profile/checkUserId";
-
+import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 import { userIdSchema } from "@/validators/profile";
 
 import { Input } from "@/components/shadcn/input";
@@ -21,6 +21,7 @@ type Props = {
 };
 
 export default function PublicProfileEdit({ user, onSuccess }: Props) {
+  useAutoScrollInput();
   const router = useRouter();
 
   const initialValue = useMemo(() => (user.id || "").trim(), [user.id]);

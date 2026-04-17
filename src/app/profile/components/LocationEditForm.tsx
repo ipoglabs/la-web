@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Country, State, City } from "country-state-city";
 
 import { updateLocation } from "@/app/actions/profile/updateLocation";
+import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/command";
 
 export default function LocationEditForm({ user, onSuccess }: any) {
+  useAutoScrollInput();
   const router = useRouter();
 
   const [countries, setCountries] = useState<any[]>([]);
