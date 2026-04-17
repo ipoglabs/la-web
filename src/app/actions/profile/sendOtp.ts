@@ -1,28 +1,23 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
+import { sendOtpService } from "@/lib/otpService";
 
 export async function sendOtp(data: {
   channel: "email" | "phone";
   value: string;
 }) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const session = await getSession();
 
-  const cookieStore = cookies();
+  if (!data?.value) {
+    throw new Error("Value is required");
+  }
 
-  const res = await fetch(`${baseUrl}/api/send-otp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      cookie: cookieStore.toString(), // ✅ CRITICAL FIX
-    },
-    body: JSON.stringify(data),
-    cache: "no-store",
+  await sendOtpService({
+    userId: session?.userId,
+    channel: data.channel,
+    value: data.value,
   });
 
-  const json = await res.json();
-
-  if (!res.ok) throw new Error(json.error);
-  return json;
+  return { success: true };
 }

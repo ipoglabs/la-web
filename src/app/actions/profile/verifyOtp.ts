@@ -1,29 +1,25 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { getSession } from "@/lib/auth";
+import { verifyOtpService } from "@/lib/otpService";
 
 export async function verifyOtp(data: {
   channel: "email" | "phone";
   value: string;
   otp: string;
 }) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const session = await getSession();
 
-  const cookieStore = cookies();
+  if (!data?.value || !data?.otp) {
+    throw new Error("Invalid request");
+  }
 
-  const res = await fetch(`${baseUrl}/api/verify-otp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      cookie: cookieStore.toString(), // ✅ CRITICAL FIX
-    },
-    body: JSON.stringify(data),
-    cache: "no-store",
+  await verifyOtpService({
+    userId: session?.userId,
+    channel: data.channel,
+    value: data.value,
+    otp: data.otp,
   });
 
-  const json = await res.json();
-
-  if (!res.ok) throw new Error(json.error);
-  return json;
+  return { success: true };
 }
