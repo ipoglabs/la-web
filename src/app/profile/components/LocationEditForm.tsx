@@ -1,41 +1,89 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { updateLocation } from "@/app/actions/profile/updateLocation";
+import { Country, State, City } from "country-state-city";
 
-import { COUNTRY_OPTIONS, STATE_MAP } from "@/lib/locationData";
+import { updateLocation } from "@/app/actions/profile/updateLocation";
 
 import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
 
 import { FormField } from "@/components/FormField";
-import { FormFieldWrapper } from "@/components/FormFieldWrapper";
 
-import type { ProfileUser } from "../types";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-type Props = {
-  user: ProfileUser;
-  onSuccess?: () => void;
-};
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 
-export default function LocationEditForm({ user, onSuccess }: Props) {
+export default function LocationEditForm({ user, onSuccess }: any) {
   const router = useRouter();
 
+  const [countries, setCountries] = useState<any[]>([]);
+  const [states, setStates] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+
+  /* ✅ STORE BOTH NAME + CODE */
   const [formData, setFormData] = useState({
-   country: user.address?.country || "",
-state: user.address?.state || "",
-locality: user.address?.city || "",
-postalCode: user.address?.postalCode || "",
+    country: user.address?.country || "",
+    countryCode: user.address?.countryCode || "",
+    state: user.address?.state || "",
+    stateCode: user.address?.stateCode || "",
+    city: user.address?.city || "",
+    postalCode: user.address?.postalCode || "",
   });
+
+  const [openCountry, setOpenCountry] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const [openCity, setOpenCity] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
-  const states = STATE_MAP[formData.country] || [];
+  /* ================= LOAD COUNTRIES ================= */
+  useEffect(() => {
+    setCountries(Country.getAllCountries());
+  }, []);
 
+  /* ================= LOAD STATES ================= */
+  useEffect(() => {
+    if (formData.countryCode) {
+      setStates(State.getStatesOfCountry(formData.countryCode));
+      setCities([]);
+      setFormData((prev) => ({
+        ...prev,
+        state: "",
+        stateCode: "",
+        city: "",
+      }));
+    }
+  }, [formData.countryCode]);
+
+  /* ================= LOAD CITIES ================= */
+  useEffect(() => {
+    if (formData.countryCode && formData.stateCode) {
+      setCities(
+        City.getCitiesOfState(
+          formData.countryCode,
+          formData.stateCode
+        )
+      );
+      setFormData((prev) => ({ ...prev, city: "" }));
+    }
+  }, [formData.stateCode]);
+
+  /* ================= SUBMIT ================= */
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -44,8 +92,10 @@ postalCode: user.address?.postalCode || "",
 
       await updateLocation({
         country: formData.country,
+        countryCode: formData.countryCode,
         state: formData.state,
-        locality: formData.locality.trim(),
+        stateCode: formData.stateCode,
+        locality: formData.city,
         postalCode: formData.postalCode.trim(),
       });
 
@@ -63,68 +113,136 @@ postalCode: user.address?.postalCode || "",
     <Form onSubmit={onSubmit} className="space-y-5">
 
       {/* COUNTRY */}
-      <FormField label="Country / Region">
-        <select
-          value={formData.country}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              country: e.target.value,
-              state: "", // reset state when country changes
-            })
-          }
-          className="w-full border rounded px-3 py-2"
-        >
-          <option value="">Select country</option>
-          {COUNTRY_OPTIONS.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+      <FormField label="Country">
+        <Popover open={openCountry} onOpenChange={setOpenCountry}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full justify-start">
+              {formData.country || "Select country"}
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-full p-0">
+            <Command>
+              <CommandInput placeholder="Search country..." />
+              <CommandEmpty>No country found</CommandEmpty>
+
+              <CommandGroup className="max-h-60 overflow-auto">
+                {countries.map((c) => (
+                  <CommandItem
+                    key={c.isoCode}
+                    onSelect={() => {
+                      setFormData({
+                        ...formData,
+                        country: c.name,           // ✅ FULL NAME
+                        countryCode: c.isoCode,    // ✅ CODE
+                        state: "",
+                        stateCode: "",
+                        city: "",
+                      });
+                      setOpenCountry(false);
+                    }}
+                  >
+                    {c.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </FormField>
 
       {/* STATE */}
       <FormField label="State">
-        <select
-          value={formData.state}
-          onChange={(e) =>
-            setFormData({ ...formData, state: e.target.value })
-          }
-          disabled={!formData.country}
-          className="w-full border rounded px-3 py-2"
-        >
-          <option value="">Select state</option>
-          {states.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <Popover open={openState} onOpenChange={setOpenState}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={!formData.countryCode}
+            >
+              {formData.state || "Select state"}
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent className="w-full p-0">
+            <Command>
+              <CommandInput placeholder="Search state..." />
+              <CommandEmpty>No state found</CommandEmpty>
+
+              <CommandGroup className="max-h-60 overflow-auto">
+                {states.map((s) => (
+                  <CommandItem
+                    key={s.isoCode}
+                    onSelect={() => {
+                      setFormData({
+                        ...formData,
+                        state: s.name,          // ✅ FULL NAME
+                        stateCode: s.isoCode,   // ✅ CODE
+                        city: "",
+                      });
+                      setOpenState(false);
+                    }}
+                  >
+                    {s.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </FormField>
 
-      {/* POSTAL + CITY */}
-      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
+      {/* CITY */}
+      <FormField label="City">
+        <Popover open={openCity} onOpenChange={setOpenCity}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={!formData.stateCode}
+            >
+              {formData.city || "Select city"}
+            </Button>
+          </PopoverTrigger>
 
-        <FormField label="Postal Code">
-          <Input
-            value={formData.postalCode}
-            onChange={(e) =>
-              setFormData({ ...formData, postalCode: e.target.value })
-            }
-          />
-        </FormField>
+          <PopoverContent className="w-full p-0">
+            <Command>
+              <CommandInput placeholder="Search city..." />
+              <CommandEmpty>No city found</CommandEmpty>
 
-        <FormField label="City">
-          <Input
-            value={formData.locality}
-            onChange={(e) =>
-              setFormData({ ...formData, locality: e.target.value })
-            }
-          />
-        </FormField>
+              <CommandGroup className="max-h-60 overflow-auto">
+                {cities.map((c) => (
+                  <CommandItem
+                    key={c.name}
+                    onSelect={() => {
+                      setFormData({
+                        ...formData,
+                        city: c.name,
+                      });
+                      setOpenCity(false);
+                    }}
+                  >
+                    {c.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </FormField>
 
-      </FormFieldWrapper>
+      {/* POSTAL */}
+      <FormField label="Postal Code">
+        <Input
+          value={formData.postalCode}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              postalCode: e.target.value,
+            })
+          }
+        />
+      </FormField>
 
       <Button type="submit" className="w-full mt-4" disabled={loading}>
         {loading ? "Saving..." : "Save Changes"}
