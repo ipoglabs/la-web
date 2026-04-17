@@ -1,5 +1,5 @@
 import User from "@/models/user";
-import otpStore from "@/lib/otpStore";
+import Otp from "@/models/Otp";
 import { generateOtp } from "@/lib/generateOtp";
 import { sendEmailOtp } from "@/lib/sendEmailOtp";
 import {
@@ -12,7 +12,7 @@ import {
 type Channel = "email" | "phone";
 
 /* =========================================================
-   SEND OTP
+   SEND OTP (REGISTER + PROFILE)
 ========================================================= */
 export async function sendOtpService({
   userId,
@@ -26,42 +26,23 @@ export async function sendOtpService({
   const normalized = normalizeTarget(channel, value);
   const otp = generateOtp();
 
-  const expiresAt = Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000;
+  const expiresAt = new Date(Date.now() + OTP_EXPIRE_MINUTES * 60 * 1000);
 
-  /* ================= REGISTER FLOW ================= */
-  if (!userId) {
-    otpStore[normalized] = {
-      otp,
+  /* ================= STORE IN OTP COLLECTION ================= */
+  await Otp.findOneAndUpdate(
+    { target: normalized },
+    {
+      channel,
+      code: otp,
       expiresAt,
       verified: false,
       attempts: 0,
       lockedUntil: null,
-    };
+    },
+    { upsert: true, new: true }
+  );
 
-    console.log("REGISTER OTP:", normalized, otp);
-
-    if (channel === "email") {
-      await sendEmailOtp(normalized, otp);
-    }
-
-    return { success: true };
-  }
-
-  /* ================= PROFILE FLOW ================= */
-  const user: any = await User.findById(userId);
-  if (!user) throw new Error("User not found");
-
-  user.otp = {
-    channel,
-    target: normalized,
-    code: otp,
-    expiresAt: new Date(expiresAt),
-    verified: false,
-    attempts: 0,
-    lockedUntil: null,
-  };
-
-  await user.save();
+  console.log("OTP:", normalized, otp);
 
   if (channel === "email") {
     await sendEmailOtp(normalized, otp);
@@ -73,7 +54,7 @@ export async function sendOtpService({
 }
 
 /* =========================================================
-   VERIFY OTP
+   VERIFY OTP (REGISTER + PROFILE)
 ========================================================= */
 export async function verifyOtpService({
   userId,
@@ -88,79 +69,47 @@ export async function verifyOtpService({
 }) {
   const normalized = normalizeTarget(channel, value);
 
-  /* ================= REGISTER FLOW ================= */
-  if (!userId) {
-    const rec = otpStore[normalized];
+  const record: any = await Otp.findOne({ target: normalized });
 
-    if (!rec) throw new Error("No OTP found. Please resend.");
-
-    if (Date.now() > rec.expiresAt) {
-      throw new Error("OTP expired.");
-    }
-
-    const ok = String(otp).trim() === rec.otp;
-
-    if (!ok) {
-      rec.attempts = (rec.attempts || 0) + 1;
-
-      if (rec.attempts >= OTP_MAX_ATTEMPTS) {
-        rec.lockedUntil =
-          Date.now() + OTP_LOCK_MINUTES * 60 * 1000;
-      }
-
-      throw new Error("Invalid OTP");
-    }
-
-    rec.verified = true;
-
-    return { success: true };
-  }
-
-  /* ================= PROFILE FLOW ================= */
-  const user: any = await User.findById(userId);
-
-  if (!user || !user.otp) {
+  if (!record) {
     throw new Error("No OTP found. Please resend.");
   }
 
-  const stored = user.otp;
-
-  if (stored.channel !== channel || stored.target !== normalized) {
-    throw new Error("OTP mismatch. Please resend.");
-  }
-
+  /* ================= LOCK CHECK ================= */
   if (
-    stored.lockedUntil &&
-    Date.now() < new Date(stored.lockedUntil).getTime()
+    record.lockedUntil &&
+    Date.now() < new Date(record.lockedUntil).getTime()
   ) {
     throw new Error("Too many attempts. Try later.");
   }
 
-  if (Date.now() > new Date(stored.expiresAt).getTime()) {
+  /* ================= EXPIRY ================= */
+  if (Date.now() > new Date(record.expiresAt).getTime()) {
     throw new Error("OTP expired.");
   }
 
-  const ok = String(otp).trim() === stored.code;
+  const ok = String(otp).trim() === record.code;
 
   if (!ok) {
-    stored.attempts = (stored.attempts || 0) + 1;
+    record.attempts = (record.attempts || 0) + 1;
 
-    if (stored.attempts >= OTP_MAX_ATTEMPTS) {
-      stored.lockedUntil = new Date(
+    if (record.attempts >= OTP_MAX_ATTEMPTS) {
+      record.lockedUntil = new Date(
         Date.now() + OTP_LOCK_MINUTES * 60 * 1000
       );
     }
 
-    await user.save();
+    await record.save();
 
     throw new Error("Invalid OTP");
   }
 
-  stored.verified = true;
-  stored.attempts = 0;
-  stored.lockedUntil = null;
+  /* ================= SUCCESS ================= */
+  record.verified = true;
+  record.attempts = 0;
+  record.lockedUntil = null;
 
-  await user.save();
+  await record.save();
 
   return { success: true };
 }

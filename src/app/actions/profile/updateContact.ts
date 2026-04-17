@@ -3,6 +3,7 @@
 
 import connectDB from "@/config/database";
 import User from "@/models/user";
+import Otp from "@/models/Otp";
 import { getSession } from "@/lib/auth";
 import { normalizeEmail, normalizePhone } from "@/lib/otpUtils";
 
@@ -28,57 +29,64 @@ export async function updateContact({
   const rawValue = String(value || "").trim();
   if (!rawValue) throw new Error("Value is required");
 
+  /* ================= NORMALIZE ================= */
   const channel = field === "email" ? "email" : "phone";
-  const normalizedTarget =
-    channel === "email" ? normalizeEmail(rawValue) : normalizePhone(rawValue);
 
-  if (
-    !user.otp ||
-    !user.otp.verified ||
-    user.otp.channel !== channel ||
-    user.otp.target !== normalizedTarget
-  ) {
+  const normalizedTarget =
+    channel === "email"
+      ? normalizeEmail(rawValue)
+      : normalizePhone(rawValue);
+
+  /* ================= VERIFY OTP (FROM DB) ================= */
+  const otpRecord: any = await Otp.findOne({
+    target: normalizedTarget,
+    channel,
+  });
+
+  if (!otpRecord || !otpRecord.verified) {
     throw new Error("OTP verification required");
   }
 
+  /* ================= UNIQUE CHECK ================= */
   if (field === "email") {
-    const nextEmail = normalizeEmail(rawValue);
-
     const exists = await User.findOne({
-      email: nextEmail,
+      email: normalizedTarget,
       _id: { $ne: user._id },
     });
 
     if (exists) throw new Error("Email already exists");
 
-    user.email = nextEmail;
+    user.email = normalizedTarget;
     user.isEmailVerified = true;
   }
 
   if (field === "primaryNumber") {
-    const nextPhone = normalizePhone(rawValue);
-
     const exists = await User.findOne({
-      primaryNumber: nextPhone,
+      primaryNumber: normalizedTarget,
       _id: { $ne: user._id },
     });
 
     if (exists) throw new Error("Phone already exists");
 
-    user.primaryNumber = nextPhone;
+    user.primaryNumber = normalizedTarget;
     user.isPrimaryNumberVerified = true;
   }
 
   if (field === "secondaryNumber1") {
-    user.secondaryNumber1 = normalizePhone(rawValue);
+    user.secondaryNumber1 = normalizedTarget;
   }
 
   if (field === "secondaryNumber2") {
-    user.secondaryNumber2 = normalizePhone(rawValue);
+    user.secondaryNumber2 = normalizedTarget;
   }
 
-  user.otp = null;
   await user.save();
+
+  /* ================= CLEANUP OTP ================= */
+  await Otp.deleteOne({
+    target: normalizedTarget,
+    channel,
+  });
 
   return { success: true };
 }
