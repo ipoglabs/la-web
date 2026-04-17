@@ -32,9 +32,6 @@ export default function ResponsiveModal({
 }: ResponsiveModalProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const scrollClass =
-    "overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
-
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,7 +40,9 @@ export default function ResponsiveModal({
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
 
-          <div className={scrollClass}>{children}</div>
+          <div className="flex-1 overflow-y-auto pr-1">
+            {children}
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -51,12 +50,18 @@ export default function ResponsiveModal({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="p-4 max-h-[85vh] flex flex-col">
+      {/* ✅ KEY FIX HERE */}
+      <DrawerContent className="h-[85dvh] flex flex-col">
+
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>
 
-        <div className={scrollClass}>{children}</div>
+        {/* ✅ SCROLLABLE AREA */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
+          {children}
+        </div>
+
       </DrawerContent>
     </Drawer>
   );
