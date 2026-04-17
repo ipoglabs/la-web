@@ -13,7 +13,7 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
 
   const session = await getSession();
   if (!session) return null;
-if (!user || user.isDeleted) return null;
+
   const { userId, email } = session;
 
   let user: any = null;
@@ -24,7 +24,11 @@ if (!user || user.isDeleted) return null;
     user = await User.findOne({ email }).lean();
   }
 
+  // ✅ NOW SAFE
   if (!user) return null;
+
+  // ✅ SOFT DELETE CHECK (correct place)
+  if (user.isDeleted) return null;
 
   return {
     id: user.userId || "",
