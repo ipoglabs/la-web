@@ -1,37 +1,29 @@
-// app/api/send-otp/route.ts
 import { NextResponse } from "next/server";
-import { sendEmailOtp } from "@/lib/sendEmailOtp";
-import { generateOtp } from "@/lib/generateOtp";
-import otpStore from "@/lib/otpStore";
-
-export const runtime = "nodejs";
+import connectDB from "@/config/database";
+import { getSession } from "@/lib/auth";
+import { sendOtpService } from "@/lib/otpService";
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
+    await connectDB();
 
-    const normalizedEmail = String(email).toLowerCase().trim();
-    const otp = generateOtp();
-    const expiresAt = Date.now() + 5 * 60 * 1000;
+    const body = await req.json();
 
-    otpStore[normalizedEmail] = {
-      otp,
-      expiresAt,
-      verified: false,
-      attempts: 0,
-      lockedUntil: null,
-    };
+    const session = await getSession();
 
-    // ✅ This waits until Gmail SMTP accepts it (should be quick).
-    // Delivery to inbox may still take time depending on Gmail.
-    await sendEmailOtp(normalizedEmail, otp);
+    const userId = session?.userId; // optional for register
 
-    return NextResponse.json({ success: true, message: "OTP sent" });
-  } catch (err) {
-    console.error("Send OTP error:", err);
-    return NextResponse.json({ error: "Failed to send OTP" }, { status: 500 });
+    await sendOtpService({
+      userId,
+      channel: body.channel || "email",
+      value: body.value || body.email,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e.message || "Failed to send OTP" },
+      { status: 400 }
+    );
   }
 }

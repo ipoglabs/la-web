@@ -12,12 +12,17 @@ import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
 import { FormField } from "@/components/FormField";
-import { FormFieldWrapper } from "@/components/FormFieldWrapper";
 
 import ResponsiveModal from "./ResponsiveModal";
 
 import type { ProfileUser } from "../types";
 
+/* ================= VALIDATORS ================= */
+const isValidEmail = (v: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+const isValidPhone = (v: string) =>
+  /^[0-9+\- ]{7,15}$/.test(v);
 
 /* ================= OTP HOOK ================= */
 function useOtpFlow(initialValue: string, type: "email" | "phone") {
@@ -35,9 +40,22 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     return () => clearInterval(t);
   }, [timer]);
 
+  /* ===== SEND OTP ===== */
   const sendOtpHandler = async () => {
-    if (!value.trim()) {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
       setError("Value is required");
+      return;
+    }
+
+    if (type === "email" && !isValidEmail(trimmed)) {
+      setError("Enter a valid email");
+      return;
+    }
+
+    if (type === "phone" && !isValidPhone(trimmed)) {
+      setError("Enter a valid phone number");
       return;
     }
 
@@ -45,11 +63,15 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     setError("");
 
     try {
-       await sendOtp({
-      email: value.trim(),
-    });
+      await sendOtp({
+        channel: type,
+        value: trimmed,
+      });
+
       setStep("otp");
       setTimer(30);
+
+      toast.success("OTP sent successfully");
     } catch (e: any) {
       setError(e?.message || "Failed to send OTP");
     } finally {
@@ -57,6 +79,7 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     }
   };
 
+  /* ===== VERIFY OTP ===== */
   const verifyOtpHandler = async (onSuccess: () => void) => {
     if (otp.length !== 6) {
       setError("OTP must be 6 digits");
@@ -67,10 +90,13 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     setError("");
 
     try {
-       await verifyOtpApi({
-      email: value.trim(), // ✅ FIXED
-      otp,
-    });
+      await verifyOtpApi({
+        channel: type,
+        value: value.trim(),
+        otp,
+      });
+
+      toast.success("OTP verified");
       onSuccess();
     } catch (e: any) {
       setError(e?.message || "Invalid OTP");
@@ -109,12 +135,12 @@ function ContactFieldEditor({
   initialValue,
   field,
 }: any) {
-
   const router = useRouter();
-
   const type = label === "Email" ? "email" : "phone";
 
   const flow = useOtpFlow(initialValue, type);
+
+  const hasChanged = flow.value.trim() !== initialValue.trim();
 
   useEffect(() => {
     if (open) {
@@ -124,20 +150,20 @@ function ContactFieldEditor({
   }, [open, initialValue]);
 
   const handleSave = async () => {
-  try {
-    await updateContact({
-      field,
-      value: flow.value.trim(), // ✅ ensure trimmed
-    });
+    try {
+      await updateContact({
+        field,
+        value: flow.value.trim(),
+      });
 
-    toast.success(`${label} updated successfully`);
+      toast.success(`${label} updated successfully`);
 
-    router.refresh();   // ✅ THIS FIXES YOUR ISSUE
-    onClose();
-  } catch (e: any) {
-    toast.error(e?.message || "Update failed");
-  }
-};
+      router.refresh(); // ✅ refresh server data
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.message || "Update failed");
+    }
+  };
 
   return (
     <ResponsiveModal
@@ -147,24 +173,31 @@ function ContactFieldEditor({
     >
       <div className="space-y-5 mt-2">
 
+        {/* ERROR */}
         {flow.error && (
           <p className="text-sm text-red-500">{flow.error}</p>
         )}
 
-        {/* INPUT */}
+        {/* INPUT STEP */}
         {flow.step === "input" && (
           <>
             <Input
               autoFocus
               value={flow.value}
-              onChange={(e) => flow.setValue(e.target.value)}
+              onChange={(e) => {
+                flow.setValue(e.target.value);
+              }}
               placeholder={`Enter ${label}`}
             />
 
             <Button
               type="button"
               className="w-full"
-              disabled={flow.loading || flow.value.trim() === initialValue}
+              disabled={
+                flow.loading ||
+                !hasChanged ||
+                flow.value.trim() === ""
+              }
               onClick={flow.sendOtp}
             >
               {flow.loading ? "Sending..." : "Continue"}
@@ -172,7 +205,7 @@ function ContactFieldEditor({
           </>
         )}
 
-        {/* OTP */}
+        {/* OTP STEP */}
         {flow.step === "otp" && (
           <>
             <p className="text-sm text-muted-foreground">
@@ -230,7 +263,7 @@ export default function ContactEditForm({
   user: ProfileUser;
 }) {
   const [active, setActive] = useState<
-    null | "email" | "phone" | "secondary1" | "secondary2"
+    null | "email" | "phone"
   >(null);
 
   return (

@@ -10,6 +10,23 @@ const AddressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const OtpSchema = new mongoose.Schema(
+  {
+    channel: {
+      type: String,
+      enum: ["email", "phone"],
+      required: true,
+    },
+    target: { type: String, required: true, trim: true },
+    code: { type: String, required: true },
+    expiresAt: { type: Date, required: true },
+    verified: { type: Boolean, default: false },
+    attempts: { type: Number, default: 0 },
+    lockedUntil: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const AuditSchema = new mongoose.Schema(
   {
     action: { type: String },
@@ -107,6 +124,8 @@ const UserSchema = new mongoose.Schema(
 isDeleted: { type: Boolean, default: false, index: true },
 deletedAt: { type: Date },
 deleteFeedback: { type: String, trim: true },
+
+ otp: { type: OtpSchema, default: null },
 
     image: { type: String },
   },

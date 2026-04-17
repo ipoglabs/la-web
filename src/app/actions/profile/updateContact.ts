@@ -1,11 +1,10 @@
+// app/actions/profile/updateContact.ts
 "use server";
 
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
-import otpStore from "@/lib/otpStore";
-
-const normalize = (v: string) => v.toLowerCase().trim();
+import { normalizeEmail, normalizePhone } from "@/lib/otpUtils";
 
 export async function updateContact({
   field,
@@ -21,25 +20,29 @@ export async function updateContact({
   await connectDB();
 
   const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+  if (!session?.userId) throw new Error("Unauthorized");
 
   const user: any = await User.findById(session.userId);
-  if (!user) throw new Error("User not found");
+  if (!user || user.isDeleted) throw new Error("User not found");
 
   const rawValue = String(value || "").trim();
-  if (!rawValue) {
-    throw new Error("Value is required");
-  }
+  if (!rawValue) throw new Error("Value is required");
 
-  const normalizedKey = normalize(rawValue);
-  const rec = otpStore[normalizedKey];
+  const channel = field === "email" ? "email" : "phone";
+  const normalizedTarget =
+    channel === "email" ? normalizeEmail(rawValue) : normalizePhone(rawValue);
 
-  if (!rec || !rec.verified) {
+  if (
+    !user.otp ||
+    !user.otp.verified ||
+    user.otp.channel !== channel ||
+    user.otp.target !== normalizedTarget
+  ) {
     throw new Error("OTP verification required");
   }
 
   if (field === "email") {
-    const nextEmail = normalizedKey;
+    const nextEmail = normalizeEmail(rawValue);
 
     const exists = await User.findOne({
       email: nextEmail,
@@ -53,7 +56,7 @@ export async function updateContact({
   }
 
   if (field === "primaryNumber") {
-    const nextPhone = rawValue;
+    const nextPhone = normalizePhone(rawValue);
 
     const exists = await User.findOne({
       primaryNumber: nextPhone,
@@ -67,29 +70,15 @@ export async function updateContact({
   }
 
   if (field === "secondaryNumber1") {
-    user.secondaryNumber1 = rawValue;
+    user.secondaryNumber1 = normalizePhone(rawValue);
   }
 
   if (field === "secondaryNumber2") {
-    user.secondaryNumber2 = rawValue;
+    user.secondaryNumber2 = normalizePhone(rawValue);
   }
 
+  user.otp = null;
   await user.save();
 
-  delete otpStore[normalizedKey];
-
-  const updated = await User.findById(user._id).lean();
-
-  return {
-    success: true,
-    updatedField: field,
-    updatedValue:
-      field === "email"
-        ? updated?.email
-        : field === "primaryNumber"
-        ? updated?.primaryNumber
-        : field === "secondaryNumber1"
-        ? updated?.secondaryNumber1
-        : updated?.secondaryNumber2,
-  };
+  return { success: true };
 }
