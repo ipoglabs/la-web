@@ -13,13 +13,25 @@ export async function softDeleteAccount(feedback?: string) {
   const user: any = await User.findById(session.userId);
   if (!user) throw new Error("User not found");
 
+  // 🔒 prevent double delete
+  if (user.isDeleted) {
+    throw new Error("Account already deleted");
+  }
+
   // ✅ Soft delete
   user.isDeleted = true;
   user.deletedAt = new Date();
   user.deleteFeedback = feedback || "";
 
-  // Optional (recommended)
+  // Optional
   user.accountStatus = "Suspended";
+  user.isSuspended = true;
+
+  // Optional audit
+  user.audit.push({
+    action: "ACCOUNT_DELETED",
+    at: new Date(),
+  });
 
   await user.save();
 

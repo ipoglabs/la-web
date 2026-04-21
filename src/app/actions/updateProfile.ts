@@ -4,6 +4,8 @@ import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 
+const PREDEFINED_ROLES = ["individual", "business", "agency"];
+
 export async function updateProfile(payload: any) {
   await connectDB();
 
@@ -12,7 +14,6 @@ export async function updateProfile(payload: any) {
 
   const { userId: sessionUserId, email } = session;
 
-  /* ================= FIND USER ================= */
   let user: any = null;
 
   if (sessionUserId) {
@@ -23,16 +24,14 @@ export async function updateProfile(payload: any) {
 
   if (!user) throw new Error("User not found");
 
-  /* ================= VALIDATION ================= */
-
-  // 🔥 USER ID (Public Profile ID)
+  /* ================= USER ID ================= */
   if (payload.userId !== undefined) {
     const newId = payload.userId.trim();
 
     if (!newId) throw new Error("Profile ID is required");
     if (newId.length > 18) throw new Error("Max 18 characters allowed");
     if (!/^[a-zA-Z0-9_]+$/.test(newId)) {
-      throw new Error("Only letters, numbers, and underscore allowed");
+      throw new Error("Only letters, numbers, underscore allowed");
     }
 
     const exists = await User.findOne({
@@ -40,92 +39,80 @@ export async function updateProfile(payload: any) {
       _id: { $ne: user._id },
     });
 
-    if (exists) {
-      throw new Error("This Profile ID is already taken");
-    }
+    if (exists) throw new Error("Profile ID already taken");
 
     user.userId = newId;
   }
 
-  // 🔥 NAME VALIDATION
+  /* ================= NAME ================= */
   if (payload.firstName !== undefined) {
     const v = payload.firstName.trim();
-
-    if (!v) throw new Error("First name is required");
-    if (v.length > 18) throw new Error("Max 18 characters allowed");
-    if (!/^[A-Za-z]+$/.test(v)) {
-      throw new Error("First name must contain only alphabets");
-    }
+    if (!v) throw new Error("First name required");
+    if (v.length > 18) throw new Error("Max 18 characters");
+    if (!/^[A-Za-z]+$/.test(v)) throw new Error("Only alphabets");
 
     user.firstName = v;
   }
 
   if (payload.lastName !== undefined) {
     const v = payload.lastName.trim();
-
-    if (!v) throw new Error("Last name is required");
-    if (v.length > 18) throw new Error("Max 18 characters allowed");
-    if (!/^[A-Za-z]+$/.test(v)) {
-      throw new Error("Last name must contain only alphabets");
-    }
+    if (!v) throw new Error("Last name required");
+    if (v.length > 18) throw new Error("Max 18 characters");
+    if (!/^[A-Za-z]+$/.test(v)) throw new Error("Only alphabets");
 
     user.lastName = v;
   }
 
-  // 🔥 ROLE
+  /* ================= ROLE ================= */
   if (payload.role !== undefined) {
     if (!payload.role) throw new Error("Role is required");
 
-    user.role = payload.role;
+    // 🔥 OTHER ROLE
+    if (payload.role === "other") {
+      const title = payload.roleTitle?.trim();
+      const desc = payload.roleDescription?.trim();
+
+      const titleRegex = /^[A-Za-z0-9\s,|&()\-]+$/;
+
+      if (!title) throw new Error("Role title required");
+      if (title.length < 2) throw new Error("Too short");
+      if (title.length > 80) throw new Error("Max 80 characters");
+      if (!titleRegex.test(title)) throw new Error("Invalid title");
+
+      if (!desc) throw new Error("Role description required");
+      if (desc.length < 2) throw new Error("Too short");
+      if (desc.length > 300) throw new Error("Max 300 characters");
+
+      // ✅ STORE REAL VALUE
+      user.role = title;
+      user.roleTitle = title;
+      user.roleDescription = desc;
+
+    } else {
+      // ✅ NORMAL ROLES
+      user.role = payload.role;
+      user.roleTitle = "";
+      user.roleDescription = "";
+    }
   }
 
-  // 🔥 ROLE EXTRA (only for other)
-  if (payload.role === "other") {
-    const title = payload.roleTitle?.trim();
-    const desc = payload.roleDescription?.trim();
-
-    if (!title) throw new Error("Role title is required");
-    if (title.length < 2) throw new Error("Role title too short");
-    if (title.length > 80) throw new Error("Max 80 characters allowed");
-
-    if (!desc) throw new Error("Role description is required");
-    if (desc.length < 2) throw new Error("Description too short");
-    if (desc.length > 300) throw new Error("Max 300 characters allowed");
-
-    user.roleTitle = title;
-    user.roleDescription = desc;
-  } else {
-    user.roleTitle = "";
-    user.roleDescription = "";
-  }
-
-  // 🔥 DOB
+  /* ================= DOB ================= */
   if (payload.dateOfBirth !== undefined) {
     const dob = new Date(payload.dateOfBirth);
-
-    if (isNaN(dob.getTime())) {
-      throw new Error("Invalid date");
-    }
+    if (isNaN(dob.getTime())) throw new Error("Invalid date");
 
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
     const m = today.getMonth() - dob.getMonth();
 
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-      age--;
-    }
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
 
-    if (age < 18) {
-      throw new Error("You must be at least 18 years old");
-    }
+    if (age < 18) throw new Error("Must be 18+");
 
     user.dateOfBirth = payload.dateOfBirth;
   }
 
-  /* ================= SAVE ================= */
   await user.save();
 
-  return {
-    success: true,
-  };
+  return { success: true };
 }

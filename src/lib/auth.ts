@@ -1,6 +1,8 @@
 // src/lib/auth.ts
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import connectDB from "@/config/database";
+import User from "@/models/user";
 
 const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -9,8 +11,6 @@ export type SessionPayload = {
   userId: string;
   email?: string;
   role?: string;
-
-  // optional fields (because not every flow signs them)
   username?: string;
   primaryNumber?: string;
 };
@@ -20,11 +20,15 @@ function requireSecret() {
   return process.env.JWT_SECRET;
 }
 
-/** create session (optional utility) */
-export function createSession(payload: SessionPayload) {
-  const token = jwt.sign(payload, requireSecret(), { expiresIn: MAX_AGE });
+/** create session */
+export async function createSession(payload: SessionPayload) {
+  const token = jwt.sign(payload, requireSecret(), {
+    expiresIn: MAX_AGE,
+  });
 
-  cookies().set(COOKIE_NAME, token, {
+  const cookieStore = await cookies();
+
+  cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -35,28 +39,30 @@ export function createSession(payload: SessionPayload) {
   return token;
 }
 
-/** read + verify session cookie */
-export function getSession(): SessionPayload | null {
-  const token = cookies().get(COOKIE_NAME)?.value;
+/** read session */
+export async function getSession(): Promise<SessionPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+
   if (!token) return null;
 
   try {
-    return jwt.verify(token, requireSecret()) as SessionPayload;
-  } catch {
-    return null;
-  }
-}
+    const payload = jwt.verify(token, requireSecret()) as SessionPayload;
 
-/** verify raw token */
-export function verifyToken(token: string): SessionPayload | null {
-  try {
-    return jwt.verify(token, requireSecret()) as SessionPayload;
+    await connectDB();
+
+    const user = await User.findById(payload.userId).select("isDeleted");
+
+    if (!user || user.isDeleted) return null;
+
+    return payload;
   } catch {
     return null;
   }
 }
 
 /** logout */
-export function clearSession() {
-  cookies().delete(COOKIE_NAME);
+export async function clearSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE_NAME);
 }

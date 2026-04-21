@@ -13,6 +13,7 @@ import LocationEditForm from "./components/LocationEditForm";
 import ContactEditForm from "./components/ContactEditForm";
 import ResetPassword from "./components/ResetPassword";
 import ResponsiveModal from "./components/ResponsiveModal";
+import { ShieldAlert, Trash2, Loader2 } from "lucide-react";
 
 import type { ProfileUser } from "./types";
 
@@ -30,68 +31,92 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
     <>
       <AppHeader />
 
-      <main className="min-h-screen flex justify-center bg-gray-50 px-4 py-6">
-        <div className="w-full max-w-2xl space-y-8">
-         <Section title="Public Profile" hideEdit>
+         {/* MAIN */}
+    <main className="min-h-screen flex justify-center bg-gray-50 px-4 py-6">
+      <div className="w-full max-w-2xl space-y-8">
+
+        {/* Sections */}
+        <Section title="Public Profile" hideEdit>
           <Row
             label="Profile ID"
             value={user.id?.trim() || "—"}
             actionLabel="Edit"
             onAction={() => setActiveModal("publicProfile")}
           />
-
         </Section>
 
-          <Section title="Basic Info" onEdit={() => setActiveModal("basic")}>
-            <Row label="First Name" value={user.firstName} />
-            <Row label="Last Name" value={user.lastName} />
-            <Row label="Role Title" value={user.role} />
-            <Row label="DOB" value={user.dateOfBirth} />
-          </Section>
+        <Section title="Basic Info" onEdit={() => setActiveModal("basic")}>
+          <Row label="First Name" value={user.firstName} />
+          <Row label="Last Name" value={user.lastName} />
+          <Row label="Role" value={user.role || "—"} />
+          {user.roleDescription && (
+            <Row label="Role Description" value={user.roleDescription} />
+          )}
+          <Row label="DOB" value={user.dateOfBirth} />
+        </Section>
 
-          <Section title="Contact Information" hideEdit>
-            <ContactEditForm user={user} />
-          </Section>
+        <Section title="Contact Information" hideEdit>
+          <ContactEditForm user={user} />
+        </Section>
 
-         <Section title="Location" onEdit={() => setActiveModal("location")}>
-            <Row label="Country" value={user.address?.country || user.nationality || "—"} />
+        <Section title="Location" onEdit={() => setActiveModal("location")}>
+          <Row label="Country" value={user.address?.country || user.nationality || "—"} />
+          <Row label="State" value={user.address?.state || "—"} />
+          <Row label="City" value={user.address?.city || user.locality || "—"} />
+          <Row label="Postal Code" value={user.address?.postalCode || "—"} />
+        </Section>
 
-            <Row label="State" value={user.address?.state || "—"} />
+        <Section title="Account Settings" hideEdit>
+          <div className="space-y-3">
 
-            <Row label="City" value={user.address?.city || user.locality || "—"} />
+            {/* Reset Password */}
+            <button
+              type="button"
+              onClick={() => setActiveModal("resetPassword")}
+              className="w-full border rounded-lg px-4 py-3 text-left hover:bg-gray-50 transition"
+            >
+              <div className="font-medium text-gray-900">Reset Password</div>
+              <div className="text-sm text-gray-500">
+                Change your account password securely
+              </div>
+            </button>
 
-            <Row label="Postal Code" value={user.address?.postalCode || "—"} />
-          </Section>
+            {/* 🔥 Danger Zone (NON-FLOATING) */}
+            <div className="flex flex-col md:flex-row md:items-center rounded-lg border border-yellow-300 bg-gradient-to-r from-yellow-50 via-yellow-100 to-yellow-50 px-4 py-3">
 
-          <Section title="Account Settings" hideEdit>
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setActiveModal("resetPassword")}
-                className="w-full border rounded-lg px-4 py-3 text-left hover:bg-gray-50 transition"
-              >
-                <div className="font-medium text-gray-900">Reset Password</div>
-                <div className="text-sm text-gray-500">
-                  Change your account password securely
+              {/* Left: Icon + text */}
+              <div className="flex items-center flex-1">
+                <ShieldAlert className="h-8 w-8 text-yellow-600 mr-2" />
+                <div>
+                  <div className="text-base font-semibold text-yellow-800">
+                    Danger zone
+                  </div>
+                  <div className="text-sm text-yellow-900">
+                    Need to delete your account? This action is permanent.
+                  </div>
                 </div>
-              </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => router.push("/profile/delete")}
-                className="w-full border border-red-200 rounded-lg px-4 py-3 text-left hover:bg-red-50 transition"
-              >
-                <div className="font-medium text-red-600">
-                  Delete My Account
-                </div>
-                <div className="text-sm text-red-400">
-                  Permanently remove your account and all data
-                </div>
-              </button>
+              {/* Right: Button */}
+              <div className="mt-3 md:mt-0 md:ml-4">
+                <button
+                  onClick={() => router.push("/profile/delete")}
+                  className="inline-flex items-center gap-2 rounded-full border border-rose-400 bg-rose-100 px-5 py-2 text-sm text-rose-700 hover:bg-rose-500 hover:text-white"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  Delete Account
+                </button>
+              </div>
+
             </div>
-          </Section>
-        </div>
-      </main>
+
+          </div>
+        </Section>
+
+      </div>
+    </main>
+
+   
 
       <ResponsiveModal
         open={activeModal === "publicProfile"}

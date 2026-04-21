@@ -83,6 +83,9 @@ const UserSchema = new mongoose.Schema(
 
     role: { type: String, required: true },
 
+    roleTitle: { type: String, trim: true },
+    roleDescription: { type: String, trim: true },
+    
     provider: {
       type: String,
       enum: ["credentials", "google", "apple"],
