@@ -3,6 +3,7 @@
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
+import { sendProfileUpdateEmail } from "@/lib/profile/updateProfileMail";
 
 const PREDEFINED_ROLES = ["individual", "business", "agency"];
 
@@ -24,6 +25,13 @@ export async function updateProfile(payload: any) {
 
   if (!user) throw new Error("User not found");
 
+  // ✅ Track detailed changes
+  const changes: {
+    field: string;
+    oldValue: string;
+    newValue: string;
+  }[] = [];
+
   /* ================= USER ID ================= */
   if (payload.userId !== undefined) {
     const newId = payload.userId.trim();
@@ -41,7 +49,15 @@ export async function updateProfile(payload: any) {
 
     if (exists) throw new Error("Profile ID already taken");
 
-    user.userId = newId;
+    if (user.userId !== newId) {
+      changes.push({
+        field: "Profile ID",
+        oldValue: user.userId || "-",
+        newValue: newId,
+      });
+
+      user.userId = newId;
+    }
   }
 
   /* ================= NAME ================= */
@@ -51,7 +67,15 @@ export async function updateProfile(payload: any) {
     if (v.length > 18) throw new Error("Max 18 characters");
     if (!/^[A-Za-z]+$/.test(v)) throw new Error("Only alphabets");
 
-    user.firstName = v;
+    if (user.firstName !== v) {
+      changes.push({
+        field: "First Name",
+        oldValue: user.firstName || "-",
+        newValue: v,
+      });
+
+      user.firstName = v;
+    }
   }
 
   if (payload.lastName !== undefined) {
@@ -60,39 +84,61 @@ export async function updateProfile(payload: any) {
     if (v.length > 18) throw new Error("Max 18 characters");
     if (!/^[A-Za-z]+$/.test(v)) throw new Error("Only alphabets");
 
-    user.lastName = v;
+    if (user.lastName !== v) {
+      changes.push({
+        field: "Last Name",
+        oldValue: user.lastName || "-",
+        newValue: v,
+      });
+
+      user.lastName = v;
+    }
   }
 
   /* ================= ROLE ================= */
   if (payload.role !== undefined) {
     if (!payload.role) throw new Error("Role is required");
 
-    // 🔥 OTHER ROLE
     if (payload.role === "other") {
       const title = payload.roleTitle?.trim();
       const desc = payload.roleDescription?.trim();
 
-      const titleRegex = /^[A-Za-z0-9\s,|&()\-]+$/;
+      if (!title || title.length < 2 || title.length > 80) {
+        throw new Error("Invalid role title");
+      }
 
-      if (!title) throw new Error("Role title required");
-      if (title.length < 2) throw new Error("Too short");
-      if (title.length > 80) throw new Error("Max 80 characters");
-      if (!titleRegex.test(title)) throw new Error("Invalid title");
+      if (!desc || desc.length < 2 || desc.length > 300) {
+        throw new Error("Invalid role description");
+      }
 
-      if (!desc) throw new Error("Role description required");
-      if (desc.length < 2) throw new Error("Too short");
-      if (desc.length > 300) throw new Error("Max 300 characters");
+      if (user.role !== title || user.roleDescription !== desc) {
+        changes.push({
+          field: "Role",
+          oldValue: user.role || "-",
+          newValue: title,
+        });
 
-      // ✅ STORE REAL VALUE
-      user.role = title;
-      user.roleTitle = title;
-      user.roleDescription = desc;
+        user.role = title;
+        user.roleTitle = title;
+        user.roleDescription = desc;
+      }
 
     } else {
-      // ✅ NORMAL ROLES
-      user.role = payload.role;
-      user.roleTitle = "";
-      user.roleDescription = "";
+      if (!PREDEFINED_ROLES.includes(payload.role)) {
+        throw new Error("Invalid role");
+      }
+
+      if (user.role !== payload.role) {
+        changes.push({
+          field: "Role",
+          oldValue: user.role || "-",
+          newValue: payload.role,
+        });
+
+        user.role = payload.role;
+        user.roleTitle = "";
+        user.roleDescription = "";
+      }
     }
   }
 
@@ -101,18 +147,32 @@ export async function updateProfile(payload: any) {
     const dob = new Date(payload.dateOfBirth);
     if (isNaN(dob.getTime())) throw new Error("Invalid date");
 
-    const today = new Date();
-    let age = today.getFullYear() - dob.getFullYear();
-    const m = today.getMonth() - dob.getMonth();
+    if (user.dateOfBirth !== payload.dateOfBirth) {
+      changes.push({
+        field: "Date of Birth",
+        oldValue: user.dateOfBirth || "-",
+        newValue: payload.dateOfBirth,
+      });
 
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-
-    if (age < 18) throw new Error("Must be 18+");
-
-    user.dateOfBirth = payload.dateOfBirth;
+      user.dateOfBirth = payload.dateOfBirth;
+    }
   }
 
   await user.save();
+
+  /* ================= EMAIL ================= */
+  try {
+    if (changes.length > 0 && user.email) {
+      await sendProfileUpdateEmail({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        changes,
+      });
+    }
+  } catch (err) {
+    console.error("Profile update email failed:", err);
+  }
 
   return { success: true };
 }

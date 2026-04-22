@@ -3,6 +3,7 @@
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
+import { sendLocationUpdateEmail } from "@/lib/profile/updateLocationEmail";
 
 export async function updateLocation({
   country,
@@ -39,20 +40,76 @@ export async function updateLocation({
   if (!locality) throw new Error("City is required");
   if (!postalCode) throw new Error("Postal code is required");
 
+  /* ================= TRACK CHANGES ================= */
+
+  const changes: {
+    field: string;
+    oldValue: string;
+    newValue: string;
+  }[] = [];
+
+  if (user.nationality !== country) {
+    changes.push({
+      field: "Country",
+      oldValue: user.nationality || "-",
+      newValue: country,
+    });
+  }
+
+  if (user.state !== state) {
+    changes.push({
+      field: "State",
+      oldValue: user.state || "-",
+      newValue: state,
+    });
+  }
+
+  if (user.locality !== locality) {
+    changes.push({
+      field: "City",
+      oldValue: user.locality || "-",
+      newValue: locality,
+    });
+  }
+
+  if (user.address?.postalCode !== postalCode) {
+    changes.push({
+      field: "Postal Code",
+      oldValue: user.address?.postalCode || "-",
+      newValue: postalCode,
+    });
+  }
+
   /* ================= UPDATE ================= */
 
   user.nationality = country;
   user.state = state;
   user.locality = locality;
+
   user.address = {
-  ...(user.address || {}),
-  country,
-  state,
-  city: locality,
-  postalCode,
-};
+    ...(user.address || {}),
+    country,
+    state,
+    city: locality,
+    postalCode,
+  };
 
   await user.save();
+
+  /* ================= EMAIL ================= */
+
+  try {
+    if (changes.length > 0 && user.email) {
+      await sendLocationUpdateEmail({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        changes,
+      });
+    }
+  } catch (err) {
+    console.error("Location email failed:", err);
+  }
 
   return { success: true };
 }

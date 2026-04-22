@@ -3,6 +3,7 @@
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
+import { sendDeleteAccountEmail } from "@/lib/profile/deleteAccountEmail";
 
 export async function softDeleteAccount(feedback?: string) {
   await connectDB();
@@ -34,6 +35,19 @@ export async function softDeleteAccount(feedback?: string) {
   });
 
   await user.save();
+
+  /* ================= EMAIL ================= */
+try {
+  if (user.email) {
+    await sendDeleteAccountEmail({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    });
+  }
+} catch (err) {
+  console.error("Delete account email failed:", err);
+}
 
   return { success: true };
 }

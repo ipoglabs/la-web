@@ -3,6 +3,7 @@
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
+import { sendPasswordUpdateEmail } from "@/lib/profile/updatePasswordEmail";
 
 import bcrypt from "bcryptjs";
 
@@ -80,6 +81,21 @@ export async function updatePassword({
   user.password = hashedPassword;
 
   await user.save();
+
+  await user.save();
+
+/* ================= EMAIL ================= */
+try {
+  if (user.email) {
+    await sendPasswordUpdateEmail({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    });
+  }
+} catch (err) {
+  console.error("Password update email failed:", err);
+}
 
   return {
     success: true,
