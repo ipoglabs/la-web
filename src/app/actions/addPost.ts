@@ -122,7 +122,7 @@ export async function addPost(
   try {
     await connectDB();
 
-    const session = getSession();
+    const session = await getSession();
 
     if (!session || !session.userId) {
       return { ok: false, error: "Unauthorized user" };
