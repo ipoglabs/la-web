@@ -94,7 +94,7 @@ const UserSchema = new mongoose.Schema(
 
     accountStatus: {
       type: String,
-      enum: ["Pending", "Active", "Suspended"],
+      enum: ["Pending", "Active", "Suspended" , "Deleted"],
       default: "Pending",
     },
 

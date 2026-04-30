@@ -57,34 +57,65 @@ export default function ResetPassword({ onSuccess }: Props) {
 
   /* ================= SUBMIT ================= */
   const handleSave = async () => {
-    if (!currentPassword.trim()) {
-      setError("Current password is required");
+  // reset previous errors
+  setError("");
+  setConfirmError("");
+
+  /* ================= BASIC VALIDATION ================= */
+  if (!currentPassword.trim()) {
+    setError("Current password is required");
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    setError("Password must be at least 8 characters");
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    setConfirmError("Passwords do not match");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await updatePassword({
+      currentPassword,
+      newPassword,
+    });
+
+    /* ================= HANDLE RESPONSE ================= */
+    if (!res?.success) {
+      // 👉 smarter UX: map error to correct field
+      if (res?.message?.toLowerCase().includes("current password")) {
+        setError(res.message); // show under current password field
+      } else {
+        toast.error(res?.message || "Failed to update password");
+      }
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
+    /* ================= SUCCESS ================= */
+    toast.success("Password updated successfully");
 
-    if (newPassword !== confirmPassword) {
-      setConfirmError("Passwords do not match");
-      return;
-    }
+    // clear form
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
 
-    try {
-      setLoading(true);
+    setError("");
+    setConfirmError("");
 
-      await updatePassword({currentPassword,newPassword,});
-      
-      toast.success("Password updated successfully");
-      onSuccess?.();
-    } catch (e: any) {
-      toast.error(e?.message || "Failed to update password");
-    } finally {
-      setLoading(false);
-    }
-  };
+    onSuccess?.();
+
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    toast.error("Something went wrong. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <>

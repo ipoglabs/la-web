@@ -11,13 +11,19 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
   const session = await getSession();
   if (!session) return null;
 
-  // 🔥 Always use userId (no fallback needed)
   const user: any = await User.findById(session.userId).lean();
 
-  if (!user || user.isDeleted) return null;
+  /* ================= FINAL PROTECTION ================= */
+  if (
+    !user ||
+    user.isDeleted === true ||
+    user.accountStatus === "Deleted"
+  ) {
+    return null;
+  }
 
   return {
-    id: user.userId || "",
+    id: user._id?.toString() || "",   // ✅ FIXED
     username: user.username || "",
     firstName: user.firstName || "",
     lastName: user.lastName || "",

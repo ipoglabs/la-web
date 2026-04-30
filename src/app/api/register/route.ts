@@ -97,21 +97,38 @@ export async function POST(req: Request) {
       );
     }
 
-    // duplicate check
-    const dup = await User.findOne({
-      $or: [{ email: payload.email }, { primaryNumber: payload.primaryNumber }],
-    })
-      .select("email primaryNumber")
-      .lean();
+    // duplicate check (ONLY block active users)
+const dup = await User.findOne({
+  $and: [
+    {
+      $or: [
+        { email: payload.email },
+        { primaryNumber: payload.primaryNumber },
+      ],
+    },
+    {
+      accountStatus: { $nin: ["Deleted"] }, // 🔥 ONLY THIS IS NEEDED
+    },
+  ],
+})
+  .select("email primaryNumber accountStatus")
+  .lean();
 
-    if (dup) {
-      if (dup.email === payload.email) {
-        return NextResponse.json({ error: "That email is already in use." }, { status: 409 });
-      }
-      if (dup.primaryNumber === payload.primaryNumber) {
-        return NextResponse.json({ error: "That phone number is already in use." }, { status: 409 });
-      }
-    }
+if (dup) {
+  if (dup.email === payload.email) {
+    return NextResponse.json(
+      { error: "That email is already in use." },
+      { status: 409 }
+    );
+  }
+
+  if (dup.primaryNumber === payload.primaryNumber) {
+    return NextResponse.json(
+      { error: "That phone number is already in use." },
+      { status: 409 }
+    );
+  }
+}
 
     // ✅ generate incremental userId
     const userId = await getNextUserId(12);

@@ -2,52 +2,60 @@
 
 import connectDB from "@/config/database";
 import User from "@/models/user";
-import { getSession } from "@/lib/auth";
+import { getSession, clearSession } from "@/lib/auth";
 import { sendDeleteAccountEmail } from "@/lib/profile/deleteAccountEmail";
 
 export async function softDeleteAccount(feedback?: string) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
+    const session = await getSession();
+    if (!session?.userId) {
+      return { success: false, message: "Unauthorized" };
+    }
 
-  const user: any = await User.findById(session.userId);
-  if (!user) throw new Error("User not found");
+    const user: any = await User.findById(session.userId);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
 
-  // 🔒 prevent double delete
-  if (user.isDeleted) {
-    throw new Error("Account already deleted");
-  }
+    if (user.isDeleted) {
+      await clearSession();
+      return { success: false, message: "Account already deleted" };
+    }
 
-  // ✅ Soft delete
-  user.isDeleted = true;
-  user.deletedAt = new Date();
-  user.deleteFeedback = feedback || "";
+    user.isDeleted = true;
+    user.accountStatus = "Deleted";
+    user.isSuspended = false;
 
-  // Optional
-  user.accountStatus = "Suspended";
-  user.isSuspended = true;
+    user.deletedAt = new Date();
+    user.deleteFeedback = feedback || "";
 
-  // Optional audit
-  user.audit.push({
-    action: "ACCOUNT_DELETED",
-    at: new Date(),
-  });
-
-  await user.save();
-
-  /* ================= EMAIL ================= */
-try {
-  if (user.email) {
-    await sendDeleteAccountEmail({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
+    user.audit.push({
+      action: "ACCOUNT_DELETED",
+      at: new Date(),
     });
-  }
-} catch (err) {
-  console.error("Delete account email failed:", err);
-}
 
-  return { success: true };
+    await user.save();
+
+    await clearSession();
+
+    try {
+      if (user.email) {
+        await sendDeleteAccountEmail({
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    return { success: true };
+
+  } catch (err) {
+    console.error(err);
+    return { success: false, message: "Something went wrong" };
+  }
 }

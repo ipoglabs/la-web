@@ -5,11 +5,17 @@ import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const COOKIE_NAME = "session";
-const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const UINFO_COOKIE_NAME = "uinfo";
+const MAX_AGE = 60 * 60 * 24 * 7;
 
 function signJwt(payload: object) {
-  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not set");
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: MAX_AGE });
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not set");
+  }
+
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: MAX_AGE,
+  });
 }
 
 export async function POST(req: Request) {
@@ -17,6 +23,7 @@ export async function POST(req: Request) {
     await dbConnect();
 
     const body = await req.json().catch(() => ({} as any));
+
     const rawIdentifier = String(body?.identifier ?? "").trim();
     const password = String(body?.password ?? "");
 
@@ -31,23 +38,44 @@ export async function POST(req: Request) {
     const emailRaw = isEmailId ? rawIdentifier.toLowerCase() : undefined;
     const phoneRaw = isEmailId ? undefined : rawIdentifier;
 
-    const query = isEmailId ? { email: emailRaw } : { primaryNumber: phoneRaw };
+    const query = isEmailId
+      ? { email: emailRaw }
+      : { primaryNumber: phoneRaw };
 
-    // IMPORTANT: include password in projection
-    const user = await User.findOne(query).lean();
-    if (!user) {
+    const user: any = await User.findOne(query);
+
+    // IMPORTANT:
+    // Deleted / suspended users must behave like invalid login.
+    if (
+      !user ||
+      user.isDeleted === true ||
+      user.isSuspended === true ||
+      user.accountStatus === "Suspended" ||
+      user.accountStatus === "Deleted"
+    ) {
       return NextResponse.json(
-        { error: "Account not found with that email / phone." },
-        { status: 404 }
+        { error: "Invalid credentials." },
+        { status: 401 }
       );
     }
 
-    const ok = await compare(password, (user as any).password);
-    if (!ok) {
-      return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    if (!user.password) {
+      return NextResponse.json(
+        { error: "Invalid credentials." },
+        { status: 401 }
+      );
     }
 
-    if (!(user as any).isEmailVerified) {
+    const ok = await compare(password, user.password);
+
+    if (!ok) {
+      return NextResponse.json(
+        { error: "Invalid credentials." },
+        { status: 401 }
+      );
+    }
+
+    if (!user.isEmailVerified) {
       return NextResponse.json(
         { error: "Please verify your email before logging in." },
         { status: 403 }
@@ -55,23 +83,23 @@ export async function POST(req: Request) {
     }
 
     const token = signJwt({
-      userId: String((user as any)._id),
-      email: (user as any).email,
-      primaryNumber: (user as any).primaryNumber,
-      role: (user as any).role ?? "user",
+      userId: String(user._id),
+      email: user.email,
+      primaryNumber: user.primaryNumber,
+      role: user.role ?? "user",
     });
 
     const res = NextResponse.json(
       {
         message: "Login successful",
         user: {
-          id: String((user as any)._id),
-          email: (user as any).email,
-          firstName: (user as any).firstName,
-          lastName: (user as any).lastName,
-          role: (user as any).role ?? "user",
-          primaryNumber: (user as any).primaryNumber,
-          locality: (user as any).locality,
+          id: String(user._id),
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role ?? "user",
+          primaryNumber: user.primaryNumber,
+          locality: user.locality,
         },
         token,
       },
@@ -87,10 +115,10 @@ export async function POST(req: Request) {
     });
 
     res.cookies.set(
-      "uinfo",
+      UINFO_COOKIE_NAME,
       JSON.stringify({
-        id: String((user as any)._id),
-        ph: (user as any).primaryNumber,
+        id: String(user._id),
+        ph: user.primaryNumber,
       }),
       {
         httpOnly: false,
@@ -104,6 +132,7 @@ export async function POST(req: Request) {
     return res;
   } catch (err) {
     console.error("Login error:", err);
+
     return NextResponse.json(
       { error: "Something went wrong during login." },
       { status: 500 }

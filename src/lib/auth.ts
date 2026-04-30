@@ -5,22 +5,38 @@ import connectDB from "@/config/database";
 import User from "@/models/user";
 
 const COOKIE_NAME = "session";
-const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const LEGACY_COOKIE_NAME = "token";
+const UINFO_COOKIE_NAME = "uinfo";
+const MAX_AGE = 60 * 60 * 24 * 7;
 
 export type SessionPayload = {
   userId: string;
+  id?: string;
   email?: string;
   role?: string;
   username?: string;
   primaryNumber?: string;
+  sub?: string;
 };
 
 function requireSecret() {
-  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not set");
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not set");
+  }
   return process.env.JWT_SECRET;
 }
 
-/** create session */
+export function verifyToken(token: string): SessionPayload | null {
+  try {
+    if (!token) return null;
+
+    const cleanToken = token.replace(/^Bearer\s+/i, "").trim();
+    return jwt.verify(cleanToken, requireSecret()) as SessionPayload;
+  } catch {
+    return null;
+  }
+}
+
 export async function createSession(payload: SessionPayload) {
   const token = jwt.sign(payload, requireSecret(), {
     expiresIn: MAX_AGE,
@@ -39,30 +55,53 @@ export async function createSession(payload: SessionPayload) {
   return token;
 }
 
-/** read session */
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+
+  const token =
+    cookieStore.get(COOKIE_NAME)?.value ||
+    cookieStore.get(LEGACY_COOKIE_NAME)?.value;
 
   if (!token) return null;
 
-  try {
-    const payload = jwt.verify(token, requireSecret()) as SessionPayload;
+  const payload = verifyToken(token);
+  if (!payload) return null;
 
+  const userId = payload.userId || payload.id;
+  if (!userId) return null;
+
+  try {
     await connectDB();
 
-    const user = await User.findById(payload.userId).select("isDeleted");
+    const user = await User.findById(userId).select(
+      "isDeleted isSuspended accountStatus"
+    );
 
-    if (!user || user.isDeleted) return null;
+    if (!user) return null;
 
-    return payload;
+    if (
+      user.isDeleted === true ||
+      user.isSuspended === true ||
+      user.accountStatus === "Suspended" ||
+      user.accountStatus === "Deleted"
+
+    ) {
+      return null;
+    }
+
+    return {
+      ...payload,
+      userId,
+    };
   } catch {
     return null;
   }
 }
 
-/** logout */
 export async function clearSession() {
   const cookieStore = await cookies();
+
   cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete(LEGACY_COOKIE_NAME);
+  cookieStore.delete(UINFO_COOKIE_NAME);
 }
