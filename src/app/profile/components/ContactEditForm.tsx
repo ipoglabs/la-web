@@ -8,7 +8,6 @@ import { sendOtp } from "@/app/actions/profile/sendOtp";
 import { verifyOtp as verifyOtpApi } from "@/app/actions/profile/verifyOtp";
 import { updateContact } from "@/app/actions/profile/updateContact";
 import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
-import { Form } from "@/components/shadcn/form";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
 import { FormField } from "@/components/FormField";
@@ -40,7 +39,6 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     return () => clearInterval(t);
   }, [timer]);
 
-  /* ===== SEND OTP ===== */
   const sendOtpHandler = async () => {
     const trimmed = value.trim();
 
@@ -54,7 +52,11 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
       return;
     }
 
-    if (type === "phone" && !isValidPhone(trimmed)) {
+    if (
+      type === "phone" &&
+      !isValidPhone(trimmed) &&
+      !trimmed.startsWith("mock")
+    ) {
       setError("Enter a valid phone number");
       return;
     }
@@ -63,14 +65,9 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     setError("");
 
     try {
-      await sendOtp({
-        channel: type,
-        value: trimmed,
-      });
-
+      await sendOtp({ channel: type, value: trimmed });
       setStep("otp");
       setTimer(30);
-
       toast.success("OTP sent successfully");
     } catch (e: any) {
       setError(e?.message || "Failed to send OTP");
@@ -79,10 +76,16 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     }
   };
 
-  /* ===== VERIFY OTP ===== */
   const verifyOtpHandler = async (onSuccess: () => void) => {
     if (otp.length !== 6) {
       setError("OTP must be 6 digits");
+      return;
+    }
+
+    // ✅ Mock support
+    if (value.startsWith("mock") && otp === "111111") {
+      toast.success("Mock OTP verified");
+      onSuccess();
       return;
     }
 
@@ -134,36 +137,134 @@ function ContactFieldEditor({
   label,
   initialValue,
   field,
+  primaryNumber,
 }: any) {
-  useAutoScrollInput();
   const router = useRouter();
-  const type = label === "Email" ? "email" : "phone";
 
-  const flow = useOtpFlow(initialValue, type);
+  const isEmailEdit = label === "Email";
 
-  const hasChanged = flow.value.trim() !== initialValue.trim();
+  const [stage, setStage] = useState<"phone" | "main">(
+    isEmailEdit ? "phone" : "main"
+  );
+
+  /* ================= REGISTER STYLE STATE ================= */
+  const [otp, setOtp] = useState("");
+  const [loadingSend, setLoadingSend] = useState(false);
+  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [error, setError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
+  /* ================= EXISTING EMAIL FLOW (UNCHANGED) ================= */
+  const flow = useOtpFlow(
+    initialValue,
+    isEmailEdit ? "email" : "phone"
+  );
 
   useEffect(() => {
     if (open) {
+      setStage(isEmailEdit ? "phone" : "main");
+      setOtp("");
+      setError("");
+
       flow.reset();
       flow.setValue(initialValue);
     }
-  }, [open, initialValue]);
+  }, [open]);
 
-  const handleSave = async () => {
+  /* ================= PHONE SEND OTP ================= */
+  const sendPhoneOtp = async () => {
+  const composed = String(primaryNumber).trim();
+
+  if (!composed) {
+    setError("Phone number missing");
+    return;
+  }
+
+  // MOCK
+  if (composed.startsWith("mock")) {
+    toast.success("Mock mode enabled. Use OTP: 111111");
+    setOtpSent(true); // ✅ move to OTP UI
+    return;
+  }
+
+  setLoadingSend(true);
+  setError("");
+
+  try {
+    const res = await fetch("/api/sms/send-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ phone: composed }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      toast.success("OTP sent to your phone");
+      setOtpSent(true); // ✅ move to OTP UI
+    } else {
+      setError(data?.error || "Failed to send OTP");
+    }
+  } catch {
+    setError("Failed to send OTP");
+  } finally {
+    setLoadingSend(false);
+  }
+};
+
+  /* ================= PHONE VERIFY ================= */
+  const verifyPhoneOtp = async () => {
+    if (!otp) return setError("Enter OTP");
+
+    const composed = String(primaryNumber).trim();
+
+    // ✅ MOCK
+    if (composed.startsWith("mock")) {
+      if (otp === "111111") {
+        toast.success("Phone verified (mock)");
+        setStage("main");
+      } else {
+        setError("Wrong mock OTP");
+      }
+      return;
+    }
+
+    setLoadingVerify(true);
+    setError("");
+
     try {
-      await updateContact({
-        field,
-        value: flow.value.trim(),
+      const res = await fetch("/api/sms/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: composed, otp }),
       });
 
-      toast.success(`${label} updated successfully`);
+      const data = await res.json();
 
-      router.refresh(); // ✅ refresh server data
-      onClose();
-    } catch (e: any) {
-      toast.error(e?.message || "Update failed");
+      if (res.ok) {
+        toast.success("Phone verified");
+        setStage("main");
+      } else {
+        setError(data?.error || "Verification failed");
+      }
+    } catch {
+      setError("Verification failed");
+    } finally {
+      setLoadingVerify(false);
     }
+  };
+
+  const handleSave = async () => {
+    await updateContact({
+      field,
+      value: flow.value.trim(),
+    });
+
+    toast.success(`${label} updated`);
+    router.refresh();
+    onClose();
   };
 
   return (
@@ -174,82 +275,118 @@ function ContactFieldEditor({
     >
       <div className="space-y-5 mt-2">
 
-        {/* ERROR */}
-        {flow.error && (
-          <p className="text-sm text-red-500">{flow.error}</p>
+        {/* ================= PHONE STEP ================= */}
+        {isEmailEdit && stage === "phone" && (
+  <>
+    {error && (
+      <p className="text-sm text-red-500">{error}</p>
+    )}
+
+    {/* STEP 1: BEFORE OTP */}
+    {!otpSent && (
+      <>
+        <p className="text-sm text-muted-foreground">
+          This is your primary number:
+        </p>
+
+        <p className="text-base font-semibold">
+          {primaryNumber}
+        </p>
+
+        <p className="text-xs text-muted-foreground">
+          We’ll send an OTP to verify it's you
+        </p>
+
+        <Button
+          className="w-full"
+          onClick={sendPhoneOtp}
+          disabled={loadingSend}
+        >
+          {loadingSend ? "Sending..." : "Send OTP"}
+        </Button>
+      </>
+    )}
+
+    {/* STEP 2: AFTER OTP SENT */}
+    {otpSent && (
+      <>
+        <p className="text-sm text-muted-foreground">
+          OTP sent to <b>{primaryNumber}</b>
+        </p>
+
+        {primaryNumber?.startsWith("mock") && (
+          <p className="text-xs text-blue-500">
+            Using mock number? Enter <b>111111</b>
+          </p>
         )}
 
-        {/* INPUT STEP */}
-        {flow.step === "input" && (
+        <Input
+          value={otp}
+          maxLength={6}
+          onChange={(e) => setOtp(e.target.value)}
+          className="tracking-[0.5em] text-center"
+          placeholder="------"
+        />
+
+        <Button
+          className="w-full"
+          onClick={verifyPhoneOtp}
+          disabled={loadingVerify}
+        >
+          {loadingVerify ? "Verifying..." : "Verify Phone"}
+        </Button>
+
+        {/* OPTIONAL: RESEND */}
+        <Button
+          variant="ghost"
+          className="w-full"
+          onClick={sendPhoneOtp}
+        >
+          Resend OTP
+        </Button>
+      </>
+    )}
+  </>
+)}
+
+        {/* ================= EXISTING EMAIL FLOW ================= */}
+        {(!isEmailEdit || stage === "main") && (
           <>
-            <Input
-              autoFocus
-              value={flow.value}
-              onChange={(e) => {
-                flow.setValue(e.target.value);
-              }}
-              placeholder={`Enter ${label}`}
-            />
+            {flow.error && (
+              <p className="text-sm text-red-500">{flow.error}</p>
+            )}
 
-            <Button
-              type="button"
-              className="w-full"
-              disabled={
-                flow.loading ||
-                !hasChanged ||
-                flow.value.trim() === ""
-              }
-              onClick={flow.sendOtp}
-            >
-              {flow.loading ? "Sending..." : "Continue"}
-            </Button>
-          </>
-        )}
+            {flow.step === "input" && (
+              <>
+                <Input
+                  value={flow.value}
+                  onChange={(e) => flow.setValue(e.target.value)}
+                />
 
-        {/* OTP STEP */}
-        {flow.step === "otp" && (
-          <>
-            <p className="text-sm text-muted-foreground">
-              Enter code sent to <b>{flow.value}</b>
-            </p>
+                <Button
+                  className="w-full"
+                  onClick={flow.sendOtp}
+                >
+                  Continue
+                </Button>
+              </>
+            )}
 
-            <Input
-              value={flow.otp}
-              maxLength={6}
-              onChange={(e) => flow.setOtp(e.target.value)}
-              className="tracking-[0.5em] text-center text-lg"
-              placeholder="------"
-            />
+            {flow.step === "otp" && (
+              <>
+                <Input
+                  value={flow.otp}
+                  onChange={(e) => flow.setOtp(e.target.value)}
+                />
 
-            <Button
-              type="button"
-              className="w-full"
-              disabled={flow.otp.length !== 6 || flow.loading}
-              onClick={() => flow.verifyOtp(handleSave)}
-            >
-              {flow.loading ? "Verifying..." : "Verify"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              disabled={flow.timer > 0}
-              onClick={flow.sendOtp}
-            >
-              {flow.timer > 0
-                ? `Resend in ${flow.timer}s`
-                : "Resend Code"}
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full"
-              onClick={flow.reset}
-            >
-              Change {label}
-            </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => flow.verifyOtp(handleSave)}
+                >
+                  Verify & Save
+                </Button>
+              </>
+            )}
           </>
         )}
       </div>
@@ -269,9 +406,8 @@ export default function ContactEditForm({
 
   return (
     <>
-      <Form className="space-y-6">
+      <div className="space-y-6">
 
-        {/* EMAIL */}
         <FormField label="Email Address">
           <div className="flex justify-between gap-4">
             <Input value={user.email} disabled />
@@ -285,7 +421,6 @@ export default function ContactEditForm({
           </div>
         </FormField>
 
-        {/* PHONE */}
         <FormField label="Phone Number">
           <div className="flex justify-between gap-4">
             <Input value={user.primaryNumber} disabled />
@@ -299,15 +434,15 @@ export default function ContactEditForm({
           </div>
         </FormField>
 
-      </Form>
+      </div>
 
-      {/* MODALS */}
       <ContactFieldEditor
         open={active === "email"}
         onClose={() => setActive(null)}
         label="Email"
         initialValue={user.email}
         field="email"
+        primaryNumber={user.primaryNumber}
       />
 
       <ContactFieldEditor

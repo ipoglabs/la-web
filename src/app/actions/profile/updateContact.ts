@@ -38,32 +38,71 @@ export async function updateContact({
     throw new Error("OTP verification required");
   }
 
-  /* ================= DUPLICATE CHECK ================= */
+  /* ================= SKIP IF SAME VALUE ================= */
   if (field === "email") {
+    const emailLower = trimmed.toLowerCase();
+
+    if (user.email === emailLower) {
+      return { success: true }; // no change
+    }
+  }
+
+  if (field === "primaryNumber") {
+    if (user.primaryNumber === trimmed) {
+      return { success: true }; // no change
+    }
+  }
+
+  /* ================= DUPLICATE CHECK ================= */
+
+  // 🔥 EMAIL
+  if (field === "email") {
+    const emailLower = trimmed.toLowerCase();
+
     const existing = await User.findOne({
-      email: trimmed,
-      _id: { $ne: user._id }, // exclude current user
+      $and: [
+        {
+          email: { $regex: `^${emailLower}$`, $options: "i" },
+        },
+        {
+          _id: { $ne: user._id },
+        },
+        {
+          accountStatus: { $ne: "Deleted" }, // 🔥 ignore deleted users
+        },
+      ],
     });
 
     if (existing) {
       throw new Error("Email already in use");
     }
+
+    user.email = emailLower;
   }
 
+  // 🔥 PRIMARY NUMBER
   if (field === "primaryNumber") {
     const existing = await User.findOne({
-      primaryNumber: trimmed,
-      _id: { $ne: user._id },
+      $and: [
+        { primaryNumber: trimmed },
+        { _id: { $ne: user._id } },
+        { accountStatus: { $ne: "Deleted" } }, // 🔥 ignore deleted users
+      ],
     });
 
     if (existing) {
       throw new Error("Phone number already in use");
     }
+
+    user.primaryNumber = trimmed;
+  }
+
+  // 🔥 SECONDARY NUMBERS (no duplicate check needed)
+  if (field === "secondaryNumber1" || field === "secondaryNumber2") {
+    user[field] = trimmed;
   }
 
   /* ================= UPDATE ================= */
-  user[field] = trimmed;
-
   await user.save();
 
   /* ================= CLEAN OTP ================= */
