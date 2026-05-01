@@ -136,8 +136,6 @@ deleteFeedback: { type: String, trim: true },
 );
 
 // indexes
-UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ primaryNumber: 1 }, { unique: true });
 UserSchema.index({ userId: 1 }, { unique: true });
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);

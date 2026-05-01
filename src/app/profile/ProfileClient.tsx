@@ -39,7 +39,7 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
         <Section title="Public Profile" hideEdit>
           <Row
             label="Profile ID"
-            value={user.id?.trim() || "—"}
+            value={user.profileId?.trim() || "—"}
             actionLabel="Edit"
             onAction={() => setActiveModal("publicProfile")}
           />

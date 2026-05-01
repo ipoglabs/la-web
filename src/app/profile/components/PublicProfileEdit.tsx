@@ -24,7 +24,7 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
   useAutoScrollInput();
   const router = useRouter();
 
-  const initialValue = useMemo(() => (user.id || "").trim(), [user.id]);
+  const initialValue = useMemo(() => (user.profileId || "").trim(), [user.profileId]);
 
   const [userId, setUserId] = useState(initialValue);
   const [errors, setErrors] = useState<string[]>([]);

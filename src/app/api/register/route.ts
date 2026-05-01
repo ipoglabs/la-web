@@ -97,8 +97,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // duplicate check (ONLY block active users)
-const dup = await User.findOne({
+   const dup = await User.findOne({
   $and: [
     {
       $or: [
@@ -107,28 +106,10 @@ const dup = await User.findOne({
       ],
     },
     {
-      accountStatus: { $nin: ["Deleted"] }, // 🔥 ONLY THIS IS NEEDED
+      accountStatus: { $nin: ["Deleted"] },
     },
   ],
-})
-  .select("email primaryNumber accountStatus")
-  .lean();
-
-if (dup) {
-  if (dup.email === payload.email) {
-    return NextResponse.json(
-      { error: "That email is already in use." },
-      { status: 409 }
-    );
-  }
-
-  if (dup.primaryNumber === payload.primaryNumber) {
-    return NextResponse.json(
-      { error: "That phone number is already in use." },
-      { status: 409 }
-    );
-  }
-}
+});
 
     // ✅ generate incremental userId
     const userId = await getNextUserId(12);

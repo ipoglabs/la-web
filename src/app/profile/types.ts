@@ -1,5 +1,6 @@
 export type ProfileUser = {
   id: string;
+  profileId: string;
   username: string;
   firstName: string;
   lastName: string;

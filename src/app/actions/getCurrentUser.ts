@@ -24,6 +24,7 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
 
   return {
     id: user._id?.toString() || "",   // ✅ FIXED
+    profileId: user.userId || "",
     username: user.username || "",
     firstName: user.firstName || "",
     lastName: user.lastName || "",
