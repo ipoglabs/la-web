@@ -44,25 +44,9 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     return () => clearInterval(t);
   }, [timer]);
 
-  const sendOtpHandler = async () => {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
+  const sendOtpHandler = async (value: string) => {
+  if (!value) {
     setError("Value is required");
-    return;
-  }
-
-  if (type === "email" && !isValidEmail(trimmed)) {
-    setError("Enter a valid email");
-    return;
-  }
-
-  if (
-    type === "phone" &&
-    !isValidPhone(trimmed) &&
-    !trimmed.startsWith("mock")
-  ) {
-    setError("Enter a valid phone number");
     return;
   }
 
@@ -70,10 +54,13 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
   setError("");
 
   try {
-    const finalValue =
-      type === "phone" ? getFullPhone() : trimmed;
+    console.log("SEND OTP:", value);   // ✅ debug
 
-    await sendOtp({ channel: type, value: finalValue });
+    await sendOtp({
+      channel: type,
+        value: String(value),   // ✅ FORCE STRING
+    });
+
     setStep("otp");
     setTimer(30);
     toast.success("OTP sent successfully");
@@ -111,7 +98,7 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
   try {
     await verifyOtpApi({
       channel: type,
-      value,
+      value: String(value),
       otp,
     });
 
@@ -498,14 +485,19 @@ function PhoneEditModal({ open, onClose, user }: any) {
   const flow = useOtpFlow(user.primaryNumber, "phone");
   const emailFlow = useOtpFlow(user.email, "email");
 
-  useEffect(() => {
-    if (open) {
-      setStage("email");
-      flow.reset();
-      emailFlow.reset();
-      flow.setValue(user.primaryNumber);
-    }
-  }, [open]);
+ useEffect(() => {
+  if (open) {
+    setStage("email");
+
+    flow.reset();
+    emailFlow.reset();
+
+    flow.setValue(user.primaryNumber);
+
+    // ✅ FIX: set email
+    emailFlow.setValue(user.email);
+  }
+}, [open]);
 
   const handleSave = async () => {
   const fullPhone = getFullPhone();
@@ -562,7 +554,7 @@ function PhoneEditModal({ open, onClose, user }: any) {
 
           <Button
             className="w-full"
-            onClick={emailFlow.sendOtp}
+            onClick={() => emailFlow.sendOtp(user.email)}
           >
             Send code
           </Button>
@@ -683,10 +675,10 @@ function PhoneEditModal({ open, onClose, user }: any) {
 
       <Button
   className="w-full"
-  onClick={() => {
-    const fullPhone = getFullPhone();   // ✅ HERE
-    flow.sendOtp(fullPhone);
-  }}
+onClick={() => {
+  const fullPhone = getFullPhone();
+  flow.sendOtp(String(fullPhone))   // ✅ correct
+}}
 >
   Send code
 </Button>
@@ -707,7 +699,7 @@ function PhoneEditModal({ open, onClose, user }: any) {
             <p className="text-sm text-muted-foreground">
               Sent to{" "}
              <span className="font-medium text-foreground">
-                +{country.dial} {flow.value}
+                 {flow.value}
               </span>
             </p>
 
@@ -746,9 +738,9 @@ function PhoneEditModal({ open, onClose, user }: any) {
        <Button
           className="w-full"
           onClick={() => {
-            const fullPhone = getFullPhone();
-            flow.verifyOtp(fullPhone, handleSave);
-          }}
+          const fullPhone = getFullPhone();
+          flow.verifyOtp(fullPhone, handleSave);
+        }}
         >
           Verify & Save
         </Button>
@@ -761,10 +753,10 @@ function PhoneEditModal({ open, onClose, user }: any) {
 
          <button
             type="button"
-            onClick={() => {
-              const fullPhone = getFullPhone();
-              flow.sendOtp(fullPhone);
-            }}
+           onClick={() => {
+            const fullPhone = getFullPhone();
+            flow.sendOtp(fullPhone);
+          }}
           >
             Resend
           </button>
