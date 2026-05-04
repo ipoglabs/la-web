@@ -19,7 +19,116 @@ import type { ProfileUser } from "./types";
 
 type ActiveModal = null | "publicProfile" | "basic" | "location" | "resetPassword";
 
+function InfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="px-4 py-3.5 border-b border-slate-100 last:border-0">
+      <div className="text-xs font-semibold text-slate-500 mb-1">
+        {label}
+      </div>
+      <div className="text-sm font-semibold text-slate-900">
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
 
+function ContactRow({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value?: string | null;
+  onClick?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 last:border-0 gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-semibold text-slate-500">{label}</div>
+        <div className="text-sm font-semibold text-slate-900 mt-0.5 truncate">
+          {value || "—"}
+        </div>
+      </div>
+
+      {onClick && (
+        <button
+          type="button"
+          onClick={onClick}
+          className="shrink-0 text-xs font-semibold text-slate-500 border border-slate-200 px-3.5 py-1.5 rounded-lg hover:border-slate-400 hover:text-slate-800"
+        >
+          Edit
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SettingsRow({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-4 py-3.5 border-b border-slate-100 last:border-0 text-left"
+    >
+      <span className="text-sm font-medium text-slate-800">{label}</span>
+      <span className="text-slate-300">›</span>
+    </button>
+  );
+}
+
+function Section({
+  label,
+  onEdit,
+  children,
+}: {
+  label: string;
+  onEdit?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between px-1 mb-2">
+        <span className="text-sm font-bold text-slate-700">{label}</span>
+
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function formatDOB(date?: string) {
+  if (!date) return "—";
+
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 export default function ProfileClient({ user }: { user: ProfileUser }) {
 
@@ -31,90 +140,125 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
     <>
       <AppHeader />
 
-         {/* MAIN */}
-    <main className="min-h-screen flex justify-center bg-gray-50 px-4 py-6">
-      <div className="w-full max-w-2xl space-y-8">
+{/* MAIN */}
+<main className="bg-slate-50 min-h-screen">
+  <div className="max-w-xl mx-auto px-4 pb-10 flex flex-col gap-6">
 
-        {/* Sections */}
-        <Section title="Public Profile" hideEdit>
-          <Row
-            label="Profile ID"
-            value={user.profileId?.trim() || "—"}
-            actionLabel="Edit"
-            onAction={() => setActiveModal("publicProfile")}
-          />
-        </Section>
+    {/* ── Avatar Hero ── */}
+    <div className="flex items-center gap-3.5 pt-5 pb-1">
 
-        <Section title="Basic Info" onEdit={() => setActiveModal("basic")}>
-          <Row label="First Name" value={user.firstName} />
-          <Row label="Last Name" value={user.lastName} />
-          <Row label="Role" value={user.role || "—"} />
-          {user.roleDescription && (
-            <Row label="Role Description" value={user.roleDescription} />
-          )}
-          <Row label="DOB" value={user.dateOfBirth} />
-        </Section>
+      <div className="relative shrink-0">
+        <div className="size-14 rounded-full bg-slate-900 flex items-center justify-center text-white text-xl font-bold shadow-sm">
+          {user.firstName?.charAt(0) || "U"}
+        </div>
 
-        <Section title="Contact Information" hideEdit>
-          <ContactEditForm user={user} />
-        </Section>
+        <button
+          type="button"
+          className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-slate-800"
+        >
+          ✎
+        </button>
+      </div>
 
-        <Section title="Location" onEdit={() => setActiveModal("location")}>
-          <Row label="Country" value={user.address?.country || user.nationality || "—"} />
-          <Row label="State" value={user.address?.state || "—"} />
-          <Row label="City" value={user.address?.city || user.locality || "—"} />
-          <Row label="Postal Code" value={user.address?.postalCode || "—"} />
-        </Section>
+      <div className="min-w-0">
+        <h2 className="text-base font-bold text-slate-900">
+          {user.firstName} {user.lastName}
+        </h2>
+        <p className="text-xs text-slate-400 mt-0.5">
+          @{user.profileId} · {user.role || "User"}
+        </p>
+      </div>
 
-        <Section title="Account Settings" hideEdit>
-          <div className="space-y-3">
+    </div>
 
-            {/* Reset Password */}
-            <button
-              type="button"
-              onClick={() => setActiveModal("resetPassword")}
-              className="w-full border rounded-lg px-4 py-3 text-left hover:bg-gray-50 transition"
-            >
-              <div className="font-medium text-gray-900">Reset Password</div>
-              <div className="text-sm text-gray-500">
-                Change your account password securely
-              </div>
-            </button>
+    {/* ── Public Profile ── */}
+    <Section label="Public Profile" onEdit={() => setActiveModal("publicProfile")}>
+      <InfoRow
+        label="Profile ID"
+        value={user.profileId?.trim() || "—"}
+      />
+    </Section>
 
-            {/* 🔥 Danger Zone (NON-FLOATING) */}
-            <div className="flex flex-col md:flex-row md:items-center rounded-lg border border-yellow-300 bg-gradient-to-r from-yellow-50 via-yellow-100 to-yellow-50 px-4 py-3">
+    {/* ── Basic Info ── */}
+    <Section label="Basic Info" onEdit={() => setActiveModal("basic")}>
+      <InfoRow label="First Name" value={user.firstName} />
+      <InfoRow label="Last Name" value={user.lastName} />
+      <InfoRow
+        label="Date of Birth"
+        value={
+          user.dateOfBirth
+            ? new Date(user.dateOfBirth).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "—"
+        }
+      />
+      <InfoRow label="Role" value={user.role || "—"} />
+      {user.roleDescription && (
+        <InfoRow label="Role Description" value={user.roleDescription} />
+      )}
+    </Section>
 
-              {/* Left: Icon + text */}
-              <div className="flex items-center flex-1">
-                <ShieldAlert className="h-8 w-8 text-yellow-600 mr-2" />
-                <div>
-                  <div className="text-base font-semibold text-yellow-800">
-                    Danger zone
-                  </div>
-                  <div className="text-sm text-yellow-900">
-                    Need to delete your account? This action is permanent.
-                  </div>
-                </div>
-              </div>
+   <Section label="Contact Information" hideEdit> <ContactEditForm user={user} /> </Section>
 
-              {/* Right: Button */}
-              <div className="mt-3 md:mt-0 md:ml-4">
-                <button
-                  onClick={() => router.push("/profile/delete")}
-                  className="inline-flex items-center gap-2 rounded-full border border-rose-400 bg-rose-100 px-5 py-2 text-sm text-rose-700 hover:bg-rose-500 hover:text-white"
-                >
-                  <Trash2 className="h-5 w-5" />
-                  Delete Account
-                </button>
-              </div>
+    {/* ── Location ── */}
+    <Section label="Location" onEdit={() => setActiveModal("location")}>
+      <InfoRow label="Country" value={user.address?.country || user.nationality || "—"} />
+      <InfoRow label="State" value={user.address?.state || "—"} />
+      <InfoRow label="City" value={user.address?.city || user.locality || "—"} />
+      <InfoRow label="Postal Code" value={user.address?.postalCode || "—"} />
+    </Section>
 
-            </div>
+    {/* ── Account Settings ── */}
+    <Section label="Account Settings">
+      <SettingsRow
+        label="Reset Password"
+        onClick={() => setActiveModal("resetPassword")}
+      />
+      <SettingsRow label="Two-Factor Authentication" />
+      <SettingsRow label="Notifications" />
+    </Section>
 
+    {/* ── Danger Zone ── */}
+    <div>
+      <div className="px-1 mb-2">
+        <span className="text-sm font-bold text-slate-700">
+          Danger Zone
+        </span>
+      </div>
+
+      <div className="rounded-2xl border border-yellow-200 bg-yellow-50 overflow-hidden">
+
+        <div className="px-4 pt-4 pb-3 flex items-start gap-3">
+          <ShieldAlert className="size-5 text-yellow-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-yellow-900">
+              Permanent action
+            </p>
+            <p className="text-sm text-yellow-800 mt-0.5">
+              Deleting your account is irreversible.
+            </p>
           </div>
-        </Section>
+        </div>
+
+        <div className="px-4 pb-4">
+          <button
+            type="button"
+            onClick={() => router.push("/profile/delete")}
+            className="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-white px-4 py-1.5 text-sm font-semibold text-rose-600 hover:bg-rose-500 hover:text-white"
+          >
+            <Trash2 className="size-3.5" />
+            Delete Account
+          </button>
+        </div>
 
       </div>
-    </main>
+    </div>
+
+  </div>
+</main>
 
    
 

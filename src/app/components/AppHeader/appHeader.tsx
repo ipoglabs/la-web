@@ -151,7 +151,7 @@ export default function AppHeader() {
                       Chat
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push("/profile")}>
-                      Your Profile
+                      Profile
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                       Logout

@@ -32,44 +32,31 @@ export async function updateContact({
   const normalized = normalizeTarget(channel, trimmed);
 
   /* ================= OTP CHECK ================= */
-  const otpRecord: any = await Otp.findOne({ target: normalized });
+  const otpRecord: any = await Otp.findOne({
+    target: normalized,
+    verified: true,
+    expiresAt: { $gt: new Date() }, // ✅ ensure not expired
+  });
 
-  if (!otpRecord || !otpRecord.verified) {
+  if (!otpRecord) {
     throw new Error("OTP verification required");
   }
 
-  /* ================= SKIP IF SAME VALUE ================= */
+  /* ================= EMAIL ================= */
   if (field === "email") {
     const emailLower = trimmed.toLowerCase();
 
+    // skip if same
     if (user.email === emailLower) {
-      return { success: true }; // no change
+      return { success: true };
     }
-  }
 
-  if (field === "primaryNumber") {
-    if (user.primaryNumber === trimmed) {
-      return { success: true }; // no change
-    }
-  }
-
-  /* ================= DUPLICATE CHECK ================= */
-
-  // 🔥 EMAIL
-  if (field === "email") {
-    const emailLower = trimmed.toLowerCase();
-
+    // duplicate check
     const existing = await User.findOne({
       $and: [
-        {
-          email: { $regex: `^${emailLower}$`, $options: "i" },
-        },
-        {
-          _id: { $ne: user._id },
-        },
-        {
-          accountStatus: { $ne: "Deleted" }, // 🔥 ignore deleted users
-        },
+        { email: { $regex: `^${emailLower}$`, $options: "i" } },
+        { _id: { $ne: user._id } },
+        { accountStatus: { $ne: "Deleted" } },
       ],
     });
 
@@ -80,13 +67,19 @@ export async function updateContact({
     user.email = emailLower;
   }
 
-  // 🔥 PRIMARY NUMBER
+  /* ================= PRIMARY NUMBER ================= */
   if (field === "primaryNumber") {
+    // skip if same
+    if (user.primaryNumber === normalized) {
+      return { success: true };
+    }
+
+    // duplicate check
     const existing = await User.findOne({
       $and: [
-        { primaryNumber: trimmed },
+        { primaryNumber: normalized },
         { _id: { $ne: user._id } },
-        { accountStatus: { $ne: "Deleted" } }, // 🔥 ignore deleted users
+        { accountStatus: { $ne: "Deleted" } },
       ],
     });
 
@@ -94,15 +87,15 @@ export async function updateContact({
       throw new Error("Phone number already in use");
     }
 
-    user.primaryNumber = trimmed;
+    user.primaryNumber = normalized; // ✅ ALWAYS save normalized
   }
 
-  // 🔥 SECONDARY NUMBERS (no duplicate check needed)
+  /* ================= SECONDARY NUMBERS ================= */
   if (field === "secondaryNumber1" || field === "secondaryNumber2") {
-    user[field] = trimmed;
+    user[field] = normalized; // ✅ keep consistent format
   }
 
-  /* ================= UPDATE ================= */
+  /* ================= SAVE ================= */
   await user.save();
 
   /* ================= CLEAN OTP ================= */

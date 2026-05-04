@@ -56,10 +56,10 @@ export default function DeleteAccountConfirmPage() {
 
     setStage(4);
 
-    // optional: redirect after 2s
-    setTimeout(() => {
-      router.push("/");
-    }, 2000);
+    // // optional: redirect after 2s
+    // setTimeout(() => {
+    //   router.push("/");
+    // }, 2000);
 
   } catch (e: any) {
     setError(e?.message || "Failed to delete account");

@@ -17,13 +17,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Rating required" }, { status: 400 });
   }
 
+  // ✅ Prevent duplicate review
+  const existing = await Review.findOne({
+    userId: body.userId,
+    reviewerId: session.userId,
+  });
+
+  if (existing) {
+    return NextResponse.json(
+      { error: "You already reviewed this user" },
+      { status: 400 }
+    );
+  }
+
   const review = await Review.create({
     userId: body.userId,
     reviewerId: session.userId,
-    name: session.firstName || "Anonymous",
+    name: session.username || session.email || "Anonymous",
     rating: body.rating,
     comment: body.comment || "",
   });
 
-  return NextResponse.json({ success: true, review });
+  return NextResponse.json({
+    success: true,
+    review,
+  });
 }

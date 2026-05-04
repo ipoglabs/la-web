@@ -15,7 +15,7 @@ export async function GET(
 
   return NextResponse.json({
     reviews: reviews.map((r) => ({
-      id: r._id.toString(),
+      id: r._id.toString(),   // ✅ CRITICAL FIX
       name: r.name,
       rating: r.rating,
       comment: r.comment,
