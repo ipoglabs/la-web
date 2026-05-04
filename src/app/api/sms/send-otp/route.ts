@@ -4,13 +4,45 @@ import phoneAttemptStore from '@/lib/phoneAttemptStore';
 
 export const runtime = 'nodejs';
 
+/* ---------------- NORMALIZE ---------------- */
+function normalizePhone(phone: string) {
+  if (!phone) throw new Error('Phone is required');
+
+  // mock support
+  if (phone.startsWith('mock')) return phone;
+
+  const cleaned = phone.replace(/\s+/g, '');
+
+  if (!/^\+\d{10,15}$/.test(cleaned)) {
+    throw new Error('Invalid phone format. Use +<countrycode><number>');
+  }
+
+  return cleaned;
+}
+
+/* ---------------- API ---------------- */
 export async function POST(req: Request) {
   const { phone } = await req.json().catch(() => ({} as any));
+
   if (!phone) {
     return NextResponse.json({ error: 'Phone is required' }, { status: 400 });
   }
 
-  const normalized = String(phone).trim();
+  let normalized: string;
+
+  try {
+    normalized = normalizePhone(String(phone));
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 400 });
+  }
+
+  console.log('FINAL PHONE SENT:', normalized);
+
+  // Mock mode
+  if (normalized.startsWith('mock')) {
+    phoneAttemptStore[normalized] = { attempts: 0, lockedUntil: null };
+    return NextResponse.json({ success: true, mock: true });
+  }
 
   const sid = process.env.TWILIO_ACCOUNT_SID!;
   const token = process.env.TWILIO_AUTH_TOKEN!;
@@ -18,28 +50,25 @@ export async function POST(req: Request) {
   const twilio = (await import('twilio')).default(sid, token);
 
   try {
-    const verification = await twilio.verify.v2
-      .services(verifySid)
-      .verifications.create({
-        to: normalized, // e.g. +447911123456
-        channel: 'sms',
-      });
+    await twilio.verify.v2.services(verifySid).verifications.create({
+      to: normalized,
+      channel: 'sms',
+    });
 
-    // ✅ Reset attempts & lock on (re)send so user gets a clean slate for this code
     phoneAttemptStore[normalized] = { attempts: 0, lockedUntil: null };
-
-    // Optional: you can surface verification.status if needed
-    // console.log(`[Twilio Verify] Sent to ${normalized}:`, verification.status);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('Verify send error:', err);
-    // Provide cleaner messages for common Twilio errors
-    const msg =
-      err?.message ||
-      (err?.code === 20003
-        ? 'Authentication error with SMS provider'
-        : 'Failed to send OTP');
-    return NextResponse.json({ error: msg }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        error:
+          err?.code === 20003
+            ? 'Authentication error with SMS provider'
+            : err?.message || 'Failed to send OTP',
+      },
+      { status: 500 }
+    );
   }
 }

@@ -61,7 +61,7 @@ export const phoneSchema = z.object({
   primaryNumber: z
     .string()
     .trim()
-    .regex(/^\+?[0-9]{7,15}$/, "Enter a valid phone number"),
+    .regex(/^\+[1-9]\d{7,14}$/, "Enter a valid phone number"), // ✅ strict E.164
 
   secondaryNumber1: optionalString,
   secondaryNumber2: optionalString,

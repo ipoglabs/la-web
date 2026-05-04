@@ -18,10 +18,11 @@ const LOCK_MINUTES = 15;
 /** Country code options */
 const CODE_OPTIONS = [
   { value: '+65', view: '+65 [SG]' },
-  { value: '+95', view: '+95 [IND]' }, // per your ask
+  { value: '+91', view: '+91 [IND]' }, // ✅ FIXED
   { value: '+44', view: '+44 [UK]' },
   { value: 'mock', view: 'Mock [TEST]' },
-] as const;
+];
+
 type CodeValue = (typeof CODE_OPTIONS)[number]['value'];
 
 /** Generic split helper for any stored number */
@@ -175,12 +176,26 @@ export default function PhoneVerificationPage() {
     }
   };
 
+ function normalizePhone(phone: string) {
+  if (!phone) throw new Error('Phone is required');
+
+  if (phone.startsWith('mock')) return phone;
+
+  const cleaned = phone.replace(/\s+/g, '');
+
+  if (!/^\+\d{10,15}$/.test(cleaned)) {
+    throw new Error('Invalid phone number');
+  }
+
+  return cleaned;
+}
+
   // ---------- Actions ----------
   const sendOtp = async () => {
     const composed =
       primaryCode === 'mock'
         ? `mock ${primaryBody.trim()}`
-        : `${primaryCode} ${primaryBody.trim()}`.trim();
+        : `${primaryCode}${primaryBody.trim()}`; // ✅ FIXED
 
     if (!primaryBody.trim()) {
       setErrors({ primaryNumber: 'Enter your phone number.' });
@@ -270,10 +285,9 @@ export default function PhoneVerificationPage() {
       );
     }
 
-    const composed =
-      primaryCode === 'mock'
+    const composed = primaryCode === 'mock'
         ? `mock ${primaryBody.trim()}`
-        : `${primaryCode} ${primaryBody.trim()}`.trim();
+        : `${primaryCode}${primaryBody.trim()}`; // ✅ FIXED
 
     setLoadingVerify(true);
     try {
