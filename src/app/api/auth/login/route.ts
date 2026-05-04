@@ -47,17 +47,17 @@ export async function POST(req: Request) {
     // IMPORTANT:
     // Deleted / suspended users must behave like invalid login.
     if (
-      !user ||
-      user.isDeleted === true ||
-      user.isSuspended === true ||
-      user.accountStatus === "Suspended" ||
-      user.accountStatus === "Deleted"
-    ) {
-      return NextResponse.json(
-        { error: "Invalid credentials." },
-        { status: 401 }
-      );
-    }
+  !user ||
+  user.isDeleted === true ||
+  user.isSuspended === true ||
+  user.accountStatus === "Suspended" ||
+  user.accountStatus === "Deleted"
+) {
+  return NextResponse.json(
+    { error: "Account not found with that email / phone." }, // 👈 change here
+    { status: 404 }               // 👈 also important
+  );
+}
 
     if (!user.password) {
       return NextResponse.json(

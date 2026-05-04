@@ -37,30 +37,29 @@ export default function ResponsiveModal({
 
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={() => {}}>
-        <DialogContent
-          className="sm:max-w-lg max-h-[85vh] flex flex-col"
-          onInteractOutside={(e) => e.preventDefault()}   // ❌ disable outside click
-          onEscapeKeyDown={(e) => e.preventDefault()}     // ❌ disable ESC
-        >
-          <DialogHeader className="flex flex-row items-center justify-between">
-            <DialogTitle>{title}</DialogTitle>
+      <Dialog open={open} onOpenChange={handleClose}>
+  <DialogContent
+    className="sm:max-w-lg max-h-[85vh] flex flex-col [&>button]:hidden"
+    onInteractOutside={(e) => e.preventDefault()}
+    onEscapeKeyDown={(e) => e.preventDefault()}
+  >
+    <DialogHeader className="flex flex-row items-center justify-between">
+      <DialogTitle>{title}</DialogTitle>
 
-            {/* ❌ Only close via X */}
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-md p-1 hover:bg-slate-100"
-            >
-              <X className="size-4" />
-            </button>
-          </DialogHeader>
+      <button
+        type="button"
+        onClick={handleClose}
+        className="rounded-md p-1 hover:bg-slate-100"
+      >
+        <X className="size-4" />
+      </button>
+    </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto pr-1">
-            {children}
-          </div>
-        </DialogContent>
-      </Dialog>
+    <div className="flex-1 overflow-y-auto pr-1">
+      {children}
+    </div>
+  </DialogContent>
+</Dialog>
     );
   }
 

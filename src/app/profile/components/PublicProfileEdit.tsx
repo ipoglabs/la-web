@@ -180,7 +180,7 @@ export default function PublicProfileEdit({ user, onSuccess }: Props) {
       {/* PREVIEW */}
       <p className="text-sm text-muted-foreground mt-2">
         Your public profile will{" "}
-        <b>lokalads.com/{userId.trim() || "your-id"}</b>
+        <b>lokalads.com/profile/{userId.trim() || "your-id"}</b>
       </p>
 
       {/* ACTION */}
