@@ -75,6 +75,17 @@ export async function verifyOtpService({
     inputOtp: otp,
   });
 
+  /* ================= VALIDATION ================= */
+  if (channel === "phone" && !/^\+\d{10,15}$/.test(normalized)) {
+    throw new Error("Invalid phone number");
+  }
+
+  /* ================= MOCK CHECK ================= */
+  const isIndiaMock =
+    channel === "phone" &&
+    process.env.NODE_ENV !== "production" &&
+    /^\+91\d{10}$/.test(normalized);
+
   /* ================= FETCH RECORD ================= */
   const record: any = await Otp.findOne({ target: normalized });
 
@@ -105,10 +116,45 @@ export async function verifyOtpService({
     throw new Error("OTP expired.");
   }
 
-  /* ================= OTP MATCH ================= */
   const inputOtp = String(otp).trim();
-  const storedOtp = String(record.code).trim(); // ✅ FIX
 
+  /* =========================================================
+     ✅ INDIA MOCK FLOW (BYPASS DB OTP)
+     ========================================================= */
+  if (isIndiaMock) {
+    console.log("[MOCK VERIFY FLOW]", normalized);
+
+    if (inputOtp === "111111") {
+      console.log("✅ MOCK OTP VERIFIED");
+
+      record.verified = true;
+      record.attempts = 0;
+      record.lockedUntil = null;
+
+      await record.save();
+
+      return { success: true };
+    }
+
+    // ❌ WRONG MOCK OTP
+    record.attempts = (record.attempts || 0) + 1;
+
+    if (record.attempts >= OTP_MAX_ATTEMPTS) {
+      record.lockedUntil = new Date(
+        Date.now() + OTP_LOCK_MINUTES * 60 * 1000
+      );
+      console.log("🔒 LOCKING USER UNTIL", record.lockedUntil);
+    }
+
+    await record.save();
+
+    throw new Error("Wrong code — expected 111111");
+  }
+
+  /* =========================================================
+     ✅ NORMAL FLOW
+     ========================================================= */
+  const storedOtp = String(record.code).trim();
   const isValid = inputOtp === storedOtp;
 
   if (!isValid) {

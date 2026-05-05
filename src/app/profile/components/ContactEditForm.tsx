@@ -28,6 +28,10 @@ const isValidEmail = (v: string) =>
 const isValidPhone = (v: string) =>
   /^[0-9+\- ]{7,15}$/.test(v);
 
+function isIndiaMock(value: string) {
+  return value.replace(/\s+/g, "").startsWith("+91");
+}
+
 /* ================= OTP HOOK ================= */
 function useOtpFlow(initialValue: string, type: "email" | "phone") {
   const [step, setStep] = useState<"input" | "otp">("input");
@@ -43,22 +47,56 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     const t = setInterval(() => setTimer((p) => p - 1), 1000);
     return () => clearInterval(t);
   }, [timer]);
+  
 
-  const sendOtpHandler = async (value: string) => {
-  if (!value) {
-    setError("Value is required");
+ const sendOtpHandler = async (
+  value: string,
+  isVerificationFlow = false
+) => {
+  const v = String(value || "").trim();
+
+  if (!v) {
+    setError(type === "email" ? "Email is required" : "Phone is required");
     return;
+  }
+
+  let normalized = v;
+
+  if (type === "email") {
+    normalized = v.toLowerCase();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      setError("Enter a valid email address");
+      return;
+    }
+  } else {
+    normalized = v.replace(/\s+/g, "");
   }
 
   setLoading(true);
   setError("");
 
   try {
-    console.log("SEND OTP:", value);   // ✅ debug
+    // ✅ duplicate check only when updating to a NEW email
+    // ❌ skip when verifying existing email
+    if (type === "email" && !isVerificationFlow) {
+      const res = await fetch("/api/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized }),
+      });
+
+      const data = await res.json();
+
+      if (data.exists) {
+        setError("Email already in use");
+        return;
+      }
+    }
 
     await sendOtp({
       channel: type,
-        value: String(value),   // ✅ FORCE STRING
+      value: normalized,
     });
 
     setStep("otp");
@@ -71,11 +109,13 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
   }
 };
 
-  const verifyOtpHandler = async (
+const verifyOtpHandler = async (
   value: string,
   onSuccess?: () => void
 ) => {
-  if (!value || typeof value !== "string") {
+  const v = String(value || "").trim();
+
+  if (!v) {
     setError("Invalid value");
     return;
   }
@@ -85,10 +125,21 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
     return;
   }
 
-  // ✅ Mock support
-  if (value.startsWith("mock") && otp === "111111") {
-    toast.success("Mock OTP verified");
-    onSuccess?.();
+  const normalized =
+    type === "phone" ? v.replace(/\s+/g, "") : v.toLowerCase();
+
+  // Mock support (India)
+  if (
+    type === "phone" &&
+    process.env.NODE_ENV !== "production" &&
+    /^\+91\d{10}$/.test(normalized)
+  ) {
+    if (otp === "111111") {
+      toast.success("OTP verified (test mode)");
+      onSuccess?.();
+    } else {
+      setError("Wrong code — expected 111111");
+    }
     return;
   }
 
@@ -98,7 +149,7 @@ function useOtpFlow(initialValue: string, type: "email" | "phone") {
   try {
     await verifyOtpApi({
       channel: type,
-      value: String(value),
+      value: normalized,
       otp,
     });
 
@@ -157,14 +208,16 @@ function EmailEditModal({ open, onClose, user }: any) {
     }
   }, [open]);
 
+  
+
   const sendPhoneOtp = async () => {
     const phone = user.primaryNumber;
 
-    if (phone.startsWith("mock")) {
-      toast.success("Use 111111");
-      setOtpSent(true);
-      return;
-    }
+    if (isIndiaMock(phone)) {
+  toast.success("Use 111111");
+  setOtpSent(true);
+  return;
+}
 
     setLoadingSend(true);
 
@@ -178,37 +231,86 @@ function EmailEditModal({ open, onClose, user }: any) {
   };
 
   const verifyPhoneOtp = async () => {
-    if (user.primaryNumber.startsWith("mock")) {
-      if (otp === "111111") {
-        setStage("main");
-        return;
-      }
-    }
+    if (isIndiaMock(user.primaryNumber)) {
+  if (otp === "111111") {
+    setStage("main");
+  } else {
+    setError("Wrong code — expected 111111");
+  }
+  return;
+}
 
     setLoadingVerify(true);
 
-    await fetch("/api/sms/verify-otp", {
-      method: "POST",
-      body: JSON.stringify({
-        phone: user.primaryNumber,
-        otp,
-      }),
-    });
+   const normalizedPhone = user.primaryNumber.replace(/\s+/g, "");
+
+      await fetch("/api/sms/verify-otp", {
+        method: "POST",
+        body: JSON.stringify({
+          phone: normalizedPhone, 
+          otp,
+        }),
+      });
 
     setLoadingVerify(false);
     setStage("main");
   };
 
-  const handleSave = async () => {
+ const handleSave = async () => {
+  const email = flow.value.trim().toLowerCase();
+
+  // ✅ validation
+  if (!email) {
+    flow.setError("Email is required");
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    flow.setError("Enter a valid email address");
+    return;
+  }
+
+  // ✅ prevent same email
+  if (email === user.email?.toLowerCase()) {
+    toast.info("You are already using this email");
+    return;
+  }
+
+  // ✅ prevent double submit
+  if (flow.loading) return;
+
+  try {
     await updateContact({
       field: "email",
-      value: flow.value.trim(),
+      value: email,
     });
 
-    toast.success("Email updated");
-    router.refresh();
+    toast.success("Email updated successfully");
+
+    flow.reset();
     onClose();
-  };
+
+  } catch (e: any) {
+    const msg = e?.message || "";
+
+    console.error("UPDATE ERROR:", msg);
+
+    /* ================= DUPLICATE ================= */
+    if (msg.includes("already in use")) {
+      flow.setError("This email is already registered");
+      return;
+    }
+
+    /* ================= OTP ================= */
+    if (msg.includes("OTP")) {
+      flow.setError("Please verify OTP again");
+      return;
+    }
+
+    /* ================= FALLBACK ================= */
+    flow.setError("Failed to update email");
+  }
+};
 
   return (
     <ResponsiveModal open={open} onOpenChange={() => onClose()} title="Update Email">
@@ -336,125 +438,131 @@ function EmailEditModal({ open, onClose, user }: any) {
 
         {/* STEP 2 */}
         {/* ================= STEP 2: EMAIL EDIT (NEW UI) ================= */}
-{stage === "main" && (
-  <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+        {stage === "main" && (
+          <div className="rounded-lg border border-border bg-card p-6 space-y-4">
 
-    {/* ── Stage: enter-email ── */}
-    {flow.step === "input" && (
-      <>
-        <div>
-          <h2 className="text-base font-semibold leading-tight">
-            Update your email
-          </h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Enter your new email address to continue.
-          </p>
-        </div>
+            {/* ── Stage: enter-email ── */}
+            {flow.step === "input" && (
+              <>
+                <div>
+                  <h2 className="text-base font-semibold leading-tight">
+                    Update your email
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Enter your new email address to continue.
+                  </p>
+                </div>
 
-        <div className="space-y-3">
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
 
-            <Input
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="you@example.com"
-              value={flow.value}
-              onChange={(e) => flow.setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") flow.sendOtp();
-              }}
-              className="pl-9"
-            />
+                    <Input
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoFocus
+                      placeholder="you@example.com"
+                      value={flow.value}
+                      onChange={(e) => flow.setValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          flow.sendOtp(flow.value);
+                        }
+                      }}
+                      className="pl-9"
+                    />
+                  </div>
+
+                  {flow.error && (
+                    <p className="text-sm text-destructive">{flow.error}</p>
+                  )}
+
+                  <Button className="w-full" onClick={() => flow.sendOtp(flow.value, false)}>
+                    Send code
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* ── Stage: verify-otp ── */}
+            {flow.step === "otp" && (
+              <>
+                <div>
+                  <h2 className="text-base font-semibold leading-tight">
+                    Enter the 6-digit code
+                  </h2>
+
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-sm text-muted-foreground">
+                      Sent to{" "}
+                      <span className="font-medium text-foreground">
+                        {flow.value}
+                      </span>
+                    </p>
+
+                    <span className="text-muted-foreground">·</span>
+
+                    <button
+                      type="button"
+                      onClick={() => flow.reset()}
+                      className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+
+                {/* OTP INPUT */}
+                <Input
+                  value={flow.otp}
+                  maxLength={6}
+                  onChange={(e) => flow.setOtp(e.target.value)}
+                  className="text-center tracking-[0.5em] text-lg"
+                  placeholder="------"
+                />
+
+                {/* STATUS */}
+                {flow.loading ? (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Verifying...
+                  </p>
+                ) : flow.error ? (
+                  <p className="text-sm text-destructive text-center">
+                    {flow.error}
+                  </p>
+                ) : null}
+
+                {/* VERIFY BUTTON */}
+                <Button
+                  className="w-full"
+                  onClick={() =>
+                    flow.verifyOtp(flow.value, async () => {
+                      await handleSave();
+                    })
+                  }
+                >
+                  Verify & Save
+                </Button>
+
+                {/* RESEND */}
+                <div className="flex items-center justify-center gap-1.5 text-sm">
+                  <span className="text-muted-foreground">
+                    Didn’t receive it?
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => flow.sendOtp(flow.value, false)}
+                    className="font-medium text-foreground hover:underline"
+                  >
+                    Resend
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-
-          {flow.error && (
-            <p className="text-sm text-destructive">{flow.error}</p>
-          )}
-
-          <Button className="w-full" onClick={flow.sendOtp}>
-            Send code
-          </Button>
-        </div>
-      </>
-    )}
-
-    {/* ── Stage: verify-otp ── */}
-    {flow.step === "otp" && (
-      <>
-        <div>
-          <h2 className="text-base font-semibold leading-tight">
-            Enter the 6-digit code
-          </h2>
-
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <p className="text-sm text-muted-foreground">
-              Sent to{" "}
-              <span className="font-medium text-foreground">
-                {flow.value}
-              </span>
-            </p>
-
-            <span className="text-muted-foreground">·</span>
-
-            <button
-              type="button"
-              onClick={() => flow.reset()}
-              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
-            >
-              Change
-            </button>
-          </div>
-        </div>
-
-        {/* OTP INPUT */}
-        <Input
-          value={flow.otp}
-          maxLength={6}
-          onChange={(e) => flow.setOtp(e.target.value)}
-          className="text-center tracking-[0.5em] text-lg"
-          placeholder="------"
-        />
-
-        {/* STATUS */}
-        {flow.loading ? (
-          <p className="text-sm text-muted-foreground text-center">
-            Verifying...
-          </p>
-        ) : flow.error ? (
-          <p className="text-sm text-destructive text-center">
-            {flow.error}
-          </p>
-        ) : null}
-
-        {/* VERIFY BUTTON */}
-        <Button
-          className="w-full"
-          onClick={() => flow.verifyOtp(handleSave)}
-        >
-          Verify & Save
-        </Button>
-
-        {/* RESEND */}
-        <div className="flex items-center justify-center gap-1.5 text-sm">
-          <span className="text-muted-foreground">
-            Didn’t receive it?
-          </span>
-
-          <button
-            type="button"
-            onClick={flow.sendOtp}
-            className="font-medium text-foreground hover:underline"
-          >
-            Resend
-          </button>
-        </div>
-      </>
-    )}
-  </div>
-)}
+        )}
       </div>
     </ResponsiveModal>
   );
@@ -525,7 +633,7 @@ function PhoneEditModal({ open, onClose, user }: any) {
       <>
         <div>
           <h2 className="text-base font-semibold leading-tight">
-            Verify your email
+            Verify your email for user is authentication
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             We will send a one-time code to verify it.
@@ -553,9 +661,7 @@ function PhoneEditModal({ open, onClose, user }: any) {
           )}
 
           <Button
-            className="w-full"
-            onClick={() => emailFlow.sendOtp(user.email)}
-          >
+            className="w-full" onClick={() => emailFlow.sendOtp(user.email, true)} >
             Send code
           </Button>
         </div>
@@ -628,7 +734,7 @@ function PhoneEditModal({ open, onClose, user }: any) {
 
           <button
             type="button"
-            onClick={emailFlow.sendOtp}
+            onClick={() => emailFlow.sendOtp(user.email, true)}
             className="font-medium text-foreground hover:underline"
           >
             Resend
@@ -763,7 +869,7 @@ onClick={() => {
         </div>
 
         {/* MOCK SUPPORT */}
-        {flow.value?.startsWith("mock") && (
+        {isIndiaMock(getFullPhone()) && (
           <p className="text-center text-xs text-muted-foreground font-mono">
             Demo OTP: <span className="font-bold tracking-widest">111111</span>
           </p>

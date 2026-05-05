@@ -20,8 +20,11 @@ const CODE_OPTIONS = [
   { value: '+65', view: '+65 [SG]' },
   { value: '+91', view: '+91 [IND]' }, // ✅ FIXED
   { value: '+44', view: '+44 [UK]' },
-  { value: 'mock', view: 'Mock [TEST]' },
 ];
+
+function isIndiaMock(code: string) {
+  return code === '+91';
+}
 
 type CodeValue = (typeof CODE_OPTIONS)[number]['value'];
 
@@ -192,90 +195,81 @@ export default function PhoneVerificationPage() {
 
   // ---------- Actions ----------
   const sendOtp = async () => {
-    const composed =
-      primaryCode === 'mock'
-        ? `mock ${primaryBody.trim()}`
-        : `${primaryCode}${primaryBody.trim()}`; // ✅ FIXED
+  if (!primaryBody.trim()) {
+    setErrors({ primaryNumber: 'Enter your phone number.' });
+    toast.error('Please fix the phone number');
+    return;
+  }
 
-    if (!primaryBody.trim()) {
-      setErrors({ primaryNumber: 'Enter your phone number.' });
-      toast.error('Please fix the phone number');
-      return;
-    }
+  const composed = `${primaryCode}${primaryBody.trim()}`;
 
-    // Mock mode
-    if (primaryCode === 'mock') {
-      setErrors({});
-      toast.success('Mock mode enabled. Use OTP: 111111');
+  // ✅ INDIA MOCK LOGIC
+  if (isIndiaMock(primaryCode)) {
+    setErrors({});
+    toast.success('Test mode (India). Use OTP: 111111');
+    setResendTimeout(RESEND_COOLDOWN);
+    setAttempts(0);
+    setLockUntil(null);
+    saveGuard(0, null);
+    setTimeout(() => otpInputRef.current?.focus(), 50);
+    return;
+  }
+
+  // ✅ normal validation
+  const parsed = phoneSchema.safeParse({ ...phones, primaryNumber: composed });
+  if (!parsed.success) {
+    const map: Record<string, string> = {};
+    parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
+    map.primaryNumber =
+      'That phone number looks invalid — check the digits and try again.';
+    setErrors(map);
+    toast.error('Please fix the phone number');
+    return;
+  }
+
+  setErrors({});
+  setLoadingSend(true);
+
+  try {
+    const res = await fetch('/api/sms/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: composed }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      toast.success('SMS OTP sent to primary number');
       setResendTimeout(RESEND_COOLDOWN);
       setAttempts(0);
       setLockUntil(null);
       saveGuard(0, null);
       setTimeout(() => otpInputRef.current?.focus(), 50);
-      return;
+    } else {
+      toast.error(data?.error || 'Failed to send SMS OTP');
     }
-
-    // Real validation
-    const parsed = phoneSchema.safeParse({ ...phones, primaryNumber: composed });
-    if (!parsed.success) {
-      const map: Record<string, string> = {};
-      parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
-      if (map.primaryNumber) {
-        map.primaryNumber =
-          'That phone number looks invalid — check the digits and try again.';
-      }
-      setErrors(map);
-      toast.error('Please fix the phone number');
-      return;
-    }
-
-    setErrors({});
-    setLoadingSend(true);
-    try {
-      const res = await fetch('/api/sms/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: composed }),
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        toast.success('SMS OTP sent to primary number');
-        setResendTimeout(RESEND_COOLDOWN);
-        setAttempts(0);
-        setLockUntil(null);
-        saveGuard(0, null);
-        setTimeout(() => otpInputRef.current?.focus(), 50);
-      } else {
-        const msg = String(data?.error || '');
-        if (/already.*(used|linked)/i.test(msg)) {
-          toast.error(
-            'This number is linked to another account. Use a different number or contact support.'
-          );
-        } else {
-          toast.error(msg || 'Failed to send SMS OTP');
-        }
-      }
-    } catch {
-      toast.error('Something went wrong sending SMS');
-    } finally {
-      setLoadingSend(false);
-    }
-  };
+  } catch {
+    toast.error('Something went wrong sending SMS');
+  } finally {
+    setLoadingSend(false);
+  }
+};
 
   const verifyOtp = async () => {
     if (!otp) return toast.error('Enter the SMS OTP');
 
     // Mock client-side
-    if (primaryCode === 'mock') {
-      if (otp === '111111') {
-        setPhoneVerified(true);
-        toast.success('Phone verified (mock)');
-      } else {
-        toast.error('Wrong mock code — expected 111111');
-      }
-      return;
-    }
+    // ✅ INDIA MOCK VERIFY
+if (isIndiaMock(primaryCode)) {
+  if (otp === '111111') {
+    setPhoneVerified(true);
+    toast.success('Phone verified (test mode)');
+  } else {
+    toast.error('Wrong code — expected 111111');
+  }
+  return;
+}
 
     if (lockActive) {
       return toast.error(
@@ -374,7 +368,11 @@ export default function PhoneVerificationPage() {
               </select>
 
               <Input
-                placeholder={primaryCode === 'mock' ? 'enter any test number' : 'phone number'}
+                placeholder={
+                    isIndiaMock(primaryCode)
+                      ? 'enter any number (test mode)'
+                      : 'phone number'
+                  }
                 value={primaryBody}
                 onChange={(e) => setPrimaryBody(e.target.value)}
                 aria-invalid={!!errors.primaryNumber}

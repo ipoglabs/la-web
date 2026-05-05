@@ -31,14 +31,46 @@ export async function updateContact({
   const channel = field === "email" ? "email" : "phone";
   const normalized = normalizeTarget(channel, trimmed);
 
-  /* ================= OTP CHECK ================= */
-  const otpRecord: any = await Otp.findOne({
-    target: normalized,
-    verified: true,
-    expiresAt: { $gt: new Date() }, // ✅ ensure not expired
+  console.log("🔎 UPDATE CONTACT", {
+    field,
+    raw: value,
+    normalized,
   });
 
+  /* ================= HARD VALIDATION ================= */
+  if (channel === "phone" && normalized.length <= 4) {
+    throw new Error("Invalid phone number");
+  }
+
+  /* ================= OTP CHECK ================= */
+  let otpRecord: any = await Otp.findOne({
+    target: normalized,
+    verified: true,
+    expiresAt: { $gt: new Date() }, // ensure still valid
+  });
+
+  /* 🔁 RETRY (handles race condition: verify → immediate save) */
   if (!otpRecord) {
+    await new Promise((r) => setTimeout(r, 200));
+
+    otpRecord = await Otp.findOne({
+      target: normalized,
+      verified: true,
+      expiresAt: { $gt: new Date() },
+    });
+  }
+
+  /* ================= MOCK FALLBACK (optional) =================
+     Allows +91 mock to proceed even if record timing failed.
+     Keep only for NON-PROD.
+  */
+  const isIndiaMock =
+    channel === "phone" &&
+    process.env.NODE_ENV !== "production" &&
+    /^\+91\d{10}$/.test(normalized);
+
+  if (!otpRecord && !isIndiaMock) {
+    console.log("❌ OTP NOT VERIFIED", normalized);
     throw new Error("OTP verification required");
   }
 
@@ -46,60 +78,47 @@ export async function updateContact({
   if (field === "email") {
     const emailLower = trimmed.toLowerCase();
 
-    // skip if same
-    if (user.email === emailLower) {
-      return { success: true };
-    }
+    if (user.email === emailLower) return { success: true };
 
-    // duplicate check
     const existing = await User.findOne({
-      $and: [
-        { email: { $regex: `^${emailLower}$`, $options: "i" } },
-        { _id: { $ne: user._id } },
-        { accountStatus: { $ne: "Deleted" } },
-      ],
+      email: emailLower,
+      _id: { $ne: user._id },
+      accountStatus: { $ne: "Deleted" },
     });
 
-    if (existing) {
-      throw new Error("Email already in use");
-    }
+    if (existing) throw new Error("Email already in use");
 
     user.email = emailLower;
   }
 
-  /* ================= PRIMARY NUMBER ================= */
+  /* ================= PRIMARY PHONE ================= */
   if (field === "primaryNumber") {
-    // skip if same
-    if (user.primaryNumber === normalized) {
-      return { success: true };
-    }
+    if (user.primaryNumber === normalized) return { success: true };
 
-    // duplicate check
     const existing = await User.findOne({
-      $and: [
-        { primaryNumber: normalized },
-        { _id: { $ne: user._id } },
-        { accountStatus: { $ne: "Deleted" } },
-      ],
+      primaryNumber: normalized,
+      _id: { $ne: user._id },
+      accountStatus: { $ne: "Deleted" },
     });
 
-    if (existing) {
-      throw new Error("Phone number already in use");
-    }
+    if (existing) throw new Error("Phone number already in use");
 
-    user.primaryNumber = normalized; // ✅ ALWAYS save normalized
+    user.primaryNumber = normalized;
   }
 
-  /* ================= SECONDARY NUMBERS ================= */
+  /* ================= SECONDARY ================= */
   if (field === "secondaryNumber1" || field === "secondaryNumber2") {
-    user[field] = normalized; // ✅ keep consistent format
+    user[field] = normalized;
   }
 
   /* ================= SAVE ================= */
   await user.save();
 
-  /* ================= CLEAN OTP ================= */
-  await Otp.deleteOne({ target: normalized });
+  /* 🧹 CLEAN OTP (only verified one) */
+  await Otp.deleteOne({
+    target: normalized,
+    verified: true,
+  });
 
   return { success: true };
 }

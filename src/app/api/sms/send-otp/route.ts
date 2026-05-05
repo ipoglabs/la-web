@@ -8,9 +8,6 @@ export const runtime = 'nodejs';
 function normalizePhone(phone: string) {
   if (!phone) throw new Error('Phone is required');
 
-  // mock support
-  if (phone.startsWith('mock')) return phone;
-
   const cleaned = phone.replace(/\s+/g, '');
 
   if (!/^\+\d{10,15}$/.test(cleaned)) {
@@ -18,6 +15,11 @@ function normalizePhone(phone: string) {
   }
 
   return cleaned;
+}
+
+/* ---------------- MOCK CHECK ---------------- */
+function isIndiaMock(phone: string) {
+  return phone.startsWith('+91'); // ✅ INDIA = MOCK
 }
 
 /* ---------------- API ---------------- */
@@ -38,12 +40,20 @@ export async function POST(req: Request) {
 
   console.log('FINAL PHONE SENT:', normalized);
 
-  // Mock mode
-  if (normalized.startsWith('mock')) {
+  // ✅ INDIA MOCK MODE
+  if (isIndiaMock(normalized)) {
+    console.log('[MOCK MODE] India number detected, skipping Twilio');
+
     phoneAttemptStore[normalized] = { attempts: 0, lockedUntil: null };
-    return NextResponse.json({ success: true, mock: true });
+
+    return NextResponse.json({
+      success: true,
+      mock: true,
+      message: 'Test mode enabled for India (+91)',
+    });
   }
 
+  // ✅ REAL FLOW (Twilio)
   const sid = process.env.TWILIO_ACCOUNT_SID!;
   const token = process.env.TWILIO_AUTH_TOKEN!;
   const verifySid = process.env.TWILIO_VERIFY_SID!;
