@@ -33,6 +33,16 @@ export default function EmailVerificationPage() {
   const lockActive = lockUntil ? Date.now() < lockUntil : false;
   const lockSecondsLeft = lockUntil ? Math.max(0, Math.ceil((lockUntil - Date.now()) / 1000)) : 0;
 
+  function maskEmail(email: string) {
+  const [name, domain] = email.split("@");
+
+  if (!name || !domain) return email;
+
+  const visible = name.slice(0, 2);
+
+  return `${visible}****@${domain}`;
+}
+
   /** ✅ Load attempts/lock state */
   useEffect(() => {
     if (!email) return;
@@ -117,12 +127,21 @@ export default function EmailVerificationPage() {
         body: JSON.stringify({ email, otp }),
       });
 
-      if (res.ok) {
+     if (res.ok) {
         setEmailVerified(true);
+
         setAttempts(0);
+
         setLockUntil(null);
+
         persistGuard(0, null);
-        toast.success('Email verified ✅ — Click Next to continue');
+
+        toast.success('Email verified ✅');
+
+        // auto navigate
+        setTimeout(() => {
+          router.push('/register/phone-verification');
+        }, 800);
       } else {
         const nextAttempts = attempts + 1;
         let nextLockUntil: number | null = null;
@@ -146,73 +165,143 @@ export default function EmailVerificationPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
-      <Card className="w-full max-w-md flex flex-col justify-between">
-        <CardHeader>
-          <CardTitle>Step 2 — Email OTP Verification</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Enter the 6-digit code we sent to <b>{email}</b>.
-          </p>
-        </CardHeader>
+  <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
+    <Card className="w-full max-w-md shadow-sm border-border/60">
+      
+      <CardHeader className="space-y-3 pb-2">
+        <div>
+          <CardTitle className="text-xl font-semibold">
+            Verify your email
+          </CardTitle>
 
-        <CardContent className="space-y-5">
-          {/* OTP input + verify (hide after verified) */}
-          {!emailVerified && (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <p className="text-sm text-muted-foreground">
+              Sent to{" "}
+              <span className="font-medium text-foreground">
+                {maskEmail(email)}
+              </span>
+            </p>
+
+            <span className="text-muted-foreground">·</span>
+
+            <button
+              type="button"
+              onClick={() => router.push("/register")}
+              className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+            >
+              Change
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
+
+        {/* VERIFIED SUCCESS */}
+        {emailVerified ? (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+            <p className="text-sm text-green-700 text-center font-medium">
+              ✅ Email verified successfully
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* OTP INPUT */}
+            <div className="space-y-3">
+
               <Input
                 ref={otpInputRef}
                 placeholder="Enter 6-digit code"
                 value={otp}
                 maxLength={6}
                 onChange={(e) => setOtp(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && verifyOtp()}
+                onKeyDown={(e) =>
+                  e.key === "Enter" &&
+                  otp.length === 6 &&
+                  verifyOtp()
+                }
                 inputMode="numeric"
-                disabled={lockActive}
+                disabled={lockActive || loadingVerify}
+                className="text-center text-lg tracking-[0.35em] font-medium"
               />
 
-              <Button onClick={verifyOtp} disabled={otp.length !== 6 || loadingVerify || lockActive}>
-                {loadingVerify ? 'Verifying…' : 'Verify'}
+              {/* VERIFYING */}
+              {loadingVerify && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Verifying&hellip;
+                </p>
+              )}
+
+              {/* LOCK */}
+              {lockActive && (
+                <p className="text-sm text-red-600 text-center">
+                  Locked for security. Try again in{" "}
+                  <span className="font-semibold">
+                    {lockSecondsLeft}s
+                  </span>
+                </p>
+              )}
+
+              {/* VERIFY BUTTON */}
+              <Button
+                className="w-full"
+                onClick={verifyOtp}
+                disabled={
+                  otp.length !== 6 ||
+                  loadingVerify ||
+                  lockActive
+                }
+              >
+                {loadingVerify ? "Verifying…" : "Verify"}
               </Button>
             </div>
-          )}
 
-          {emailVerified && (
-            <p className="text-green-600 text-sm mt-1">✅ Email verified successfully</p>
-          )}
+            {/* RESEND */}
+            <div className="flex items-center justify-center gap-1.5 text-sm">
+              <span className="text-muted-foreground">
+                Didn&apos;t receive it?
+              </span>
 
-          {/* ✅ Resend button should also hide after verified */}
-          {!emailVerified && (
-            <Button
-              variant="secondary"
-              onClick={sendOtp}
-              disabled={resendTimeout > 0 || loadingSend}
-            >
-              {loadingSend
-                ? 'Sending…'
-                : resendTimeout > 0
-                ? `Resend code (${resendTimeout}s)`
-                : 'Resend code'}
-            </Button>
-          )}
+              {resendTimeout > 0 ? (
+                <span className="text-muted-foreground">
+                  Resend in{" "}
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {resendTimeout}s
+                  </span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={sendOtp}
+                  disabled={loadingSend}
+                  className="font-medium text-foreground hover:underline transition-colors disabled:opacity-50"
+                >
+                  {loadingSend ? "Sending…" : "Resend"}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
 
-          {/* lock message (optional: hide after verified) */}
-          {!emailVerified && lockActive && (
-            <p className="text-sm text-red-600">
-              Locked for security. Try again in <b>{lockSecondsLeft}</b>s.
-            </p>
-          )}
-        </CardContent>
+      {/* <CardFooter className="flex justify-between pt-2">
+        <Button
+          variant="outline"
+          onClick={() => router.push("/register")}
+        >
+          Back
+        </Button>
 
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => router.push('/register')}>
-            Back
-          </Button>
-
-          <Button onClick={() => router.push('/register/phone-verification')} disabled={!emailVerified}>
-            Next
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
-  );
+        <Button
+          onClick={() =>
+            router.push("/register/phone-verification")
+          }
+          disabled={!emailVerified}
+        >
+          Next
+        </Button>
+      </CardFooter> */}
+    </Card>
+  </div>
+);
 }

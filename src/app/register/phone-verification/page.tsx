@@ -1,535 +1,807 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import {
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 
-import { useRegisterStore } from '@/store/registerStore';
-import { phoneSchema } from '@/lib/validators';
+import {
+  Check,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
-const RESEND_COOLDOWN = 30;
-const MAX_ATTEMPTS = 5;
-const LOCK_MINUTES = 15;
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
-/** Country code options */
-const CODE_OPTIONS = [
-  { value: '+65', view: '+65 [SG]' },
-  { value: '+91', view: '+91 [IND]' }, // ✅ FIXED
-  { value: '+44', view: '+44 [UK]' },
+import { Button } from "@/components/ui/button";
+
+import { PhoneNumberInput } from "@/components/phone-number-input/PhoneNumberInput";
+
+import {
+  type Country,
+  COUNTRIES,
+} from "@/components/phone-number-input/countries";
+
+import { OtpInput } from "@/components/ui/otp-input";
+
+import { useResendTimer } from "@/hooks/useResendTimer";
+import { useRegisterStore } from "@/store/registerStore";
+
+import { cn } from "@/lib/utils";
+
+const MAX_NUMBERS = 3;
+
+const LABELS = [
+  "Primary",
+  "Secondary 1",
+  "Secondary 2",
+] as const;
+
+const MIN_DIGITS = 5;
+
+const ALLOWED_COUNTRIES: string[] = [
+  "SG",
+  "IN",
+  "GB",
 ];
 
-function isIndiaMock(code: string) {
-  return code === '+91';
+type Stage =
+  | "enter-phone"
+  | "verify-otp"
+  | "summary";
+
+interface VerifiedEntry {
+  country: Country;
+  phone: string;
+  label: (typeof LABELS)[number];
 }
 
-type CodeValue = (typeof CODE_OPTIONS)[number]['value'];
-
-/** Generic split helper for any stored number */
-const splitNumber = (value?: string | null): { code: CodeValue; number: string } => {
-  if (!value) return { code: '+65', number: '' }; // default
-
-  if (value.startsWith('mock ')) {
-    return { code: 'mock', number: value.slice(5) };
-  }
-
-  const m = value.match(/^(\+\d{1,3})\s*(.*)$/);
-  if (m) {
-    const code = (m[1] as CodeValue) ?? '+65';
-    const number = m[2] ?? '';
-    return { code, number };
-  }
-
-  return { code: '+65', number: value };
-};
-
-export default function PhoneVerificationPage() {
+export default function PhoneOtpCardV2() {
   const router = useRouter();
-  const { phones, updatePhones, phoneVerified, setPhoneVerified } = useRegisterStore();
+  const {
+  phones,
+  updatePhones,
+  phoneVerified,
+  setPhoneVerified,
+} = useRegisterStore();
 
-  // show/hide secondaries
-  const [showSec1, setShowSec1] = useState<boolean>(!!phones.secondaryNumber1);
-  const [showSec2, setShowSec2] = useState<boolean>(!!phones.secondaryNumber2);
+  const [stage, setStage] =
+    useState<Stage>("enter-phone");
 
-  // OTP UX
-  const [otp, setOtp] = useState('');
-  const [resendTimeout, setResendTimeout] = useState(0);
-  const [loadingSend, setLoadingSend] = useState(false);
-  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [verified, setVerified] =
+    useState<VerifiedEntry[]>([]);
 
-  // friendly validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [country, setCountry] =
+    useState<Country>(
+      () =>
+        COUNTRIES.find(
+          (c) => c.code === "SG"
+        ) ?? COUNTRIES[0]
+    );
 
-  // attempts/lock
-  const [attempts, setAttempts] = useState(0);
-  const [lockUntil, setLockUntil] = useState<number | null>(null);
-  const lockActive = lockUntil ? Date.now() < lockUntil : false;
-  const lockSecondsLeft = lockUntil
-    ? Math.max(0, Math.ceil((lockUntil - Date.now()) / 1000))
-    : 0;
+  const [phone, setPhone] =
+    useState("");
 
-  const otpInputRef = useRef<HTMLInputElement | null>(null);
+  const [phoneError, setPhoneError] =
+    useState("");
 
-  // ---------- Primary number (code + body) ----------
-  const { code: initPrimaryCode, number: initPrimaryBody } = splitNumber(
-    phones.primaryNumber
-  );
-  const [primaryCode, setPrimaryCode] = useState<CodeValue>(initPrimaryCode);
-  const [primaryBody, setPrimaryBody] = useState<string>(initPrimaryBody);
+  const [otpError, setOtpError] =
+    useState(false);
 
-  useEffect(() => {
-    const composed =
-      primaryCode === 'mock'
-        ? `mock ${primaryBody.trim()}`
-        : `${primaryCode} ${primaryBody.trim()}`.trim();
+  const [otpErrorMsg, setOtpErrorMsg] =
+    useState("");
 
-    updatePhones({ primaryNumber: composed });
-  }, [primaryCode, primaryBody, updatePhones]);
+  const [verifying, setVerifying] =
+    useState(false);
 
-  // ---------- Secondary 1 (code + body) ----------
-  const { code: initSec1Code, number: initSec1Body } = splitNumber(
-    phones.secondaryNumber1
-  );
-  const [sec1Code, setSec1Code] = useState<CodeValue>(initSec1Code);
-  const [sec1Body, setSec1Body] = useState<string>(initSec1Body);
+  const [
+    confirmingDelete,
+    setConfirmingDelete,
+  ] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!showSec1) return;
-    const composed =
-      sec1Code === 'mock'
-        ? `mock ${sec1Body.trim()}`
-        : `${sec1Code} ${sec1Body.trim()}`.trim();
+  const {
+    seconds,
+    enabled,
+    reset,
+  } = useResendTimer(30);
 
-    updatePhones({ secondaryNumber1: sec1Body.trim() ? composed : '' });
-  }, [sec1Code, sec1Body, showSec1, updatePhones]);
+  const phoneInputRef =
+    useRef<HTMLInputElement>(null);
 
-  // ---------- Secondary 2 (code + body) ----------
-  const { code: initSec2Code, number: initSec2Body } = splitNumber(
-    phones.secondaryNumber2
-  );
-  const [sec2Code, setSec2Code] = useState<CodeValue>(initSec2Code);
-  const [sec2Body, setSec2Body] = useState<string>(initSec2Body);
+  /* ------------------------------------------------ */
+  /* ENTER KEY SUBMIT                                */
+  /* ------------------------------------------------ */
 
   useEffect(() => {
-    if (!showSec2) return;
-    const composed =
-      sec2Code === 'mock'
-        ? `mock ${sec2Body.trim()}`
-        : `${sec2Code} ${sec2Body.trim()}`.trim();
+    const el = phoneInputRef.current;
 
-    updatePhones({ secondaryNumber2: sec2Body.trim() ? composed : '' });
-  }, [sec2Code, sec2Body, showSec2, updatePhones]);
+    if (
+      !el ||
+      stage !== "enter-phone"
+    )
+      return;
 
-  // resend countdown
-  useEffect(() => {
-    if (resendTimeout <= 0) return;
-    const t = setInterval(() => setResendTimeout((s) => s - 1), 1000);
-    return () => clearInterval(t);
-  }, [resendTimeout]);
-
-  // ---------- Guard (persist attempts/lock for this primary) ----------
-  const saveGuard = (a: number, l: number | null) => {
-    const key = `phone-otp-guard:${phones.primaryNumber || ''}`;
-    try {
-      localStorage.setItem(key, JSON.stringify({ attempts: a, lockUntil: l }));
-    } catch {}
-  };
-
-  const loadGuard = () => {
-    const key = `phone-otp-guard:${phones.primaryNumber || ''}`;
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const { attempts: a, lockUntil: l } = JSON.parse(raw);
-        setAttempts(a || 0);
-        setLockUntil(l || null);
+    const handler = (
+      e: KeyboardEvent
+    ) => {
+      if (e.key === "Enter") {
+        handleSend();
       }
-    } catch {}
-  };
+    };
 
-  useEffect(() => {
-    loadGuard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phones.primaryNumber]);
+    el.addEventListener(
+      "keydown",
+      handler
+    );
 
-  // ---------- Secondary controls ----------
-  const addSecondary = () => {
-    if (!showSec1) {
-      setShowSec1(true);
-      return;
-    }
-    if (!showSec2) {
-      setShowSec2(true);
-      return;
-    }
-  };
+    return () =>
+      el.removeEventListener(
+        "keydown",
+        handler
+      );
+  }, [stage, phone]);
 
-  const removeSecondary = (which: 1 | 2) => {
-    if (which === 1) {
-      setShowSec1(false);
-      setSec1Body('');
-      updatePhones({ secondaryNumber1: '' });
-    } else {
-      setShowSec2(false);
-      setSec2Body('');
-      updatePhones({ secondaryNumber2: '' });
-    }
-  };
+  /* ------------------------------------------------ */
+  /* SEND OTP                                        */
+  /* ------------------------------------------------ */
 
- function normalizePhone(phone: string) {
-  if (!phone) throw new Error('Phone is required');
+  async function handleSend() {
+  const digits = phone.trim();
 
-  if (phone.startsWith('mock')) return phone;
+  if (!digits) {
+    setPhoneError(
+      "Please enter your phone number."
+    );
 
-  const cleaned = phone.replace(/\s+/g, '');
-
-  if (!/^\+\d{10,15}$/.test(cleaned)) {
-    throw new Error('Invalid phone number');
-  }
-
-  return cleaned;
-}
-
-  // ---------- Actions ----------
-  const sendOtp = async () => {
-  if (!primaryBody.trim()) {
-    setErrors({ primaryNumber: 'Enter your phone number.' });
-    toast.error('Please fix the phone number');
     return;
   }
 
-  const composed = `${primaryCode}${primaryBody.trim()}`;
+  const composed = `+${country.dial}${digits}`;
 
-  // ✅ INDIA MOCK LOGIC
-  if (isIndiaMock(primaryCode)) {
-    setErrors({});
-    toast.success('Test mode (India). Use OTP: 111111');
-    setResendTimeout(RESEND_COOLDOWN);
-    setAttempts(0);
-    setLockUntil(null);
-    saveGuard(0, null);
-    setTimeout(() => otpInputRef.current?.focus(), 50);
+  // INDIA MOCK
+  if (country.code === "IN") {
+    setPhoneError("");
+
+    toast.success(
+      "Test mode (India). Use OTP: 111111"
+    );
+
+    reset();
+
+    setStage("verify-otp");
+
     return;
   }
 
-  // ✅ normal validation
-  const parsed = phoneSchema.safeParse({ ...phones, primaryNumber: composed });
-  if (!parsed.success) {
-    const map: Record<string, string> = {};
-    parsed.error.issues.forEach((i) => (map[i.path.join('.')] = i.message));
-    map.primaryNumber =
-      'That phone number looks invalid — check the digits and try again.';
-    setErrors(map);
-    toast.error('Please fix the phone number');
-    return;
-  }
-
-  setErrors({});
-  setLoadingSend(true);
+  setPhoneError("");
 
   try {
-    const res = await fetch('/api/sms/send-otp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: composed }),
-    });
+    const res = await fetch(
+      "/api/sms/send-otp",
+      {
+        method: "POST",
 
-    const data = await res.json();
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          phone: composed,
+        }),
+      }
+    );
+
+    const data =
+      await res.json();
 
     if (res.ok) {
-      toast.success('SMS OTP sent to primary number');
-      setResendTimeout(RESEND_COOLDOWN);
-      setAttempts(0);
-      setLockUntil(null);
-      saveGuard(0, null);
-      setTimeout(() => otpInputRef.current?.focus(), 50);
+      reset();
+
+      setStage("verify-otp");
+
+      toast.success(
+        "SMS OTP sent"
+      );
     } else {
-      toast.error(data?.error || 'Failed to send SMS OTP');
-    }
-  } catch {
-    toast.error('Something went wrong sending SMS');
-  } finally {
-    setLoadingSend(false);
-  }
-};
-
-  const verifyOtp = async () => {
-    if (!otp) return toast.error('Enter the SMS OTP');
-
-    // Mock client-side
-    // ✅ INDIA MOCK VERIFY
-if (isIndiaMock(primaryCode)) {
-  if (otp === '111111') {
-    setPhoneVerified(true);
-    toast.success('Phone verified (test mode)');
-  } else {
-    toast.error('Wrong code — expected 111111');
-  }
-  return;
-}
-
-    if (lockActive) {
-      return toast.error(
-        `For security we’ve locked OTP attempts for 15 minutes. You can try again in ${Math.ceil(
-          lockSecondsLeft / 60
-        )} minutes.`
+      setPhoneError(
+        data?.error ||
+          "Failed to send OTP"
       );
     }
+  } catch {
+    setPhoneError(
+      "Failed to send OTP"
+    );
+  }
+}
 
-    const composed = primaryCode === 'mock'
-        ? `mock ${primaryBody.trim()}`
-        : `${primaryCode}${primaryBody.trim()}`; // ✅ FIXED
+  /* ------------------------------------------------ */
+  /* VERIFY OTP                                      */
+  /* ------------------------------------------------ */
 
-    setLoadingVerify(true);
-    try {
-      const res = await fetch('/api/sms/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: composed, otp }),
-      });
-      const data = await res.json();
+async function handleOtpComplete(
+  otp: string
+) {
+  setVerifying(true);
 
-      if (res.ok) {
-        setPhoneVerified(true);
-        toast.success('Phone verified');
-      } else {
-        const code = data?.code as string | undefined;
+  try {
+    /* -------------------------------------------- */
+    /* INDIA MOCK                                  */
+    /* -------------------------------------------- */
 
-        if (code === 'LOCKED') {
-          const secs = Number(data?.retryAfterSeconds || LOCK_MINUTES * 60);
-          const until = Date.now() + secs * 1000;
-          setLockUntil(until);
-          saveGuard(attempts, until);
-          toast.error(
-            'For security we’ve locked OTP attempts for 15 minutes. Need help? Contact support.'
+    if (country.code === "IN") {
+      setTimeout(() => {
+        setVerifying(false);
+
+        if (otp === "111111") {
+
+          // ✅ UPDATE ZUSTAND
+          setPhoneVerified(true);
+
+          // ✅ STORE VERIFIED NUMBERS
+          setVerified((prev) => [
+            ...prev,
+            {
+              country,
+              phone,
+              label:
+                LABELS[
+                  prev.length
+                ],
+            },
+          ]);
+
+          toast.success(
+            "Phone verified (test mode)"
           );
-        } else if (code === 'INVALID') {
-          const next = attempts + 1;
-          setAttempts(next);
-          if (next >= MAX_ATTEMPTS) {
-            const until = Date.now() + LOCK_MINUTES * 60 * 1000;
-            setLockUntil(until);
-            saveGuard(next, until);
-            toast.error(
-              'For security we’ve locked OTP attempts for 15 minutes. Need help? Contact support.'
-            );
-          } else {
-            saveGuard(next, lockUntil);
-            toast.error('Wrong code — try again.');
-          }
-        } else if (code === 'EXPIRED') {
-          toast.error('Code expired — request a new one.');
-        } else if (code === 'NOT_FOUND') {
-          toast.error('No OTP found for this number — please resend the code.');
+
+          // ✅ STAY ON PAGE
+          setStage("summary");
         } else {
-          toast.error(data?.error || 'Invalid OTP');
+          setOtpError(true);
+
+          setOtpErrorMsg(
+            "Wrong code — expected 111111"
+          );
         }
-      }
-    } catch {
-      toast.error('Verification failed');
-    } finally {
-      setLoadingVerify(false);
+      }, 500);
+
+      return;
     }
-  };
 
-  const otpDigitsOnly = (s: string) => s.replace(/\D/g, '').slice(0, 6);
-  const canVerify = otp.length === 6 && !loadingVerify && !lockActive;
+    /* -------------------------------------------- */
+    /* REAL OTP                                    */
+    /* -------------------------------------------- */
 
-  return (
-    <div className="flex items-center justify-center min-h-screen p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <CardTitle>Step 3 — Mobile OTP Verification</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">
-            Verified phone numbers help buyers trust you.
+    const fullPhone = `+${country.dial}${phone}`;
+
+    const res = await fetch(
+      "/api/sms/verify-otp",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          phone: fullPhone,
+          otp,
+        }),
+      }
+    );
+
+    const data =
+      await res.json();
+
+    setVerifying(false);
+
+    if (res.ok) {
+
+      // ✅ UPDATE ZUSTAND
+      setPhoneVerified(true);
+
+      // ✅ STORE VERIFIED NUMBERS
+      setVerified((prev) => [
+        ...prev,
+        {
+          country,
+          phone,
+          label:
+            LABELS[
+              prev.length
+            ],
+        },
+      ]);
+
+      toast.success(
+        "Phone verified ✅"
+      );
+
+      // ✅ STAY ON PAGE
+      setStage("summary");
+    } else {
+      setOtpError(true);
+
+      setOtpErrorMsg(
+        data?.error ||
+          "Incorrect code. Try again."
+      );
+    }
+  } catch {
+    setVerifying(false);
+
+    setOtpError(true);
+
+    setOtpErrorMsg(
+      "Verification failed."
+    );
+  }
+}
+  /* ------------------------------------------------ */
+  /* CLEAR OTP ERROR                                 */
+  /* ------------------------------------------------ */
+
+  const handleOtpErrorCleared =
+    useCallback(() => {
+      setOtpError(false);
+
+      setOtpErrorMsg("");
+    }, []);
+
+  /* ------------------------------------------------ */
+  /* ADD ANOTHER NUMBER                              */
+  /* ------------------------------------------------ */
+
+  function handleAddAnother() {
+    setCountry(
+      COUNTRIES.find(
+        (c) => c.code === "SG"
+      ) ?? COUNTRIES[0]
+    );
+
+    setPhone("");
+
+    setPhoneError("");
+
+    setOtpError(false);
+
+    setOtpErrorMsg("");
+
+    setConfirmingDelete(null);
+
+    reset();
+
+    setStage("enter-phone");
+  }
+
+  /* ------------------------------------------------ */
+  /* CHANGE NUMBER                                   */
+  /* ------------------------------------------------ */
+
+  function handleChangeNumber() {
+    setPhone("");
+
+    setPhoneError("");
+
+    setOtpError(false);
+
+    setOtpErrorMsg("");
+
+    setConfirmingDelete(null);
+
+    setStage("enter-phone");
+  }
+
+  /* ------------------------------------------------ */
+  /* DELETE NUMBER                                   */
+  /* ------------------------------------------------ */
+
+  function handleDelete(
+    index: number
+  ) {
+    const updated =
+      verified.filter(
+        (_, i) => i !== index
+      );
+
+    setVerified(updated);
+
+    setConfirmingDelete(null);
+
+    if (
+      updated.length === 0 &&
+      stage === "summary"
+    ) {
+      setStage("enter-phone");
+    }
+  }
+
+  /* ------------------------------------------------ */
+  /* SUMMARY                                          */
+  /* ------------------------------------------------ */
+
+  if (stage === "summary") {
+    const allDone =
+      verified.length >=
+      MAX_NUMBERS;
+
+    return (
+  <main className="min-h-screen w-full flex items-center justify-center px-4 py-10 bg-background">
+
+    <div className="w-full max-w-sm mx-auto space-y-3">
+
+      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+
+        <div>
+          <h2 className="text-base font-semibold leading-tight">
+            {allDone
+              ? "All numbers verified"
+              : "Number verified"}
+          </h2>
+
+          <p className="text-xs text-muted-foreground">
+            {verified.length} of{" "}
+            {MAX_NUMBERS} added
           </p>
-        </CardHeader>
+        </div>
 
-        <CardContent className="space-y-6">
-          {/* Primary with country code dropdown */}
-          <div>
-            <Label>Primary phone number *</Label>
+        <div className="space-y-2">
+          {verified.map((entry, i) => {
+            const Flag =
+              entry.country.Flag;
 
-            <div className="mt-1 flex gap-2">
-              <select
-                aria-label="Country code"
-                value={primaryCode}
-                onChange={(e) => setPrimaryCode(e.target.value as CodeValue)}
-                className="w-[160px] h-10 rounded-sm border border-gray-700/50 bg-gray-50 px-2 text-sm"
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-center gap-3 rounded-md border px-4 py-3 transition-colors",
+                  confirmingDelete === i
+                    ? "border-destructive/30 bg-destructive/5"
+                    : "border-border bg-muted/40"
+                )}
               >
-                {CODE_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.view}
-                  </option>
-                ))}
-              </select>
+                {confirmingDelete === i ? (
+                  <>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <Flag className="h-4 w-5 shrink-0" />
 
-              <Input
-                placeholder={
-                    isIndiaMock(primaryCode)
-                      ? 'enter any number (test mode)'
-                      : 'phone number'
-                  }
-                value={primaryBody}
-                onChange={(e) => setPrimaryBody(e.target.value)}
-                aria-invalid={!!errors.primaryNumber}
-                className="flex-1"
-              />
-            </div>
+                      <p className="text-sm font-medium text-destructive truncate">
+                        Remove +
+                        {entry.country.dial}{" "}
+                        {entry.phone}?
+                      </p>
+                    </div>
 
-            <p className="text-xs text-muted-foreground mt-1">
-              Used to receive OTP and for important notifications — you can hide this on your
-              profile.
-            </p>
-            {errors.primaryNumber && (
-              <p className="text-sm text-red-600 mt-1">{errors.primaryNumber}</p>
-            )}
-          </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirmingDelete(null)
+                        }
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Cancel
+                      </button>
 
-          {/* Secondary controls + fields with same template */}
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={addSecondary}
-                disabled={showSec1 && showSec2}
-              >
-                {showSec1 && showSec2 ? 'Maximum added' : 'Add secondary number'}
-              </Button>
-              {showSec1 && (
-                <Button type="button" variant="outline" onClick={() => removeSecondary(1)}>
-                  Remove #1
-                </Button>
-              )}
-              {showSec2 && (
-                <Button type="button" variant="outline" onClick={() => removeSecondary(2)}>
-                  Remove #2
-                </Button>
-              )}
-            </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(i)
+                        }
+                        className="text-xs font-semibold text-destructive hover:text-destructive/70 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <Check
+                        className="w-3.5 h-3.5 text-primary-foreground"
+                        strokeWidth={3}
+                      />
+                    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {showSec1 && (
-                <div>
-                  <Label>Secondary number 1 (optional)</Label>
-                  <div className="mt-1 flex gap-2">
-                    <select
-                      aria-label="Country code secondary 1"
-                      value={sec1Code}
-                      onChange={(e) => setSec1Code(e.target.value as CodeValue)}
-                      className="w-[130px] h-10 rounded-sm border border-gray-700/50 bg-gray-50 px-2 text-sm"
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {LABELS[i]}
+                      </p>
+
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Flag className="h-3.5 w-5 shrink-0" />
+
+                        <p className="text-sm font-medium text-foreground truncate">
+                          +{entry.country.dial}{" "}
+                          {entry.phone}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      aria-label="Remove number"
+                      onClick={() =>
+                        setConfirmingDelete(i)
+                      }
+                      className="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
                     >
-                      {CODE_OPTIONS.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.view}
-                        </option>
-                      ))}
-                    </select>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-                    <Input
-                      placeholder="phone number"
-                      value={sec1Body}
-                      onChange={(e) => setSec1Body(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Optional — extra number for business or office.
-                  </p>
-                </div>
-              )}
-
-              {showSec2 && (
-                <div>
-                  <Label>Secondary number 2 (optional)</Label>
-                  <div className="mt-1 flex gap-2">
-                    <select
-                      aria-label="Country code secondary 2"
-                      value={sec2Code}
-                      onChange={(e) => setSec2Code(e.target.value as CodeValue)}
-                      className="w-[130px] h-10 rounded-sm border border-gray-700/50 bg-gray-50 px-2 text-sm"
-                    >
-                      {CODE_OPTIONS.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.view}
-                        </option>
-                      ))}
-                    </select>
-
-                    <Input
-                      placeholder="phone number"
-                      value={sec2Body}
-                      onChange={(e) => setSec2Body(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* OTP + Verify */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={sendOtp}
-              disabled={resendTimeout > 0 || loadingSend}
+        <div className="space-y-3">
+          {!allDone && (
+            <button
+              type="button"
+              onClick={handleAddAnother}
+              className="flex items-center justify-center gap-2 w-full rounded-md border border-dashed border-border py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
             >
-              {resendTimeout > 0 ? `Resend code (${resendTimeout}s)` : 'Send OTP'}
-            </Button>
+              <Plus className="w-4 h-4" />
 
-            <Input
-              ref={otpInputRef}
-              placeholder={primaryCode === 'mock' ? 'Enter 111111 (mock)' : 'Enter 6-digit code'}
-              value={otp}
-              onChange={(e) => setOtp(otpDigitsOnly(e.target.value))}
-              className="max-w-xs"
-              inputMode="numeric"
-              maxLength={6}
-              aria-label="SMS OTP"
-              disabled={lockActive}
-              onKeyDown={(e) => e.key === 'Enter' && canVerify && verifyOtp()}
+              {verified.length === 1
+                ? "Add secondary number"
+                : "Add another secondary number"}
+            </button>
+          )}
+
+          {/* DONE BUTTON */}
+          <Button
+            className="w-full"
+            onClick={() =>
+              router.push(
+                "/register/profile-setup"
+              )
+            }
+          >
+            Done
+          </Button>
+        </div>
+      </div>
+    </div>
+  </main>
+);
+  }
+
+  /* ------------------------------------------------ */
+  /* MAIN FLOW                                       */
+  /* ------------------------------------------------ */
+
+ return (
+  <main className="min-h-screen flex items-center justify-center px-4 py-10 bg-background">
+    <div className="w-full max-w-sm space-y-3">
+
+      {/* VERIFIED NUMBERS */}
+      {verified.length > 0 && (
+        <div className="space-y-2">
+          {verified.map((entry, i) => {
+            const Flag = entry.country.Flag;
+
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-center gap-3 rounded-md border px-4 py-2.5 transition-colors",
+                  confirmingDelete === i
+                    ? "border-destructive/30 bg-destructive/5"
+                    : "border-border bg-card"
+                )}
+              >
+                {confirmingDelete === i ? (
+                  <>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <Flag className="h-4 w-5 shrink-0" />
+
+                      <p className="text-sm font-medium text-destructive truncate">
+                        Remove +{entry.country.dial} {entry.phone}?
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirmingDelete(null)
+                        }
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDelete(i)
+                        }
+                        className="text-xs font-semibold text-destructive hover:text-destructive/70 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <Check
+                        className="w-3 h-3 text-primary-foreground"
+                        strokeWidth={3}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">
+                        {LABELS[i]}
+                      </span>
+
+                      <Flag className="h-3.5 w-5 shrink-0" />
+
+                      <span className="text-sm font-medium text-foreground truncate">
+                        +{entry.country.dial} {entry.phone}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      aria-label="Remove number"
+                      onClick={() =>
+                        setConfirmingDelete(i)
+                      }
+                      className="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* MAIN CARD */}
+      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+
+        {/* ENTER PHONE */}
+        {stage === "enter-phone" && (
+          <>
+            <div>
+              <h2 className="text-base font-semibold leading-tight">
+                {verified.length === 0
+                  ? "Verify your phone"
+                  : `Add ${LABELS[
+                      verified.length
+                    ].toLowerCase()} number`}
+              </h2>
+
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {verified.length === 0
+                  ? "We will send a one-time code to verify it."
+                  : "Add a backup number for account recovery."}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+
+              <PhoneNumberInput
+                value={phone}
+                country={country}
+                onlyCountries={ALLOWED_COUNTRIES}
+                onCountryChange={(c) => {
+                  setCountry(c);
+                  setPhone("");
+                  setPhoneError("");
+                }}
+                onChange={(digits) => {
+                  setPhone(digits);
+                  setPhoneError("");
+                }}
+                inputRef={phoneInputRef}
+              />
+
+              {phoneError && (
+                <p className="text-sm text-destructive">
+                  {phoneError}
+                </p>
+              )}
+
+              <Button
+                className="w-full"
+                onClick={handleSend}
+              >
+                Send code
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* VERIFY OTP */}
+        {stage === "verify-otp" && (
+          <>
+            <div>
+              <h2 className="text-base font-semibold leading-tight">
+                Enter the 6-digit code
+              </h2>
+
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-sm text-muted-foreground">
+                  Sent to{" "}
+                  <span className="font-medium text-foreground">
+                    +{country.dial} {phone}
+                  </span>
+                </p>
+
+                <span className="text-muted-foreground">
+                  ·
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleChangeNumber}
+                  className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
+            <OtpInput
+              error={otpError}
+              disabled={verifying}
+              onComplete={handleOtpComplete}
+              onErrorCleared={
+                handleOtpErrorCleared
+              }
             />
 
-            <Button onClick={verifyOtp} disabled={!canVerify}>
-              {loadingVerify ? 'Verifying…' : 'Verify'}
-            </Button>
-          </div>
+            {verifying ? (
+              <p className="text-sm text-muted-foreground text-center">
+                Verifying&hellip;
+              </p>
+            ) : otpErrorMsg ? (
+              <p className="text-sm text-destructive text-center">
+                {otpErrorMsg}
+              </p>
+            ) : null}
 
-          {phoneVerified && (
-            <p className="text-green-600 text-sm -mt-2">✅ Phone verified successfully</p>
-          )}
+            <div className="flex items-center justify-center gap-1.5 text-sm">
+              <span className="text-muted-foreground">
+                Didn&apos;t receive it?
+              </span>
 
-          {lockActive && (
-            <p className="text-sm text-red-600">
-              For security we’ve locked OTP attempts for 15 minutes. You can try again in{' '}
-              <b>{lockSecondsLeft}</b> seconds.
-            </p>
-          )}
-
-          <div className="flex items-center justify-between pt-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/register/email-verification')}
-            >
-              Back
-            </Button>
-
-            <Button
-              onClick={() => router.push('/register/profile-setup')}
-              disabled={!phoneVerified}
-            >
-              Next: Profile Setup
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              {enabled ? (
+                <button
+                  type="button"
+                  onClick={() => reset()}
+                  className="font-medium text-foreground hover:underline transition-colors"
+                >
+                  Resend
+                </button>
+              ) : (
+                <span className="text-muted-foreground">
+                  Resend in{" "}
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {seconds}s
+                  </span>
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
-  );
+  </main>
+);
 }
  
 // Template SMS content:
