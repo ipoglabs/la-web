@@ -78,6 +78,8 @@ export const PhoneNumberInput = React.forwardRef<HTMLInputElement, PhoneNumberIn
       ? providedList.filter((c: Country) => onlyCountries.includes(c.code))
       : providedList;
 
+    const isSingleCountry = visibleList.length === 1;
+
     React.useEffect(() => {
       if (country) setSelected(country);
     }, [country]);
@@ -131,10 +133,13 @@ export const PhoneNumberInput = React.forwardRef<HTMLInputElement, PhoneNumberIn
           <div className="absolute inset-y-0 left-0 flex items-center pl-2">
             <button
               type="button"
-              onClick={() => setOpen(true)}
+              onClick={isSingleCountry ? undefined : () => setOpen(true)}
               aria-haspopup="dialog"
-              aria-label="Open country selector"
-              className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-slate-200 text-slate-800 text-sm hover:bg-slate-300"
+              aria-label={isSingleCountry ? `${selected.name} +${selected.dial}` : "Open country selector"}
+              className={cn(
+                "inline-flex items-center gap-2 px-2 py-1 rounded-md bg-slate-200 text-slate-800 text-sm",
+                isSingleCountry ? "cursor-default" : "hover:bg-slate-300"
+              )}
             >
               {showFlag && <FlagComp className="h-4 w-6" />}
               <span className="font-medium">+{selected.dial}</span>
@@ -160,7 +165,7 @@ export const PhoneNumberInput = React.forwardRef<HTMLInputElement, PhoneNumberIn
             aria-describedby={inputDescribedBy}
             className={cn(
               [
-                "flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 pr-3 pl-20 py-2 text-base font-normal text-gray-900 placeholder:text-gray-400",
+                "flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 pr-3 pl-24 py-2 text-base font-normal text-gray-900 caret-gray-900 placeholder:text-gray-400",
                 "focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 inputClassName,

@@ -298,8 +298,10 @@ export default function ProfileSetupPage() {
 
     setErrors({});
     setSubmitting(true);
+console.log("PHONES STORE", phones);
 
     try {
+      
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -499,7 +501,7 @@ export default function ProfileSetupPage() {
               </FormField>
 
               {/* Confirm Password — ✅ focus-out validation only */}
-              <FormField
+              {/* <FormField
                 label="Confirm Password"
                 htmlFor="confirmPassword"
                 error={errors.confirmPassword}
@@ -538,7 +540,7 @@ export default function ProfileSetupPage() {
                     {showConfirmPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
                   </button>
                 </div>
-              </FormField>
+              </FormField> */}
             </FormFieldWrapper>
 
             {/* Password checklist */}

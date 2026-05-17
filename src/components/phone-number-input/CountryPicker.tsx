@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose, DrawerFo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose as DClose } from "@/components/ui/dialog";
 import { COUNTRIES, Country } from "./countries";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -18,6 +19,33 @@ export function CountryPicker({ open, onClose, selected, onSelect, countries }: 
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const list = countries && countries.length ? countries : COUNTRIES;
+
+  const isThumbnail = list.length >= 2 && list.length <= 6;
+
+  const thumbnailContent = (
+    <div className="grid grid-cols-2 gap-2 p-4">
+      {list.map((c) => {
+        const isSelected = selected?.code === c.code;
+        return (
+          <button
+            key={c.code}
+            onClick={() => { onSelect(c); onClose(); }}
+            className={cn(
+              "flex flex-col items-center gap-1 px-3 py-3 rounded-xl border-2 transition-colors w-full",
+              isSelected
+                ? "border-blue-500 bg-blue-50"
+                : "border-transparent bg-slate-100 hover:bg-slate-200"
+            )}
+          >
+            <c.Flag className="h-8 w-12 rounded-sm flex-none" />
+            <span className="text-xs font-medium text-slate-800 truncate w-full text-center mt-0.5 leading-none">
+              {c.name} <span className="font-normal text-slate-400">(+{c.dial})</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   const content = (
     <div className="max-h-[50vh] overflow-auto">
@@ -63,12 +91,18 @@ export function CountryPicker({ open, onClose, selected, onSelect, countries }: 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="w-full max-w-sm p-0">
+        <DialogContent className={cn("w-full p-0", isThumbnail ? "max-w-sm" : "max-w-sm")}>
           <DialogHeader>
             <DialogTitle>Select Country</DialogTitle>
+            <DClose asChild>
+              <button type="button" aria-label="Close" className="flex h-7 w-7 flex-none items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-800">
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                  <path d="M18 6L6 18M6 6l12 12" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </DClose>
           </DialogHeader>
-          {content}
-          <DClose className="sr-only" />
+          {isThumbnail ? thumbnailContent : content}
         </DialogContent>
       </Dialog>
     );
@@ -80,7 +114,7 @@ export function CountryPicker({ open, onClose, selected, onSelect, countries }: 
         <DrawerHeader>
           <DrawerTitle>Select country</DrawerTitle>
         </DrawerHeader>
-        {content}
+        {isThumbnail ? thumbnailContent : content}
         <DrawerFooter />
       </DrawerContent>
     </Drawer>

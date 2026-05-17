@@ -59,14 +59,17 @@ interface VerifiedEntry {
   label: (typeof LABELS)[number];
 }
 
-export default function PhoneOtpCardV2() {
+export default function PhoneVerificationPage() {
   const router = useRouter();
-  const {
-  phones,
-  updatePhones,
-  phoneVerified,
-  setPhoneVerified,
-} = useRegisterStore();
+ const phones =
+  useRegisterStore(
+    (s) => s.phones
+  );
+
+const phoneVerified =
+  useRegisterStore(
+    (s) => s.phoneVerified
+  );
 
   const [stage, setStage] =
     useState<Stage>("enter-phone");
@@ -222,7 +225,52 @@ export default function PhoneOtpCardV2() {
   /* ------------------------------------------------ */
   /* VERIFY OTP                                      */
   /* ------------------------------------------------ */
+async function saveVerifiedPhone(
+  fullPhone: string
+) {
+  const store =
+    useRegisterStore.getState();
 
+  const existing =
+    store.phones;
+
+  if (!existing.primaryNumber) {
+    store.updatePhones({
+      primaryNumber:
+        fullPhone,
+    });
+  } else if (
+    !existing.secondaryNumber1
+  ) {
+    store.updatePhones({
+      secondaryNumber1:
+        fullPhone,
+    });
+  } else if (
+    !existing.secondaryNumber2
+  ) {
+    store.updatePhones({
+      secondaryNumber2:
+        fullPhone,
+    });
+  }
+
+  store.setPhoneVerified(
+    true
+  );
+
+  // WAIT FOR ZUSTAND PERSIST
+  await new Promise(
+    (resolve) =>
+      setTimeout(resolve, 50)
+  );
+
+  console.log(
+    "UPDATED STORE",
+    useRegisterStore.getState()
+      .phones
+  );
+}
 async function handleOtpComplete(
   otp: string
 ) {
@@ -239,10 +287,14 @@ async function handleOtpComplete(
 
         if (otp === "111111") {
 
-          // ✅ UPDATE ZUSTAND
-          setPhoneVerified(true);
+          const fullPhone = `+${country.dial}${phone}`;
 
-          // ✅ STORE VERIFIED NUMBERS
+          // ✅ SAVE PHONE
+          saveVerifiedPhone(
+  fullPhone
+);
+
+          // ✅ STORE VERIFIED UI STATE
           setVerified((prev) => [
             ...prev,
             {
@@ -303,10 +355,12 @@ async function handleOtpComplete(
 
     if (res.ok) {
 
-      // ✅ UPDATE ZUSTAND
-      setPhoneVerified(true);
+      // ✅ SAVE PHONE
+     await saveVerifiedPhone(
+  fullPhone
+);
 
-      // ✅ STORE VERIFIED NUMBERS
+      // ✅ STORE VERIFIED UI STATE
       setVerified((prev) => [
         ...prev,
         {
@@ -559,11 +613,18 @@ async function handleOtpComplete(
           {/* DONE BUTTON */}
           <Button
             className="w-full"
-            onClick={() =>
-              router.push(
-                "/register/profile-setup"
-              )
-            }
+            onClick={() => {
+              console.log(
+                "FINAL STORE",
+                useRegisterStore.getState()
+              );
+
+              setTimeout(() => {
+                router.push(
+                  "/register/profile-setup"
+                );
+              }, 300);
+            }}
           >
             Done
           </Button>
