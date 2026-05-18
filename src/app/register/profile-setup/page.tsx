@@ -594,7 +594,7 @@ console.log("PHONES STORE", phones);
                       onClick={() => {
                         updateProfile({ role: r.key });
                         clearFieldError("role");
-                        if (r.key !== "other") {
+                        if (r.key !== profile.role) {
                           updateProfile({ roleTitle: "", roleDescription: "" });
                           clearFieldError("roleTitle");
                           clearFieldError("roleDescription");

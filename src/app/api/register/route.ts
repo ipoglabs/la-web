@@ -67,9 +67,13 @@ export async function POST(req: Request) {
       email: String(body.email || "").trim().toLowerCase(),
 
       primaryNumber: String(body.primaryNumber || "").trim(),
+      secondaryNumber1: body.secondaryNumber1 ? String(body.secondaryNumber1).trim() : undefined,
+      secondaryNumber2: body.secondaryNumber2 ? String(body.secondaryNumber2).trim() : undefined,
 
       password: String(body.password || ""),
       role: String(body.role || "individual").trim(),
+      roleTitle: body.roleTitle ? String(body.roleTitle).trim() : undefined,
+      roleDescription: body.roleDescription ? String(body.roleDescription).trim() : undefined,
 
       // ✅ Consents
       isTermsAndConditionAccepted: !!body.isTermsAndConditionAccepted,
@@ -113,6 +117,7 @@ export async function POST(req: Request) {
 
     // ✅ generate incremental userId
     const userId = await getNextUserId(12);
+    
     const passwordHash = await hash(payload.password, 10);
 
     const created = await User.create({
@@ -139,14 +144,16 @@ export async function POST(req: Request) {
     });
 
     // welcome email (don't await, we don't want to block the response if email fails)
-sendWelcomeEmail({
-  firstName: created.firstName,
-  lastName: created.lastName,
-  email: created.email,
-  phone: created.primaryNumber,
-}).catch((err) => {
+try {
+  await sendWelcomeEmail({
+    firstName: created.firstName,
+    lastName: created.lastName,
+    email: created.email,
+    phone: created.primaryNumber,
+  });
+} catch (err) {
   console.error("Welcome email failed:", err);
-});
+}
 
     const token = signJwt({
       userId: String(created._id),

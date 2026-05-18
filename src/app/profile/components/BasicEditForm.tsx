@@ -15,6 +15,8 @@ import { Button } from "@/components/shadcn/button";
 import { FormField } from "@/components/FormField";
 import { FormFieldWrapper } from "@/components/FormFieldWrapper";
 import { FormHelperText } from "@/components/FormHelperText";
+import { DateInput } from "@/components/date-input";
+import { useMediaQuery } from "@/components/hooks/use-media-query";
 
 import type { ProfileUser } from "../types";
 
@@ -37,6 +39,7 @@ function cx(...arr: any[]) {
 export default function BasicEditForm({ user, onSuccess }: Props) {
   useAutoScrollInput();
   const router = useRouter();
+  const isBelowLaptop = useMediaQuery("(max-width:1024px)");
 
  const PREDEFINED_ROLES = ["individual", "business", "agency"];
 
@@ -276,18 +279,28 @@ const [formData, setFormData] = useState({
     </FormField>
 
       {/* DOB */}
-      <FormField label="Date of Birth" error={errors.dateOfBirth}>
-        <input
-          type="date"
-          value={formData.dateOfBirth}
-          onChange={(e) =>
-            setFormData({ ...formData, dateOfBirth: e.target.value })
-          }
-          onBlur={(e) => {
-            const msg = validateField("dateOfBirth", e.target.value);
-            if (msg) setErrors((p) => ({ ...p, dateOfBirth: msg }));
+      <FormField
+        label="Date of Birth"
+        htmlFor="dateOfBirth"
+        error={errors.dateOfBirth}
+        helperLabel="We need this to confirm you are 18+"
+        showFocusWithin={!isBelowLaptop}
+      >
+        <DateInput
+          id="dateOfBirth"
+          value={formData.dateOfBirth || ""}
+          onChange={(value) => {
+            setFormData({ ...formData, dateOfBirth: value || "" });
+            setErrors((p) => ({ ...p, dateOfBirth: "" }));
           }}
-          className="w-full border rounded px-3 py-2"
+          inputFormat="DMY"
+          separator="/"
+          blurDisplay="medium"
+          placeholder="DD / MM / YYYY"
+          error={errors.dateOfBirth}
+          className={cx(
+            !!errors.dateOfBirth && "border-red-500 focus-visible:ring-red-500/20"
+          )}
         />
       </FormField>
 

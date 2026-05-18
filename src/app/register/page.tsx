@@ -16,6 +16,9 @@
   import { FormFieldWrapper } from "@/components/FormFieldWrapper";
   import { FormHelperText } from "@/components/FormHelperText";
   import { useMediaQuery } from "@/components/hooks/use-media-query";
+  import AppHeader from "../components/AppHeader/appHeader";
+  import AppFooter from "../components/AppFooter/appFooter";
+  
 
   /* ---------- utils ---------- */
   function pad(n: number) {
@@ -199,6 +202,8 @@ if (verifiedEmail !== nextEmail) {
     };
 
     return (
+      <>
+      <AppHeader />
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="w-full max-w-2xl">
           <CardHeader>
@@ -388,5 +393,7 @@ if (verifiedEmail !== nextEmail) {
           </CardContent>
         </Card>
       </div>
+      <AppFooter />
+      </>
     );
   }
