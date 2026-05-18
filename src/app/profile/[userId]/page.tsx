@@ -58,7 +58,7 @@ export default async function Page({
   /* ================= BUILD RESPONSE ================= */
   const user = {
     userId: safeUser.userId,
-    name: `${safeUser.firstName} ${safeUser.lastName}`,
+    name: safeUser.fullName || "",
     role: safeUser.roleTitle || safeUser.role,
 
     location:

@@ -6,14 +6,14 @@
   import { toast } from "sonner";
 
   import { useRegisterStore } from "@/store/registerStore";
-  import { generalInfoSchema } from "@/lib/validators";
+  import { generalInfoSchema, type GeneralInfoForm } from "@/lib/validators";
 
   import { Form } from "@/components/shadcn/form";
   import { Input } from "@/components/shadcn/input";
   import { Button } from "@/components/shadcn/button";
   import { DateInput } from "@/components/date-input";
   import { FormField } from "@/components/FormField";
-  import { FormFieldWrapper } from "@/components/FormFieldWrapper";
+
   import { FormHelperText } from "@/components/FormHelperText";
   import { useMediaQuery } from "@/components/hooks/use-media-query";
   import AppHeader from "../components/AppHeader/appHeader";
@@ -45,21 +45,22 @@
     return age;
   }
 
-  // ✅ allow typing anything; validate on blur/submit
   const lettersOnlyRegex = /^[A-Za-z]+$/;
 
-  function validateName(value: string, label: string) {
-    const v = (value ?? "").trim();
-    if (!v) return `Please enter your ${label}.`;
-    if (!lettersOnlyRegex.test(v))
-      return "Only letters A–Z are allowed (no numbers or special characters).";
+  function validateFullName(value: string) {
+    const trimmed = (value ?? "").trim();
+    if (!trimmed) return "Please enter your full name.";
+    const parts = trimmed.split(/\s+/).filter(Boolean);
+    for (const part of parts) {
+      if (!lettersOnlyRegex.test(part))
+        return "Only letters A–Z are allowed (no numbers or special characters).";
+    }
     return "";
   }
 
   // ✅ Validate only fields present on this step
   const step1Schema = generalInfoSchema.pick({
-    firstName: true,
-    lastName: true,
+    fullName: true,
     dateOfBirth: true,
     gender: true,
     email: true,
@@ -84,6 +85,7 @@
 } = useRegisterStore();
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
     const isBelowLaptop = useMediaQuery("(max-width:1024px)");
 
@@ -105,31 +107,19 @@
       });
     };
 
-    const validateNameOnBlur = (field: "firstName" | "lastName", label: string, value: string) => {
-      const msg = validateName(value, label);
-      setFieldError(field, msg || undefined);
-
-      // optional: store trimmed value after blur
-      updateGeneral({ [field]: value.trim() } as any);
-    };
+    const [fullName, setFullName] = React.useState(general.fullName || "");
 
     const onSubmit = (e?: React.FormEvent) => {
       e?.preventDefault();
 
-      const firstName = (general.firstName || "").trim();
-      const lastName = (general.lastName || "").trim();
       const dateOfBirth = general.dateOfBirth || "";
       const gender = general.gender || "";
       const email = (general.email || "").trim();
 
       const mappedErrors: Record<string, string> = {};
 
-      // friendly checks
-      const fnErr = validateName(firstName, "first name");
-      if (fnErr) mappedErrors.firstName = fnErr;
-
-      const lnErr = validateName(lastName, "last name");
-      if (lnErr) mappedErrors.lastName = lnErr;
+      const nameErr = validateFullName(fullName);
+      if (nameErr) mappedErrors.fullName = nameErr;
 
       if (!dateOfBirth) {
         mappedErrors.dateOfBirth = "Please enter your date of birth.";
@@ -147,8 +137,7 @@
           }
       // zod validation for this step
       const parsed = step1Schema.safeParse({
-        firstName,
-        lastName,
+        fullName: fullName.trim(),
         dateOfBirth,
         gender,
         email,
@@ -184,8 +173,7 @@ if (verifiedEmail !== nextEmail) {
 }
 
  updateGeneral({
-  firstName,
-  lastName,
+  fullName,
   dateOfBirth,
   gender,
   email: nextEmail,
@@ -220,68 +208,40 @@ if (verifiedEmail !== nextEmail) {
                 Lets get to know you, a few details to personalise your lokalads experience,
               </p>
 
-              {/* First / Last Name */}
-              <FormFieldWrapper
-                className="grid grid-cols-1 md:grid-cols-2 md:gap-4"
+              {/* Full Name */}
+              <FormField
+                label="Full Name"
+                htmlFor="fullName"
+                error={errors.fullName}
                 showFocusWithin={!isBelowLaptop}
               >
-                <FormField
-                  label="First Name"
-                  htmlFor="firstName"
-                  error={errors.firstName}
-                  className="mb-0"
-                  showFocusWithin={isBelowLaptop}
-                >
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    value={general.firstName || ""}
-                    onChange={(e) => {
-                      updateGeneral({ firstName: e.target.value });
-                      // do not block typing; clear error while typing (optional)
-                      clearError("firstName");
-                    }}
-                    onBlur={(e) => validateNameOnBlur("firstName", "first name", e.target.value)}
-                    placeholder="e.g. Johnson"
-                    inputMode="text"
-                    autoComplete="given-name"
-                    aria-invalid={!!errors.firstName}
-                    aria-describedby={errors.firstName ? "firstName-error" : undefined}
-                    className={cx(!!errors.firstName && "border-red-500 focus-visible:ring-red-500/20")}
-                  />
-                </FormField>
-
-                <FormField
-                  label="Last Name"
-                  htmlFor="lastName"
-                  error={errors.lastName}
-                  className="mb-0"
-                  showFocusWithin={isBelowLaptop}
-                >
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    value={general.lastName || ""}
-                    onChange={(e) => {
-                      updateGeneral({ lastName: e.target.value });
-                      clearError("lastName");
-                    }}
-                    onBlur={(e) => validateNameOnBlur("lastName", "last name", e.target.value)}
-                    placeholder="e.g. Davis"
-                    inputMode="text"
-                    autoComplete="family-name"
-                    aria-invalid={!!errors.lastName}
-                    aria-describedby={errors.lastName ? "lastName-error" : undefined}
-                    className={cx(!!errors.lastName && "border-red-500 focus-visible:ring-red-500/20")}
-                  />
-                </FormField>
-              </FormFieldWrapper>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  autoCorrect="off"
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFullName(val);
+                    updateGeneral({ fullName: val });
+                    clearError("fullName");
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim();
+                    setFullName(val);
+                    updateGeneral({ fullName: val });
+                    const msg = validateFullName(val);
+                    setFieldError("fullName", msg || undefined);
+                  }}
+                  placeholder="e.g. Johnson Davis"
+                  inputMode="text"
+                  aria-invalid={!!errors.fullName}
+                  aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                  className={cx(!!errors.fullName && "border-red-500 focus-visible:ring-red-500/20")}
+                />
+              </FormField>
 
               <FormHelperText className="mt-1 mb-4">Use your real name to build trust.</FormHelperText>
 
@@ -332,7 +292,7 @@ if (verifiedEmail !== nextEmail) {
                         value={opt.value}
                         checked={general.gender === opt.value}
                         onChange={(e) => {
-                          updateGeneral({ gender: e.target.value });
+                          updateGeneral({ gender: e.target.value as GeneralInfoForm["gender"] });
                           clearError("gender");
                         }}
                         className={cx(
@@ -360,7 +320,7 @@ if (verifiedEmail !== nextEmail) {
                     updateGeneral({ email: e.target.value });
                     clearError("email");
                   }}
-                  onBlur={(e) => {
+                  onBlur={async (e) => {
                     const value = e.target.value.trim();
 
                     if (!value) {
@@ -376,6 +336,23 @@ if (verifiedEmail !== nextEmail) {
                     }
 
                     clearError("email");
+
+                    setCheckingEmail(true);
+                    try {
+                      const res = await fetch("/api/check-email", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: value }),
+                      });
+                      const data = await res.json();
+                      if (data.exists) {
+                        setFieldError("email", "This email is already registered.");
+                      }
+                    } catch {
+                      // silently ignore — the server will catch it on submit
+                    } finally {
+                      setCheckingEmail(false);
+                    }
                   }}
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "email-error" : undefined}
@@ -384,9 +361,12 @@ if (verifiedEmail !== nextEmail) {
                       "border-red-500 focus-visible:ring-red-500/20"
                   )}
                 />
+                {checkingEmail && (
+                  <p className="mt-1 text-xs text-muted-foreground">Checking availability…</p>
+                )}
               </FormField>
 
-              <Button type="submit" className="mt-4 w-full">
+              <Button type="submit" className="mt-4 w-full" disabled={checkingEmail}>
                 Next: Verify Email
               </Button>
             </Form>

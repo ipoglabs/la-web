@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { ArrowLeft, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,6 @@ export default function EmailVerificationPage() {
         setLockUntil(null);
         persistGuard(0, null);
         toast.success("Email verified ✅");
-        setTimeout(() => router.push("/register/phone-verification"), 800);
       } else {
         const nextAttempts = attempts + 1;
         let nextLockUntil: number | null = null;
@@ -150,7 +149,17 @@ export default function EmailVerificationPage() {
                 </div>
                 <div>
                   <h2 className="text-base font-semibold leading-tight">Email verified</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5 truncate">{email}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-sm text-muted-foreground truncate">{email}</p>
+                    <span className="text-muted-foreground">·</span>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/register")}
+                      className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors shrink-0"
+                    >
+                      Change
+                    </button>
+                  </div>
                 </div>
               </div>
               <Button
@@ -175,24 +184,24 @@ export default function EmailVerificationPage() {
         <div className="w-full max-w-sm">
           <div className="rounded-lg border border-border bg-card p-6 space-y-4">
 
-            <div>
-              <h2 className="text-base font-semibold leading-tight">
-                Enter the 6-digit code
-              </h2>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-sm text-muted-foreground">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-base font-semibold leading-tight">
+                  Enter the 6-digit code
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   Sent to{" "}
                   <span className="font-medium text-foreground">{email}</span>
                 </p>
-                <span className="text-muted-foreground">·</span>
-                <button
-                  type="button"
-                  onClick={() => router.push("/register")}
-                  className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-                >
-                  Change
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back
+              </button>
             </div>
 
             <OtpInput

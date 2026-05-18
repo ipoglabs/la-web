@@ -149,7 +149,7 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
 
       <div className="relative shrink-0">
         <div className="size-14 rounded-full bg-slate-900 flex items-center justify-center text-white text-xl font-bold shadow-sm">
-          {user.firstName?.charAt(0) || "U"}
+          {user.fullName?.charAt(0) || "U"}
         </div>
 
         <button
@@ -162,7 +162,7 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
 
       <div className="min-w-0">
         <h2 className="text-base font-bold text-slate-900">
-          {user.firstName} {user.lastName}
+          {user.fullName}
         </h2>
         <p className="text-xs text-slate-400 mt-0.5">
           @{user.profileId} · {user.role || "User"}
@@ -181,8 +181,7 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
 
     {/* ── Basic Info ── */}
     <Section label="Basic Info" onEdit={() => setActiveModal("basic")}>
-      <InfoRow label="First Name" value={user.firstName} />
-      <InfoRow label="Last Name" value={user.lastName} />
+      <InfoRow label="Full Name" value={user.fullName} />
       <InfoRow
         label="Date of Birth"
         value={

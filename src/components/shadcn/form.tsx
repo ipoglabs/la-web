@@ -8,12 +8,11 @@ import {
 } from "react-hook-form";
 
 // Form context provider
-export function Form({
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLFormElement>) {
-  return <form {...props}>{children}</form>;
-}
+export const Form = React.forwardRef<HTMLFormElement, React.HTMLAttributes<HTMLFormElement>>(
+  function Form({ children, ...props }, ref) {
+    return <form ref={ref} {...props}>{children}</form>;
+  }
+);
 
 // FormField: Connects RHF control to a field
 export function FormField<TFieldValues extends FieldValues = FieldValues>({

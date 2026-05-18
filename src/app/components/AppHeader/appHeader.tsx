@@ -50,9 +50,9 @@ export default function AppHeader() {
     });
 
     setIsLoggedIn(false);
-
-    // 🔥 notify other components
     window.dispatchEvent(new Event("auth-changed"));
+
+    toast.success("You have been logged out.");
 
     router.push("/");
     router.refresh();

@@ -22,19 +22,14 @@ const ALPHA_ONLY = /^[A-Za-z]+$/;
 /* ===== schema ===== */
 export const basicProfileSchema = z
   .object({
-    firstName: z
+    fullName: z
       .string()
       .trim()
-      .min(1, "First name is required")
-      .max(18, "Max 18 characters allowed")
-      .regex(ALPHA_ONLY, "Only alphabets allowed"),
-
-    lastName: z
-      .string()
-      .trim()
-      .min(1, "Last name is required")
-      .max(18, "Max 18 characters allowed")
-      .regex(ALPHA_ONLY, "Only alphabets allowed"),
+      .min(1, "Full name is required")
+      .refine(
+        (v) => v.trim().split(/\s+/).filter(Boolean).every((p) => ALPHA_ONLY.test(p)),
+        "Only alphabets (A–Z) allowed"
+      ),
 
     role: z
       .string()
@@ -69,19 +64,19 @@ export const basicProfileSchema = z
         ctx.addIssue({
           path: ["roleTitle"],
           message: "Role title is required",
-          code: z.ZodIssueCode.custom,
+          code: "custom",
         });
       } else if (title.length < 2) {
         ctx.addIssue({
           path: ["roleTitle"],
           message: "Minimum 2 characters required",
-          code: z.ZodIssueCode.custom,
+          code: "custom",
         });
       } else if (title.length > 80) {
         ctx.addIssue({
           path: ["roleTitle"],
           message: "Max 80 characters allowed",
-          code: z.ZodIssueCode.custom,
+          code: "custom",
         });
       }
 
@@ -90,19 +85,19 @@ export const basicProfileSchema = z
         ctx.addIssue({
           path: ["roleDescription"],
           message: "Role description is required",
-          code: z.ZodIssueCode.custom,
+          code: "custom",
         });
       } else if (desc.length < 2) {
         ctx.addIssue({
           path: ["roleDescription"],
           message: "Minimum 2 characters required",
-          code: z.ZodIssueCode.custom,
+          code: "custom",
         });
       } else if (desc.length > 300) {
         ctx.addIssue({
           path: ["roleDescription"],
           message: "Max 300 characters allowed",
-          code: z.ZodIssueCode.custom,
+          code: "custom",
         });
       }
     }

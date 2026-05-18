@@ -53,6 +53,7 @@ export default function PostHeader() {
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    toast.success("You have been logged out.");
     router.push("/");
   }, [router]);
 

@@ -102,8 +102,7 @@ export const useRegisterStore =
         /* ------------------------------------------------ */
 
         general: {
-          firstName: '',
-          lastName: '',
+          fullName: '',
           dateOfBirth: '',
           gender: '',
           email: '',
@@ -211,8 +210,7 @@ export const useRegisterStore =
         reset: () =>
           set({
             general: {
-              firstName: '',
-              lastName: '',
+              fullName: '',
               dateOfBirth: '',
               gender: '',
               email: '',

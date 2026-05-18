@@ -55,8 +55,7 @@ export async function POST(req: Request) {
     });
 
     const payload = stripEmpty({
-      firstName: toNameCase(body.firstName),
-      lastName: toNameCase(body.lastName),
+      fullName: toNameCase(body.fullName),
       dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
       gender: String(body.gender || "other").trim(),
 
@@ -86,8 +85,7 @@ export async function POST(req: Request) {
 
     // required
     const missing: string[] = [];
-    if (!payload.firstName) missing.push("firstName");
-    if (!payload.lastName) missing.push("lastName");
+    if (!payload.fullName) missing.push("fullName");
     if (!payload.dateOfBirth) missing.push("dateOfBirth");
     if (!payload.email) missing.push("email");
     if (!payload.primaryNumber) missing.push("primaryNumber");
@@ -146,8 +144,7 @@ export async function POST(req: Request) {
     // welcome email (don't await, we don't want to block the response if email fails)
 try {
   await sendWelcomeEmail({
-    firstName: created.firstName,
-    lastName: created.lastName,
+    fullName: created.fullName,
     email: created.email,
     phone: created.primaryNumber,
   });
@@ -168,8 +165,7 @@ try {
           id: String(created._id),
           userId: created.userId,
           email: created.email,
-          firstName: created.firstName,
-          lastName: created.lastName,
+          fullName: created.fullName,
           primaryNumber: created.primaryNumber,
           role: created.role ?? "user",
           locality: created.locality,

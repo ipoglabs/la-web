@@ -52,8 +52,7 @@ const UserSchema = new mongoose.Schema(
     // incremental public ID
     userId: { type: String, required: true, unique: true, index: true },
 
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
+    fullName: { type: String, required: true },
     dateOfBirth: { type: Date, required: true },
     gender: { type: String },
 

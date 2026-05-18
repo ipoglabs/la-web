@@ -17,8 +17,28 @@ type Props = {
 
 export function CountryPicker({ open, onClose, selected, onSelect, countries }: Props) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [search, setSearch] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (open) {
+      setSearch("");
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  }, [open]);
 
   const list = countries && countries.length ? countries : COUNTRIES;
+
+  const filtered = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.dial.includes(q) ||
+        c.code.toLowerCase().includes(q)
+    );
+  }, [list, search]);
 
   const isThumbnail = list.length >= 2 && list.length <= 6;
 
@@ -48,42 +68,49 @@ export function CountryPicker({ open, onClose, selected, onSelect, countries }: 
   );
 
   const content = (
-    <div className="max-h-[50vh] overflow-auto">
-      <div className="divide-y divide-slate-200">
-        {list.map((c) => {
-          const isSelected = selected?.code === c.code;
-          return (
-            <button
-              key={c.code}
-              onClick={() => {
-                onSelect(c);
-                onClose();
-              }}
-              className={
-                `w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-200 ${
-                  isSelected ? "bg-blue-50" : ""
-                }`
-              }
-            >
-              <span className="flex-none">
-                <c.Flag className="rounded-sm" />
-              </span>
-              <span className="flex-1">
-                <div className={`text-sm font-normal ${isSelected ? "text-blue-900" : ""}`}>{c.name} <span className="text-sm text-slate-500">(+{c.dial})</span></div>
-              </span>
-              <span className="flex-none">
-                <span
-                  className={
-                    `inline-block h-2 w-2 rounded-full ${
-                      isSelected ? "bg-blue-700" : "bg-transparent"
-                    }`
-                  }
-                  aria-hidden
-                />
-              </span>
-            </button>
-          );
-        })}
+    <div>
+      <div className="px-3 py-2">
+        <input
+          ref={inputRef}
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search country or dial code…"
+          className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+        />
+      </div>
+      <div className="max-h-[45vh] overflow-auto">
+        <div className="divide-y divide-slate-200">
+          {filtered.length === 0 && (
+            <p className="px-4 py-6 text-center text-sm text-slate-400">No countries found</p>
+          )}
+          {filtered.map((c) => {
+            const isSelected = selected?.code === c.code;
+            return (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => { onSelect(c); onClose(); }}
+                className={`w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-200 ${isSelected ? "bg-blue-50" : ""}`}
+              >
+                <span className="flex-none">
+                  <c.Flag className="rounded-sm" />
+                </span>
+                <span className="flex-1">
+                  <div className={`text-sm font-normal ${isSelected ? "text-blue-900" : ""}`}>
+                    {c.name} <span className="text-sm text-slate-500">(+{c.dial})</span>
+                  </div>
+                </span>
+                <span className="flex-none">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${isSelected ? "bg-blue-700" : "bg-transparent"}`}
+                    aria-hidden
+                  />
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

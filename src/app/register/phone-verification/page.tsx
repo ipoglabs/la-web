@@ -7,7 +7,7 @@ import {
   useEffect,
 } from "react";
 
-import { Check, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -204,13 +204,23 @@ export default function PhoneVerificationPage() {
           <div className="w-full max-w-sm space-y-3">
             <div className="rounded-lg border border-border bg-card p-6 space-y-4">
 
-              <div>
-                <h2 className="text-base font-semibold leading-tight">
-                  {allDone ? "All numbers verified" : "Number verified"}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  {verified.length} of {MAX_NUMBERS} added
-                </p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-base font-semibold leading-tight">
+                    {allDone ? "All numbers verified" : "Number verified"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {verified.length} of {MAX_NUMBERS} added
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -282,7 +292,7 @@ export default function PhoneVerificationPage() {
                   </button>
                 )}
                 <Button className="w-full" onClick={() => router.push("/register/profile-setup")}>
-                  Done
+                  Next
                 </Button>
               </div>
 
@@ -371,17 +381,27 @@ export default function PhoneVerificationPage() {
             {/* ENTER PHONE */}
             {stage === "enter-phone" && (
               <>
-                <div>
-                  <h2 className="text-base font-semibold leading-tight">
-                    {verified.length === 0
-                      ? "Verify your phone"
-                      : `Add ${LABELS[verified.length].toLowerCase()} number`}
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {verified.length === 0
-                      ? "We will send a one-time code to verify it."
-                      : "Add a backup number for account recovery."}
-                  </p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="text-base font-semibold leading-tight">
+                      {verified.length === 0
+                        ? "Verify your phone"
+                        : `Add ${LABELS[verified.length].toLowerCase()} number`}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {verified.length === 0
+                        ? "We will send a one-time code to verify it."
+                        : "Add a backup number for account recovery."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => verified.length > 0 ? setStage("summary") : router.back()}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back
+                  </button>
                 </div>
 
                 <div className="space-y-3">
@@ -402,23 +422,26 @@ export default function PhoneVerificationPage() {
             {/* VERIFY OTP */}
             {stage === "verify-otp" && (
               <>
-                <div>
-                  <h2 className="text-base font-semibold leading-tight">
-                    Enter the 6-digit code
-                  </h2>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="text-base font-semibold leading-tight">
+                      Enter the 6-digit code
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">
                       Sent to{" "}
                       <span className="font-medium text-foreground">
                         +{country.dial} {phone}
                       </span>
                     </p>
-                    <span className="text-muted-foreground">·</span>
-                    <button type="button" onClick={handleChangeNumber}
-                      className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors">
-                      Change
-                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleChangeNumber}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Back
+                  </button>
                 </div>
 
                 <OtpInput

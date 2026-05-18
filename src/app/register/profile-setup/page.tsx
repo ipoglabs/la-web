@@ -98,11 +98,7 @@ export default function ProfileSetupPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPwd, setShowPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [confirmTouched, setConfirmTouched] = useState(false); // ✅ used for blur-based revalidation
   const [consent, setConsent] = useState(false);
   const [subscribe, setSubscribe] = useState(false);
 
@@ -124,14 +120,6 @@ export default function ProfileSetupPage() {
     [profile.password]
   );
 
-  const validateConfirmPassword = (value: string) => {
-    if (!value) return "";
-    if (value !== (profile.password || "")) {
-      return "Passwords don’t match — please check both fields.";
-    }
-    return "";
-  };
-
   const clearFieldError = (key: string) => {
     setErrors((prev) => {
       if (!prev[key]) return prev;
@@ -150,21 +138,6 @@ export default function ProfileSetupPage() {
     });
   };
 
-  // ✅ If password changes after confirm field was blurred, keep error accurate
-  useEffect(() => {
-    if (!confirmTouched) return;
-    if (!confirmPassword) return;
-
-    setErrors((prev) => {
-      const next = { ...prev };
-      const msg = validateConfirmPassword(confirmPassword);
-      if (msg) next.confirmPassword = msg;
-      else delete next.confirmPassword;
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.password]);
-
   useEffect(() => {
     if (profile.locality && profile.locality !== locationQuery) {
       setLocationQuery(profile.locality);
@@ -175,7 +148,6 @@ export default function ProfileSetupPage() {
     const order = [
       "locality",
       "password",
-      "confirmPassword",
       "role",
       "roleTitle",
       "roleDescription",
@@ -265,10 +237,6 @@ export default function ProfileSetupPage() {
       map.password = "Try a longer password or add a symbol for better protection.";
     }
 
-    // ✅ confirm password check on submit (still required)
-    const confirmMsg = validateConfirmPassword(confirmPassword);
-    if (confirmMsg) map.confirmPassword = confirmMsg;
-
     if (!trimmed.role) {
       map.role = "Tell us how you’ll use Lokalads so we can tailor your experience.";
     }
@@ -306,8 +274,7 @@ console.log("PHONES STORE", phones);
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: general.firstName,
-          lastName: general.lastName,
+          fullName: general.fullName,
           dateOfBirth: general.dateOfBirth,
           gender: general.gender,
           residency: general.residency || undefined,

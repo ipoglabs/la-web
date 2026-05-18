@@ -17,17 +17,14 @@ const optionalString = z.string().trim().optional().or(z.literal(""));
 
 /* ================= STEP 1 ================= */
 export const generalInfoSchema = z.object({
-  firstName: z
+  fullName: z
     .string()
     .trim()
-    .min(1, "Please enter your first name.")
-    .regex(ALPHA_ONLY, "Only alphabets (A–Z) allowed"),
-
-  lastName: z
-    .string()
-    .trim()
-    .min(1, "Please enter your last name.")
-    .regex(ALPHA_ONLY, "Only alphabets (A–Z) allowed"),
+    .min(1, "Please enter your full name.")
+    .refine((v) => {
+      const parts = v.trim().split(/\s+/).filter(Boolean);
+      return parts.every((p) => ALPHA_ONLY.test(p));
+    }, "Only alphabets (A–Z) allowed"),
 
   dateOfBirth: z
     .string()
@@ -38,8 +35,8 @@ export const generalInfoSchema = z.object({
       message: "You must be 18 or older",
     }),
 
-  gender: z.enum(["male", "female", "prefer-not-to-say", "other"], {
-    errorMap: () => ({ message: "Please select a gender option." }),
+  gender: z.enum(["male", "female", "prefer-not-to-say", "other"] as const, {
+    error: "Please select a gender option.",
   }),
 
   nationality: optionalString,
@@ -51,7 +48,7 @@ export const generalInfoSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .email("Please enter a valid email address."),
+    .email({ message: "Please enter a valid email address." }),
 });
 
 export type GeneralInfoForm = z.infer<typeof generalInfoSchema>;
@@ -101,19 +98,19 @@ export const profileSchema = z
 
       if (!title) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["roleTitle"],
           message: "Role title required",
         });
       } else if (title.length < 2) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["roleTitle"],
           message: "Min 2 characters",
         });
       } else if (title.length > 24) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["roleTitle"],
           message: "Max 24 characters",
         });
@@ -121,19 +118,19 @@ export const profileSchema = z
 
       if (!desc) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["roleDescription"],
           message: "Description required",
         });
       } else if (desc.length < 8) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["roleDescription"],
           message: "Min 8 characters",
         });
       } else if (desc.length > 300) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["roleDescription"],
           message: "Max 300 characters",
         });

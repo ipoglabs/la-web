@@ -61,37 +61,21 @@ export async function updateProfile(payload: any) {
   }
 
   /* ================= NAME ================= */
-  if (payload.firstName !== undefined) {
-    const v = payload.firstName.trim();
-    if (!v) throw new Error("First name required");
-    if (v.length > 18) throw new Error("Max 18 characters");
-    if (!/^[A-Za-z]+$/.test(v)) throw new Error("Only alphabets");
+  if (payload.fullName !== undefined) {
+    const v = payload.fullName.trim();
+    if (!v) throw new Error("Full name is required");
+    const parts = v.split(/\s+/).filter(Boolean);
+    if (!parts.every((p: string) => /^[A-Za-z]+$/.test(p)))
+      throw new Error("Only alphabets allowed");
 
-    if (user.firstName !== v) {
+    if (user.fullName !== v) {
       changes.push({
-        field: "First Name",
-        oldValue: user.firstName || "-",
+        field: "Full Name",
+        oldValue: user.fullName || "-",
         newValue: v,
       });
 
-      user.firstName = v;
-    }
-  }
-
-  if (payload.lastName !== undefined) {
-    const v = payload.lastName.trim();
-    if (!v) throw new Error("Last name required");
-    if (v.length > 18) throw new Error("Max 18 characters");
-    if (!/^[A-Za-z]+$/.test(v)) throw new Error("Only alphabets");
-
-    if (user.lastName !== v) {
-      changes.push({
-        field: "Last Name",
-        oldValue: user.lastName || "-",
-        newValue: v,
-      });
-
-      user.lastName = v;
+      user.fullName = v;
     }
   }
 
@@ -164,8 +148,7 @@ export async function updateProfile(payload: any) {
   try {
     if (changes.length > 0 && user.email) {
       await sendProfileUpdateEmail({
-        firstName: user.firstName,
-        lastName: user.lastName,
+        fullName: user.fullName,
         email: user.email,
         changes,
       });

@@ -12,8 +12,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, label = "timeout"): Promise<T
 }
 
 export async function sendWelcomeEmail(data: {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
   phone: string;
 }) {
@@ -49,7 +48,7 @@ export async function sendWelcomeEmail(data: {
     <tr>
       <td style="padding:10px 20px;">
         <p style="font-size:18px;color:#333;margin:0 0 10px 0;">
-          Hi <b>${data.firstName} ${data.lastName}</b>,
+          Hi <b>${data.fullName}</b>,
         </p>
 
         <p style="font-size:16px;color:#555;margin:0 0 15px 0;">

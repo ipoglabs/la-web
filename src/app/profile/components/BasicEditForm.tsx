@@ -44,8 +44,7 @@ export default function BasicEditForm({ user, onSuccess }: Props) {
  const PREDEFINED_ROLES = ["individual", "business", "agency"];
 
 const [formData, setFormData] = useState({
-  firstName: user.firstName || "",
-  lastName: user.lastName || "",
+  fullName: user.fullName || "",
 
   // 🔥 detect if it's custom role
   role: PREDEFINED_ROLES.includes(user.role)
@@ -105,8 +104,7 @@ const [formData, setFormData] = useState({
 
       await updateProfile({
         ...formData,
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
+        fullName: formData.fullName.trim(),
       });
 
       toast.success("Profile updated successfully");
@@ -123,37 +121,20 @@ const [formData, setFormData] = useState({
     <Form onSubmit={onSubmit} className="space-y-2 px-3">
 
       {/* NAME */}
-      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        <FormField label="First Name" error={errors.firstName}>
-          <Input
-            value={formData.firstName}
-            onChange={(e) => {
-              setFormData({ ...formData, firstName: e.target.value });
-              setErrors({ ...errors, firstName: "" });
-            }}
-            onBlur={(e) => {
-              const msg = validateField("firstName", e.target.value);
-              if (msg) setErrors((p) => ({ ...p, firstName: msg }));
-            }}
-          />
-        </FormField>
-
-        <FormField label="Last Name" error={errors.lastName}>
-          <Input
-            value={formData.lastName}
-            onChange={(e) => {
-              setFormData({ ...formData, lastName: e.target.value });
-              setErrors({ ...errors, lastName: "" });
-            }}
-            onBlur={(e) => {
-              const msg = validateField("lastName", e.target.value);
-              if (msg) setErrors((p) => ({ ...p, lastName: msg }));
-            }}
-          />
-        </FormField>
-
-      </FormFieldWrapper>
+      <FormField label="Full Name" htmlFor="fullName" error={errors.fullName}>
+        <Input
+          id="fullName"
+          value={formData.fullName}
+          onChange={(e) => {
+            setFormData({ ...formData, fullName: e.target.value });
+            setErrors({ ...errors, fullName: "" });
+          }}
+          onBlur={(e) => {
+            const msg = validateField("fullName", e.target.value);
+            if (msg) setErrors((p) => ({ ...p, fullName: msg }));
+          }}
+        />
+      </FormField>
 
     {/* ================= ROLE ================= */}
     <FormField

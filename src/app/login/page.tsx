@@ -127,6 +127,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState<Country>(COUNTRIES[0]);
+  const [dialCode, setDialCode] = useState(() => COUNTRIES[0].dial.replace("+", ""));
   const [identifierTouched, setIdentifierTouched] = useState(false);
 
   /* ── Password Step ── */
@@ -154,7 +155,7 @@ const isValidPhone = (v: string, minLen = 6) =>
   );
 
   const identifierValid = method === "email" ? emailValid : phoneValid;
-  const identifier = method === "email" ? email : phone;
+  const identifier = method === "email" ? email : `+${dialCode}${phone}`;
 
   /* ================= HANDLERS ================= */
 
@@ -263,7 +264,7 @@ const isValidPhone = (v: string, minLen = 6) =>
                 Enter your password for
               </p>
               <p className="text-sm font-semibold text-slate-900 bg-slate-100 rounded-md px-3 h-10 flex items-center mt-1 truncate">
-                {method === "email" ? email : phone}
+                {method === "email" ? email : `+${dialCode} ${phone}`}
               </p>
             </div>
           )}
@@ -329,6 +330,11 @@ const isValidPhone = (v: string, minLen = 6) =>
                       setLoginError("");
                     }}
                     defaultCountry={country.code}
+                    onCountryChange={(c) => {
+                      setDialCode(c.dial);
+                      const match = COUNTRIES.find((x) => x.code === c.code);
+                      if (match) setCountry(match);
+                    }}
                   />
                   {showIdentifierError && (
                     <p className="text-sm italic text-red-500">
