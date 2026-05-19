@@ -38,8 +38,28 @@ export default function PhoneVerificationPage() {
   const phones = useRegisterStore((s) => s.phones);
   const phoneVerified = useRegisterStore((s) => s.phoneVerified);
 
-  const [stage, setStage] = useState<Stage>("enter-phone");
-  const [verified, setVerified] = useState<VerifiedEntry[]>([]);
+  // Re-hydrate from store so navigating back doesn't reset progress
+  const [verified, setVerified] = useState<VerifiedEntry[]>(() => {
+    const { primaryNumber, secondaryNumber1, secondaryNumber2 } =
+      useRegisterStore.getState().phones;
+
+    const parse = (full: string, label: (typeof LABELS)[number]): VerifiedEntry | null => {
+      if (!full) return null;
+      const c = COUNTRIES.find((c) => full.startsWith(`+${c.dial}`));
+      if (!c) return null;
+      return { country: c, phone: full.slice(c.dial.length + 1), label };
+    };
+
+    return [
+      parse(primaryNumber, "Primary"),
+      parse(secondaryNumber1, "Secondary 1"),
+      parse(secondaryNumber2, "Secondary 2"),
+    ].filter(Boolean) as VerifiedEntry[];
+  });
+
+  const [stage, setStage] = useState<Stage>(() =>
+    useRegisterStore.getState().phones.primaryNumber ? "summary" : "enter-phone"
+  );
   const [country, setCountry] = useState<Country>(
     () => COUNTRIES.find((c) => c.code === "SG") ?? COUNTRIES[0]
   );
@@ -66,6 +86,11 @@ export default function PhoneVerificationPage() {
     if (!digits) { setPhoneError("Please enter your phone number."); return; }
 
     const composed = `+${country.dial}${digits}`;
+
+    if (verified.some((v) => `+${v.country.dial}${v.phone}` === composed)) {
+      setPhoneError("This number is already verified.");
+      return;
+    }
 
     if (country.code === "IN") {
       setPhoneError("");
