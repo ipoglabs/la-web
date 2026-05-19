@@ -106,6 +106,9 @@ export default function SimpleHeader() {
                     <DropdownMenuItem onClick={() => router.push('/my-ads')}>My Ads</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/chat')}>Chat</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/profile')}>Your Profile</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push("/switch-country")}>
+                      Switch Country
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                   </>
                 ) : (

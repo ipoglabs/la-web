@@ -153,6 +153,9 @@ export default function AppHeader() {
                     <DropdownMenuItem onClick={() => router.push("/profile")}>
                       Profile
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push("/switch-country")}>
+                      Switch Country
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                       Logout
                     </DropdownMenuItem>
