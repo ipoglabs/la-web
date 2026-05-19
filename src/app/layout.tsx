@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
 import SiteGate from "@/app/components/SiteGate";
 import { CountryInitializer } from "@/app/components/CountryInitializer";
+import { CountryBadge } from "@/app/components/CountryBadge";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={cn("bg-white min-h-screen text-slate-900", inter.className)}>
         <Toaster position="top-center" richColors />
         <CountryInitializer />
+        <CountryBadge />
 
         <SiteGate>
           {children}
