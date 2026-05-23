@@ -5,8 +5,9 @@ import { persist } from "zustand/middleware";
 
 export type AuthUser = {
   id: string;
-  firstName: string;
-  lastName: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   dateOfBirth?: string | Date;
   gender?: string;
 

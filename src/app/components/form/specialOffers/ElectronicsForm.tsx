@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function ElectronicsGadgetsForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -129,40 +131,25 @@ export default function ElectronicsGadgetsForm() {
         onChange={(v) => setField("brand", v)}
       />
 
-      {/* Product Type */}
-      <SelectField
-        label="Product Type"
-        field="electronicsCategory"
-        value={electronicsCategory}
-        onChange={(v) => setField("electronicsCategory", v)}
-        options={[
-          { value: "mobile", label: "Mobile Phones" },
-          { value: "laptop", label: "Laptops" },
-          { value: "tv", label: "Televisions" },
-          { value: "camera", label: "Cameras" },
-          { value: "audio", label: "Audio Devices" },
-          { value: "accessories", label: "Accessories" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Product Type" singleSelect value={electronicsCategory ? [electronicsCategory] : []} onChange={(v) => setField("electronicsCategory", v[0] ?? "")}>
+        <ToggleGroupButton value="mobile">Mobile Phones</ToggleGroupButton>
+        <ToggleGroupButton value="laptop">Laptops</ToggleGroupButton>
+        <ToggleGroupButton value="tv">Televisions</ToggleGroupButton>
+        <ToggleGroupButton value="camera">Cameras</ToggleGroupButton>
+        <ToggleGroupButton value="audio">Audio Devices</ToggleGroupButton>
+        <ToggleGroupButton value="accessories">Accessories</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Condition */}
-      <SelectField
-        label="Condition"
-        field="condition"
-        value={condition}
-        onChange={(v) => setField("condition", v)}
-        options={[
-          { value: "new", label: "New" },
-          { value: "used", label: "Used" },
-          { value: "refurbished", label: "Refurbished" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="new">New</ToggleGroupButton>
+        <ToggleGroupButton value="used">Used</ToggleGroupButton>
+        <ToggleGroupButton value="refurbished">Refurbished</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Price */}
       <FormField
-        label="Price (₹)"
+        label={`Price (${currency})`}
         field="salePrice"
         type="number"
         value={price}

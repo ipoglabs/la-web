@@ -3,15 +3,18 @@
 import React, { useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function FoodServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
   const setField = usePostFormStore((s) => s.setField);
   const store = usePostFormStore();
 
   const name = store.name ?? "";
+  const serviceType = (store as any).serviceType ?? "";
   const cuisineType = (store as any).cuisineType ?? "";
   const deliveryAvailable = (store as any).deliveryAvailable ?? "";
   const price = (store as any).price ?? "";
@@ -114,17 +117,13 @@ export default function FoodServiceForm() {
         required
       />
 
-      <SelectField
-        label="Service Type"
-        field="serviceType"
-        options={[
-          { value: "home-cooked" },
-          { value: "tiffin" },
-          { value: "catering" },
-          { value: "restaurant" },
-          { value: "cloud-kitchen" },
-        ]}
-      />
+      <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
+        <ToggleGroupButton value="home-cooked">Home Cooked</ToggleGroupButton>
+        <ToggleGroupButton value="tiffin">Tiffin</ToggleGroupButton>
+        <ToggleGroupButton value="catering">Catering</ToggleGroupButton>
+        <ToggleGroupButton value="restaurant">Restaurant</ToggleGroupButton>
+        <ToggleGroupButton value="cloud-kitchen">Cloud Kitchen</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Cuisine Type"
@@ -147,32 +146,26 @@ export default function FoodServiceForm() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <FormField
-          label="Price (₹)"
-          field="price"
-          type="number"
-          value={price}
-          onChange={(v) => handlePrice(String(v))}
-          required
-        />
+      <FormField
+        label={`Price (${currency})`}
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
 
-        <input
-          className="border rounded px-3 py-2"
-          placeholder="Location"
-          value={location?.address ?? ""}
-          onChange={(e) => setLoc(e.target.value)}
-        />
+      <input
+        className="border rounded px-3 py-2 w-full"
+        placeholder="Location"
+        value={location?.address ?? ""}
+        onChange={(e) => setLoc(e.target.value)}
+      />
 
-        <SelectField
-          label="Delivery Available"
-          field="deliveryAvailable"
-          options={[
-            { value: "yes" },
-            { value: "no" },
-          ]}
-        />
-      </div>
+      <ToggleButtonGroup title="Delivery Available" singleSelect value={deliveryAvailable ? [deliveryAvailable] : []} onChange={(v) => setField("deliveryAvailable", v[0] ?? "")}>
+        <ToggleGroupButton value="yes">Yes</ToggleGroupButton>
+        <ToggleGroupButton value="no">No</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Description"

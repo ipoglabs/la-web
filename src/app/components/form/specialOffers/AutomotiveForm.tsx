@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function AutomotiveForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -121,20 +123,12 @@ export default function AutomotiveForm() {
     >
       <h2 className="text-2xl font-bold">Post a Vehicle</h2>
 
-      {/* Vehicle Type */}
-      <SelectField
-        label="Vehicle Type"
-        field="subcategory"
-        value={subcategory}
-        onChange={(v) => setField("subcategory", v)}
-        options={[
-          { value: "car", label: "Car" },
-          { value: "motorcycle", label: "Motorcycle" },
-          { value: "truck", label: "Truck" },
-          { value: "van", label: "Van" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Vehicle Type" singleSelect value={subcategory ? [subcategory] : []} onChange={(v) => setField("subcategory", v[0] ?? "")}>
+        <ToggleGroupButton value="car">Car</ToggleGroupButton>
+        <ToggleGroupButton value="motorcycle">Motorcycle</ToggleGroupButton>
+        <ToggleGroupButton value="truck">Truck</ToggleGroupButton>
+        <ToggleGroupButton value="van">Van</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Make / Model / Year */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -161,56 +155,37 @@ export default function AutomotiveForm() {
         />
       </div>
 
-      {/* Condition / Mileage / Fuel */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SelectField
-          label="Condition"
-          field="condition"
-          value={condition}
-          onChange={(v) => setField("condition", v)}
-          options={[
-            { value: "New" },
-            { value: "Used" },
-            { value: "Certified Pre-Owned", label: "Certified Pre-Owned" },
-          ]}
-        />
-        <FormField
-          label="Mileage (km)"
-          field="kms"
-          type="number"
-          value={kms}
-          onChange={(v) => setField("kms", v)}
-        />
-        <SelectField
-          label="Fuel Type"
-          field="fuelType"
-          value={fuelType}
-          onChange={(v) => setField("fuelType", v)}
-          options={[
-            { value: "Petrol" },
-            { value: "Diesel" },
-            { value: "Electric" },
-            { value: "Hybrid" },
-            { value: "Other" },
-          ]}
-        />
-      </div>
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="New">New</ToggleGroupButton>
+        <ToggleGroupButton value="Used">Used</ToggleGroupButton>
+        <ToggleGroupButton value="Certified Pre-Owned">Certified Pre-Owned</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Transmission / Body / Color */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SelectField
-          label="Transmission"
-          field="transmission"
-          value={transmission}
-          onChange={(v) => setField("transmission", v)}
-          options={[
-            { value: "Manual" },
-            { value: "Automatic" },
-            { value: "AMT" },
-            { value: "CVT" },
-            { value: "DCT" },
-          ]}
-        />
+      <FormField
+        label="Mileage (km)"
+        field="kms"
+        type="number"
+        value={kms}
+        onChange={(v) => setField("kms", v)}
+      />
+
+      <ToggleButtonGroup title="Fuel Type" singleSelect value={fuelType ? [fuelType] : []} onChange={(v) => setField("fuelType", v[0] ?? "")}>
+        <ToggleGroupButton value="Petrol">Petrol</ToggleGroupButton>
+        <ToggleGroupButton value="Diesel">Diesel</ToggleGroupButton>
+        <ToggleGroupButton value="Electric">Electric</ToggleGroupButton>
+        <ToggleGroupButton value="Hybrid">Hybrid</ToggleGroupButton>
+        <ToggleGroupButton value="Other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
+
+      <ToggleButtonGroup title="Transmission" singleSelect value={transmission ? [transmission] : []} onChange={(v) => setField("transmission", v[0] ?? "")}>
+        <ToggleGroupButton value="Manual">Manual</ToggleGroupButton>
+        <ToggleGroupButton value="Automatic">Automatic</ToggleGroupButton>
+        <ToggleGroupButton value="AMT">AMT</ToggleGroupButton>
+        <ToggleGroupButton value="CVT">CVT</ToggleGroupButton>
+        <ToggleGroupButton value="DCT">DCT</ToggleGroupButton>
+      </ToggleButtonGroup>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           label="Body Type"
           field="bodyType"
@@ -257,7 +232,7 @@ export default function AutomotiveForm() {
           onChange={(v) => setField("serviceHistory", v)}
         />
         <FormField
-          label="Price (₹)"
+          label={`Price (${currency})`}
           field="salePrice"
           type="number"
           value={price}

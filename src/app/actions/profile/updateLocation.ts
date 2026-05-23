@@ -101,8 +101,7 @@ export async function updateLocation({
   try {
     if (changes.length > 0 && user.email) {
       await sendLocationUpdateEmail({
-        firstName: user.firstName,
-        lastName: user.lastName,
+        fullName: user.fullName || "",
         email: user.email,
         changes,
       });

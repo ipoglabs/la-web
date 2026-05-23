@@ -3,11 +3,13 @@
 import React, { useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function TutoringForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
@@ -128,33 +130,19 @@ export default function TutoringForm() {
         required
       />
 
-      {/* Level */}
-      <SelectField
-        label="Level"
-        field="level"
-        value={level}
-        onChange={(v) => setField("level", v)}
-        options={[
-          { value: "primary", label: "Primary" },
-          { value: "secondary", label: "Secondary" },
-          { value: "higher-secondary", label: "Higher Secondary" },
-          { value: "college", label: "College / University" },
-          { value: "competitive", label: "Competitive Exams" },
-        ]}
-      />
+      <ToggleButtonGroup title="Level" singleSelect value={level ? [level] : []} onChange={(v) => setField("level", v[0] ?? "")}>
+        <ToggleGroupButton value="primary">Primary</ToggleGroupButton>
+        <ToggleGroupButton value="secondary">Secondary</ToggleGroupButton>
+        <ToggleGroupButton value="higher-secondary">Higher Secondary</ToggleGroupButton>
+        <ToggleGroupButton value="college">College / University</ToggleGroupButton>
+        <ToggleGroupButton value="competitive">Competitive Exams</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Mode */}
-      <SelectField
-        label="Mode"
-        field="mode"
-        value={mode}
-        onChange={(v) => setField("mode", v)}
-        options={[
-          { value: "online", label: "Online" },
-          { value: "offline", label: "Offline (In-person)" },
-          { value: "both", label: "Both" },
-        ]}
-      />
+      <ToggleButtonGroup title="Mode" singleSelect value={mode ? [mode] : []} onChange={(v) => setField("mode", v[0] ?? "")}>
+        <ToggleGroupButton value="online">Online</ToggleGroupButton>
+        <ToggleGroupButton value="offline">Offline (In-person)</ToggleGroupButton>
+        <ToggleGroupButton value="both">Both</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Qualification */}
       <FormField
@@ -179,7 +167,7 @@ export default function TutoringForm() {
           onChange={(v) => setField("availability", v)}
         />
         <FormField
-          label="Fee (₹)"
+          label={`Fee (${currency})`}
           field="price"
           type="number"
           value={price}

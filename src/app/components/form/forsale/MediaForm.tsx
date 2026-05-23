@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function BooksMusicMediaForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -23,13 +25,11 @@ export default function BooksMusicMediaForm() {
   const price = (store as any).price ?? store.salePrice ?? "";
   const negotiable = (store as any).negotiable ?? "";
   const description = store.description ?? "";
-
   const location = store.location ?? {};
   const sellerInfo = store.sellerInfo ?? {};
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // preset category/subcategory
   useEffect(() => {
     if (!category) setField("category", "For Sale");
     if (!subcategory) setField("subcategory", "Books & Media");
@@ -42,20 +42,14 @@ export default function BooksMusicMediaForm() {
   };
 
   const dispatchValidated = (ok: boolean) => {
-    window.dispatchEvent(
-      new CustomEvent("postform:validated", { detail: { ok } })
-    );
+    window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok } }));
+    window.dispatchEvent(new CustomEvent("mediaform:validated", { detail: { ok } }));
   };
 
   const scrollToFirstError = (mapped: Record<string, string>) => {
     const first = Object.keys(mapped)[0];
     if (!first) return;
-
-    const el =
-      formRef.current?.querySelector<HTMLElement>(
-        `[name="${first}"]`
-      );
-
+    const el = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     el?.focus?.();
   };
@@ -65,34 +59,22 @@ export default function BooksMusicMediaForm() {
     setField("salePrice", v);
   };
 
-  const setSeller = (k: "name" | "email" | "phone", v?: string) => {
-    const cur = sellerInfo || {};
-    setField("sellerInfo", { ...cur, [k]: v ?? "" });
-  };
-
-  const setLoc = (address?: string) => {
-    const cur = location || {};
-    setField("location", { ...cur, address: address ?? "" });
+  const setSeller = (k: "name" | "email" | "phone", v: string) => {
+    setField("sellerInfo", { ...(sellerInfo || {}), [k]: v });
   };
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     const mapped: Record<string, string> = {};
 
     if (!name.trim()) mapped.name = "Title required";
     if (!mediaType) mapped.mediaType = "Media type required";
     if (!condition) mapped.condition = "Condition required";
     if (!isPositive(price)) mapped.price = "Invalid price";
-    if (!sellerInfo?.name?.trim())
-      mapped.sellerName = "Seller name required";
-    if (!sellerInfo?.phone?.trim())
-      mapped.sellerPhone = "Seller phone required";
-    if (!sellerInfo?.email?.trim())
-      mapped.sellerEmail = "Seller email required";
+    if (!sellerInfo?.name?.trim()) mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim()) mapped.sellerPhone = "Phone required";
 
     setErrors(mapped);
-
     if (Object.keys(mapped).length > 0) {
       scrollToFirstError(mapped);
       toast.error("Please fix highlighted fields");
@@ -100,91 +82,48 @@ export default function BooksMusicMediaForm() {
       return;
     }
 
-    // clean persist
     setField("name", name.trim());
     setField("description", description.trim());
-
     setErrors({});
     dispatchValidated(true);
   };
 
   return (
     <form
-      ref={formRef}
+      id="mediaForm"
       data-post-form="true"
+      ref={formRef}
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">
-        Books · Music · Media
-      </h2>
+      <h2 className="text-2xl font-bold">Books · Music · Media</h2>
 
-      {/* Title */}
-      <FormField
-        label="Title"
-        field="name"
-        value={name}
-        onChange={(v) => setField("name", v)}
-        required
-      />
+      <FormField label="Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      {/* Media Type */}
-      <SelectField
-        label="Item Type"
-        field="mediaType"
-        value={mediaType}
-        onChange={(v) => setField("mediaType", v)}
-        options={[
-          { value: "book", label: "Book" },
-          { value: "music", label: "Music (CD/Vinyl/Digital)" },
-          { value: "movie", label: "Movie / DVD / Blu-ray" },
-          { value: "game", label: "Game" },
-          { value: "other", label: "Other Media" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Item Type" singleSelect value={mediaType ? [mediaType] : []} onChange={(v) => setField("mediaType", v[0] ?? "")}>
+        <ToggleGroupButton value="book">Book</ToggleGroupButton>
+        <ToggleGroupButton value="music">Music</ToggleGroupButton>
+        <ToggleGroupButton value="movie">Movie / DVD / Blu-ray</ToggleGroupButton>
+        <ToggleGroupButton value="game">Game</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other Media</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Condition */}
-      <SelectField
-        label="Condition"
-        field="condition"
-        value={condition}
-        onChange={(v) => setField("condition", v)}
-        options={[
-          { value: "new", label: "New" },
-          { value: "like-new", label: "Like New" },
-          { value: "used", label: "Used" },
-          { value: "collectible", label: "Collectible" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="new">New</ToggleGroupButton>
+        <ToggleGroupButton value="like-new">Like New</ToggleGroupButton>
+        <ToggleGroupButton value="used">Used</ToggleGroupButton>
+        <ToggleGroupButton value="collectible">Collectible</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          label="Author / Artist"
-          field="authorArtist"
-          value={authorArtist}
-          onChange={(v) => setField("authorArtist", v)}
-        />
-        <FormField
-          label="Genre"
-          field="genre"
-          value={genre}
-          onChange={(v) => setField("genre", v)}
-        />
+        <FormField label="Author / Artist" field="authorArtist" value={authorArtist} onChange={(v) => setField("authorArtist", v)} />
+        <FormField label="Genre" field="genre" value={genre} onChange={(v) => setField("genre", v)} />
       </div>
 
-      <FormField
-        label="Description"
-        field="description"
-        type="textarea"
-        value={description}
-        onChange={(v) => setField("description", v)}
-      />
+      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
 
-      {/* Price */}
       <FormField
-        label="Price (₹)"
+        label={`Price (${currency})`}
         field="price"
         type="number"
         value={price}
@@ -192,54 +131,58 @@ export default function BooksMusicMediaForm() {
         required
       />
 
-      <SelectField
-        label="Negotiable"
-        field="negotiable"
-        value={negotiable}
-        onChange={(v) => setField("negotiable", v)}
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ]}
-      />
+      <ToggleButtonGroup title="Negotiable" singleSelect value={negotiable ? [negotiable] : []} onChange={(v) => setField("negotiable", v[0] ?? "")}>
+        <ToggleGroupButton value="yes">Yes</ToggleGroupButton>
+        <ToggleGroupButton value="no">No</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Location */}
-      <input
-        name="location"
-        className="border rounded px-3 py-2 w-full"
-        placeholder="Location"
-        value={location?.address ?? ""}
-        onChange={(e) => setLoc(e.target.value)}
-        required
-      />
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Location</label>
+        <input
+          name="location"
+          className="border rounded px-3 py-2 w-full"
+          placeholder="City / Area"
+          value={location?.address ?? ""}
+          onChange={(e) => setField("location", { ...location, address: e.target.value })}
+        />
+      </div>
 
-      {/* Seller Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-6">
-        <input
-          name="sellerName"
-          className="border rounded px-3 py-2"
-          placeholder="Contact Name"
-          value={sellerInfo?.name ?? ""}
-          onChange={(e) => setSeller("name", e.target.value)}
-          required
-        />
-        <input
-          name="sellerEmail"
-          className="border rounded px-3 py-2"
-          type="email"
-          placeholder="Contact Email"
-          value={sellerInfo?.email ?? ""}
-          onChange={(e) => setSeller("email", e.target.value)}
-          required
-        />
-        <input
-          name="sellerPhone"
-          className="border rounded px-3 py-2"
-          placeholder="Contact Phone"
-          value={sellerInfo?.phone ?? ""}
-          onChange={(e) => setSeller("phone", e.target.value)}
-          required
-        />
+      <div className="space-y-3 border-t pt-4">
+        <h3 className="text-lg font-semibold">Contact Details</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Contact Name *</label>
+            <input
+              name="sellerName"
+              className="border rounded px-3 py-2 w-full"
+              placeholder="Your name"
+              value={sellerInfo?.name ?? ""}
+              onChange={(e) => setSeller("name", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Phone *</label>
+            <input
+              name="sellerPhone"
+              type="tel"
+              className="border rounded px-3 py-2 w-full"
+              placeholder="Phone number"
+              value={sellerInfo?.phone ?? ""}
+              onChange={(e) => setSeller("phone", e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium">Email</label>
+            <input
+              name="sellerEmail"
+              type="email"
+              className="border rounded px-3 py-2 w-full"
+              placeholder="Email address"
+              value={sellerInfo?.email ?? ""}
+              onChange={(e) => setSeller("email", e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       <button type="submit" className="sr-only" />

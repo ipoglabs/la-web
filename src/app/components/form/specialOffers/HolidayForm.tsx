@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function HolidayOffersForm() {
@@ -132,18 +132,12 @@ export default function HolidayOffersForm() {
         onChange={(v) => setField("providerName", v)}
       />
 
-      <SelectField
-        label="Category"
-        field="holidayCategory"
-        value={holidayCategory}
-        onChange={(v) => setField("holidayCategory", v)}
-        options={[
-          { value: "holiday-packages", label: "Holiday Packages" },
-          { value: "seasonal-sale", label: "Seasonal Sale" },
-          { value: "special-offers", label: "Special Offers" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Category" singleSelect value={holidayCategory ? [holidayCategory] : []} onChange={(v) => setField("holidayCategory", v[0] ?? "")}>
+        <ToggleGroupButton value="holiday-packages">Holiday Packages</ToggleGroupButton>
+        <ToggleGroupButton value="seasonal-sale">Seasonal Sale</ToggleGroupButton>
+        <ToggleGroupButton value="special-offers">Special Offers</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField

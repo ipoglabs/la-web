@@ -3,12 +3,13 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function PartnershipOpportunitiesForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -72,7 +73,7 @@ export default function PartnershipOpportunitiesForm() {
 
         {/* Budget (from config) */}
         <FormField
-          label="Budget (₹)"
+          label={`Budget (${currency})`}
           field="budgetAmount"
           type="number"
           inputMode="decimal"

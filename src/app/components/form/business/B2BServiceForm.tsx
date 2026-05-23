@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function B2BServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -125,21 +127,14 @@ export default function B2BServiceForm() {
         required
       />
 
-      <SelectField
-        label="Industry"
-        field="industry"
-        value={industry}
-        onChange={(v) => setField("industry", v)}
-        options={[
-          { value: "manufacturing", label: "Manufacturing" },
-          { value: "logistics", label: "Logistics & Supply Chain" },
-          { value: "wholesale", label: "Wholesale Trade" },
-          { value: "consulting", label: "Consulting" },
-          { value: "it-services", label: "IT & Tech Services" },
-          { value: "other", label: "Other" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Industry" singleSelect value={industry ? [industry] : []} onChange={(v) => setField("industry", v[0] ?? "")}>
+        <ToggleGroupButton value="manufacturing">Manufacturing</ToggleGroupButton>
+        <ToggleGroupButton value="logistics">Logistics &amp; Supply Chain</ToggleGroupButton>
+        <ToggleGroupButton value="wholesale">Wholesale Trade</ToggleGroupButton>
+        <ToggleGroupButton value="consulting">Consulting</ToggleGroupButton>
+        <ToggleGroupButton value="it-services">IT &amp; Tech Services</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Business Name"
@@ -159,7 +154,7 @@ export default function B2BServiceForm() {
       />
 
       <FormField
-        label="Price / Rate (₹)"
+        label={`Price / Rate (${currency})`}
         field="price"
         type="number"
         value={price}

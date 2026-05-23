@@ -3,11 +3,13 @@
 import React, { useMemo, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function TechnologyServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -135,22 +137,15 @@ export default function TechnologyServiceForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Technology Service</h2>
 
-      {/* Service Type */}
-      <SelectField
-        label="Service Type"
-        field="serviceType"
-        value={serviceType}
-        onChange={(v) => setField("serviceType", v)}
-        options={[
-          { value: "it-support", label: "IT Support" },
-          { value: "software-development", label: "Software Development" },
-          { value: "web-design", label: "Web Design & Development" },
-          { value: "networking", label: "Networking & Security" },
-          { value: "repair", label: "Hardware/Device Repair" },
-          { value: "consulting", label: "Tech Consulting" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
+        <ToggleGroupButton value="it-support">IT Support</ToggleGroupButton>
+        <ToggleGroupButton value="software-development">Software Development</ToggleGroupButton>
+        <ToggleGroupButton value="web-design">Web Design &amp; Development</ToggleGroupButton>
+        <ToggleGroupButton value="networking">Networking &amp; Security</ToggleGroupButton>
+        <ToggleGroupButton value="repair">Hardware/Device Repair</ToggleGroupButton>
+        <ToggleGroupButton value="consulting">Tech Consulting</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Title */}
       <FormField
@@ -189,20 +184,13 @@ export default function TechnologyServiceForm() {
         </p>
       </div>
 
-      {/* Availability */}
-      <SelectField
-        label="Availability"
-        field="availability"
-        value={availability}
-        onChange={(v) => setField("availability", v)}
-        options={[
-          { value: "full-time", label: "Full-Time" },
-          { value: "part-time", label: "Part-Time" },
-          { value: "contract", label: "Contract" },
-          { value: "freelance", label: "Freelance" },
-          { value: "remote", label: "Remote" },
-        ]}
-      />
+      <ToggleButtonGroup title="Availability" singleSelect value={availability ? [availability] : []} onChange={(v) => setField("availability", v[0] ?? "")}>
+        <ToggleGroupButton value="full-time">Full-Time</ToggleGroupButton>
+        <ToggleGroupButton value="part-time">Part-Time</ToggleGroupButton>
+        <ToggleGroupButton value="contract">Contract</ToggleGroupButton>
+        <ToggleGroupButton value="freelance">Freelance</ToggleGroupButton>
+        <ToggleGroupButton value="remote">Remote</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Location */}
       <div className="space-y-1">
@@ -216,31 +204,23 @@ export default function TechnologyServiceForm() {
         />
       </div>
 
-      {/* Rate Type + Price */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SelectField
-          label="Rate Type"
-          field="rateType"
-          value={rateType}
-          onChange={(v) => setField("rateType", v)}
-          options={[
-            { value: "hourly", label: "Hourly" },
-            { value: "daily", label: "Daily" },
-            { value: "monthly", label: "Monthly" },
-            { value: "project", label: "Per Project" },
-            { value: "negotiable", label: "Negotiable" },
-          ]}
-        />
-        <FormField
-          label="Price (₹)"
-          field="price"
-          type="number"
-          value={price}
-          onChange={(v) => handlePrice(String(v))}
-          placeholder="Enter amount"
-          required
-        />
-      </div>
+      <ToggleButtonGroup title="Rate Type" singleSelect value={rateType ? [rateType] : []} onChange={(v) => setField("rateType", v[0] ?? "")}>
+        <ToggleGroupButton value="hourly">Hourly</ToggleGroupButton>
+        <ToggleGroupButton value="daily">Daily</ToggleGroupButton>
+        <ToggleGroupButton value="monthly">Monthly</ToggleGroupButton>
+        <ToggleGroupButton value="project">Per Project</ToggleGroupButton>
+        <ToggleGroupButton value="negotiable">Negotiable</ToggleGroupButton>
+      </ToggleButtonGroup>
+
+      <FormField
+        label={`Price (${currency})`}
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        placeholder="Enter amount"
+        required
+      />
 
       {/* Contact Details */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">

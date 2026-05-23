@@ -12,8 +12,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, label = "timeout"): Promise<T
 }
 
 export async function sendDeleteAccountEmail(data: {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
 }) {
   await verifyMailerOnce();
@@ -47,7 +46,7 @@ export async function sendDeleteAccountEmail(data: {
     <tr>
       <td style="padding:10px 20px;">
         <p style="font-size:18px;color:#333;">
-          Hi <b>${data.firstName} ${data.lastName}</b>,
+          Hi <b>${data.fullName}</b>,
         </p>
 
         <p style="font-size:16px;color:#555;">

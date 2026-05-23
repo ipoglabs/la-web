@@ -3,11 +3,13 @@
 import React, { useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function HealthServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
   const setField = usePostFormStore((s) => s.setField);
   const store = usePostFormStore();
 
@@ -118,32 +120,26 @@ export default function HealthServiceForm() {
         onChange={(v) => setField("qualification", v)}
       />
 
-      <div className="grid grid-cols-3 gap-4">
-        <FormField
-          label="Service Type"
-          field="serviceType"
-          onChange={(v) => setField("serviceType", v)}
-        />
+      <FormField
+        label="Service Type"
+        field="serviceType"
+        onChange={(v) => setField("serviceType", v)}
+      />
 
-        <SelectField
-          label="Consultation Mode"
-          field="consultationMode"
-          options={[
-            { value: "online" },
-            { value: "in-person" },
-            { value: "both" },
-          ]}
-        />
+      <ToggleButtonGroup title="Consultation Mode" singleSelect value={consultationMode ? [consultationMode] : []} onChange={(v) => setField("consultationMode", v[0] ?? "")}>
+        <ToggleGroupButton value="online">Online</ToggleGroupButton>
+        <ToggleGroupButton value="in-person">In-Person</ToggleGroupButton>
+        <ToggleGroupButton value="both">Both</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-        <FormField
-          label="Consultation Fee (₹)"
-          field="price"
-          type="number"
-          value={price}
-          onChange={(v) => handlePrice(String(v))}
-          required
-        />
-      </div>
+      <FormField
+        label={`Consultation Fee (${currency})`}
+        field="price"
+        type="number"
+        value={price}
+        onChange={(v) => handlePrice(String(v))}
+        required
+      />
 
       <div className="grid grid-cols-3 gap-4">
         <FormField

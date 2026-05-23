@@ -1,70 +1,37 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
-import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
 import { cn as cx } from "@/lib/utils";
+import { usePropertyConfig } from "@/hooks/usePropertyConfig";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function RoomRentalForm() {
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const formRef  = useRef<HTMLFormElement | null>(null);
+  const config   = usePropertyConfig();
+  const { currency } = useCountryConfig();
   const setField = usePostFormStore((s) => s.setField);
 
-  const roomType = usePostFormStore((s) => (s as any).type) ?? "";
-  const name = usePostFormStore((s) => s.name) ?? "";
-  const description = usePostFormStore((s) => s.description) ?? "";
-
-  const rent = usePostFormStore((s) => (s as any).rent) ?? "";
-  const deposit = usePostFormStore((s) => (s as any).deposit) ?? "";
-  const available_from = usePostFormStore((s) => (s as any).available_from) ?? "";
-
+  const roomType        = usePostFormStore((s) => (s as any).type) ?? "";
+  const name            = usePostFormStore((s) => s.name) ?? "";
+  const description     = usePostFormStore((s) => s.description) ?? "";
+  const rent            = usePostFormStore((s) => (s as any).rent) ?? "";
+  const deposit         = usePostFormStore((s) => (s as any).deposit) ?? "";
+  const available_from  = usePostFormStore((s) => (s as any).available_from) ?? "";
   const preferred_tenants = usePostFormStore((s) => (s as any).preferred_tenants) ?? "";
-  const gender_pref = usePostFormStore((s) => (s as any).gender_pref) ?? "";
-
-  const amenities = (usePostFormStore((s) => (s as any).amenities) ?? []) as string[];
-  const rules = (usePostFormStore((s) => (s as any).rules) ?? []) as string[];
+  const gender_pref  = usePostFormStore((s) => (s as any).gender_pref) ?? "";
+  const amenities    = (usePostFormStore((s) => (s as any).amenities) as string[]) ?? [];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const amenitiesOptions = useMemo(
-    () => [
-      "WiFi",
-      "Attached Bathroom",
-      "Air Conditioning",
-      "Kitchen Access",
-      "Washing Machine",
-      "TV/Smart TV",
-      "Balcony",
-      "Parking",
-      "Housekeeping",
-      "Meals Included",
-    ],
-    []
-  );
-
-  const rulesOptions = useMemo(
-    () => ["Smoking Allowed", "Pets Allowed", "Guests Allowed"],
-    []
-  );
-
-  const tenantPreferenceOptions = useMemo(
-    () => ["Any", "Students", "Working Professionals", "Family"],
-    []
-  );
-
-  const genderPreferenceOptions = useMemo(
-    () => ["Any", "Male", "Female"],
-    []
-  );
-
-  const roomTypeOptions = useMemo(
-    () => ["Single Room", "Shared Room", "PG", "Hostel", "Other"],
-    []
-  );
+  const tenantPreferenceOptions = ["Any", "Students", "Working Professionals", "Family"];
+  const genderPreferenceOptions = ["Any", "Male", "Female"];
 
   const isPositive = (v: unknown) => {
     if (v === null || v === undefined || v === "") return false;
@@ -80,7 +47,6 @@ export default function RoomRentalForm() {
   const scrollToFirstError = (mapped: Record<string, string>) => {
     const first = Object.keys(mapped)[0];
     if (!first) return;
-
     const el = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     el?.focus?.();
@@ -88,24 +54,16 @@ export default function RoomRentalForm() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     const mapped: Record<string, string> = {};
 
-    const title = name.trim();
-    const desc = description.trim();
-
-    if (!roomType) mapped.type = "Please select a room type.";
-    if (!title) mapped.name = "Listing title is required.";
-    if (!desc) mapped.description = "Description is required.";
-
-    if (!isPositive(rent)) mapped.rent = "Rent must be greater than 0.";
-    if (!available_from) mapped.available_from = "Select available date.";
-
-    if (deposit && !isPositive(deposit))
-      mapped.deposit = "Deposit must be positive.";
+    if (!roomType)            mapped.type        = "Please select a room type.";
+    if (!name.trim())         mapped.name        = "Listing title is required.";
+    if (!description.trim())  mapped.description = "Description is required.";
+    if (!isPositive(rent))    mapped.rent        = "Rent must be greater than 0.";
+    if (!available_from)      mapped.available_from = "Select available date.";
+    if (deposit && !isPositive(deposit)) mapped.deposit = "Deposit must be positive.";
 
     setErrors(mapped);
-
     if (Object.keys(mapped).length > 0) {
       scrollToFirstError(mapped);
       toast.error("Please fix the highlighted fields.");
@@ -113,10 +71,8 @@ export default function RoomRentalForm() {
       return;
     }
 
-    // ✅ IMPORTANT: persist trimmed values
-    setField("name", title);
-    setField("description", desc);
-
+    setField("name", name.trim());
+    setField("description", description.trim());
     setErrors({});
     dispatchValidated(true);
   };
@@ -129,27 +85,22 @@ export default function RoomRentalForm() {
       onSubmit={onSubmit}
       className="w-full max-w-xl space-y-6"
     >
-      <h2 className="text-2xl font-semibold text-center">
-        Add Room for Rent
-      </h2>
+      <h2 className="text-2xl font-semibold text-center">Add Room for Rent</h2>
 
       {/* Room Type */}
-      <FormFieldContainer label="Room Type" htmlFor="type" error={errors.type}>
-        <select
-          id="type"
-          name="type"
-          value={roomType}
-          onChange={(e) => setField("type", e.target.value)}
-          className={cx("w-full border px-3 py-2 rounded", errors.type && "border-red-500")}
-        >
-          <option value="">Select room type</option>
-          {roomTypeOptions.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Room Type"
+        isMandatory
+        singleSelect
+        showError={!!errors.type}
+        errorMessage={errors.type}
+        value={roomType ? [roomType] : []}
+        onChange={(v) => setField("type", v[0] ?? "")}
+      >
+        {config.roomRental.roomTypes.map((opt) => (
+          <ToggleGroupButton key={opt} value={opt}>{opt}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Title */}
       <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name}>
@@ -171,78 +122,56 @@ export default function RoomRentalForm() {
         />
       </FormFieldContainer>
 
-      {/* Rent */}
+      {/* Rent / Deposit */}
       <FormFieldWrapper className="grid grid-cols-2 gap-4">
-        <FormFieldContainer label="Rent (₹)" htmlFor="rent" error={errors.rent}>
-          <Input
-            id="rent"
-            name="rent"
-            type="number"
-            value={rent as any}
-            onChange={(e) => setField("rent", e.target.value)}
-          />
+        <FormFieldContainer label={`Rent (${currency})`} htmlFor="rent" error={errors.rent}>
+          <Input id="rent" name="rent" type="number" value={rent as any}
+            onChange={(e) => setField("rent", e.target.value)} />
         </FormFieldContainer>
 
         <FormFieldContainer label="Deposit" htmlFor="deposit">
-          <Input
-            id="deposit"
-            name="deposit"
-            type="number"
-            value={deposit as any}
-            onChange={(e) => setField("deposit", e.target.value)}
-          />
+          <Input id="deposit" name="deposit" type="number" value={deposit as any}
+            onChange={(e) => setField("deposit", e.target.value)} />
         </FormFieldContainer>
       </FormFieldWrapper>
 
-      {/* Available */}
+      {/* Available From */}
       <FormFieldContainer label="Available From" htmlFor="available_from" error={errors.available_from}>
-        <Input
-          id="available_from"
-          name="available_from"
-          type="date"
-          value={available_from as any}
-          onChange={(e) => setField("available_from", e.target.value)}
-        />
+        <Input id="available_from" name="available_from" type="date" value={available_from as any}
+          onChange={(e) => setField("available_from", e.target.value)} />
       </FormFieldContainer>
 
       {/* Preferences */}
       <FormFieldWrapper className="grid grid-cols-2 gap-4">
         <FormFieldContainer label="Preferred Tenants">
-          <select
-            value={preferred_tenants}
+          <select value={preferred_tenants}
             onChange={(e) => setField("preferred_tenants", e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          >
+            className="w-full border px-3 py-2 rounded">
             <option value="">Select</option>
-            {tenantPreferenceOptions.map((opt) => (
-              <option key={opt}>{opt}</option>
-            ))}
+            {tenantPreferenceOptions.map((opt) => <option key={opt}>{opt}</option>)}
           </select>
         </FormFieldContainer>
 
         <FormFieldContainer label="Gender Preference">
-          <select
-            value={gender_pref}
+          <select value={gender_pref}
             onChange={(e) => setField("gender_pref", e.target.value)}
-            className="w-full border px-3 py-2 rounded"
-          >
+            className="w-full border px-3 py-2 rounded">
             <option value="">Select</option>
-            {genderPreferenceOptions.map((opt) => (
-              <option key={opt}>{opt}</option>
-            ))}
+            {genderPreferenceOptions.map((opt) => <option key={opt}>{opt}</option>)}
           </select>
         </FormFieldContainer>
       </FormFieldWrapper>
 
       {/* Amenities */}
-      <FormFieldContainer label="Amenities">
-        <CheckboxGroupField field="amenities" options={amenitiesOptions} cols={3} />
-      </FormFieldContainer>
-
-      {/* Rules */}
-      <FormFieldContainer label="Rules">
-        <CheckboxGroupField field="rules" options={rulesOptions} cols={2} />
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Amenities"
+        value={amenities}
+        onChange={(v) => setField("amenities", v)}
+      >
+        {config.roomRental.amenities.map((a) => (
+          <ToggleGroupButton key={a} value={a}>{a}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       <button type="submit" className="sr-only" />
     </form>

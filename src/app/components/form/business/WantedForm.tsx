@@ -3,12 +3,15 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function WantedForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
+  const urgency = (store as any).urgency ?? "";
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -62,24 +65,18 @@ export default function WantedForm() {
 
         {/* Budget */}
         <FormField
-          label="Budget (₹)"
+          label={`Budget (${currency})`}
           field="budgetAmount"
           type="number"
           inputMode="decimal"
           placeholder="Enter your budget"
         />
 
-        {/* Urgency */}
-        <SelectField
-          label="Urgency"
-          field="urgency"
-          placeholder="Select urgency"
-          options={[
-            { value: "immediate", label: "Immediate" },
-            { value: "within-month", label: "Within a Month" },
-            { value: "flexible", label: "Flexible" },
-          ]}
-        />
+        <ToggleButtonGroup title="Urgency" singleSelect value={urgency ? [urgency] : []} onChange={(v) => setField("urgency", v[0] ?? "")}>
+          <ToggleGroupButton value="immediate">Immediate</ToggleGroupButton>
+          <ToggleGroupButton value="within-month">Within a Month</ToggleGroupButton>
+          <ToggleGroupButton value="flexible">Flexible</ToggleGroupButton>
+        </ToggleButtonGroup>
 
         {/* Location (nested) */}
         <FormField

@@ -67,7 +67,7 @@ export async function GET(
     return NextResponse.json({
       user: {
         userId: user.userId,
-        name: `${user.firstName} ${user.lastName}`,
+        name: user.fullName || "",
         role: user.roleTitle || user.role,
 
         location:

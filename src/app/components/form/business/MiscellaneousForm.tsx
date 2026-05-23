@@ -4,10 +4,12 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function BusinessMiscellaneousForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -77,7 +79,7 @@ export default function BusinessMiscellaneousForm() {
 
         {/* Price */}
         <FormField
-          label="Price (₹)"
+          label={`Price (${currency})`}
           field="price"
           type="number"
           inputMode="decimal"

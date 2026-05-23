@@ -90,10 +90,9 @@ export default function PreviewPage() {
 
     const existing = usePostFormStore.getState().sellerInfo;
 
-    const fullName = [user.firstName, user.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+    const fullName =
+      user.fullName ||
+      [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
 
     setField("sellerInfo", {
       name: existing?.name || fullName,
@@ -111,6 +110,7 @@ export default function PreviewPage() {
     () => ({
       name:
         data.sellerInfo?.name ||
+        user?.fullName ||
         [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
         "",
       email: data.sellerInfo?.email || user?.email || "",
@@ -134,6 +134,7 @@ export default function PreviewPage() {
     if (!data.category) m.push("Category");
     if (!data.subcategory) m.push("Subcategory");
     if (!data.location?.address?.trim()) m.push("Location");
+    if (!sellerInfo.name?.trim()) m.push("Contact Name");
     if (!sellerInfo.phone?.trim()) m.push("Phone");
 
     return m;

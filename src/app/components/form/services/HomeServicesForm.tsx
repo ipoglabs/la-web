@@ -3,11 +3,13 @@
 import React, { useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function HomeServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
   const setField = usePostFormStore((s) => s.setField);
   const store = usePostFormStore();
 
@@ -92,20 +94,15 @@ export default function HomeServiceForm() {
     >
       <h2 className="text-2xl font-semibold">Post Home Service</h2>
 
-      {/* Service Type */}
-      <SelectField
-        label="Service Type"
-        field="serviceType"
-        options={[
-          { value: "cleaning" },
-          { value: "plumbing" },
-          { value: "electrical" },
-          { value: "carpentry" },
-          { value: "pest-control" },
-          { value: "gardening" },
-          { value: "others" },
-        ]}
-      />
+      <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
+        <ToggleGroupButton value="cleaning">Cleaning</ToggleGroupButton>
+        <ToggleGroupButton value="plumbing">Plumbing</ToggleGroupButton>
+        <ToggleGroupButton value="electrical">Electrical</ToggleGroupButton>
+        <ToggleGroupButton value="carpentry">Carpentry</ToggleGroupButton>
+        <ToggleGroupButton value="pest-control">Pest Control</ToggleGroupButton>
+        <ToggleGroupButton value="gardening">Gardening</ToggleGroupButton>
+        <ToggleGroupButton value="others">Others</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Title */}
       <FormField
@@ -142,7 +139,7 @@ export default function HomeServiceForm() {
         />
 
         <FormField
-          label="Service Charge (₹)"
+          label={`Service Charge (${currency})`}
           field="price"
           type="number"
           value={price}

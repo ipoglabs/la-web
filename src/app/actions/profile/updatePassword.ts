@@ -94,8 +94,7 @@ export async function updatePassword({
     try {
       if (user.email) {
         await sendPasswordUpdateEmail({
-          firstName: user.firstName,
-          lastName: user.lastName,
+          fullName: user.fullName || "",
           email: user.email,
         });
       }

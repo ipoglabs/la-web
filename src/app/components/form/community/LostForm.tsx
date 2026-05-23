@@ -3,12 +3,13 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 
 export default function LostAndFoundForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const reportType = (store as any).reportType ?? "";
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -47,16 +48,10 @@ export default function LostAndFoundForm() {
           />
         </div>
 
-        {/* Lost or Found */}
-        <SelectField
-          label="Report Type"
-          field="reportType"
-          options={[
-            { value: "lost", label: "Lost" },
-            { value: "found", label: "Found" },
-          ]}
-          required
-        />
+        <ToggleButtonGroup title="Report Type" singleSelect value={reportType ? [reportType] : []} onChange={(v) => setField("reportType", v[0] ?? "")}>
+          <ToggleGroupButton value="lost">Lost</ToggleGroupButton>
+          <ToggleGroupButton value="found">Found</ToggleGroupButton>
+        </ToggleButtonGroup>
 
         {/* Item Title */}
         <FormField

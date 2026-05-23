@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function HomeLivingForm() {
@@ -129,32 +129,19 @@ export default function HomeLivingForm() {
         onChange={(v) => setField("brandName", v)}
       />
 
-      <SelectField
-        label="Category Type"
-        field="categoryType"
-        value={categoryType}
-        onChange={(v) => setField("categoryType", v)}
-        options={[
-          { value: "furniture", label: "Furniture" },
-          { value: "home-decor", label: "Home Decor" },
-          { value: "appliances", label: "Appliances" },
-          { value: "kitchenware", label: "Kitchenware" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Category Type" singleSelect value={categoryType ? [categoryType] : []} onChange={(v) => setField("categoryType", v[0] ?? "")}>
+        <ToggleGroupButton value="furniture">Furniture</ToggleGroupButton>
+        <ToggleGroupButton value="home-decor">Home Decor</ToggleGroupButton>
+        <ToggleGroupButton value="appliances">Appliances</ToggleGroupButton>
+        <ToggleGroupButton value="kitchenware">Kitchenware</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      <SelectField
-        label="Condition"
-        field="condition"
-        value={condition}
-        onChange={(v) => setField("condition", v)}
-        options={[
-          { value: "new", label: "New" },
-          { value: "used", label: "Used" },
-          { value: "refurbished", label: "Refurbished" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="new">New</ToggleGroupButton>
+        <ToggleGroupButton value="used">Used</ToggleGroupButton>
+        <ToggleGroupButton value="refurbished">Refurbished</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField label="Material" field="material" value={material} onChange={(v) => setField("material", v)} />
       <FormField label="Dimensions" field="dimensions" value={dimensions} onChange={(v) => setField("dimensions", v)} />
@@ -172,17 +159,11 @@ export default function HomeLivingForm() {
         required
       />
 
-      <SelectField
-        label="Delivery Option"
-        field="deliveryOption"
-        value={deliveryOption}
-        onChange={(v) => setField("deliveryOption", v)}
-        options={[
-          { value: "pickup", label: "Pickup Only" },
-          { value: "delivery", label: "Home Delivery Available" },
-          { value: "both", label: "Pickup & Delivery" },
-        ]}
-      />
+      <ToggleButtonGroup title="Delivery Option" singleSelect value={deliveryOption ? [deliveryOption] : []} onChange={(v) => setField("deliveryOption", v[0] ?? "")}>
+        <ToggleGroupButton value="pickup">Pickup Only</ToggleGroupButton>
+        <ToggleGroupButton value="delivery">Home Delivery Available</ToggleGroupButton>
+        <ToggleGroupButton value="both">Pickup &amp; Delivery</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField label="Media URL" field="mediaUrl" value={mediaUrl} onChange={(v) => setField("mediaUrl", v)} />
 

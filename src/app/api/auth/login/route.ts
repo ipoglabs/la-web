@@ -95,8 +95,7 @@ export async function POST(req: Request) {
         user: {
           id: String(user._id),
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
+          fullName: user.fullName,
           role: user.role ?? "user",
           primaryNumber: user.primaryNumber,
           locality: user.locality,

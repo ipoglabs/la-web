@@ -3,10 +3,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function B2CServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -132,7 +134,7 @@ export default function B2CServiceForm() {
       />
 
       <FormField
-        label="Price / Rate (₹)"
+        label={`Price / Rate (${currency})`}
         field="price"
         type="number"
         value={price}

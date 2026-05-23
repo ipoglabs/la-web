@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function EquipmentSuppliesForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -127,37 +129,23 @@ export default function EquipmentSuppliesForm() {
         required
       />
 
-      <SelectField
-        label="Item Category"
-        field="itemCategory"
-        value={itemCategory}
-        onChange={(v) => setField("itemCategory", v)}
-        options={[
-          { value: "machinery", label: "Machinery" },
-          { value: "tools", label: "Tools" },
-          { value: "office_supplies", label: "Office Supplies" },
-          { value: "construction_equipment", label: "Construction Equipment" },
-          { value: "other", label: "Other" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Item Category" singleSelect value={itemCategory ? [itemCategory] : []} onChange={(v) => setField("itemCategory", v[0] ?? "")}>
+        <ToggleGroupButton value="machinery">Machinery</ToggleGroupButton>
+        <ToggleGroupButton value="tools">Tools</ToggleGroupButton>
+        <ToggleGroupButton value="office_supplies">Office Supplies</ToggleGroupButton>
+        <ToggleGroupButton value="construction_equipment">Construction Equipment</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      <SelectField
-        label="Condition"
-        field="condition"
-        value={condition}
-        onChange={(v) => setField("condition", v)}
-        options={[
-          { value: "new", label: "New" },
-          { value: "used", label: "Used" },
-          { value: "refurbished", label: "Refurbished" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="new">New</ToggleGroupButton>
+        <ToggleGroupButton value="used">Used</ToggleGroupButton>
+        <ToggleGroupButton value="refurbished">Refurbished</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
-          label="Price (₹)"
+          label={`Price (${currency})`}
           field="price"
           type="number"
           value={price}

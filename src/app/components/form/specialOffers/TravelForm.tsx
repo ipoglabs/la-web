@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function TravelTourismForm() {
@@ -120,21 +120,14 @@ export default function TravelTourismForm() {
         required
       />
 
-      <SelectField
-        label="Tour Type"
-        field="tourType"
-        value={tourType}
-        onChange={(v) => setField("tourType", v)}
-        options={[
-          { value: "domestic", label: "Domestic" },
-          { value: "international", label: "International" },
-          { value: "adventure", label: "Adventure" },
-          { value: "cruise", label: "Cruise" },
-          { value: "honeymoon", label: "Honeymoon" },
-          { value: "other", label: "Other" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Tour Type" singleSelect value={tourType ? [tourType] : []} onChange={(v) => setField("tourType", v[0] ?? "")}>
+        <ToggleGroupButton value="domestic">Domestic</ToggleGroupButton>
+        <ToggleGroupButton value="international">International</ToggleGroupButton>
+        <ToggleGroupButton value="adventure">Adventure</ToggleGroupButton>
+        <ToggleGroupButton value="cruise">Cruise</ToggleGroupButton>
+        <ToggleGroupButton value="honeymoon">Honeymoon</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Description"
@@ -154,33 +147,21 @@ export default function TravelTourismForm() {
       <FormField label="Inclusions" field="inclusions" type="textarea" value={inclusions} onChange={(v) => setField("inclusions", v)} />
       <FormField label="Exclusions" field="exclusions" type="textarea" value={exclusions} onChange={(v) => setField("exclusions", v)} />
 
-      <SelectField
-        label="Accommodation Type"
-        field="accommodation"
-        value={accommodation}
-        onChange={(v) => setField("accommodation", v)}
-        options={[
-          { value: "hotel", label: "Hotel" },
-          { value: "resort", label: "Resort" },
-          { value: "hostel", label: "Hostel" },
-          { value: "camp", label: "Camp" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Accommodation Type" singleSelect value={accommodation ? [accommodation] : []} onChange={(v) => setField("accommodation", v[0] ?? "")}>
+        <ToggleGroupButton value="hotel">Hotel</ToggleGroupButton>
+        <ToggleGroupButton value="resort">Resort</ToggleGroupButton>
+        <ToggleGroupButton value="hostel">Hostel</ToggleGroupButton>
+        <ToggleGroupButton value="camp">Camp</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      <SelectField
-        label="Transport Mode"
-        field="transport"
-        value={transport}
-        onChange={(v) => setField("transport", v)}
-        options={[
-          { value: "flight", label: "Flight" },
-          { value: "train", label: "Train" },
-          { value: "bus", label: "Bus" },
-          { value: "cruise", label: "Cruise" },
-          { value: "own", label: "Own Transport" },
-        ]}
-      />
+      <ToggleButtonGroup title="Transport Mode" singleSelect value={transport ? [transport] : []} onChange={(v) => setField("transport", v[0] ?? "")}>
+        <ToggleGroupButton value="flight">Flight</ToggleGroupButton>
+        <ToggleGroupButton value="train">Train</ToggleGroupButton>
+        <ToggleGroupButton value="bus">Bus</ToggleGroupButton>
+        <ToggleGroupButton value="cruise">Cruise</ToggleGroupButton>
+        <ToggleGroupButton value="own">Own Transport</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField label="Group Size" field="groupSize" value={groupSize} onChange={(v) => setField("groupSize", v)} />
       <FormField label="Booking Deadline" field="bookingDeadline" type="date" value={bookingDeadline} onChange={(v) => setField("bookingDeadline", v)} />

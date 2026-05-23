@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function RetailShoppingForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -127,32 +129,19 @@ export default function RetailShoppingForm() {
       <FormField label="Return Policy" field="returnPolicy" value={returnPolicy} onChange={(v) => setField("returnPolicy", v)} />
       <FormField label="Available Offers" field="offers" value={offers} onChange={(v) => setField("offers", v)} />
 
-      <SelectField
-        label="Condition"
-        field="condition"
-        value={condition}
-        onChange={(v) => setField("condition", v)}
-        options={[
-          { value: "new", label: "New" },
-          { value: "used", label: "Used" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="new">New</ToggleGroupButton>
+        <ToggleGroupButton value="used">Used</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      <SelectField
-        label="Delivery / Pickup Option"
-        field="deliveryOption"
-        value={deliveryOption}
-        onChange={(v) => setField("deliveryOption", v)}
-        options={[
-          { value: "pickup", label: "Pickup Only" },
-          { value: "delivery", label: "Delivery Available" },
-          { value: "both", label: "Pickup & Delivery" },
-        ]}
-      />
+      <ToggleButtonGroup title="Delivery / Pickup Option" singleSelect value={deliveryOption ? [deliveryOption] : []} onChange={(v) => setField("deliveryOption", v[0] ?? "")}>
+        <ToggleGroupButton value="pickup">Pickup Only</ToggleGroupButton>
+        <ToggleGroupButton value="delivery">Delivery Available</ToggleGroupButton>
+        <ToggleGroupButton value="both">Pickup &amp; Delivery</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
-        label="Price (INR)"
+        label={`Price (${currency})`}
         field="price"
         type="number"
         value={price}

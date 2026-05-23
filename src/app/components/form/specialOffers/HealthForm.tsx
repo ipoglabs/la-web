@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function HealthWellnessForm() {
@@ -134,34 +134,20 @@ export default function HealthWellnessForm() {
         onChange={(v) => setField("providerName", v)}
       />
 
-      {/* Category */}
-      <SelectField
-        label="Category"
-        field="wellnessCategory"
-        value={wellnessCategory}
-        onChange={(v) => setField("wellnessCategory", v)}
-        options={[
-          { value: "fitness", label: "Fitness" },
-          { value: "nutrition", label: "Nutrition" },
-          { value: "mental-health", label: "Mental Health" },
-          { value: "wellness-products", label: "Wellness Products" },
-          { value: "therapy", label: "Therapy / Counseling" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Category" singleSelect value={wellnessCategory ? [wellnessCategory] : []} onChange={(v) => setField("wellnessCategory", v[0] ?? "")}>
+        <ToggleGroupButton value="fitness">Fitness</ToggleGroupButton>
+        <ToggleGroupButton value="nutrition">Nutrition</ToggleGroupButton>
+        <ToggleGroupButton value="mental-health">Mental Health</ToggleGroupButton>
+        <ToggleGroupButton value="wellness-products">Wellness Products</ToggleGroupButton>
+        <ToggleGroupButton value="therapy">Therapy / Counseling</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Service Type */}
-      <SelectField
-        label="Service Type"
-        field="serviceType"
-        value={serviceType}
-        onChange={(v) => setField("serviceType", v)}
-        options={[
-          { value: "online", label: "Online" },
-          { value: "offline", label: "Offline" },
-          { value: "both", label: "Both" },
-        ]}
-      />
+      <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
+        <ToggleGroupButton value="online">Online</ToggleGroupButton>
+        <ToggleGroupButton value="offline">Offline</ToggleGroupButton>
+        <ToggleGroupButton value="both">Both</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Price */}
       <FormField

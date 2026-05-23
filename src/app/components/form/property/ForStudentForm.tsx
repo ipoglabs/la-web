@@ -1,272 +1,238 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
-import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
 import { toast } from "sonner";
+import { usePropertyConfig } from "@/hooks/usePropertyConfig";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+const GENDER_OPTIONS = [
+  { value: "Boys",  label: "Boys" },
+  { value: "Girls", label: "Girls" },
+  { value: "CoEd",  label: "Co-ed" },
+];
+
 export default function ForStudentForm() {
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const formRef  = useRef<HTMLFormElement | null>(null);
+  const config   = usePropertyConfig();
+  const { currency } = useCountryConfig();
   const setField = usePostFormStore((s) => s.setField);
 
-  const store = usePostFormStore();
+  const name        = usePostFormStore((s) => s.name) ?? "";
+  const description = usePostFormStore((s) => s.description) ?? "";
+  const propertyType = usePostFormStore((s) => (s as any).propertyType) ?? "";
+  const occupancy   = usePostFormStore((s) => (s as any).occupancy) ?? "";
+  const gender_pref = usePostFormStore((s) => (s as any).gender_pref) ?? "";
+  const rentPrice   = usePostFormStore((s) => (s as any).rentPrice) ?? "";
+  const deposit     = usePostFormStore((s) => (s as any).deposit) ?? "";
+  const beds        = usePostFormStore((s) => (s as any).beds) ?? "";
+  const baths        = usePostFormStore((s) => (s as any).baths) ?? "";
+  const facilities   = (usePostFormStore((s) => (s as any).facilities) as string[]) ?? [];
+  const amenities    = (usePostFormStore((s) => (s as any).amenities) as string[]) ?? [];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /** ---------- OPTIONS ---------- */
-
-  const propertyTypeOptions = [
-    { value: "Hostel", label: "Hostel" },
-    { value: "PG", label: "PG" },
-    { value: "SharedApartment", label: "Shared Apartment" },
-    { value: "StudentApartment", label: "Student Apartment" },
-    { value: "CoLiving", label: "Co-living Space" },
-  ];
-
-  const occupancyOptions = [
-    { value: "Single", label: "Single" },
-    { value: "Double", label: "Double Sharing" },
-    { value: "Triple", label: "Triple Sharing" },
-    { value: "Dorm", label: "Dormitory" },
-  ];
-
-  const genderOptions = [
-    { value: "Boys", label: "Boys" },
-    { value: "Girls", label: "Girls" },
-    { value: "CoEd", label: "Co-ed" },
-  ];
-
-  const facilitiesOptions = useMemo(
-    () => [
-      "WiFi",
-      "Study Table & Chair",
-      "Laundry Service",
-      "Housekeeping",
-      "Common Kitchen",
-      "Meals Included",
-      "Gym/Fitness",
-      "Common Room",
-      "Air Conditioning",
-      "Security/CCTV",
-      "Power Backup",
-      "RO Water",
-    ],
-    []
-  );
-
-  /** ✅ NEW (from config) */
-  const amenitiesOptions = useMemo(
-    () => [
-      "Lift",
-      "Parking",
-      "Garden",
-      "Terrace",
-      "Balcony",
-      "24x7 Security",
-    ],
-    []
-  );
-
-  /** ---------- HELPERS ---------- */
-
-  const setAndClear = (key: string, value: any) => {
-    setField(key, value);
-    setErrors((prev) => {
-      if (!prev[key]) return prev;
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
+  const isPositive = (v: unknown) => {
+    if (v === null || v === undefined || v === "") return false;
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0;
   };
 
-  const isPositive = (v: any) => Number(v) > 0;
-
   const dispatchValidated = (ok: boolean) => {
-    window.dispatchEvent(
-      new CustomEvent("postform:validated", { detail: { ok } })
-    );
+    window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok } }));
+    window.dispatchEvent(new CustomEvent("forstudentform:validated", { detail: { ok } }));
   };
 
   const scrollToFirstError = (mapped: Record<string, string>) => {
     const first = Object.keys(mapped)[0];
     if (!first) return;
-
-    const el = formRef.current?.querySelector(`[name="${first}"]`);
-    (el as HTMLElement)?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
+    const el = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    el?.focus?.();
   };
-
-  /** ---------- SUBMIT ---------- */
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     const mapped: Record<string, string> = {};
 
-    if (!store.name) mapped.name = "Please enter title";
-    if (!store.description) mapped.description = "Please enter description";
+    if (!name.trim())        mapped.name        = "Please enter title.";
+    if (!description.trim()) mapped.description = "Please enter description.";
+    if (!propertyType)       mapped.propertyType = "Select property type.";
+    if (!occupancy)          mapped.occupancy    = "Select occupancy type.";
+    if (!isPositive(rentPrice)) mapped.rentPrice = "Enter valid rent.";
 
-    if (!store.propertyType)
-      mapped.propertyType = "Select property type";
-
-    if (!store.occupancy)
-      mapped.occupancy = "Select occupancy type";
-
-    if (!isPositive(store.rentPrice))
-      mapped.rentPrice = "Enter valid rent";
-
+    setErrors(mapped);
     if (Object.keys(mapped).length > 0) {
-      setErrors(mapped);
       scrollToFirstError(mapped);
-      toast.error("Please fix the highlighted fields");
+      toast.error("Please fix the highlighted fields.");
       dispatchValidated(false);
       return;
     }
 
+    setField("name", name.trim());
+    setField("description", description.trim());
     setErrors({});
     dispatchValidated(true);
   };
 
-  /** ---------- UI ---------- */
-
   return (
     <form
+      id="forStudentForm"
+      data-post-form="true"
       ref={formRef}
       onSubmit={onSubmit}
       className="w-full max-w-xl space-y-6"
     >
+      <h2 className="text-2xl font-semibold text-center">Add Student Accommodation</h2>
+
       {/* Title */}
-      <FormFieldContainer label="Listing Title" error={errors.name}>
+      <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name}>
         <Input
+          id="name"
           name="name"
-          value={store.name || ""}
-          onChange={(e) => setAndClear("name", e.target.value)}
+          value={name}
+          onChange={(e) => setField("name", e.target.value)}
           className={cx(errors.name && "border-red-500")}
         />
       </FormFieldContainer>
 
       {/* Description */}
-      <FormFieldContainer label="Description" error={errors.description}>
+      <FormFieldContainer label="Description" htmlFor="description" error={errors.description}>
         <Textarea
+          id="description"
           name="description"
-          value={store.description || ""}
-          onChange={(e) => setAndClear("description", e.target.value)}
+          value={description}
+          onChange={(e) => setField("description", e.target.value)}
           className={cx(errors.description && "border-red-500")}
         />
       </FormFieldContainer>
 
       {/* Property Type */}
-      <FormFieldContainer label="Property Type" error={errors.propertyType}>
-        <select
-          name="propertyType"
-          value={store.propertyType || ""}
-          onChange={(e) => setAndClear("propertyType", e.target.value)}
-          className="w-full border p-2 rounded-md"
-        >
-          <option value="">Select</option>
-          {propertyTypeOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Property Type"
+        isMandatory
+        singleSelect
+        showError={!!errors.propertyType}
+        errorMessage={errors.propertyType}
+        value={propertyType ? [propertyType] : []}
+        onChange={(v) => setField("propertyType", v[0] ?? "")}
+      >
+        {config.student.propertyTypes.map((o) => (
+          <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Occupancy */}
-      <FormFieldContainer label="Occupancy" error={errors.occupancy}>
+      <FormFieldContainer label="Occupancy" htmlFor="occupancy" error={errors.occupancy}>
         <select
+          id="occupancy"
           name="occupancy"
-          value={store.occupancy || ""}
-          onChange={(e) => setAndClear("occupancy", e.target.value)}
-          className="w-full border p-2 rounded-md"
+          value={occupancy}
+          onChange={(e) => setField("occupancy", e.target.value)}
+          className={cx("w-full border px-3 py-2 rounded", errors.occupancy && "border-red-500")}
         >
           <option value="">Select</option>
-          {occupancyOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
+          {config.student.occupancyTypes.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
       </FormFieldContainer>
 
       {/* Beds / Baths */}
       <FormFieldWrapper className="grid grid-cols-2 gap-4">
-        <Input
-          type="number"
-          placeholder="Beds"
-          value={store.beds || ""}
-          onChange={(e) => setAndClear("beds", e.target.value)}
-        />
-        <Input
-          type="number"
-          placeholder="Baths"
-          value={store.baths || ""}
-          onChange={(e) => setAndClear("baths", e.target.value)}
-        />
+        <FormFieldContainer label="Beds" htmlFor="beds">
+          <Input
+            id="beds"
+            name="beds"
+            type="number"
+            value={beds as any}
+            onChange={(e) => setField("beds", e.target.value)}
+          />
+        </FormFieldContainer>
+
+        <FormFieldContainer label="Baths" htmlFor="baths">
+          <Input
+            id="baths"
+            name="baths"
+            type="number"
+            value={baths as any}
+            onChange={(e) => setField("baths", e.target.value)}
+          />
+        </FormFieldContainer>
       </FormFieldWrapper>
 
-      {/* Gender */}
-      <FormFieldContainer label="Gender Preference">
+      {/* Gender Preference */}
+      <FormFieldContainer label="Gender Preference" htmlFor="gender_pref">
         <select
-          value={store.gender_pref || ""}
-          onChange={(e) => setAndClear("gender_pref", e.target.value)}
-          className="w-full border p-2 rounded-md"
+          id="gender_pref"
+          name="gender_pref"
+          value={gender_pref}
+          onChange={(e) => setField("gender_pref", e.target.value)}
+          className="w-full border px-3 py-2 rounded"
         >
           <option value="">Select</option>
-          {genderOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
+          {GENDER_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </select>
       </FormFieldContainer>
 
       {/* Facilities */}
-      <FormFieldContainer label="Facilities">
-        <CheckboxGroupField
-          field="facilities"
-          options={facilitiesOptions}
-          cols={3}
-        />
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Facilities"
+        value={facilities}
+        onChange={(v) => setField("facilities", v)}
+      >
+        {config.student.facilities.map((f) => (
+          <ToggleGroupButton key={f} value={f}>{f}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
-      {/* ✅ NEW: Amenities */}
-      <FormFieldContainer label="Amenities">
-        <CheckboxGroupField
-          field="amenities"
-          options={amenitiesOptions}
-          cols={3}
-        />
-      </FormFieldContainer>
+      {/* Amenities */}
+      <ToggleButtonGroup
+        title="Amenities"
+        value={amenities}
+        onChange={(v) => setField("amenities", v)}
+      >
+        {config.student.amenities.map((a) => (
+          <ToggleGroupButton key={a} value={a}>{a}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Pricing */}
       <FormFieldWrapper className="grid grid-cols-2 gap-4">
-        <Input
-          type="number"
-          placeholder="Rent"
-          value={store.rentPrice || ""}
-          onChange={(e) => setAndClear("rentPrice", e.target.value)}
-        />
-        <Input
-          type="number"
-          placeholder="Deposit"
-          value={store.deposit || ""}
-          onChange={(e) => setAndClear("deposit", e.target.value)}
-        />
+        <FormFieldContainer label={`Rent (${currency})`} htmlFor="rentPrice" error={errors.rentPrice}>
+          <Input
+            id="rentPrice"
+            name="rentPrice"
+            type="number"
+            value={rentPrice as any}
+            onChange={(e) => setField("rentPrice", e.target.value)}
+            className={cx(errors.rentPrice && "border-red-500")}
+          />
+        </FormFieldContainer>
+
+        <FormFieldContainer label="Deposit" htmlFor="deposit">
+          <Input
+            id="deposit"
+            name="deposit"
+            type="number"
+            value={deposit as any}
+            onChange={(e) => setField("deposit", e.target.value)}
+          />
+        </FormFieldContainer>
       </FormFieldWrapper>
 
-      {/* Hidden submit */}
-      <button type="submit" className="hidden" />
+      <button type="submit" className="sr-only" />
     </form>
   );
 }

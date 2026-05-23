@@ -161,10 +161,9 @@ useEffect(() => {
 
   const existing = usePostFormStore.getState().sellerInfo;
 
-  const fullName = [user.firstName, user.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  const fullName =
+    user.fullName ||
+    [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
 
   setField("sellerInfo", {
     name: existing?.name || fullName,

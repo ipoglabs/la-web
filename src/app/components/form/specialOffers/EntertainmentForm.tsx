@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function EntertainmentForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -134,20 +136,13 @@ export default function EntertainmentForm() {
         onChange={(v) => setField("organizerName", v)}
       />
 
-      {/* Event Type */}
-      <SelectField
-        label="Event Type"
-        field="eventType"
-        value={eventType}
-        onChange={(v) => setField("eventType", v)}
-        options={[
-          { value: "concert", label: "Concert" },
-          { value: "movie", label: "Movie / Premiere" },
-          { value: "theater", label: "Theater / Play" },
-          { value: "festival", label: "Festival" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Event Type" singleSelect value={eventType ? [eventType] : []} onChange={(v) => setField("eventType", v[0] ?? "")}>
+        <ToggleGroupButton value="concert">Concert</ToggleGroupButton>
+        <ToggleGroupButton value="movie">Movie / Premiere</ToggleGroupButton>
+        <ToggleGroupButton value="theater">Theater / Play</ToggleGroupButton>
+        <ToggleGroupButton value="festival">Festival</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Date & Time */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -184,26 +179,19 @@ export default function EntertainmentForm() {
 
       {/* Ticket Price */}
       <FormField
-        label="Ticket Price / Entry Fee (₹)"
+        label={`Ticket Price / Entry Fee (${currency})`}
         field="salePrice"
         type="number"
         value={price}
         onChange={(v) => handlePrice(String(v))}
       />
 
-      {/* Age Restriction */}
-      <SelectField
-        label="Age Restriction"
-        field="ageRestriction"
-        value={ageRestriction}
-        onChange={(v) => setField("ageRestriction", v)}
-        options={[
-          { value: "all", label: "All Ages" },
-          { value: "13+", label: "13+" },
-          { value: "18+", label: "18+" },
-          { value: "21+", label: "21+" },
-        ]}
-      />
+      <ToggleButtonGroup title="Age Restriction" singleSelect value={ageRestriction ? [ageRestriction] : []} onChange={(v) => setField("ageRestriction", v[0] ?? "")}>
+        <ToggleGroupButton value="all">All Ages</ToggleGroupButton>
+        <ToggleGroupButton value="13+">13+</ToggleGroupButton>
+        <ToggleGroupButton value="18+">18+</ToggleGroupButton>
+        <ToggleGroupButton value="21+">21+</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Website */}
       <FormField

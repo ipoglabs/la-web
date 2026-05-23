@@ -3,12 +3,15 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function ServiceWantedForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
+  const urgency = (store as any).urgency ?? "";
 
   // Ensure category/subcategory for Services → Wanted
   React.useEffect(() => {
@@ -71,25 +74,18 @@ export default function ServiceWantedForm() {
           required
         />
 
-        {/* Budget + Urgency */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            label="Budget (if applicable, INR)"
-            field="budgetAmount"
-            type="number"
-            placeholder="e.g., 5000"
-          />
-          <SelectField
-            label="Urgency"
-            field="urgency"
-            placeholder="Select urgency"
-            options={[
-              { value: "immediate", label: "Immediate" },
-              { value: "within-a-week", label: "Within a week" },
-              { value: "flexible", label: "Flexible" },
-            ]}
-          />
-        </div>
+        <FormField
+          label={`Budget (if applicable, ${currency})`}
+          field="budgetAmount"
+          type="number"
+          placeholder="e.g., 5000"
+        />
+
+        <ToggleButtonGroup title="Urgency" singleSelect value={urgency ? [urgency] : []} onChange={(v) => setField("urgency", v[0] ?? "")}>
+          <ToggleGroupButton value="immediate">Immediate</ToggleGroupButton>
+          <ToggleGroupButton value="within-a-week">Within a Week</ToggleGroupButton>
+          <ToggleGroupButton value="flexible">Flexible</ToggleGroupButton>
+        </ToggleButtonGroup>
 
         {/* Contact Info (sellerInfo) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

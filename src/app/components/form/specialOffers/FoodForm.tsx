@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function FoodDiningForm() {
@@ -111,21 +111,14 @@ export default function FoodDiningForm() {
         required
       />
 
-      {/* Internal Category */}
-      <SelectField
-        label="Category"
-        field="foodCategory"
-        value={foodCategory}
-        onChange={(v) => setField("foodCategory", v)}
-        options={[
-          { value: "restaurant", label: "Restaurant" },
-          { value: "cafe", label: "Cafe" },
-          { value: "delivery", label: "Food Delivery" },
-          { value: "catering", label: "Catering" },
-          { value: "streetfood", label: "Street Food" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Category" singleSelect value={foodCategory ? [foodCategory] : []} onChange={(v) => setField("foodCategory", v[0] ?? "")}>
+        <ToggleGroupButton value="restaurant">Restaurant</ToggleGroupButton>
+        <ToggleGroupButton value="cafe">Cafe</ToggleGroupButton>
+        <ToggleGroupButton value="delivery">Food Delivery</ToggleGroupButton>
+        <ToggleGroupButton value="catering">Catering</ToggleGroupButton>
+        <ToggleGroupButton value="streetfood">Street Food</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Description */}
       <FormField
@@ -168,18 +161,11 @@ export default function FoodDiningForm() {
         onChange={(v) => setField("openingHours", v)}
       />
 
-      {/* Delivery */}
-      <SelectField
-        label="Delivery Option"
-        field="deliveryOption"
-        value={deliveryOption}
-        onChange={(v) => setField("deliveryOption", v)}
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-          { value: "thirdparty", label: "Available via Swiggy / Zomato" },
-        ]}
-      />
+      <ToggleButtonGroup title="Delivery Option" singleSelect value={deliveryOption ? [deliveryOption] : []} onChange={(v) => setField("deliveryOption", v[0] ?? "")}>
+        <ToggleGroupButton value="yes">Yes</ToggleGroupButton>
+        <ToggleGroupButton value="no">No</ToggleGroupButton>
+        <ToggleGroupButton value="thirdparty">Via Swiggy / Zomato</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Website */}
       <FormField

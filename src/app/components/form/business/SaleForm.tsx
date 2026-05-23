@@ -3,12 +3,15 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function BusinessSaleLeaseForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
+  const ownership = (store as any).ownership ?? "";
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -62,23 +65,17 @@ export default function BusinessSaleLeaseForm() {
           required
         />
 
-        {/* Ownership (matches config) */}
-        <SelectField
-          label="Ownership"
-          field="ownership"
-          placeholder="Select ownership type"
-          options={[
-            { value: "sole-proprietor", label: "Sole Proprietor" },
-            { value: "partnership", label: "Partnership" },
-            { value: "private-limited", label: "Private Limited" },
-            { value: "llp", label: "LLP" },
-            { value: "other", label: "Other" },
-          ]}
-        />
+        <ToggleButtonGroup title="Ownership" singleSelect value={ownership ? [ownership] : []} onChange={(v) => setField("ownership", v[0] ?? "")}>
+          <ToggleGroupButton value="sole-proprietor">Sole Proprietor</ToggleGroupButton>
+          <ToggleGroupButton value="partnership">Partnership</ToggleGroupButton>
+          <ToggleGroupButton value="private-limited">Private Limited</ToggleGroupButton>
+          <ToggleGroupButton value="llp">LLP</ToggleGroupButton>
+          <ToggleGroupButton value="other">Other</ToggleGroupButton>
+        </ToggleButtonGroup>
 
         {/* Price (matches config key) */}
         <FormField
-          label="Asking Price (₹)"
+          label={`Asking Price (${currency})`}
           field="price"
           type="number"
           inputMode="decimal"

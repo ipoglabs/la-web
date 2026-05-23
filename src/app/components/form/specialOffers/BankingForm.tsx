@@ -3,11 +3,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function BankingFinancialForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
 
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
@@ -120,21 +122,14 @@ export default function BankingFinancialForm() {
         required
       />
 
-      {/* Deal Type */}
-      <SelectField
-        label="Deal Type"
-        field="dealType"
-        value={dealType}
-        onChange={(v) => setField("dealType", v)}
-        options={[
-          { value: "loan", label: "Loan" },
-          { value: "credit-card", label: "Credit Card" },
-          { value: "investment", label: "Investment" },
-          { value: "insurance", label: "Insurance" },
-          { value: "savings", label: "Savings / Deposit" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Deal Type" singleSelect value={dealType ? [dealType] : []} onChange={(v) => setField("dealType", v[0] ?? "")}>
+        <ToggleGroupButton value="loan">Loan</ToggleGroupButton>
+        <ToggleGroupButton value="credit-card">Credit Card</ToggleGroupButton>
+        <ToggleGroupButton value="investment">Investment</ToggleGroupButton>
+        <ToggleGroupButton value="insurance">Insurance</ToggleGroupButton>
+        <ToggleGroupButton value="savings">Savings / Deposit</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Institution */}
       <FormField
@@ -173,14 +168,14 @@ export default function BankingFinancialForm() {
       {/* Amount Range */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
-          label="Minimum Amount (₹)"
+          label={`Minimum Amount (${currency})`}
           field="minAmount"
           type="number"
           value={minAmount}
           onChange={(v) => setField("minAmount", v)}
         />
         <FormField
-          label="Maximum Amount (₹)"
+          label={`Maximum Amount (${currency})`}
           field="maxAmount"
           type="number"
           value={maxAmount}

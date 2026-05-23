@@ -3,12 +3,13 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function FreelanceContractorForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -86,7 +87,7 @@ export default function FreelanceContractorForm() {
 
         {/* Pricing */}
         <FormField
-          label="Service Price (₹)"
+          label={`Service Price (${currency})`}
           field="price"
           type="number"
           inputMode="decimal"

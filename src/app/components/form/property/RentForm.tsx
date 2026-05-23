@@ -4,31 +4,21 @@ import React, { useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
-import CheckboxGroupField from "@/app/components/form/fields/CheckboxGroupField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
 import { toast } from "sonner";
+import { usePropertyConfig } from "@/hooks/usePropertyConfig";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-const PROPERTY_TYPES = [
-  { value: "Apartment", label: "Apartment" },
-  { value: "IndependentHouse", label: "Independent House" },
-  { value: "Villa", label: "Villa" },
-  { value: "Studio", label: "Studio" },
-  { value: "Other", label: "Other" },
-];
-
-const FURNISHING = [
-  { value: "Furnished", label: "Furnished" },
-  { value: "Semi-furnished", label: "Semi-furnished" },
-  { value: "Unfurnished", label: "Unfurnished" },
-];
-
 export default function RentPropertyForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const config  = usePropertyConfig();
+  const { currency } = useCountryConfig();
 
   const setField = usePostFormStore((s) => s.setField);
 
@@ -53,21 +43,7 @@ export default function RentPropertyForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const amenityOptions = useMemo(
-    () => [
-      "Parking",
-      "Lift",
-      "Power Backup",
-      "Gym",
-      "Swimming Pool",
-      "Garden",
-      "Security",
-      "Water Supply",
-      "Club House",
-      "Balcony",
-    ],
-    []
-  );
+  const amenityOptions = config.rent.amenities;
 
   const isPositive = (v: unknown) => {
     if (v === null || v === undefined || v === "") return false;
@@ -175,26 +151,23 @@ export default function RentPropertyForm() {
       </FormFieldContainer>
 
       {/* Property Type */}
-      <FormFieldContainer label="Property Type" htmlFor="propertyType" error={errors.propertyType}>
-        <select
-          id="propertyType"
-          name="propertyType"
-          value={propertyType}
-          onChange={(e) => setField("propertyType", e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        >
-          <option value="">Select</option>
-          {PROPERTY_TYPES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Property Type"
+        isMandatory
+        singleSelect
+        showError={!!errors.propertyType}
+        errorMessage={errors.propertyType}
+        value={propertyType ? [propertyType] : []}
+        onChange={(v) => setField("propertyType", v[0] ?? "")}
+      >
+        {config.rent.propertyTypes.map((o) => (
+          <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Rent */}
       <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FormFieldContainer label="Rent (₹)" htmlFor="rentPrice" error={errors.rentPrice}>
+        <FormFieldContainer label={`Rent (${currency})`} htmlFor="rentPrice" error={errors.rentPrice}>
           <Input
             id="rentPrice"
             name="rentPrice"
@@ -249,9 +222,15 @@ export default function RentPropertyForm() {
       </FormFieldWrapper>
 
       {/* Amenities */}
-      <FormFieldContainer label="Amenities">
-        <CheckboxGroupField field="amenities" options={amenityOptions} cols={3} />
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Amenities"
+        value={amenities}
+        onChange={(v) => setField("amenities", v)}
+      >
+        {amenityOptions.map((a) => (
+          <ToggleGroupButton key={a} value={a}>{a}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       <button type="submit" className="sr-only" />
     </form>

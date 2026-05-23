@@ -3,12 +3,16 @@
 import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function ClassesForm() {
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
+  const { currency } = useCountryConfig();
+  const level = (store as any).level ?? "";
+  const mode = (store as any).mode ?? "";
 
   /* ---------------- DEFAULT CATEGORY ---------------- */
 
@@ -68,34 +72,22 @@ export default function ClassesForm() {
           required
         />
 
-        {/* Level */}
-        <SelectField
-          label="Level"
-          field="level"
-          placeholder="Select level"
-          options={[
-            { value: "beginner", label: "Beginner" },
-            { value: "intermediate", label: "Intermediate" },
-            { value: "advanced", label: "Advanced" },
-            { value: "all", label: "All Levels" },
-          ]}
-        />
+        <ToggleButtonGroup title="Level" singleSelect value={level ? [level] : []} onChange={(v) => setField("level", v[0] ?? "")}>
+          <ToggleGroupButton value="beginner">Beginner</ToggleGroupButton>
+          <ToggleGroupButton value="intermediate">Intermediate</ToggleGroupButton>
+          <ToggleGroupButton value="advanced">Advanced</ToggleGroupButton>
+          <ToggleGroupButton value="all">All Levels</ToggleGroupButton>
+        </ToggleButtonGroup>
 
-        {/* Mode */}
-        <SelectField
-          label="Mode"
-          field="mode"
-          placeholder="Select mode"
-          options={[
-            { value: "online", label: "Online" },
-            { value: "offline", label: "Offline" },
-            { value: "hybrid", label: "Hybrid" },
-          ]}
-        />
+        <ToggleButtonGroup title="Mode" singleSelect value={mode ? [mode] : []} onChange={(v) => setField("mode", v[0] ?? "")}>
+          <ToggleGroupButton value="online">Online</ToggleGroupButton>
+          <ToggleGroupButton value="offline">Offline</ToggleGroupButton>
+          <ToggleGroupButton value="hybrid">Hybrid</ToggleGroupButton>
+        </ToggleButtonGroup>
 
         {/* Fee */}
         <FormField
-          label="Fee (₹)"
+          label={`Fee (${currency})`}
           field="price"
           type="number"
           inputMode="decimal"

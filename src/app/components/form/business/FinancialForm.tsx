@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function FinancialServicesForm() {
@@ -108,21 +108,14 @@ export default function FinancialServicesForm() {
         required
       />
 
-      <SelectField
-        label="Service Type"
-        field="serviceType"
-        value={serviceType}
-        onChange={(v) => setField("serviceType", v)}
-        options={[
-          { value: "accounting", label: "Accounting" },
-          { value: "tax", label: "Tax Advisory" },
-          { value: "investment", label: "Investment Services" },
-          { value: "loan", label: "Loan & Credit Services" },
-          { value: "insurance", label: "Insurance" },
-          { value: "other", label: "Other" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
+        <ToggleGroupButton value="accounting">Accounting</ToggleGroupButton>
+        <ToggleGroupButton value="tax">Tax Advisory</ToggleGroupButton>
+        <ToggleGroupButton value="investment">Investment Services</ToggleGroupButton>
+        <ToggleGroupButton value="loan">Loan &amp; Credit Services</ToggleGroupButton>
+        <ToggleGroupButton value="insurance">Insurance</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Company Name"
@@ -145,18 +138,12 @@ export default function FinancialServicesForm() {
         onChange={(v) => setField("experience", v)}
       />
 
-      <SelectField
-        label="Pricing Model"
-        field="pricingModel"
-        value={pricingModel}
-        onChange={(v) => setField("pricingModel", v)}
-        options={[
-          { value: "fixed", label: "Fixed Fee" },
-          { value: "hourly", label: "Hourly Rate" },
-          { value: "commission", label: "Commission-based" },
-          { value: "custom", label: "Custom Pricing" },
-        ]}
-      />
+      <ToggleButtonGroup title="Pricing Model" singleSelect value={pricingModel ? [pricingModel] : []} onChange={(v) => setField("pricingModel", v[0] ?? "")}>
+        <ToggleGroupButton value="fixed">Fixed Fee</ToggleGroupButton>
+        <ToggleGroupButton value="hourly">Hourly Rate</ToggleGroupButton>
+        <ToggleGroupButton value="commission">Commission-based</ToggleGroupButton>
+        <ToggleGroupButton value="custom">Custom Pricing</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Website"

@@ -43,8 +43,7 @@ export async function softDeleteAccount(feedback?: string) {
     try {
       if (user.email) {
         await sendDeleteAccountEmail({
-          firstName: user.firstName,
-          lastName: user.lastName,
+          fullName: user.fullName || "",
           email: user.email,
         });
       }

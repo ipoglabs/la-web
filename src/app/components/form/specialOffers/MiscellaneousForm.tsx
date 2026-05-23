@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
 
 export default function MiscellaneousForm() {
@@ -122,34 +122,21 @@ export default function MiscellaneousForm() {
         required
       />
 
-      <SelectField
-        label="Condition"
-        field="condition"
-        value={condition}
-        onChange={(v) => setField("condition", v)}
-        options={[
-          { value: "new", label: "New" },
-          { value: "used", label: "Used" },
-          { value: "refurbished", label: "Refurbished" },
-        ]}
-        required
-      />
+      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
+        <ToggleGroupButton value="new">New</ToggleGroupButton>
+        <ToggleGroupButton value="used">Used</ToggleGroupButton>
+        <ToggleGroupButton value="refurbished">Refurbished</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField label="Brand" field="brand" value={brand} onChange={(v) => setField("brand", v)} />
       <FormField label="Model" field="model" value={model} onChange={(v) => setField("model", v)} />
       <FormField label="Usage Duration" field="usageDuration" value={usageDuration} onChange={(v) => setField("usageDuration", v)} />
       <FormField label="Age" field="age" value={age} onChange={(v) => setField("age", v)} />
 
-      <SelectField
-        label="Exchange Option"
-        field="exchangeOption"
-        value={exchangeOption}
-        onChange={(v) => setField("exchangeOption", v)}
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ]}
-      />
+      <ToggleButtonGroup title="Exchange Option" singleSelect value={exchangeOption ? [exchangeOption] : []} onChange={(v) => setField("exchangeOption", v[0] ?? "")}>
+        <ToggleGroupButton value="yes">Yes</ToggleGroupButton>
+        <ToggleGroupButton value="no">No</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField
         label="Price"
@@ -160,17 +147,11 @@ export default function MiscellaneousForm() {
         required
       />
 
-      <SelectField
-        label="Delivery Option"
-        field="deliveryOption"
-        value={deliveryOption}
-        onChange={(v) => setField("deliveryOption", v)}
-        options={[
-          { value: "pickup", label: "Pickup Only" },
-          { value: "delivery", label: "Delivery Available" },
-          { value: "both", label: "Pickup & Delivery" },
-        ]}
-      />
+      <ToggleButtonGroup title="Delivery Option" singleSelect value={deliveryOption ? [deliveryOption] : []} onChange={(v) => setField("deliveryOption", v[0] ?? "")}>
+        <ToggleGroupButton value="pickup">Pickup Only</ToggleGroupButton>
+        <ToggleGroupButton value="delivery">Delivery Available</ToggleGroupButton>
+        <ToggleGroupButton value="both">Pickup &amp; Delivery</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       <FormField label="Media URL" field="mediaUrl" value={mediaUrl} onChange={(v) => setField("mediaUrl", v)} />
 

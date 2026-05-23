@@ -3,11 +3,13 @@
 import React, { useRef, useState } from "react";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
+import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";
 
 export default function TravelServiceForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const { currency } = useCountryConfig();
   const store = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
 
@@ -112,20 +114,13 @@ export default function TravelServiceForm() {
         Post Travel Service
       </h2>
 
-      {/* Service Type */}
-      <SelectField
-        label="Service Type"
-        field="serviceType"
-        value={serviceType}
-        onChange={(v) => setField("serviceType", v)}
-        options={[
-          { value: "tour", label: "Tour" },
-          { value: "package", label: "Package" },
-          { value: "guide", label: "Guide" },
-          { value: "transport", label: "Transport" },
-          { value: "other", label: "Other" },
-        ]}
-      />
+      <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
+        <ToggleGroupButton value="tour">Tour</ToggleGroupButton>
+        <ToggleGroupButton value="package">Package</ToggleGroupButton>
+        <ToggleGroupButton value="guide">Guide</ToggleGroupButton>
+        <ToggleGroupButton value="transport">Transport</ToggleGroupButton>
+        <ToggleGroupButton value="other">Other</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Title */}
       <FormField
@@ -168,7 +163,7 @@ export default function TravelServiceForm() {
           onChange={(v) => setField("availability", v)}
         />
         <FormField
-          label="Price (₹)"
+          label={`Price (${currency})`}
           field="price"
           type="number"
           value={price}
