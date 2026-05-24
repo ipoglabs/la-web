@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from "react";
 import FormField from "@/app/components/form/fields/FormField";
-import SelectField from "@/app/components/form/fields/SelectField";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "@/app/post/store/postFormStore";
 import { usePropertyConfig } from "@/hooks/usePropertyConfig";
@@ -120,11 +119,15 @@ export default function PropertySaleForm() {
         required
       />
 
-      <SelectField
-        label="Negotiable"
-        field="negotiable"
-        options={[{ value: "Yes" }, { value: "No" }]}
-      />
+      <ToggleButtonGroup
+        title="Negotiable"
+        singleSelect
+        value={negotiable ? [negotiable] : []}
+        onChange={(v) => setField("negotiable", v[0] ?? "")}
+      >
+        <ToggleGroupButton value="Yes">Yes</ToggleGroupButton>
+        <ToggleGroupButton value="No">No</ToggleGroupButton>
+      </ToggleButtonGroup>
 
       {/* Plot area */}
       <FormField
@@ -136,11 +139,16 @@ export default function PropertySaleForm() {
       />
 
       {/* Ownership */}
-      <SelectField
-        label="Ownership"
-        field="ownership"
-        options={config.sale.ownershipTypes}
-      />
+      <ToggleButtonGroup
+        title="Ownership"
+        singleSelect
+        value={ownership ? [ownership] : []}
+        onChange={(v) => setField("ownership", v[0] ?? "")}
+      >
+        {config.sale.ownershipTypes.map((o) => (
+          <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Amenities */}
       <ToggleButtonGroup

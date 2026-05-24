@@ -142,25 +142,27 @@ export default function RoomRentalForm() {
       </FormFieldContainer>
 
       {/* Preferences */}
-      <FormFieldWrapper className="grid grid-cols-2 gap-4">
-        <FormFieldContainer label="Preferred Tenants">
-          <select value={preferred_tenants}
-            onChange={(e) => setField("preferred_tenants", e.target.value)}
-            className="w-full border px-3 py-2 rounded">
-            <option value="">Select</option>
-            {tenantPreferenceOptions.map((opt) => <option key={opt}>{opt}</option>)}
-          </select>
-        </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Preferred Tenants"
+        singleSelect
+        value={preferred_tenants ? [preferred_tenants] : []}
+        onChange={(v) => setField("preferred_tenants", v[0] ?? "")}
+      >
+        {tenantPreferenceOptions.map((opt) => (
+          <ToggleGroupButton key={opt} value={opt}>{opt}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
-        <FormFieldContainer label="Gender Preference">
-          <select value={gender_pref}
-            onChange={(e) => setField("gender_pref", e.target.value)}
-            className="w-full border px-3 py-2 rounded">
-            <option value="">Select</option>
-            {genderPreferenceOptions.map((opt) => <option key={opt}>{opt}</option>)}
-          </select>
-        </FormFieldContainer>
-      </FormFieldWrapper>
+      <ToggleButtonGroup
+        title="Gender Preference"
+        singleSelect
+        value={gender_pref ? [gender_pref] : []}
+        onChange={(v) => setField("gender_pref", v[0] ?? "")}
+      >
+        {genderPreferenceOptions.map((opt) => (
+          <ToggleGroupButton key={opt} value={opt}>{opt}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Amenities */}
       <ToggleButtonGroup

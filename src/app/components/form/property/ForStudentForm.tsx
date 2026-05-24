@@ -132,20 +132,19 @@ export default function ForStudentForm() {
       </ToggleButtonGroup>
 
       {/* Occupancy */}
-      <FormFieldContainer label="Occupancy" htmlFor="occupancy" error={errors.occupancy}>
-        <select
-          id="occupancy"
-          name="occupancy"
-          value={occupancy}
-          onChange={(e) => setField("occupancy", e.target.value)}
-          className={cx("w-full border px-3 py-2 rounded", errors.occupancy && "border-red-500")}
-        >
-          <option value="">Select</option>
-          {config.student.occupancyTypes.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Occupancy"
+        isMandatory
+        singleSelect
+        showError={!!errors.occupancy}
+        errorMessage={errors.occupancy}
+        value={occupancy ? [occupancy] : []}
+        onChange={(v) => setField("occupancy", v[0] ?? "")}
+      >
+        {config.student.occupancyTypes.map((o) => (
+          <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Beds / Baths */}
       <FormFieldWrapper className="grid grid-cols-2 gap-4">
@@ -171,20 +170,16 @@ export default function ForStudentForm() {
       </FormFieldWrapper>
 
       {/* Gender Preference */}
-      <FormFieldContainer label="Gender Preference" htmlFor="gender_pref">
-        <select
-          id="gender_pref"
-          name="gender_pref"
-          value={gender_pref}
-          onChange={(e) => setField("gender_pref", e.target.value)}
-          className="w-full border px-3 py-2 rounded"
-        >
-          <option value="">Select</option>
-          {GENDER_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-      </FormFieldContainer>
+      <ToggleButtonGroup
+        title="Gender Preference"
+        singleSelect
+        value={gender_pref ? [gender_pref] : []}
+        onChange={(v) => setField("gender_pref", v[0] ?? "")}
+      >
+        {GENDER_OPTIONS.map((o) => (
+          <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Facilities */}
       <ToggleButtonGroup
