@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -762,7 +762,7 @@ function EmptyState() {
 // PAGE
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export default function ChatPage() {
+function ChatPageContent() {
   const searchParams = useSearchParams();
   const convParam    = searchParams.get("conv"); // conversation ID passed from ChitChat
 
@@ -1018,5 +1018,13 @@ export default function ChatPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatPageContent />
+    </Suspense>
   );
 }
