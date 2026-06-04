@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "npx tsc",
+    "build": "node node_modules/typescript/bin/tsc",
     "start": "node dist/server.js"
   },
   "dependencies": {
