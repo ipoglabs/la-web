@@ -17,10 +17,15 @@ export function getSocket(): Promise<Socket> {
 
     return io(process.env.NEXT_PUBLIC_WS_URL!, {
       auth:                 { token },
-      transports:           ["websocket"],
+      // Start with polling so the HTTP handshake always completes,
+      // then upgrade to WebSocket. This survives proxies that block
+      // direct WS upgrades and gives a fallback if WS is flaky.
+      transports:           ["polling", "websocket"],
+      upgrade:              true,
       reconnection:         true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 20,
       reconnectionDelay:    1000,
+      reconnectionDelayMax: 5000,
     });
   })();
 

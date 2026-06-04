@@ -8,11 +8,23 @@ const INTERNAL_SECRET = process.env.INTERNAL_SECRET!;
 const CLIENT_ORIGIN   = process.env.CLIENT_ORIGIN || "http://localhost:3000";
 const PORT            = parseInt(process.env.PORT || "4000");
 
+// Accept the configured origin plus any Vercel preview/branch deployments
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true; // server-to-server calls have no origin
+  if (origin === CLIENT_ORIGIN) return true;
+  if (/^https:\/\/[\w-]+\.vercel\.app$/.test(origin)) return true;
+  if (origin === "http://localhost:3000") return true;
+  return false;
+}
+
 const httpServer = createServer(handleHttp);
 
 const io = new Server(httpServer, {
-  cors: { origin: CLIENT_ORIGIN, credentials: true },
-  transports:   ["websocket", "polling"],
+  cors: {
+    origin:      (origin, cb) => cb(null, isAllowedOrigin(origin)),
+    credentials: true,
+  },
+  transports:   ["polling", "websocket"],
   pingTimeout:  60_000,
   pingInterval: 25_000,
 });
