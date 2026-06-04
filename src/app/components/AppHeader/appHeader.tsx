@@ -66,6 +66,16 @@ export default function AppHeader() {
     else            setUnreadCount(0);
   }, [isLoggedIn, fetchUnreadCount]);
 
+  // Subtract from badge when user reads a conversation on the /chat page
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const count = (e as CustomEvent<{ count: number }>).detail.count;
+      setUnreadCount((prev) => Math.max(0, prev - count));
+    };
+    window.addEventListener("conv-read", handler);
+    return () => window.removeEventListener("conv-read", handler);
+  }, []);
+
   // Re-fetch whenever leaving /chat (user may have read messages there)
   const prevPathnameRef = useRef(pathname);
   useEffect(() => {

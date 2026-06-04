@@ -804,6 +804,9 @@ function ChatPageContent() {
     const target = convos.find((c) => c.id === convParam);
     if (target) {
       autoOpened.current = true;
+      if (target.unreadCount > 0) {
+        window.dispatchEvent(new CustomEvent("conv-read", { detail: { count: target.unreadCount } }));
+      }
       setSelected(target);
       setConvos((prev) => prev.map((c) => c.id === target.id ? { ...c, unread: false, unreadCount: 0 } : c));
     }
@@ -920,6 +923,10 @@ function ChatPageContent() {
   }, [selected?.id]);
 
   const handleSelect = (conv: Convo) => {
+    // Tell AppHeader to subtract this conversation's unread count from its badge
+    if (conv.unreadCount > 0) {
+      window.dispatchEvent(new CustomEvent("conv-read", { detail: { count: conv.unreadCount } }));
+    }
     setSelected(conv);
     setConvos((prev) => prev.map((c) => c.id === conv.id ? { ...c, unread: false, unreadCount: 0 } : c));
   };
