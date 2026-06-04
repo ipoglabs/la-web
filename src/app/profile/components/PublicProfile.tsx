@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 // import {
 //   Tabs,
 //   TabsList,
@@ -718,15 +718,30 @@ function ContactRow({
         )}
 
         {/* ACTIONS */}
-       <div className="mt-5 pt-4 border-t border-slate-100">
+        <div className="mt-5 pt-4 border-t border-slate-100">
 
-        <MessageResponsiveDialog sellerName={user.name} />
+          {user.isOwnProfile ? (
+            <div className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-400 text-sm font-medium px-4 py-3 rounded-xl cursor-default select-none">
+              This is your profile
+            </div>
+          ) : !user.isLoggedIn ? (
+            <a
+              href="/login"
+              className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            >
+              Log in to send a message
+            </a>
+          ) : (
+            <MessageResponsiveDialog sellerName={user.name} receiverId={user.mongoId} />
+          )}
 
-        <p className="mt-3 text-xs text-slate-400">
-          Usually replies within 24 hours
-        </p>
+          {!user.isOwnProfile && (
+            <p className="mt-3 text-xs text-slate-400">
+              Usually replies within 24 hours
+            </p>
+          )}
 
-      </div>
+        </div>
 
       </div>
     </Tabs.Content>

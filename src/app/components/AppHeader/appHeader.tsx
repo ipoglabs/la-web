@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -11,54 +11,139 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-import Logo from "@/app/assets/la-logo-symbol-color.svg";
+import Logo     from "@/app/assets/la-logo-symbol-color.svg";
 import LogoText from "@/app/assets/la-text-black.svg";
+import { getSocket, disconnectSocket } from "@/lib/wsClient";
+import type { Socket } from "socket.io-client";
 
 export default function AppHeader() {
-  const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router   = useRouter();
+  const pathname = usePathname();
 
-  // 🔥 Reusable auth check
+  const [isLoggedIn,  setIsLoggedIn]  = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Ref so socket handlers always see the latest pathname without stale closure
+  const pathnameRef = useRef(pathname);
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+
+  // ── Auth check ─────────────────────────────────────────────────────────────
+
   const checkAuth = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me", {
-        credentials: "include",
-      });
-
+      const res = await fetch("/api/auth/me", { credentials: "include" });
       setIsLoggedIn(res.ok);
     } catch {
       setIsLoggedIn(false);
     }
   }, []);
 
-  // 🔥 Initial load + listen for updates
   useEffect(() => {
     checkAuth();
-
     const handler = () => checkAuth();
     window.addEventListener("auth-changed", handler);
-
     return () => window.removeEventListener("auth-changed", handler);
   }, [checkAuth]);
 
-  // 🔥 Logout (centralized)
+  // ── Unread count helpers ───────────────────────────────────────────────────
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/conversations");
+      if (!res.ok) return;
+      const { conversations = [] } = await res.json();
+      const total: number = conversations.reduce(
+        (sum: number, c: { unreadCount?: number }) => sum + (c.unreadCount ?? 0),
+        0
+      );
+      setUnreadCount(total);
+    } catch {}
+  }, []);
+
+  // Fetch on login / logout
+  useEffect(() => {
+    if (isLoggedIn) fetchUnreadCount();
+    else            setUnreadCount(0);
+  }, [isLoggedIn, fetchUnreadCount]);
+
+  // Re-fetch whenever leaving /chat (user may have read messages there)
+  const prevPathnameRef = useRef(pathname);
+  useEffect(() => {
+    const prev = prevPathnameRef.current;
+    prevPathnameRef.current = pathname;
+    if (prev === "/chat" && pathname !== "/chat" && isLoggedIn) {
+      fetchUnreadCount();
+    }
+  }, [pathname, isLoggedIn, fetchUnreadCount]);
+
+  // ── Socket.io — real-time unread updates + in-app toast ───────────────────
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    let cleanup: (() => void) | null = null;
+
+    getSocket().then((sock: Socket) => {
+      if (cancelled) return;
+
+      const onUpdated = (data: {
+        conversationId: string;
+        lastMessage:    string;
+        senderName?:    string;
+      }) => {
+        // Chat page manages its own badge and message list — skip toast there
+        if (pathnameRef.current === "/chat") return;
+
+        setUnreadCount((prev) => prev + 1);
+
+        const preview = data.lastMessage?.length > 60
+          ? data.lastMessage.slice(0, 60) + "…"
+          : data.lastMessage;
+
+        toast.info(
+          data.senderName ? `${data.senderName}: ${preview}` : preview ?? "New message",
+          {
+            action: {
+              label:   "Open",
+              onClick: () => router.push("/chat"),
+            },
+            duration: 6000,
+          }
+        );
+      };
+
+      // On reconnect re-fetch for an accurate count
+      const onReconnect = () => fetchUnreadCount();
+
+      sock.on("conversation:updated", onUpdated);
+      sock.on("connect",              onReconnect);
+
+      cleanup = () => {
+        sock.off("conversation:updated", onUpdated);
+        sock.off("connect",              onReconnect);
+      };
+    }).catch(() => {});
+
+    return () => { cancelled = true; cleanup?.(); };
+  }, [isLoggedIn, fetchUnreadCount, router]);
+
+  // ── Logout ─────────────────────────────────────────────────────────────────
+
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+    disconnectSocket();
+    setUnreadCount(0);
+
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
 
     setIsLoggedIn(false);
     window.dispatchEvent(new Event("auth-changed"));
-
     toast.success("You have been logged out.");
-
     router.push("/");
     router.refresh();
   };
 
-  // 🔥 Post button logic
+  // ── Post button ────────────────────────────────────────────────────────────
+
   const handlePostClick = () => {
     if (!isLoggedIn) {
       toast.info("Please login to post an ad.");
@@ -67,6 +152,8 @@ export default function AppHeader() {
       router.push("/post/select-category");
     }
   };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <header className="border-b border-slate-200 shadow-md shadow-gray-300">
@@ -81,10 +168,10 @@ export default function AppHeader() {
 
           <div className="flex-1" />
 
-          {/* Right Section */}
+          {/* Right section */}
           <div className="h-full flex items-center gap-2">
 
-            {/* Heart Icon */}
+            {/* Heart / wishlist */}
             <button className="hover:bg-slate-300 flex items-center justify-center w-11 h-full">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -102,7 +189,7 @@ export default function AppHeader() {
               </svg>
             </button>
 
-            {/* POST Button */}
+            {/* POST button */}
             <button
               onClick={handlePostClick}
               className="bg-rose-500 hover:bg-rose-600 flex items-center rounded-full text-white text-sm font-medium pl-2 pr-3 py-1 shadow-sm mr-2"
@@ -113,11 +200,12 @@ export default function AppHeader() {
               <span>POST</span>
             </button>
 
-            {/* Profile Dropdown */}
+            {/* Profile dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="hover:bg-slate-300 flex items-center justify-center w-11 h-full">
                   <div className="relative size-10 bg-indigo-200 rounded-full flex items-center justify-center">
+
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="size-6 text-slate-700"
@@ -133,23 +221,43 @@ export default function AppHeader() {
                       />
                     </svg>
 
-                    {/* Online indicator */}
+                    {/* Online dot */}
                     {isLoggedIn && (
                       <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full" />
                     )}
+
+                    {/* Unread badge on avatar — shows even before opening dropdown */}
+                    {isLoggedIn && unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-rose-500 border-2 border-white rounded-full flex items-center justify-center">
+                        <span className="text-[9px] font-bold text-white leading-none px-0.5">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      </span>
+                    )}
+
                   </div>
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuContent align="end" className="w-44">
                 {isLoggedIn ? (
                   <>
                     <DropdownMenuItem onClick={() => router.push("/my-ads")}>
                       My Ads
                     </DropdownMenuItem>
+
+                    {/* Chat — with unread badge */}
                     <DropdownMenuItem onClick={() => router.push("/chat")}>
-                      Chat
+                      <span className="flex items-center justify-between w-full">
+                        Chat
+                        {unreadCount > 0 && (
+                          <span className="ml-2 bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
+                      </span>
                     </DropdownMenuItem>
+
                     <DropdownMenuItem onClick={() => router.push("/profile")}>
                       Profile
                     </DropdownMenuItem>

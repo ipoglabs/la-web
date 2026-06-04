@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import ChitChat from "./components/ChitChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -38,6 +39,15 @@ function formatLabel(key: string) {
     .replace(/([A-Z])/g, " $1")
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getPostPrice(post: Post): string {
+  const raw = post.price ?? post.rentPrice ?? post.salePrice ?? post.salary ??
+              post.budget ?? post.rateNightly ?? post.budgetAmount;
+  if (!raw) return "";
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency", currency: "INR", maximumFractionDigits: 0,
+  }).format(Number(raw));
 }
 
 function renderValue(key: string, value: any): string {
@@ -618,60 +628,20 @@ export default function PostDetailPageClient() {
           className="
             md:hidden
             bg-white px-4 py-5
-            border-y border-slate-900/25 
-            sm:rounded-md sm:border  
+            border-y border-slate-900/25
+            sm:rounded-md sm:border
             flex flex-col
           "
         >
-          <h2 className="font-bold text-2xl text-gray-700">ChitChat</h2>
-          <p className="mb-4">Don't worry this is private message to owner.</p>
-
-          {/* CHAT BOX */}
-          <div className="flex-grow overflow-y-auto bg-gray-200 rounded-xl px-4 py-5">
-            <div className="flex flex-col gap-3">
-
-              {/* RIGHT MESSAGE */}
-              <div className="flex justify-end">
-                <div className="bg-blue-500 rounded-lg px-4 py-2 max-w-[80%]">
-                  <p className="text-white text-sm">
-                    Hey, how are you?
-                  </p>
-                </div>
-              </div>
-
-              {/* LEFT MESSAGE */}
-              <div className="flex justify-start">
-                <div className="bg-white rounded-lg px-4 py-2 max-w-[80%]">
-                  <p className="text-gray-900 text-sm">
-                    I'm good, thanks! How about you?
-                  </p>
-                </div>
-              </div>
-
-              {/* RIGHT MESSAGE */}
-              <div className="flex justify-end">
-                <div className="bg-blue-500 rounded-lg px-4 py-2 max-w-[80%]">
-                  <p className="text-white text-sm">
-                    I am good, thank you! Could you please help share your number to call you over WhatsApp?
-                  </p>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          {/* INPUT */}
-          <div className="flex justify-center items-center h-16">
-            <input
-              type="text"
-              className="flex-1 border border-gray-500 rounded-lg py-2 px-4 w-full mr-4"
-              placeholder="Type a message..."
-            />
-
-            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded">
-              Send
-            </button>
-          </div>
+          <h2 className="font-bold text-2xl text-gray-700 mb-1">ChitChat</h2>
+          <p className="mb-4 text-sm text-slate-500">Private message to the owner.</p>
+          <ChitChat
+            postId={post._id}
+            postTitle={post.name}
+            postPrice={getPostPrice(post)}
+            postImage={post.images?.[0] || ""}
+            sellerId={post.ownerId?.toString() || ""}
+          />
         </section>
 
     </div>
@@ -769,58 +739,20 @@ export default function PostDetailPageClient() {
         <section
           className="
             bg-white px-4 py-5
-            border border-slate-900/25 
+            border border-slate-900/25
             rounded-md shadow-black/10 shadow-md
             flex flex-col
           "
         >
-          <h2 className="font-bold text-2xl text-gray-700">ChitChat</h2>
-          <p className="mb-4">Don't worry this is private message to owner.</p>
-
-          <div className="flex-grow overflow-y-auto bg-gray-200 rounded-xl px-4 py-5">
-            <div className="flex flex-col gap-3">
-              <div className="flex justify-end">
-                <div className="bg-blue-500 rounded-lg px-4 py-2 max-w-[80%]">
-                  <p className="text-white text-sm">Hey, how are you?</p>
-                </div>
-              </div>
-
-              <div className="flex justify-start">
-                <div className="bg-white rounded-lg px-4 py-2 max-w-[80%]">
-                  <p className="text-gray-900 text-sm">
-                    I'm good, thanks! How about you?
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <div className="bg-blue-500 rounded-lg px-4 py-2 max-w-[80%]">
-                  <p className="text-white text-sm">
-                    I am good, thank you! Could you please help share your number to
-                    call you over WhatsUp ?
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-center items-center h-16">
-            <input
-              type="text"
-              className="flex-1 border border-gray-500 rounded-lg py-2 px-4 w-full mr-3"
-              placeholder="Type a message..."
-            />
-            <button className="border border-blue-600 bg-blue-500 hover:bg-blue-700 rounded-lg text-white font-bold py-2 px-5 flex items-center justify-center">
-              <span>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-6">
-                  <path
-                    fill="currentColor"
-                    d="M4.4 19.425q-.5.2-.95-.088T3 18.5V14l8-2l-8-2V5.5q0-.55.45-.837t.95-.088l15.4 6.5q.625.275.625.925t-.625.925z"
-                  />
-                </svg>
-              </span>
-            </button>
-          </div>
+          <h2 className="font-bold text-2xl text-gray-700 mb-1">ChitChat</h2>
+          <p className="mb-4 text-sm text-slate-500">Private message to the owner.</p>
+          <ChitChat
+            postId={post._id}
+            postTitle={post.name}
+            postPrice={getPostPrice(post)}
+            postImage={post.images?.[0] || ""}
+            sellerId={post.ownerId?.toString() || ""}
+          />
         </section>
 
       {/* ================= MAP ================= */}

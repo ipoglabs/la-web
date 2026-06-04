@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import {
@@ -21,24 +22,71 @@ import {
 
 type Props = {
   sellerName?: string;
+  receiverId?: string;
 };
 
 const MAX_CHARS = 500;
 
-export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
+export function MessageResponsiveDialog({ sellerName = "Seller", receiverId }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  function handleSend() {
-    // TODO: wire API POST /api/messages
-    setOpen(false);
-    setSubject("");
-    setMessage("");
+  async function handleSend() {
+    if (!receiverId) return;
+    setSending(true);
+    setError("");
+
+    try {
+      // Step 1: find-or-create conversation
+      const convRes = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          otherUserId: receiverId,
+          adId: "direct",
+          adTitle: sellerName,
+        }),
+      });
+
+      if (!convRes.ok) {
+        const data = await convRes.json().catch(() => ({}));
+        throw new Error(data.error || "Could not start conversation");
+      }
+
+      const { conversationId } = await convRes.json();
+      const convId: string = conversationId;
+
+      // Step 2: send the first message
+      const text = subject.trim() ? `${subject.trim()}\n\n${message.trim()}` : message.trim();
+
+      const msgRes = await fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!msgRes.ok) {
+        const data = await msgRes.json().catch(() => ({}));
+        throw new Error(data.error || "Could not send message");
+      }
+
+      setOpen(false);
+      setSubject("");
+      setMessage("");
+      router.push("/chat");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setSending(false);
+    }
   }
 
-  const canSend = subject.trim().length > 0 && message.trim().length > 0;
+  const canSend = !!receiverId && message.trim().length > 0 && !sending;
 
   // ── Trigger ──────────────────────────────────────────────────────────────
   const trigger = (
@@ -66,7 +114,7 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
       {/* Subject */}
       <div>
         <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Subject
+          Subject <span className="text-slate-300 font-normal normal-case">(optional)</span>
         </label>
         <input
           value={subject}
@@ -96,6 +144,14 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
           rows={5}
         />
       </div>
+
+      {/* Error */}
+      {!receiverId && (
+        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">Unable to identify this user. Try refreshing the page.</p>
+      )}
+      {error && (
+        <p className="text-xs text-rose-500 bg-rose-50 rounded-lg px-3 py-2">{error}</p>
+      )}
     </div>
   );
 
@@ -104,8 +160,9 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
     <div className="px-5 pb-5 pt-3 flex gap-3">
       <button
         type="button"
-        onClick={() => setOpen(false)}
-        className="flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-400 hover:text-slate-800 transition-colors"
+        onClick={() => { setOpen(false); setError(""); }}
+        disabled={sending}
+        className="flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-400 hover:text-slate-800 transition-colors disabled:opacity-40"
       >
         Cancel
       </button>
@@ -115,10 +172,17 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
         disabled={!canSend}
         className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 transition-colors"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
-          <path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z" />
-        </svg>
-        Send message
+        {sending ? (
+          <svg className="size-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
+            <path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z" />
+          </svg>
+        )}
+        {sending ? "Sending…" : "Send message"}
       </button>
     </div>
   );
@@ -127,8 +191,9 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
   const closeBtn = (
     <button
       type="button"
-      onClick={() => setOpen(false)}
-      className="shrink-0 size-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+      onClick={() => { setOpen(false); setError(""); }}
+      disabled={sending}
+      className="shrink-0 size-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-40"
     >
       <X className="size-4 text-slate-500" />
       <span className="sr-only">Close</span>
@@ -137,7 +202,7 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
 
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { if (!sending) { setOpen(v); setError(""); } }}>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
         <DialogContent className="max-w-md w-full p-0 gap-0 rounded-2xl overflow-hidden">
           <DialogHeader className="flex flex-row items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
@@ -154,7 +219,7 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen} dismissible={false}>
+    <Drawer open={open} onOpenChange={(v) => { if (!sending) { setOpen(v); setError(""); } }} dismissible={false}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent className="max-h-[92dvh] flex flex-col rounded-t-2xl">
         <DrawerHeader className="flex flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100">

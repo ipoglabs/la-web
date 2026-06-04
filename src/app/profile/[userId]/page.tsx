@@ -4,17 +4,20 @@ import connectDB from "@/config/database";
 import User from "@/models/user";
 import Post from "@/models/post";
 import Review from "@/models/review";
+import { getSession } from "@/lib/auth";
 
 export default async function Page({
   params,
 }: {
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
 }) {
+  const { userId } = await params;
+  const session = await getSession();
   await connectDB();
 
   /* ================= USER ================= */
   const userData: any = await User.findOne({
-    userId: params.userId,
+    userId,
     isDeleted: { $ne: true },
   }).lean();
 
@@ -56,7 +59,11 @@ export default async function Page({
       : 0;
 
   /* ================= BUILD RESPONSE ================= */
+  const profileMongoId = safeUser._id.toString();
   const user = {
+    mongoId:     profileMongoId,
+    isOwnProfile: session?.userId === profileMongoId,
+    isLoggedIn:   !!session,
     userId: safeUser.userId,
     name: safeUser.fullName || "",
     role: safeUser.roleTitle || safeUser.role,
