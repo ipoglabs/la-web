@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { IconEye, IconEyeOff } from "@/components/icons/inline";
 // import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/store/authStore";
+import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
 /* ================= SAFE PARSER ================= */
@@ -62,15 +63,15 @@ function mapLoginError(opts: {
     };
   }
 
-  if (status === 429) {
+  if (status === 403) {
     return {
-      general: "Too many attempts. Please try later.",
+      general: "Please verify your email before logging in.",
     };
   }
 
-  if (msg.includes("verify")) {
+  if (status === 429) {
     return {
-      general: "Please verify your account before login.",
+      general: "Too many attempts. Please try later.",
     };
   }
 
@@ -206,10 +207,8 @@ const isValidPhone = (v: string, minLen = 6) =>
     // ✅ SUCCESS
     const data = result.data;
 
-    if (data?.token && data?.user) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setAuth(data.token, data.user);
+    if (data?.user) {
+      setAuth(null, data.user);
     }
 
     // 🔥 success toast
@@ -360,6 +359,9 @@ const isValidPhone = (v: string, minLen = 6) =>
                 type="button"
                 variant="outline"
                 className="w-full bg-slate-200 hover:bg-slate-300"
+                onClick={() =>
+                  signIn("google", { callbackUrl: "/api/auth/google-callback" })
+                }
               >
                 Continue with Google
               </Button>

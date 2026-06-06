@@ -8,18 +8,21 @@ export async function sendMessageNotificationEmail({
   toName,
   senderName,
   messagePreview,
+  conversationId,
 }: {
   toEmail:        string;
   toName:         string;
   senderName:     string;
   messagePreview: string;
+  conversationId: string;
 }): Promise<void> {
   await verifyMailerOnce();
 
   const preview  = messagePreview.length > 120
     ? messagePreview.slice(0, 120) + "…"
     : messagePreview;
-  const chatUrl  = `${APP_URL}/chat`;
+  const chatUrl  = `${APP_URL}/chat?conv=${conversationId}`;
+  const name     = toName || "there";
   const mailer   = getMailer();
 
   await mailer.sendMail({
@@ -47,7 +50,7 @@ export async function sendMessageNotificationEmail({
     <tr>
       <td style="padding:32px 24px;background:#ffffff;">
         <p style="font-size:16px;color:#1e293b;margin:0 0 8px 0;">
-          Hi <strong>${toName}</strong>,
+          Hi <strong>${name}</strong>,
         </p>
         <p style="font-size:15px;color:#475569;margin:0 0 20px 0;">
           You have a new message from <strong>${senderName}</strong>:

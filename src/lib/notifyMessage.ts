@@ -46,6 +46,7 @@ export async function notifyRecipient({
       toName:         recipient.fullName,
       senderName,
       messagePreview: messageText,
+      conversationId,
     }).catch((err) => console.error("[notifyEmail] failed:", err));
 
     // Record the send time so the cooldown applies to subsequent messages

@@ -120,7 +120,7 @@ export async function POST(req: Request) {
         ph: user.primaryNumber,
       }),
       {
-        httpOnly: false,
+        httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
