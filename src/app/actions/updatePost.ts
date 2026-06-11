@@ -4,8 +4,8 @@
 import { Types } from "mongoose";
 import connectDB from "@/config/database";
 import Post from "@/models/post";
-import cloudinary from "@/config/cloudinary";
 import { getSession } from "@/lib/auth";
+import { deleteImageVariants } from "@/lib/media/imageVariants";
 
 /* ---------------------- helpers (unchanged from you) ---------------------- */
 
@@ -143,34 +143,25 @@ export async function updatePost(
         pullString(formData.get("contactNumber")),
     };
 
-    // ----- Images: keep existing + new uploads -----
-    const imageUrlEntries = (formData.getAll("imageUrl") as string[]) || [];
-    const imageFiles = (formData.getAll("images") as File[]) || [];
-    const mergedImages: string[] = [...imageUrlEntries];
-
-    for (const file of imageFiles) {
-      // In server actions, File is available
-      // but we still sanity check
-      if (!(file instanceof File) || !file.size || !file.type?.startsWith("image/")) continue;
-
-      const buffer = await file.arrayBuffer();
-      const base64 = Buffer.from(new Uint8Array(buffer)).toString("base64");
-
-      try {
-        const result = await cloudinary.uploader.upload(
-          `data:${file.type};base64,${base64}`,
-          { folder: "posts" }
-        );
-        mergedImages.push(result.secure_url);
-      } catch (e) {
-        console.error("Cloudinary upload failed:", e);
-      }
-    }
+    // ----- Images: R2 URLs already uploaded client-side -----
+    const base = process.env.R2_PUBLIC_URL || "";
+    const imageUrlEntries = (formData.getAll("imageUrl") as string[]).filter(
+      (v) => typeof v === "string" && v.startsWith("http") && (!base || v.startsWith(base))
+    );
 
     const images =
-      imageUrlEntries.length === 0 && imageFiles.length === 0
-        ? current.images ?? []
-        : mergedImages;
+      imageUrlEntries.length > 0 ? imageUrlEntries : ((current.images ?? []) as string[]);
+
+    // Delete orphaned R2 variants when the user replaced or removed images
+    if (imageUrlEntries.length > 0) {
+      const previousImages = (current.images ?? []) as string[];
+      const removedImages = previousImages.filter((url) => !imageUrlEntries.includes(url));
+      if (removedImages.length > 0) {
+        deleteImageVariants(removedImages).catch((e) =>
+          console.error("R2 orphan cleanup error:", e)
+        );
+      }
+    }
 
     // ----- Build update object (mostly your existing mapping) -----
     const updateRaw: Record<string, any> = {

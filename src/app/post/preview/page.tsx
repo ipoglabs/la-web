@@ -13,6 +13,7 @@ import { useWizardGuard } from "../wizard/guard";
 
 import { addPost } from "@/app/actions/addPost";
 import { buildPostFormData } from "@/lib/buildPostFormData";
+import { uploadFileToR2 } from "@/lib/media/uploadToR2";
 
 import { useAuthStore } from "@/store/authStore";
 import { getSpecs } from "@/posting/config/getSpecs";
@@ -71,7 +72,7 @@ function renderByType(spec: FieldSpec, value: any): string {
 /* ---------------- MAIN ---------------- */
 
 export default function PreviewPage() {
-  useWizardGuard("preview", { allowRefresh: true });
+  useWizardGuard("preview");
 
   const router = useRouter();
 
@@ -209,47 +210,72 @@ export default function PreviewPage() {
   /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async () => {
-  setClientError(null);
+    setClientError(null);
 
-  if (missing.length) {
-    setClientError(`Please fill: ${missing.join(", ")}`);
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const store = usePostFormStore.getState();
-
-    const fd = buildPostFormData({
-      ...store,
-      sellerInfo,
-    });
-
-    let res;
-
-    if (store.editMode && store.postId) {
-      res = await updatePost(store.postId, fd);
-    } else {
-      res = await addPost(fd);
-    }
-
-    if (!res || (res as any).ok === false) {
-      setClientError((res as any)?.error || "Submit failed.");
+    if (missing.length) {
+      setClientError(`Please fill: ${missing.join(", ")}`);
       return;
     }
 
-    // ✅ reset AFTER success
-    await usePostFormStore.getState().reset();
+    setLoading(true);
 
-    router.push("/congratulation");
+    try {
+      const store = usePostFormStore.getState();
 
-  } catch (error: any) {
-    setClientError(error?.message || "Submit failed.");
-  } finally {
-    setLoading(false);
-  }
-};
+      // Upload all File objects to R2, collect public URLs
+      const resolvedImages: string[] = [];
+      const failedImageNumbers: number[] = [];
+
+      const allImages = store.images || [];
+      for (let i = 0; i < allImages.length; i++) {
+        const img = allImages[i];
+        if (img instanceof File) {
+          try {
+            const url = await uploadFileToR2(img, store.name);
+            resolvedImages.push(url);
+          } catch (uploadErr: any) {
+            console.error(`Photo ${i + 1} upload error:`, uploadErr?.message);
+            failedImageNumbers.push(i + 1);
+          }
+        } else if (typeof img === "string" && !img.startsWith("blob:")) {
+          resolvedImages.push(img); // existing hosted URL — keep as-is
+        }
+      }
+
+      if (failedImageNumbers.length > 0) {
+        setClientError(
+          `Photo ${failedImageNumbers.join(", ")} failed to upload. Remove and re-add ${failedImageNumbers.length === 1 ? "it" : "them"} before submitting.`
+        );
+        return;
+      }
+
+      const fd = buildPostFormData({
+        ...store,
+        sellerInfo,
+        images: resolvedImages,
+      });
+
+      let res;
+
+      if (store.editMode && store.postId) {
+        res = await updatePost(store.postId, fd);
+      } else {
+        res = await addPost(fd);
+      }
+
+      if (!res || (res as any).ok === false) {
+        setClientError((res as any)?.error || "Submit failed.");
+        return;
+      }
+
+      await usePostFormStore.getState().reset();
+      router.push("/congratulation");
+    } catch (error: any) {
+      setClientError(error?.message || "Submit failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChangeNavigation = (path: string) => {
   // ✅ reset edit mode safely

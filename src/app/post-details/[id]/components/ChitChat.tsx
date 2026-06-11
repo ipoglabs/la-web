@@ -105,12 +105,10 @@ export default function ChitChat({ postId, postTitle, postPrice, postImage, sell
   // ── Mount: auth check + find existing conversation ─────────────────────────
 
   useEffect(() => {
-    if (!sellerId) { setAuthChecked(true); return; }
-
     let cancelled = false;
 
     async function init() {
-      // Auth
+      // Auth check always runs first so myId is set before authChecked flips
       const meRes  = await fetch("/api/auth/me");
       const meData = await meRes.json();
       const uid    = meData.user?.id ?? null;
@@ -119,7 +117,8 @@ export default function ChitChat({ postId, postTitle, postPrice, postImage, sell
       setMyId(uid);
       setAuthChecked(true);
 
-      if (!uid || uid === sellerId) return;
+      // Can't chat: not logged in, no seller id, or viewing own listing
+      if (!uid || !sellerId || uid === sellerId) return;
 
       // Find existing conversation for this post
       const convosRes = await fetch("/api/conversations");

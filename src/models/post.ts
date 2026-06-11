@@ -378,9 +378,6 @@ const PostSchema = new Schema<IPost>(
     // Service wanted
     urgency: String,
 
-    // Service wanted
-urgency: String,
-
 /* 🔴 Moderation */
 
     reported: {

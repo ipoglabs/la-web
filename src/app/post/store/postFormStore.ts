@@ -11,6 +11,7 @@ import {
   blobToFile,
   idbDel,
 } from "../wizard/imagePersistence";
+import { processImage } from "@/lib/media/processImage";
 
 export type SellerInfo = { name: string; email: string; phone: string };
 export type Location = { address: string; lat?: number; lng?: number };
@@ -30,6 +31,7 @@ export type PostFormState = {
 
   editMode?: boolean;
   postId?: string;
+  lastActiveAt: number;
 
   setField: (key: string, value: any) => void;
   setBulk: (data: Partial<PostFormState>) => void;
@@ -39,6 +41,8 @@ export type PostFormState = {
   removeImage: (index: number) => Promise<void>;
   setImagesFromRefs: () => Promise<void>;
 };
+
+const STALE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const defaultState = {
   category: "",
@@ -55,6 +59,7 @@ const defaultState = {
 
   editMode: false,
   postId: undefined as string | undefined,
+  lastActiveAt: 0,
 };
 
 export const usePostFormStore = create<PostFormState>()(
@@ -99,16 +104,20 @@ export const usePostFormStore = create<PostFormState>()(
 
         for (const f of arr) {
           if (!(f instanceof File)) continue;
-          if (!f.size || !f.type?.startsWith("image/")) continue;
+          if (!f.size) continue;
 
-          const key = makeImageKey(f);
-          await idbSet(key, f);
+          // Convert HEIC + compress before storing
+          const processed = await processImage(f);
 
-          refs.push(encodeIdbRef(key, f.name));
+          const key = makeImageKey(processed);
+          await idbSet(key, processed);
+
+          refs.push(encodeIdbRef(key, processed.name));
         }
 
         set((s) => ({
           imageRefs: [...(s.imageRefs || []), ...refs],
+          lastActiveAt: Date.now(),
         }));
 
         await get().setImagesFromRefs();
@@ -178,7 +187,12 @@ export const usePostFormStore = create<PostFormState>()(
       },
 
       onRehydrateStorage: () => async (state) => {
-        if (state?.setImagesFromRefs) {
+        if (!state) return;
+        const hasImages = (state.imageRefs?.length ?? 0) > 0;
+        const isStale = Date.now() - (state.lastActiveAt ?? 0) > STALE_MS;
+        if (hasImages && isStale) {
+          await state.reset();
+        } else if (state.setImagesFromRefs) {
           await state.setImagesFromRefs();
         }
       },

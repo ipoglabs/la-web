@@ -102,8 +102,15 @@ export default function SelectCategoryClient() {
 
   const categories = useMemo(() => categoryIN.data, []);
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(() => {
+    const { category } = usePostFormStore.getState();
+    if (!category) return null;
+    return categoryIN.data.find((c) => c.name === category)?.id ?? null;
+  });
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(() => {
+    const { subcategory } = usePostFormStore.getState();
+    return subcategory || null;
+  });
 
   const currentCategory = categories.find((c) => c.id === selectedCategoryId) ?? null;
   const canContinue = Boolean(currentCategory && selectedSubCategory);

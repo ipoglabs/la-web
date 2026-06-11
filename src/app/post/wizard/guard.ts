@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { STEP_ROUTES, StepKey } from "./steps";
+import { STEP_ROUTES, STEPS, StepKey } from "./steps";
 import { usePostFormStore } from "../store/postFormStore";
 
 function hasText(v: unknown) {
@@ -40,9 +40,8 @@ export function useWizardGuard(current: StepKey) {
     if (!missing) return;
 
     // If earliest missing is BEFORE current, force redirect back.
-    const order: StepKey[] = ["select-category", "details", "upload-photo", "pick-location", "preview"];
-    const missingIdx = order.indexOf(missing);
-    const currentIdx = order.indexOf(current);
+    const missingIdx = STEPS.indexOf(missing);
+    const currentIdx = STEPS.indexOf(current);
 
     if (missingIdx !== -1 && currentIdx !== -1 && missingIdx < currentIdx) {
       router.replace(STEP_ROUTES[missing]);

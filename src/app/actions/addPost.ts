@@ -3,7 +3,6 @@
 import connectDB from "@/config/database";
 import Post from "@/models/post";
 import { generateAdsId } from "@/lib/generateAdsId";
-import cloudinary from "@/config/cloudinary";
 import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 
@@ -82,38 +81,12 @@ function getCountryCode(formData: FormData, location: LocationData): string {
   return getCountryCodeFromLocation(location);
 }
 
-async function uploadImages(formData: FormData): Promise<string[]> {
-  const imageUrlEntries = formData
+function getImages(formData: FormData): string[] {
+  const base = process.env.R2_PUBLIC_URL || "";
+  return formData
     .getAll("imageUrl")
     .map((item) => (typeof item === "string" ? item.trim() : ""))
-    .filter(Boolean);
-
-  const imageFiles = formData
-    .getAll("images")
-    .filter((item): item is File => item instanceof File);
-
-  const uploadedImages = await Promise.all(
-    imageFiles.map(async (file) => {
-      if (!file.size || !file.type?.startsWith("image/")) return null;
-
-      try {
-        const buffer = await file.arrayBuffer();
-        const base64 = Buffer.from(new Uint8Array(buffer)).toString("base64");
-
-        const result = await cloudinary.uploader.upload(
-          `data:${file.type};base64,${base64}`,
-          { folder: "posts" }
-        );
-
-        return result.secure_url;
-      } catch (error) {
-        console.error("Cloudinary upload failed:", error);
-        return null;
-      }
-    })
-  );
-
-  return [...imageUrlEntries, ...uploadedImages.filter(Boolean)];
+    .filter((url) => url.startsWith("http") && (!base || url.startsWith(base)));
 }
 
 export async function addPost(
@@ -167,7 +140,7 @@ export async function addPost(
         "",
     };
 
-    const images = await uploadImages(formData);
+    const images = getImages(formData);
 
     const facilities = pullArray(formData.get("facilities"));
     const amenities = pullArray(formData.get("amenities"));

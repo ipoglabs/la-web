@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,31 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Logo from "@/app/assets/la-logo-symbol-color.svg";
 import LogoText from "@/app/assets/la-text-black.svg";
+import { useAuthStore } from "@/store/authStore";
 
 export default function PostHeader() {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
-  // Safe login detection
-  useEffect(() => {
-    const checkLogin = () => {
-      try {
-        const token = localStorage.getItem("token");
-        setIsLoggedIn(!!token);
-      } catch {
-        setIsLoggedIn(false);
-      }
-    };
-
-    checkLogin();
-
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "token") checkLogin();
-    };
-
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  const isLoggedIn = !!user;
 
   const handlePostClick = useCallback(() => {
     if (!isLoggedIn) {
@@ -51,11 +34,10 @@ export default function PostHeader() {
   }, [isLoggedIn, router]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
+    logout();
     toast.success("You have been logged out.");
     router.push("/");
-  }, [router]);
+  }, [logout, router]);
 
   return (
     <header className="border-b border-slate-200 shadow-md shadow-gray-300">

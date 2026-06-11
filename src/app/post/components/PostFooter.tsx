@@ -11,6 +11,7 @@ interface PostFooterProps {
   nextLabel?: string;
   submitLabel?: string;
 
+  step?: string;
   steps?: string[];
   basePath?: string;
 
@@ -20,8 +21,9 @@ interface PostFooterProps {
   onSubmit?: () => void;
 
   isNextDisabled?: boolean;
+  submitting?: boolean;
 
-  showProgress?: boolean; // NEW
+  showProgress?: boolean;
 }
 
 const REAL_STEPS = [
@@ -50,6 +52,7 @@ export default function PostFooter(props: PostFooterProps) {
     onSubmit,
 
     isNextDisabled = false,
+    submitting = false,
     showProgress = true,
   } = props;
 
@@ -153,9 +156,9 @@ export default function PostFooter(props: PostFooterProps) {
               type="button"
               onClick={handleRightBtnClick}
               className={darkBtn}
-              disabled={showNext && isNextDisabled}
+              disabled={(showNext && isNextDisabled) || submitting}
             >
-              {showSubmit ? submitLabel : nextLabel}
+              {submitting ? "Submitting…" : showSubmit ? submitLabel : nextLabel}
             </button>
           )}
         </div>
