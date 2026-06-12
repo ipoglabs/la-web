@@ -30,8 +30,14 @@ const MessageSchema = new Schema<IMessage>(
   { timestamps: true }
 );
 
-// Hot query — always paginate by conversationId + createdAt
+// Kept for any legacy queries sorted by createdAt
 MessageSchema.index({ conversationId: 1, createdAt: -1 });
+
+// Cursor-based pagination (sorted by _id desc)
+MessageSchema.index({ conversationId: 1, _id: -1 });
+
+// Unread-count aggregation: conversationId IN [...], senderId ≠ me, readBy ≠ me, deletedAt null
+MessageSchema.index({ conversationId: 1, senderId: 1, deletedAt: 1 });
 
 export default mongoose.models.Message ||
   mongoose.model<IMessage>("Message", MessageSchema);

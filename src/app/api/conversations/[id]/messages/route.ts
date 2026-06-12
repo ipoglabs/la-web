@@ -33,13 +33,13 @@ export async function GET(
 
   const query: Record<string, unknown> = { conversationId: id, deletedAt: null };
 
+  // ObjectIDs are time-ordered — compare _id directly, no extra findById needed
   if (cursor && mongoose.Types.ObjectId.isValid(cursor)) {
-    const ref = await Message.findById(cursor).lean();
-    if (ref) query.createdAt = { $lt: ref.createdAt };
+    query._id = { $lt: new mongoose.Types.ObjectId(cursor) };
   }
 
   const raw = await Message.find(query)
-    .sort({ createdAt: -1 })
+    .sort({ _id: -1 })
     .limit(limit + 1)
     .lean();
 
@@ -131,24 +131,26 @@ export async function POST(
 
   // Notify each recipient's personal room for unread badge + in-app toast
   const recipients = conv.participants.filter((p) => !p.equals(myId));
-  for (const rid of recipients) {
-    await wsEmit(`user:${rid.toString()}`, "conversation:updated", {
-      conversationId: id,
-      lastMessage:    serialized.text,
-      lastMessageAt:  serialized.createdAt,
-      senderName,
-    });
-  }
+  await Promise.all(
+    recipients.map((rid) =>
+      wsEmit(`user:${rid.toString()}`, "conversation:updated", {
+        conversationId: id,
+        lastMessage:    serialized.text,
+        lastMessageAt:  serialized.createdAt,
+        senderName,
+      })
+    )
+  );
 
   // Fire-and-forget offline email notification — does not block the response
-  for (const rid of recipients) {
+  recipients.forEach((rid) => {
     notifyRecipient({
       conversationId: id,
       recipientId:    rid.toString(),
       senderName,
       messageText:    trimmed,
     }).catch(() => {});
-  }
+  });
 
   return NextResponse.json({ message: serialized }, { status: 201 });
 }

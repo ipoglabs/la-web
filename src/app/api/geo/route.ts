@@ -74,7 +74,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = (await fromIpinfo(rawIp)) ?? (await fromIpwho(rawIp));
+    // Race both providers in parallel — first non-null result wins
+    const toRace = (p: Promise<GeoResult | null>) =>
+      p.then((r) => r ?? Promise.reject(new Error("no result")));
+
+    const result = await Promise.any([
+      toRace(fromIpinfo(rawIp)),
+      toRace(fromIpwho(rawIp)),
+    ]).catch(() => null);
+
     if (!result) return NextResponse.json(null, { status: 502 });
     return NextResponse.json(result);
   } catch {

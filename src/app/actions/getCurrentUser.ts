@@ -1,29 +1,43 @@
 "use server";
 
+import { cookies } from "next/headers";
 import connectDB from "@/config/database";
 import User from "@/models/user";
-import { getSession } from "@/lib/auth";
+import { verifyToken } from "@/lib/auth";
 import type { ProfileUser } from "@/app/profile/types";
 
 export async function getCurrentUser(): Promise<ProfileUser | null> {
+  // JWT-only verify — no DB call for auth check
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get("session")?.value ||
+    cookieStore.get("token")?.value;
+
+  if (!token) return null;
+
+  const payload = verifyToken(token);
+  if (!payload) return null;
+
+  const userId = payload.userId || payload.id;
+  if (!userId) return null;
+
   await connectDB();
 
-  const session = await getSession();
-  if (!session) return null;
+  // ONE query — fetch full doc and check status in the same round-trip
+  const user: any = await User.findById(userId).lean();
 
-  const user: any = await User.findById(session.userId).lean();
-
-  /* ================= FINAL PROTECTION ================= */
   if (
     !user ||
     user.isDeleted === true ||
-    user.accountStatus === "Deleted"
+    user.isSuspended === true ||
+    user.accountStatus === "Deleted" ||
+    user.accountStatus === "Suspended"
   ) {
     return null;
   }
 
   return {
-    id: user._id?.toString() || "",   // ✅ FIXED
+    id: user._id?.toString() || "",
     profileId: user.userId || "",
     username: user.username || "",
     fullName: user.fullName || "",

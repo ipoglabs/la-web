@@ -24,16 +24,20 @@ export async function GET() {
     .populate<{ participants: PopulatedUser[] }>("participants", "fullName username image _id")
     .lean();
 
-  // Unread counts in parallel
-  const unreadCounts = await Promise.all(
-    conversations.map((conv) =>
-      Message.countDocuments({
-        conversationId: conv._id,
+  // Single aggregation for all unread counts — replaces N individual countDocuments calls
+  const unreadAgg = await Message.aggregate([
+    {
+      $match: {
+        conversationId: { $in: conversations.map((c) => c._id) },
         senderId:       { $ne: myId },
         readBy:         { $ne: myId },
         deletedAt:      null,
-      })
-    )
+      },
+    },
+    { $group: { _id: "$conversationId", count: { $sum: 1 } } },
+  ]);
+  const unreadMap = new Map<string, number>(
+    unreadAgg.map((a) => [a._id.toString(), a.count])
   );
 
   const result = conversations.map((conv, i) => {
@@ -57,7 +61,7 @@ export async function GET() {
       adImage:       conv.adImage,
       lastMessage:   conv.lastMessage,
       lastMessageAt: conv.lastMessageAt ?? new Date(),
-      unreadCount:   unreadCounts[i],
+      unreadCount:   unreadMap.get((conv._id as mongoose.Types.ObjectId).toString()) ?? 0,
       iBlockedThem:  iBlocked,
       blockedByOther: theyBlocked,
       isBlocked:     iBlocked || theyBlocked,

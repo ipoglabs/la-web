@@ -13,5 +13,8 @@ const ReviewSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Covers Review.find({ userId }) and Review.findOne({ userId, reviewerId })
+ReviewSchema.index({ userId: 1, reviewerId: 1 });
+
 export default mongoose.models.Review ||
   mongoose.model("Review", ReviewSchema);

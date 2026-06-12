@@ -1,5 +1,6 @@
 // src/lib/auth.ts
 import { cookies } from "next/headers";
+import { cache } from "react";
 import jwt from "jsonwebtoken";
 import connectDB from "@/config/database";
 import User from "@/models/user";
@@ -55,7 +56,7 @@ export async function createSession(payload: SessionPayload) {
   return token;
 }
 
-export async function getSession(): Promise<SessionPayload | null> {
+export const getSession = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
 
   const token =
@@ -96,7 +97,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   } catch {
     return null;
   }
-}
+});
 
 export async function clearSession() {
   const cookieStore = await cookies();

@@ -34,7 +34,7 @@ export async function changePassword(form: FormData) {
   const ok = await bcrypt.compare(currentPassword, user.password);
   if (!ok) return { ok: false, error: "Current password is incorrect" };
 
-  user.password = await bcrypt.hash(newPassword, 12);
+  user.password = await bcrypt.hash(newPassword, 10);
   await user.save();
 
   return { ok: true };

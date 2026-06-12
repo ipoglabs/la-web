@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       ? { email: emailRaw }
       : { primaryNumber: phoneRaw };
 
-    const user: any = await User.findOne(query);
+    const user: any = await User.findOne(query).lean();
 
     // IMPORTANT:
     // Deleted / suspended users must behave like invalid login.

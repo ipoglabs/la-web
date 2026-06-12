@@ -26,22 +26,21 @@ export async function GET(
       );
     }
 
-    /* ================= POSTS ================= */
-    const posts = await Post.find({
-      ownerId: user._id,
-      status: { $in: ["active", "expired"] },
-    })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .lean();
+    /* ================= POSTS + REVIEWS (parallel) ================= */
+    const [posts, reviews] = await Promise.all([
+      Post.find({
+        ownerId: user._id,
+        status: { $in: ["active", "expired"] },
+      })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
 
-    /* ================= REVIEWS ================= */
-    const reviews = await Review.find({
-      userId: user.userId,
-    })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
+      Review.find({ userId: user.userId })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean(),
+    ]);
 
     /* ================= MASK DATA ================= */
     const maskedEmail = user.email
