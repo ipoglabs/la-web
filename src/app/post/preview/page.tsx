@@ -224,7 +224,7 @@ export default function PreviewPage() {
 
       // Upload all File objects to R2, collect public URLs
       const resolvedImages: string[] = [];
-      const failedImageNumbers: number[] = [];
+      const uploadErrors: { index: number; reason: string }[] = [];
 
       const allImages = store.images || [];
       for (let i = 0; i < allImages.length; i++) {
@@ -234,17 +234,21 @@ export default function PreviewPage() {
             const url = await uploadFileToR2(img, store.name);
             resolvedImages.push(url);
           } catch (uploadErr: any) {
-            console.error(`Photo ${i + 1} upload error:`, uploadErr?.message);
-            failedImageNumbers.push(i + 1);
+            const reason = uploadErr?.message || "Unknown error";
+            console.error(`Photo ${i + 1} upload error:`, reason);
+            uploadErrors.push({ index: i + 1, reason });
           }
         } else if (typeof img === "string" && !img.startsWith("blob:")) {
-          resolvedImages.push(img); // existing hosted URL — keep as-is
+          resolvedImages.push(img);
         }
       }
 
-      if (failedImageNumbers.length > 0) {
+      if (uploadErrors.length > 0) {
+        const first = uploadErrors[0]!;
         setClientError(
-          `Photo ${failedImageNumbers.join(", ")} failed to upload. Remove and re-add ${failedImageNumbers.length === 1 ? "it" : "them"} before submitting.`
+          uploadErrors.length === 1
+            ? `Photo ${first.index} failed to upload: ${first.reason}`
+            : `${uploadErrors.length} photos failed to upload. First error: ${first.reason}`
         );
         return;
       }
