@@ -108,6 +108,14 @@ export async function addPost(
     const ownerId = new mongoose.Types.ObjectId(session.userId);
     const ownerEmail = normalizeEmail(session.email);
 
+    // Use the client-pre-generated postId as _id so it matches the R2 folder.
+    // Validate strictly — reject anything that isn't a 24-char hex ObjectId.
+    const rawPostId = pullString(formData.get("postId"));
+    const preGenId =
+      rawPostId && /^[a-f0-9]{24}$/.test(rawPostId)
+        ? new mongoose.Types.ObjectId(rawPostId)
+        : undefined;
+
     const name =
       pullString(formData.get("name")) ||
       pullString(formData.get("jobTitle")) ||
@@ -320,6 +328,7 @@ export async function addPost(
     const adsId = await generateAdsId(countryCode);
 
     const newPost = new Post({
+      ...(preGenId ? { _id: preGenId } : {}),
       ...postData,
       adsId,
     });

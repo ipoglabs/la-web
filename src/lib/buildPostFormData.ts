@@ -2,11 +2,13 @@ import { normalizeCategory, normalizeSubcategory } from "@/posting/config/normal
 import { CATEGORY_CONFIG, FALLBACK_OPTIONAL_FIELDS } from "@/posting/config/categoryConfig";
 import type { FieldSpec } from "@/posting/config/types";
 
-// keep your StoreState type as-is
 type StoreState = any;
 
 export function buildPostFormData(data: StoreState) {
   const fd = new FormData();
+
+  // postId is used by addPost to pre-set _id so it matches the R2 folder name
+  if (data.postId) fd.append("postId", data.postId);
 
   fd.append("category", data.category || "");
   fd.append("subcategory", data.subcategory || "");
@@ -18,20 +20,13 @@ export function buildPostFormData(data: StoreState) {
   fd.append("seller_info.email", data.sellerInfo?.email || "");
   fd.append("seller_info.phone", data.sellerInfo?.phone || "");
 
- (data.images || []).forEach((img: any, i: number) => {
-  // ✅ NEW FILES
-  if (img instanceof File) {
-    fd.append("images", img); // ❌ remove re-wrapping
-  }
-
-  // ✅ EXISTING IMAGES (ONLY REAL URLS)
-  else if (typeof img === "string") {
-    // ignore blob preview URLs
-    if (!img.startsWith("blob:")) {
+  (data.images || []).forEach((img: any) => {
+    if (img instanceof File) {
+      fd.append("images", img);
+    } else if (typeof img === "string" && !img.startsWith("blob:")) {
       fd.append("imageUrl", img);
     }
-  }
-});
+  });
 
   const normCat = normalizeCategory(data.category);
   const normSub = normalizeSubcategory(data.subcategory);

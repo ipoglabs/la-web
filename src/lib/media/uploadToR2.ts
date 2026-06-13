@@ -1,11 +1,14 @@
 import imageCompression from "browser-image-compression";
 import { VARIANT_SIZES, type ImageVariant } from "./variants";
 
-export async function uploadFileToR2(file: File, title?: string): Promise<string> {
-  const uuid = crypto.randomUUID();
+export async function uploadFileToR2(file: File, postId: string): Promise<string> {
+  // One timestamp shared across all 4 variant uploads for this image.
+  // This ensures all variants of the same image share an identical filename
+  // and getVariantUrl() can swap the folder name to navigate between them.
+  const timestamp = Date.now();
   const entries = Object.entries(VARIANT_SIZES) as [ImageVariant, number][];
 
-  let largeUrl = "";
+  let extraLargeUrl = "";
 
   await Promise.all(
     entries.map(async ([variant, maxWidthOrHeight]) => {
@@ -19,8 +22,8 @@ export async function uploadFileToR2(file: File, title?: string): Promise<string
       const formData = new FormData();
       formData.append("file", compressed);
       formData.append("variant", variant);
-      formData.append("uuid", uuid);
-      if (title) formData.append("title", title);
+      formData.append("postId", postId);
+      formData.append("timestamp", String(timestamp));
 
       const res = await fetch("/api/media/upload", {
         method: "POST",
@@ -32,12 +35,14 @@ export async function uploadFileToR2(file: File, title?: string): Promise<string
         throw new Error(err.error || `Upload failed (${res.status})`);
       }
 
-      if (variant === "large") {
+      // Store the extra-large URL as the canonical reference in post.images[].
+      // Smaller variants are derived via getVariantUrl() wherever needed.
+      if (variant === "extra-large") {
         const { publicUrl } = await res.json();
-        largeUrl = publicUrl;
+        extraLargeUrl = publicUrl;
       }
     })
   );
 
-  return largeUrl;
+  return extraLargeUrl;
 }

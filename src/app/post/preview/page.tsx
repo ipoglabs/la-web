@@ -14,6 +14,7 @@ import { useWizardGuard } from "../wizard/guard";
 import { addPost } from "@/app/actions/addPost";
 import { buildPostFormData } from "@/lib/buildPostFormData";
 import { uploadFileToR2 } from "@/lib/media/uploadToR2";
+import { deleteImageVariants } from "@/lib/media/imageVariants";
 
 import { useAuthStore } from "@/store/authStore";
 import { getSpecs } from "@/posting/config/getSpecs";
@@ -221,18 +222,21 @@ export default function PreviewPage() {
 
     try {
       const store = usePostFormStore.getState();
+      const postId = store.postId || "draft";
 
-      // Upload all File objects to R2, collect public URLs
+      // Upload every File to R2 under {userId}/post-images/{postId}/
       const resolvedImages: string[] = [];
       const uploadErrors: { index: number; reason: string }[] = [];
+      const newlyUploadedUrls: string[] = []; // track for orphan cleanup on failure
 
       const allImages = store.images || [];
       for (let i = 0; i < allImages.length; i++) {
         const img = allImages[i];
         if (img instanceof File) {
           try {
-            const url = await uploadFileToR2(img, store.name);
+            const url = await uploadFileToR2(img, postId);
             resolvedImages.push(url);
+            newlyUploadedUrls.push(url);
           } catch (uploadErr: any) {
             const reason = uploadErr?.message || "Unknown error";
             console.error(`Photo ${i + 1} upload error:`, reason);
@@ -244,6 +248,12 @@ export default function PreviewPage() {
       }
 
       if (uploadErrors.length > 0) {
+        // Clean up any images that did upload before the failure
+        if (newlyUploadedUrls.length > 0) {
+          deleteImageVariants(newlyUploadedUrls).catch((e) =>
+            console.error("R2 orphan cleanup after upload error:", e)
+          );
+        }
         const first = uploadErrors[0]!;
         setClientError(
           uploadErrors.length === 1
@@ -268,12 +278,19 @@ export default function PreviewPage() {
       }
 
       if (!res || (res as any).ok === false) {
+        // addPost/updatePost failed — clean up any newly uploaded R2 images
+        if (newlyUploadedUrls.length > 0) {
+          deleteImageVariants(newlyUploadedUrls).catch((e) =>
+            console.error("R2 orphan cleanup after submit failure:", e)
+          );
+        }
         setClientError((res as any)?.error || "Submit failed.");
         return;
       }
 
+      const savedId = (res as any).id as string | undefined;
       await usePostFormStore.getState().reset();
-      router.push("/congratulation");
+      router.push(savedId ? `/congratulation?postId=${savedId}` : "/congratulation");
     } catch (error: any) {
       setClientError(error?.message || "Submit failed.");
     } finally {
@@ -282,15 +299,11 @@ export default function PreviewPage() {
   };
 
   const handleChangeNavigation = (path: string) => {
-  // ✅ reset edit mode safely
-  usePostFormStore.setState({
-    editMode: false,
-    postId: undefined,
-  });
-
-  window.scrollTo(0, 0);
-  router.push(path);
-};
+    // Preserve postId so R2 folder stays consistent if user edits then comes back
+    usePostFormStore.setState({ editMode: false });
+    window.scrollTo(0, 0);
+    router.push(path);
+  };
 
   /* ---------------- UI ---------------- */
 

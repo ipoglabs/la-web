@@ -44,6 +44,19 @@ export type PostFormState = {
 
 const STALE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+/**
+ * Generates a valid 24-char MongoDB ObjectId hex string on the client.
+ * Format: 4-byte timestamp + 8 random bytes (matches ObjectId spec).
+ * Safe to use as _id in MongoDB via new Types.ObjectId(hex).
+ */
+function generateObjectId(): string {
+  const ts = Math.floor(Date.now() / 1000).toString(16).padStart(8, "0");
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return ts + rand;
+}
+
 const defaultState = {
   category: "",
   subcategory: "",
@@ -58,7 +71,7 @@ const defaultState = {
   facilities: [],
 
   editMode: false,
-  postId: undefined as string | undefined,
+  postId: generateObjectId(),
   lastActiveAt: 0,
 };
 
@@ -81,15 +94,14 @@ export const usePostFormStore = create<PostFormState>()(
         const refs = get().imageRefs || [];
         const seller = get().sellerInfo;
 
-        // 🔥 delete all images from IndexedDB
         for (const ref of refs) {
           const parsed = decodeIdbRef(ref);
           if (parsed) await idbDel(parsed.key);
         }
 
-        // ✅ reset everything but keep sellerInfo
         set(() => ({
           ...defaultState,
+          postId: generateObjectId(), // fresh ID for the next post
           sellerInfo: seller,
         }));
       },
@@ -106,7 +118,6 @@ export const usePostFormStore = create<PostFormState>()(
           if (!(f instanceof File)) continue;
           if (!f.size) continue;
 
-          // Convert HEIC + compress before storing
           const processed = await processImage(f);
 
           const key = makeImageKey(processed);
@@ -124,37 +135,32 @@ export const usePostFormStore = create<PostFormState>()(
       },
 
       removeImage: async (index) => {
-  const state = get();
+        const state = get();
 
-  const refs = [...(state.imageRefs || [])];
-  const runtimeImages = [...(state.images || [])];
+        const refs = [...(state.imageRefs || [])];
+        const runtimeImages = [...(state.images || [])];
 
-  const target = runtimeImages[index];
+        const target = runtimeImages[index];
 
-  // 🔥 CASE 1: EXISTING IMAGE (URL)
-  if (typeof target === "string" && !target.startsWith("idb:")) {
-    const updatedImages = runtimeImages.filter((_, i) => i !== index);
+        // CASE 1: already-uploaded URL (edit mode or previously uploaded)
+        if (typeof target === "string" && !target.startsWith("idb:")) {
+          set(() => ({
+            images: runtimeImages.filter((_, i) => i !== index),
+          }));
+          return;
+        }
 
-    set(() => ({
-      images: updatedImages,
-    }));
+        // CASE 2: local IDB blob
+        const removed = refs[index];
+        if (!removed) return;
 
-    return;
-  }
+        const parsed = decodeIdbRef(removed);
+        if (parsed) await idbDel(parsed.key);
 
-  // 🔥 CASE 2: IDB IMAGE
-  const removed = refs[index];
-  if (!removed) return;
-
-  const parsed = decodeIdbRef(removed);
-  if (parsed) await idbDel(parsed.key);
-
-  refs.splice(index, 1);
-
-  set(() => ({ imageRefs: refs }));
-
-  await get().setImagesFromRefs();
-},
+        refs.splice(index, 1);
+        set(() => ({ imageRefs: refs }));
+        await get().setImagesFromRefs();
+      },
 
       setImagesFromRefs: async () => {
         const refs = get().imageRefs || [];
@@ -169,7 +175,6 @@ export const usePostFormStore = create<PostFormState>()(
           }
 
           const blob = await idbGet(parsed.key);
-
           if (blob) {
             runtime.push(blobToFile(blob, parsed.filename));
           }

@@ -71,7 +71,7 @@ export async function updatePost(
     await connectDB();
 
     // 🔐 Use same session mechanism as getCurrentUser()
-    const session = getSession();
+    const session = await getSession();
     if (!session) {
       return { ok: false, error: "Not authenticated" };
     }

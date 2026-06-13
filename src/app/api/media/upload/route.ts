@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { r2 } from "@/config/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSession } from "@/lib/auth";
-import { randomUUID } from "crypto";
 import type { ImageVariant } from "@/lib/media/variants";
 
 const ALLOWED_TYPES = new Set([
@@ -13,19 +12,10 @@ const ALLOWED_TYPES = new Set([
   "image/gif",
 ]);
 
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-function slugify(text: string): string {
-  return (
-    text
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .slice(0, 60) || "untitled"
-  );
-}
+// Valid 24-char hex MongoDB ObjectId or the literal "draft" fallback
+const VALID_POST_ID = /^[a-f0-9]{24}$|^draft$/;
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -40,10 +30,15 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: `Failed to parse upload: ${e?.message}` }, { status: 400 });
   }
 
-  const file = formData.get("file") as File | null;
-  const title = (formData.get("title") as string | null) || "untitled";
-  const variant = ((formData.get("variant") as string | null) || "large") as ImageVariant;
-  const uuid = (formData.get("uuid") as string | null) || randomUUID();
+  const file      = formData.get("file") as File | null;
+  const variant   = ((formData.get("variant") as string | null) || "large") as ImageVariant;
+  const rawPostId = (formData.get("postId") as string | null) || "draft";
+  const timestamp = (formData.get("timestamp") as string | null) || String(Date.now());
+
+  // Sanitise postId — reject anything that isn't a 24-char hex ObjectId or "draft"
+  if (!VALID_POST_ID.test(rawPostId)) {
+    return Response.json({ error: "Invalid postId." }, { status: 400 });
+  }
 
   if (!file || file.size === 0) {
     return Response.json({ error: "No file provided or file is empty." }, { status: 400 });
@@ -73,8 +68,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "File buffer is empty." }, { status: 400 });
   }
 
-  const folder = slugify(title);
-  const key = `Post-Image/${folder}/${variant}/${uuid}.jpg`;
+  const userId = session.userId;
+
+  // {userId}/post-images/{postId}/{variant}/{postId}_{timestamp}.jpg
+  const key = `${userId}/post-images/${rawPostId}/${variant}/${rawPostId}_${timestamp}.jpg`;
 
   try {
     await r2.send(
