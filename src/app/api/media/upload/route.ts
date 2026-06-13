@@ -1,10 +1,9 @@
 import { NextRequest } from "next/server";
-import sharp from "sharp";
 import { r2 } from "@/config/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSession } from "@/lib/auth";
 import { randomUUID } from "crypto";
-import { VARIANT_SIZES, type ImageVariant } from "@/lib/media/imageVariants";
+import type { ImageVariant } from "@/lib/media/variants";
 
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -15,10 +14,6 @@ const ALLOWED_TYPES = new Set([
 ]);
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024;
-
-const VARIANTS = (Object.entries(VARIANT_SIZES) as [ImageVariant, number][]).map(
-  ([name, size]) => ({ name, size })
-);
 
 function slugify(text: string): string {
   return (
@@ -47,12 +42,13 @@ export async function POST(req: NextRequest) {
 
   const file = formData.get("file") as File | null;
   const title = (formData.get("title") as string | null) || "untitled";
+  const variant = ((formData.get("variant") as string | null) || "large") as ImageVariant;
+  const uuid = (formData.get("uuid") as string | null) || randomUUID();
 
   if (!file || file.size === 0) {
     return Response.json({ error: "No file provided or file is empty." }, { status: 400 });
   }
 
-  // Normalise type — IndexedDB can return empty string on some browsers
   const mimeType = (file.type || "image/jpeg").toLowerCase();
 
   if (!ALLOWED_TYPES.has(mimeType)) {
@@ -77,28 +73,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "File buffer is empty." }, { status: 400 });
   }
 
-  const uuid = randomUUID();
   const folder = slugify(title);
+  const key = `Post-Image/${folder}/${variant}/${uuid}.jpg`;
 
   try {
-    await Promise.all(
-      VARIANTS.map(async ({ name, size }) => {
-        const resized = await sharp(buffer)
-          .resize(size, size, { fit: "inside", withoutEnlargement: true })
-          .jpeg({ quality: 85 })
-          .toBuffer();
-
-        const key = `Post-Image/${folder}/${name}/${uuid}.jpg`;
-
-        await r2.send(
-          new PutObjectCommand({
-            Bucket: process.env.R2_BUCKET_NAME!,
-            Key: key,
-            Body: resized,
-            ContentType: "image/jpeg",
-            ContentLength: resized.length,
-          })
-        );
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: key,
+        Body: buffer,
+        ContentType: "image/jpeg",
+        ContentLength: buffer.length,
       })
     );
   } catch (err: any) {
@@ -128,6 +113,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: `Upload failed: ${message}` }, { status: 502 });
   }
 
-  const publicUrl = `${process.env.R2_PUBLIC_URL}/Post-Image/${folder}/large/${uuid}.jpg`;
+  const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
   return Response.json({ publicUrl });
 }

@@ -1,15 +1,9 @@
 import { r2 } from "@/config/r2";
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { VARIANT_NAMES, VARIANT_SIZES } from "./variants";
 
-const VARIANT_NAMES = ["thumbnail", "small", "medium", "large"] as const;
-export type ImageVariant = (typeof VARIANT_NAMES)[number];
-
-export const VARIANT_SIZES: Record<ImageVariant, number> = {
-  thumbnail: 150,
-  small: 400,
-  medium: 800,
-  large: 1200,
-};
+export type { ImageVariant } from "./variants";
+export { VARIANT_SIZES };
 
 /** Replace any variant segment in the URL with the requested one. */
 export function getVariantUrl(imageUrl: string, variant: ImageVariant): string {
