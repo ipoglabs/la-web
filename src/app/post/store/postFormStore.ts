@@ -77,112 +77,123 @@ const defaultState = {
 
 export const usePostFormStore = create<PostFormState>()(
   persist(
-    (set, get) => ({
-      ...defaultState,
+    (set, get) => {
+      const actions = {
+        /* ---------------- SETTERS ---------------- */
 
-      /* ---------------- SETTERS ---------------- */
+        setField: (key: string, value: any) =>
+          set((s) => ({ ...s, [key]: value })),
 
-      setField: (key, value) =>
-        set((s) => ({ ...s, [key]: value })),
+        setBulk: (data: Partial<PostFormState>) =>
+          set((s) => ({ ...s, ...data })),
 
-      setBulk: (data) =>
-        set((s) => ({ ...s, ...data })),
+        /* ---------------- RESET (KEEP SELLER INFO) ---------------- */
 
-      /* ---------------- RESET (KEEP SELLER INFO) ---------------- */
+        reset: async () => {
+          const refs = get().imageRefs || [];
+          const seller = get().sellerInfo;
 
-      reset: async () => {
-        const refs = get().imageRefs || [];
-        const seller = get().sellerInfo;
+          for (const ref of refs) {
+            const parsed = decodeIdbRef(ref);
+            if (parsed) await idbDel(parsed.key);
+          }
 
-        for (const ref of refs) {
-          const parsed = decodeIdbRef(ref);
-          if (parsed) await idbDel(parsed.key);
-        }
+          // Full replace (not merge) so stale category-specific fields
+          // (propertyType, salePrice, amenities, etc.) don't survive the reset.
+          set(
+            {
+              ...defaultState,
+              postId: generateObjectId(), // fresh ID for the next post
+              sellerInfo: seller,
+              ...actions,
+            } as PostFormState,
+            true
+          );
+        },
 
-        set(() => ({
-          ...defaultState,
-          postId: generateObjectId(), // fresh ID for the next post
-          sellerInfo: seller,
-        }));
-      },
+        /* ---------------- IMAGE HANDLING ---------------- */
 
-      /* ---------------- IMAGE HANDLING ---------------- */
+        addFiles: async (files: FileList | File[]) => {
+          const arr = Array.from(files || []);
+          if (!arr.length) return;
 
-      addFiles: async (files) => {
-        const arr = Array.from(files || []);
-        if (!arr.length) return;
+          const refs: string[] = [];
 
-        const refs: string[] = [];
+          for (const f of arr) {
+            if (!(f instanceof File)) continue;
+            if (!f.size) continue;
 
-        for (const f of arr) {
-          if (!(f instanceof File)) continue;
-          if (!f.size) continue;
+            const processed = await processImage(f);
 
-          const processed = await processImage(f);
+            const key = makeImageKey(processed);
+            await idbSet(key, processed);
 
-          const key = makeImageKey(processed);
-          await idbSet(key, processed);
+            refs.push(encodeIdbRef(key, processed.name));
+          }
 
-          refs.push(encodeIdbRef(key, processed.name));
-        }
-
-        set((s) => ({
-          imageRefs: [...(s.imageRefs || []), ...refs],
-          lastActiveAt: Date.now(),
-        }));
-
-        await get().setImagesFromRefs();
-      },
-
-      removeImage: async (index) => {
-        const state = get();
-
-        const refs = [...(state.imageRefs || [])];
-        const runtimeImages = [...(state.images || [])];
-
-        const target = runtimeImages[index];
-
-        // CASE 1: already-uploaded URL (edit mode or previously uploaded)
-        if (typeof target === "string" && !target.startsWith("idb:")) {
-          set(() => ({
-            images: runtimeImages.filter((_, i) => i !== index),
+          set((s) => ({
+            imageRefs: [...(s.imageRefs || []), ...refs],
+            lastActiveAt: Date.now(),
           }));
-          return;
-        }
 
-        // CASE 2: local IDB blob
-        const removed = refs[index];
-        if (!removed) return;
+          await get().setImagesFromRefs();
+        },
 
-        const parsed = decodeIdbRef(removed);
-        if (parsed) await idbDel(parsed.key);
+        removeImage: async (index: number) => {
+          const state = get();
 
-        refs.splice(index, 1);
-        set(() => ({ imageRefs: refs }));
-        await get().setImagesFromRefs();
-      },
+          const refs = [...(state.imageRefs || [])];
+          const runtimeImages = [...(state.images || [])];
 
-      setImagesFromRefs: async () => {
-        const refs = get().imageRefs || [];
-        const runtime: (File | string)[] = [];
+          const target = runtimeImages[index];
 
-        for (const r of refs) {
-          const parsed = decodeIdbRef(r);
-
-          if (!parsed) {
-            runtime.push(r);
-            continue;
+          // CASE 1: already-uploaded URL (edit mode or previously uploaded)
+          if (typeof target === "string" && !target.startsWith("idb:")) {
+            set(() => ({
+              images: runtimeImages.filter((_, i) => i !== index),
+            }));
+            return;
           }
 
-          const blob = await idbGet(parsed.key);
-          if (blob) {
-            runtime.push(blobToFile(blob, parsed.filename));
-          }
-        }
+          // CASE 2: local IDB blob
+          const removed = refs[index];
+          if (!removed) return;
 
-        set(() => ({ images: runtime }));
-      },
-    }),
+          const parsed = decodeIdbRef(removed);
+          if (parsed) await idbDel(parsed.key);
+
+          refs.splice(index, 1);
+          set(() => ({ imageRefs: refs }));
+          await get().setImagesFromRefs();
+        },
+
+        setImagesFromRefs: async () => {
+          const refs = get().imageRefs || [];
+          const runtime: (File | string)[] = [];
+
+          for (const r of refs) {
+            const parsed = decodeIdbRef(r);
+
+            if (!parsed) {
+              runtime.push(r);
+              continue;
+            }
+
+            const blob = await idbGet(parsed.key);
+            if (blob) {
+              runtime.push(blobToFile(blob, parsed.filename));
+            }
+          }
+
+          set(() => ({ images: runtime }));
+        },
+      };
+
+      return {
+        ...defaultState,
+        ...actions,
+      };
+    },
     {
       name: "post-form-store",
 

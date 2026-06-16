@@ -19,6 +19,10 @@ import { deleteImageVariants } from "@/lib/media/imageVariants";
 import { useAuthStore } from "@/store/authStore";
 import { getSpecs } from "@/posting/config/getSpecs";
 import type { FieldSpec } from "@/posting/config/types";
+import SubmitProgressModal, {
+  SUBMIT_STEPS,
+  type SubmitStepStatus,
+} from "../components/SubmitProgressModal";
 
 /* ---------------- HELPERS ---------------- */
 
@@ -84,6 +88,14 @@ export default function PreviewPage() {
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState(false);
+
+  const [stepStatus, setStepStatus] = useState<Record<string, SubmitStepStatus>>(
+    Object.fromEntries(SUBMIT_STEPS.map((s) => [s.key, "pending"]))
+  );
+  const setStep = (key: string, status: SubmitStepStatus) =>
+    setStepStatus((s) => ({ ...s, [key]: status }));
+  const resetSteps = () =>
+    setStepStatus(Object.fromEntries(SUBMIT_STEPS.map((s) => [s.key, "pending"])));
 
   /* ---------------- SELLER AUTO-FILL ---------------- */
 
@@ -218,13 +230,17 @@ export default function PreviewPage() {
       return;
     }
 
+    resetSteps();
     setLoading(true);
 
     try {
+      setStep("validate", "active");
       const store = usePostFormStore.getState();
       const postId = store.postId || "draft";
+      setStep("validate", "done");
 
       // Upload every File to R2 under {userId}/post-images/{postId}/
+      setStep("upload", "active");
       const resolvedImages: string[] = [];
       const uploadErrors: { index: number; reason: string }[] = [];
       const newlyUploadedUrls: string[] = []; // track for orphan cleanup on failure
@@ -248,6 +264,7 @@ export default function PreviewPage() {
       }
 
       if (uploadErrors.length > 0) {
+        setStep("upload", "error");
         // Clean up any images that did upload before the failure
         if (newlyUploadedUrls.length > 0) {
           deleteImageVariants(newlyUploadedUrls).catch((e) =>
@@ -260,15 +277,20 @@ export default function PreviewPage() {
             ? `Photo ${first.index} failed to upload: ${first.reason}`
             : `${uploadErrors.length} photos failed to upload. First error: ${first.reason}`
         );
+        setLoading(false);
         return;
       }
+      setStep("upload", "done");
 
+      setStep("build", "active");
       const fd = buildPostFormData({
         ...store,
         sellerInfo,
         images: resolvedImages,
       });
+      setStep("build", "done");
 
+      setStep("save", "active");
       let res;
 
       if (store.editMode && store.postId) {
@@ -278,6 +300,7 @@ export default function PreviewPage() {
       }
 
       if (!res || (res as any).ok === false) {
+        setStep("save", "error");
         // addPost/updatePost failed — clean up any newly uploaded R2 images
         if (newlyUploadedUrls.length > 0) {
           deleteImageVariants(newlyUploadedUrls).catch((e) =>
@@ -285,15 +308,22 @@ export default function PreviewPage() {
           );
         }
         setClientError((res as any)?.error || "Submit failed.");
+        setLoading(false);
         return;
       }
+      setStep("save", "done");
 
+      setStep("finalize", "active");
       const savedId = (res as any).id as string | undefined;
       await usePostFormStore.getState().reset();
-      router.push(savedId ? `/congratulation?postId=${savedId}` : "/congratulation");
+      setStep("finalize", "done");
+
+      // Keep the modal visible briefly so the user sees the final checkmark
+      setTimeout(() => {
+        router.push(savedId ? `/congratulation?postId=${savedId}` : "/congratulation");
+      }, 400);
     } catch (error: any) {
       setClientError(error?.message || "Submit failed.");
-    } finally {
       setLoading(false);
     }
   };
@@ -310,6 +340,10 @@ export default function PreviewPage() {
   return (
     <>
       <PostHeader />
+
+      {loading && (
+        <SubmitProgressModal status={stepStatus} errorMessage={clientError} />
+      )}
 
       <main className="min-h-screen flex flex-col items-center bg-gray-50 p-8">
         <div className="w-full max-w-xl">

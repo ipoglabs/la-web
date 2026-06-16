@@ -11,6 +11,7 @@ import PostHeader from "../components/PostHeader";
 import PageHeader from "../components/PageHeader";
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
+import { useAuthStore } from "@/store/authStore";
 import { getTimezoneLocation } from "@/lib/timezoneLocation";
 import { cn } from "@/lib/utils";
 import type { GeoResult } from "@/app/api/geo/route";
@@ -26,6 +27,7 @@ export default function SelectLocationPage() {
 
   const location = usePostFormStore((s) => s.location);
   const setField = usePostFormStore((s) => s.setField);
+  const userLocality = useAuthStore((s) => s.user?.locality);
 
   const [query, setQuery] = useState(location?.address ?? "");
   const [accuracy, setAccuracy] = useState<LocationAccuracy | null>(null);
@@ -41,6 +43,21 @@ export default function SelectLocationPage() {
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
 
   /* ---------- helpers ---------- */
+
+  const forwardGeocode = useCallback(async (address: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/geo/forward?address=${encodeURIComponent(address)}`);
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (typeof data.lat !== "number" || typeof data.lng !== "number") return false;
+      setField("location", { lat: data.lat, lng: data.lng, address: data.address });
+      setQuery(data.address);
+      setAccuracy("approximate");
+      return true;
+    } catch {
+      return false;
+    }
+  }, [setField]);
 
   const reverseGeocode = useCallback(async (lat: number, lng: number): Promise<string> => {
     try {
@@ -83,6 +100,13 @@ export default function SelectLocationPage() {
 
     (async () => {
       setDetecting(true);
+
+      if (!cancelled && userLocality) {
+        const ok = await forwardGeocode(userLocality);
+        if (!cancelled) setDetecting(false);
+        if (ok || cancelled) return;
+      }
+
       const ok = await fetchIPLocation();
       if (!cancelled && !ok) applyTimezoneDefault();
       if (!cancelled) setDetecting(false);

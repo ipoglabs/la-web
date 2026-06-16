@@ -109,7 +109,7 @@
 
     const [fullName, setFullName] = React.useState(general.fullName || "");
 
-    const onSubmit = (e?: React.FormEvent) => {
+    const onSubmit = async (e?: React.FormEvent) => {
       e?.preventDefault();
 
       const dateOfBirth = general.dateOfBirth || "";
@@ -128,14 +128,14 @@
       }
 
       if (!gender) mappedErrors.gender = "Please select a gender option.";
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-          if (!email) {
-            mappedErrors.email = "Please enter your email address.";
-          } else if (!emailRegex.test(email)) {
-            mappedErrors.email = "Please enter a valid email address.";
-          }
-      // zod validation for this step
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email) {
+        mappedErrors.email = "Please enter your email address.";
+      } else if (!emailRegex.test(email)) {
+        mappedErrors.email = "Please enter a valid email address.";
+      }
+
       const parsed = step1Schema.safeParse({
         fullName: fullName.trim(),
         dateOfBirth,
@@ -152,41 +152,44 @@
 
       if (Object.keys(mappedErrors).length > 0) {
         setErrors(mappedErrors);
-
-        // scroll + focus first error
         const firstErrorField = Object.keys(mappedErrors)[0];
         const el = formRef.current?.querySelector<HTMLElement>(`[name="${firstErrorField}"]`);
         el?.scrollIntoView({ behavior: "smooth", block: "center" });
         (el as HTMLElement | null)?.focus?.();
-
         toast.error("Please fix the highlighted fields.");
         return;
       }
 
-      // save normalized values and continue
-  const nextEmail =
-  email.trim().toLowerCase();
+      const nextEmail = email.toLowerCase();
 
-/* reset verification if email changed */
-if (verifiedEmail !== nextEmail) {
-  setEmailVerified(false);
-}
+      // Check email availability inline so a single click completes the whole flow
+      setCheckingEmail(true);
+      try {
+        const res = await fetch("/api/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: nextEmail }),
+        });
+        const data = await res.json();
+        if (data.exists) {
+          setErrors({ email: "This email is already registered." });
+          toast.error("Please fix the highlighted fields.");
+          return;
+        }
+      } catch {
+        // silently ignore — the server will catch it on submit
+      } finally {
+        setCheckingEmail(false);
+      }
 
- updateGeneral({
-  fullName,
-  dateOfBirth,
-  gender,
-  email: nextEmail,
-});
+      if (verifiedEmail !== nextEmail) {
+        setEmailVerified(false);
+        setVerifiedEmail("");
+      }
 
-/* store verified email */
-if (verifiedEmail !== nextEmail) {
-  setVerifiedEmail("");
-}
-
-  setErrors({});
-
-  router.push("/register/email-verification");
+      updateGeneral({ fullName, dateOfBirth, gender, email: nextEmail });
+      setErrors({});
+      router.push("/register/email-verification");
     };
 
     return (
@@ -320,39 +323,18 @@ if (verifiedEmail !== nextEmail) {
                     updateGeneral({ email: e.target.value });
                     clearError("email");
                   }}
-                  onBlur={async (e) => {
+                  onBlur={(e) => {
                     const value = e.target.value.trim();
-
                     if (!value) {
                       setFieldError("email", "Please enter your email address.");
                       return;
                     }
-
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
                     if (!emailRegex.test(value)) {
                       setFieldError("email", "Please enter a valid email address.");
                       return;
                     }
-
                     clearError("email");
-
-                    setCheckingEmail(true);
-                    try {
-                      const res = await fetch("/api/check-email", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: value }),
-                      });
-                      const data = await res.json();
-                      if (data.exists) {
-                        setFieldError("email", "This email is already registered.");
-                      }
-                    } catch {
-                      // silently ignore — the server will catch it on submit
-                    } finally {
-                      setCheckingEmail(false);
-                    }
                   }}
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "email-error" : undefined}
@@ -361,13 +343,10 @@ if (verifiedEmail !== nextEmail) {
                       "border-red-500 focus-visible:ring-red-500/20"
                   )}
                 />
-                {checkingEmail && (
-                  <p className="mt-1 text-xs text-muted-foreground">Checking availability…</p>
-                )}
               </FormField>
 
               <Button type="submit" className="mt-4 w-full" disabled={checkingEmail}>
-                Next: Verify Email
+                {checkingEmail ? "Checking…" : "Next: Verify Email"}
               </Button>
             </Form>
           </CardContent>
