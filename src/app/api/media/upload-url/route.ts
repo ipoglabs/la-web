@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { postId, variant = "large", mimeType, size } = await req.json();
+  const { postId, variant = "large", index = 1, mimeType, size } = await req.json();
 
   if (!ALLOWED_TYPES.includes(mimeType)) {
     return Response.json({ error: "File type not allowed" }, { status: 400 });
@@ -29,11 +29,11 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid postId." }, { status: 400 });
   }
 
-  const timestamp = Date.now();
+  const seq = String(Math.max(1, Math.min(999, Number(index) || 1))).padStart(3, "0");
   const userId = session.userId;
 
   // Mirror the same key structure as /api/media/upload
-  const key = `${userId}/post-images/${rawPostId}/${variant}/${rawPostId}_${timestamp}.jpg`;
+  const key = `${userId}/post-images/${rawPostId}/${variant}/${rawPostId}_${seq}.jpg`;
 
   const command = new PutObjectCommand({
     Bucket: process.env.R2_BUCKET_NAME!,

@@ -23,14 +23,6 @@ export default function ClientList({
 
   // ✅ FIX: Sync server → client state
   useEffect(() => {
-    console.log(
-      "🟡 CLIENT - initialRows:",
-      initialRows?.map((r) => ({
-        id: r.id,
-        status: r.status,
-      }))
-    );
-
     setRows(Array.isArray(initialRows) ? initialRows : []);
   }, [initialRows]);
 
@@ -41,7 +33,6 @@ export default function ClientList({
     if (!hasPending) return;
 
     const interval = setInterval(() => {
-      console.log("🔄 Refreshing due to pending ads...");
       router.refresh();
     }, 8000);
 
@@ -50,10 +41,7 @@ export default function ClientList({
 
   return (
     <div className="space-y-3">
-      {rows.map((r) => {
-        console.log("🧩 MAPPING ROW:", r.id, r.status);
-
-        return (
+      {rows.map((r) => (
           <MyAdRow
             key={r.id}
             row={r}
@@ -77,8 +65,7 @@ export default function ClientList({
               )
             }
           />
-        );
-      })}
+      ))}
     </div>
   );
 }

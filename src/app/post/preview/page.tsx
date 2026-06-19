@@ -250,7 +250,7 @@ export default function PreviewPage() {
         const img = allImages[i];
         if (img instanceof File) {
           try {
-            const url = await uploadFileToR2(img, postId);
+            const url = await uploadFileToR2(img, postId, i + 1);
             resolvedImages.push(url);
             newlyUploadedUrls.push(url);
           } catch (uploadErr: any) {

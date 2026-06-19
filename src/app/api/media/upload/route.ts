@@ -33,12 +33,15 @@ export async function POST(req: NextRequest) {
   const file      = formData.get("file") as File | null;
   const variant   = ((formData.get("variant") as string | null) || "large") as ImageVariant;
   const rawPostId = (formData.get("postId") as string | null) || "draft";
-  const timestamp = (formData.get("timestamp") as string | null) || String(Date.now());
+  const rawSeq    = (formData.get("seq") as string | null) || "";
 
   // Sanitise postId — reject anything that isn't a 24-char hex ObjectId or "draft"
   if (!VALID_POST_ID.test(rawPostId)) {
     return Response.json({ error: "Invalid postId." }, { status: 400 });
   }
+
+  // seq must be exactly 3 digits (001–999); fall back to "001" if malformed
+  const seq = /^\d{3}$/.test(rawSeq) ? rawSeq : "001";
 
   if (!file || file.size === 0) {
     return Response.json({ error: "No file provided or file is empty." }, { status: 400 });
@@ -70,8 +73,8 @@ export async function POST(req: NextRequest) {
 
   const userId = session.userId;
 
-  // {userId}/post-images/{postId}/{variant}/{postId}_{timestamp}.jpg
-  const key = `${userId}/post-images/${rawPostId}/${variant}/${rawPostId}_${timestamp}.jpg`;
+  // {userId}/post-images/{postId}/{variant}/{postId}_{seq}.jpg
+  const key = `${userId}/post-images/${rawPostId}/${variant}/${rawPostId}_${seq}.jpg`;
 
   try {
     await r2.send(

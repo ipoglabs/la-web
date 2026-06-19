@@ -24,7 +24,11 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
   await connectDB();
 
   // ONE query — fetch full doc and check status in the same round-trip
-  const user: any = await User.findById(userId).lean();
+  const user: any = await User.findById(userId)
+    .select(
+      "userId username fullName dateOfBirth gender nationality residency email primaryNumber secondaryNumber1 secondaryNumber2 role roleTitle roleDescription image marketingOptIn locality address isDeleted isSuspended accountStatus"
+    )
+    .lean();
 
   if (
     !user ||

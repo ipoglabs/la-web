@@ -38,7 +38,11 @@ export async function getMyPosts({ ownerId, email }: Params = {}) {
     };
   }
 
-  const rows = await Post.find(query).sort({ updatedAt: -1 }).lean();
+  const rows = await Post.find(query)
+    .sort({ updatedAt: -1 })
+    .select("name category subcategory status images updatedAt lastBumpedAt")
+    .limit(100)
+    .lean();
 
   return rows.map((r: any) => ({
     id: r._id.toString(),
