@@ -1,11 +1,11 @@
 // src/app/listing/page.tsx
-import AppHeader from "../components/AppHeader/appHeader";
-import SecondarySearchArea from "../components/AppHeader/secondarySearchArea";
-import Filter from "../components/ListingComponents/filter";
-import ListingCard from "../components/ListingComponents/ListingCard";
-import SortDropdown from "../components/ListingComponents/SortDropdown";
-import Pagination from "../components/ListingComponents/Pagination";
-import AppFooter from "../components/AppFooter/appFooter";
+import AppHeader from "../../components/AppHeader/appHeader";
+import SecondarySearchArea from "../../components/AppHeader/secondarySearchArea";
+import Filter from "../../components/ListingComponents/filter";
+import ListingCard from "../../components/ListingComponents/ListingCard";
+import SortDropdown from "../../components/ListingComponents/SortDropdown";
+import Pagination from "../../components/ListingComponents/Pagination";
+import AppFooter from "../../components/AppFooter/appFooter";
 
 import connectDB from "@/lib/db";
 import Post from "@/models/post";

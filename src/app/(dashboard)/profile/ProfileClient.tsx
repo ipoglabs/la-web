@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 
-import AppHeader from "../components/AppHeader/appHeader";
+import AppHeader from "../../components/AppHeader/appHeader";
 import Section from "./components/Section";
 import Row from "./components/Row";
 import PublicProfileEdit from "./components/PublicProfileEdit";

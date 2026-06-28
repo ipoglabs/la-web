@@ -16,8 +16,8 @@
 
   import { FormHelperText } from "@/components/FormHelperText";
   import { useMediaQuery } from "@/components/hooks/use-media-query";
-  import AppHeader from "../components/AppHeader/appHeader";
-  import AppFooter from "../components/AppFooter/appFooter";
+  import AppHeader from "../../components/AppHeader/appHeader";
+  import AppFooter from "../../components/AppFooter/appFooter";
   
 
   /* ---------- utils ---------- */
