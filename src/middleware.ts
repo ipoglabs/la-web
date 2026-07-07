@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { COUNTRY_COOKIE } from "@/lib/country-context";
 
 // ── Admin ──────────────────────────────────────────────────────────────────────
 const ADMIN_COOKIE = "admin_session";
@@ -23,8 +24,10 @@ async function verifyEdgeJwt(token: string) {
 }
 
 // ── Country detection ──────────────────────────────────────────────────────────
-const COUNTRY_COOKIE = "user_country";
-const SUPPORTED      = ["IN", "SG", "GB"];
+// COUNTRY_COOKIE is imported from lib/country-context.ts ("countryContext") so
+// middleware and the client (country-cookies.ts / useCountryConfig) always agree
+// on the same cookie name. Do NOT redeclare this locally.
+const SUPPORTED = ["IN", "SG", "GB"];
 
 // These routes bypass the country guard completely
 const EXEMPT_PREFIXES = [
@@ -41,7 +44,7 @@ const EXEMPT_PREFIXES = [
 function setCountryCookie(res: NextResponse, code: string): NextResponse {
   res.cookies.set(COUNTRY_COOKIE, code, {
     path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: 60 * 60 * 24 * 30, // 30 days
     sameSite: "lax",
     httpOnly: false, // must be readable by client JS (countryStore)
   });
@@ -81,18 +84,21 @@ export async function middleware(req: NextRequest) {
   const isExempt  = EXEMPT_PREFIXES.some((p) => pathname.startsWith(p));
   const hasCookie = req.cookies.has(COUNTRY_COOKIE);
 
-  // Already resolved or exempt route — pass straight through
+  // Already resolved (cookie present) or exempt route — pass straight through.
+  // The cookie is trusted for its full 30-day life; we do NOT re-check IP on
+  // every request once a country has been resolved.
   if (isExempt || hasCookie) return NextResponse.next();
 
-  const cfCode     = req.headers.get("cf-ipcountry") ?? "";
+  const cfCode      = req.headers.get("cf-ipcountry") ?? "";
   const isSupported = SUPPORTED.includes(cfCode);
 
   if (isSupported) {
-    // Cloudflare confirmed a supported country — set cookie, let them in
+    // No cookie yet, and Cloudflare confirmed a supported country — set the
+    // cookie now so this doesn't need to be re-detected for 30 days.
     return setCountryCookie(NextResponse.next(), cfCode);
   }
 
-  // Unknown / unsupported country — send to the country picker
+  // No cookie, and no usable/supported IP signal — send to the country picker.
   const url = req.nextUrl.clone();
   url.pathname = "/select-country";
   return NextResponse.redirect(url);

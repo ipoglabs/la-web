@@ -50,7 +50,7 @@
  *   onValueChange  (value: string) => void   Called when user picks an option.
  *   options?       LaSelectOption[]          Flat list of options.
  *   groups?        LaSelectOptionGroup[]     Grouped options (renders <optgroup> / group header).
- *   placeholder?   string                    Label shown when nothing is selected (skipped when first option has value="").
+ *   placeholder?   string                    Label shown when nothing is selected.
  *   label?         string                    Drawer title on mobile.
  *   status?        "default"|"error"|"success"
  *   disabled?      boolean
@@ -129,10 +129,6 @@ export function LaSelectResponsive({
 
   const allOptions = flatOptions(options, groups);
   const selectedLabel = allOptions.find((o) => o.value === value)?.label;
-  // If the first option already has value="" (e.g. "No Min" / "No Max"),
-  // skip the auto-rendered disabled placeholder — it would be a duplicate
-  // and the disabled attribute prevents the user from re-selecting it.
-  const firstOptionIsEmpty = allOptions[0]?.value === "";
 
   /* ── DESKTOP: native <select> ≥ md ───────────────────────── */
   const desktopSelect = (
@@ -145,11 +141,9 @@ export function LaSelectResponsive({
         aria-label={label ?? placeholder}
         onChange={(e) => onValueChange(e.target.value)}
       >
-        {!firstOptionIsEmpty && (
-          <option value="" disabled>
-            {placeholder}
-          </option>
-        )}
+        <option value="" disabled>
+          {placeholder}
+        </option>
         {options &&
           options.map((o) => (
             <option key={o.value} value={o.value} disabled={o.disabled}>
