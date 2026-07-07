@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
 import { useAuthStore } from "@/store/authStore";
 
 type UserDTO = {
@@ -94,25 +93,6 @@ export default function ClientProfile({ user }: { user: UserDTO }) {
         },
       });
     }
-
-    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
-
-    usePostFormStore.setState((state) => ({
-      sellerInfo: {
-        ...(state.sellerInfo || { name: "", email: "", phone: "" }),
-        name:
-          state.sellerInfo?.name?.trim() ||
-          fullName ||
-          state.sellerInfo?.name ||
-          "",
-        email:
-          state.sellerInfo?.email?.trim() ||
-          currentUser?.email ||
-          user.email ||
-          "",
-        phone: primaryNumber,
-      },
-    }));
   }
 
   async function onSubmitPassword(e: React.FormEvent<HTMLFormElement>) {

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Trash2, Frown, Loader2 } from "lucide-react";
 import { softDeleteAccount } from "@/app/actions/profile/deleteAccount";
 import { toast } from "sonner";
-import AppHeader from "@/app/components/AppHeader/appHeader";
-import AppFooter from "@/app/components/AppFooter/appFooter";
+import AppHeader from "@/components/la-blocks/AppHeader";
+import AppFooter from "@/components/la-blocks/AppFooter";
 
 const userName = "User"; // TODO: replace with session user
 
