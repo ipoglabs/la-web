@@ -1,0 +1,108 @@
+import type { FieldSpec } from "./types";
+
+export const propertyConfig: Record<string, FieldSpec[]> = {
+  "to buy": [
+    
+    { key: "name", type: "string", label: "Listing Title", required: true },
+    { key: "description", type: "string", label: "Description", required: true },
+    { key: "salePrice", type: "currency", label: "Sale Price (₹)", required: true },
+    { key: "builtup_area", type: "number", label: "Built-up Area (sq ft)" },
+    { key: "carpet_area", type: "number", label: "Carpet Area (sq ft)" },
+    { key: "beds", type: "number", label: "Beds" },
+    { key: "baths", type: "number", label: "Baths" },
+    { key: "propertyType", type: "string", label: "Property Type" },
+    { key: "facilities", type: "array", label: "Facilities" },
+    { key: "amenities", type: "array", label: "Amenities" },
+    { key: "negotiable", type: "string", label: "Negotiable" },
+    { key: "ownership", type: "string", label: "Ownership" },
+    { key: "age", type: "string", label: "Property Age" },
+  ],
+
+  "to rent": [
+    { key: "rentPrice", type: "currency", label: "Rent (₹)" },
+    { key: "deposit", type: "currency", label: "Deposit (₹)" },
+    { key: "maintenance", type: "currency", label: "Maintenance (₹)" },
+    { key: "available_from", type: "date", label: "Available From" },
+    { key: "leaseTerm", type: "number", label: "Lease Term (months)" },
+    { key: "beds", type: "number", label: "Beds" },
+    { key: "baths", type: "number", label: "Baths" },
+    { key: "furnishing", type: "string", label: "Furnishing" },
+    { key: "propertyType", type: "string", label: "Property Type" },
+    { key: "facilities", type: "array", label: "Facilities" },
+    { key: "amenities", type: "array", label: "Amenities" },
+  ],
+
+  commercial: [
+    { key: "propertyType", type: "string", label: "Property Type" },
+    { key: "rentPrice", type: "currency", label: "Rent (₹)" },
+    { key: "deposit", type: "currency", label: "Deposit (₹)" },
+    { key: "maintenance", type: "currency", label: "Maintenance (₹)" },
+    { key: "builtup_area", type: "number", label: "Built-up Area (sq ft)" },
+    { key: "carpet_area", type: "number", label: "Carpet Area (sq ft)" },
+    { key: "floor", type: "number", label: "Floor" },
+    { key: "totalFloors", type: "number", label: "Total Floors" },
+    { key: "furnishing", type: "string", label: "Furnishing" },
+    { key: "washrooms", type: "number", label: "Washrooms" },
+    { key: "pantry", type: "string", label: "Pantry" },
+    { key: "parkingSpaces", type: "number", label: "Parking Spaces" },
+    { key: "available_from", type: "date", label: "Available From" },
+    { key: "leaseTerm", type: "number", label: "Lease Term (months)" },
+    { key: "powerBackup", type: "string", label: "Power Backup" },
+    { key: "facilities", type: "array", label: "Facilities" },
+    { key: "amenities", type: "array", label: "Amenities" },
+  ],
+
+  "for students": [
+    { key: "rentPrice", type: "currency", label: "Rent (₹)" },
+    { key: "deposit", type: "currency", label: "Deposit (₹)" },
+    { key: "beds", type: "number", label: "Beds" },
+    { key: "baths", type: "number", label: "Baths" },
+    { key: "occupancy", type: "string", label: "Occupancy" },
+    { key: "gender_pref", type: "string", label: "Gender Preference" },
+    { key: "propertyType", type: "string", label: "Property Type" },
+    { key: "facilities", type: "array", label: "Facilities" },
+    { key: "amenities", type: "array", label: "Amenities" },
+  ],
+
+  "holiday rental": [
+    { key: "holidayType", type: "string", label: "Holiday Type" },
+    { key: "guests", type: "number", label: "Guests" },
+    { key: "beds", type: "number", label: "Beds" },
+    { key: "baths", type: "number", label: "Baths" },
+    { key: "rateNightly", type: "currency", label: "Rate Nightly (₹)" },
+    { key: "rateWeekly", type: "currency", label: "Rate Weekly (₹)" },
+    { key: "rateMonthly", type: "currency", label: "Rate Monthly (₹)" },
+    { key: "amenities", type: "array", label: "Amenities" },
+    { key: "house_rules", type: "array", label: "House Rules" },
+  ],
+
+  "room rental": [
+    { key: "type", type: "string", label: "Room Type" },
+    { key: "rent", type: "currency", label: "Rent (₹)" },
+    { key: "deposit", type: "currency", label: "Deposit (₹)" },
+    { key: "available_from", type: "date", label: "Available From" },
+    { key: "preferred_tenants", type: "string", label: "Preferred Tenants" },
+    { key: "gender_pref", type: "string", label: "Gender Preference" },
+    { key: "amenities", type: "array", label: "Amenities" },
+    { key: "rules", type: "array", label: "Rules" },
+  ],
+
+  "land for sale/lease": [
+    { key: "plot_area", type: "number", label: "Plot Area (sq ft)" },
+    { key: "salePrice", type: "currency", label: "Price (₹)" },
+    { key: "negotiable", type: "string", label: "Negotiable" },
+    { key: "ownership", type: "string", label: "Ownership" },
+    { key: "preferred_locations", type: "array", label: "Preferred Locations" },
+  ],
+
+  wanted: [
+    { key: "minBudget", type: "currency", label: "Min Budget (₹)" },
+    { key: "maxBudget", type: "currency", label: "Max Budget (₹)" },
+    { key: "minArea", type: "number", label: "Min Area (sq ft)" },
+    { key: "propertyType", type: "string", label: "Property Type" },
+    { key: "beds", type: "number", label: "Beds" },
+    { key: "baths", type: "number", label: "Baths" },
+    { key: "preferred_locations", type: "array", label: "Preferred Locations" },
+    { key: "amenities", type: "array", label: "Amenities" },
+  ],
+};

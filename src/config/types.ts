@@ -1,0 +1,137 @@
+/**
+ * config/types.ts — Core type definitions for the country configuration system.
+ *
+ * Pure types only — no runtime code, no imports from other files.
+ * Every other config file imports from here.
+ */
+
+// ─── Country code ─────────────────────────────────────────────────────────────
+
+/**
+ * Internal config key for each supported country.
+ * Deliberately lowercase and short — used as Record keys and URL params.
+ *
+ * HOW TO ADD A NEW COUNTRY:
+ *   1. Add the code here:  "au" | "my" | ...
+ *   2. Create /config/countries/au.ts
+ *   3. Register it in /config/index.ts
+ *   TypeScript will error on every missing required field — that's intentional.
+ */
+export type CountryCode = "in" | "uk" | "sg";
+
+// ─── Feature flags ────────────────────────────────────────────────────────────
+
+/**
+ * Per-country feature flags.
+ * Global defaults live in GLOBAL_CONFIG.features (config/global.ts).
+ * Each country can override individual flags via its `features` field.
+ *
+ * HOW TO ADD A NEW FLAG:
+ *   1. Add it here with its type.
+ *   2. Add a global default in GLOBAL_CONFIG.features (config/global.ts).
+ *   3. TypeScript immediately errors on every country entry missing a decision.
+ */
+export interface CountryFeatures {
+  /** Show / hide the donation banner in the app footer. */
+  donationFooter: boolean;
+
+  // ── Add future flags below ──────────────────────────────────────────────────
+  // payments: boolean;
+  // premiumListings: boolean;
+  // chat: boolean;
+}
+
+// ─── Country config shape ─────────────────────────────────────────────────────
+
+/**
+ * Full configuration for a single country.
+ * Every field is required unless marked optional — no silent gaps.
+ *
+ * FIELD GROUPS:
+ *   Identity    → isoCode, displayName
+ *   Locale      → locationScope, radiusUnit, currency, currencySymbol, dateFormat
+ *   Legal       → companyName, companyRegNo
+ *   Features    → features (partial override of GLOBAL_CONFIG.features)
+ *   Content     → enabledCategories
+ */
+export interface CountryConfig {
+
+  // ── Identity ────────────────────────────────────────────────────────────────
+
+  /**
+   * ISO 3166-1 alpha-2 code (uppercase).
+   * Bridges the internal config key (e.g. "uk") and the cookie / CF header value ("GB").
+   * ALLOWED_COUNTRY_CODES is derived from this field — adding a country here
+   * automatically lets it through the country gate.
+   */
+  isoCode: string;
+
+  /**
+   * Full display name shown in header, footer, overlays, and API calls.
+   * e.g. "India", "United Kingdom", "Singapore"
+   */
+  displayName: string;
+
+  // ── Locale ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Country codes passed to LocationPicker.countryScope to restrict
+   * location autocomplete to this country only.
+   */
+  locationScope: string[];
+
+  /**
+   * Distance unit for the radius picker.
+   * UK uses miles; all others use kilometres.
+   */
+  radiusUnit: "km" | "mi";
+
+  /** ISO 4217 currency code — e.g. "INR", "GBP", "SGD" */
+  currency: string;
+
+  /** Currency symbol — e.g. "₹", "£", "S$" */
+  currencySymbol: string;
+
+  /**
+   * Country-specific date format override.
+   * If omitted, GLOBAL_CONFIG.dateFormat is used.
+   */
+  dateFormat?: string;
+
+  // ── Add future locale fields below ──────────────────────────────────────────
+  // locale?: string;       // e.g. "en-IN", "en-GB", "en-SG"
+  // timezone?: string;     // e.g. "Asia/Kolkata", "Europe/London"
+  // phonePrefix?: string;  // e.g. "+91", "+44", "+65"
+
+  // ── Legal ───────────────────────────────────────────────────────────────────
+
+  /** Legal entity name — shown in footer and legal documents. */
+  companyName: string;
+
+  /** Company registration / incorporation number for this country. */
+  companyRegNo: string;
+
+  // ── Features ────────────────────────────────────────────────────────────────
+
+  /**
+   * Country-level feature flag overrides.
+   * Only specify flags that differ from GLOBAL_CONFIG.features.
+   * Merged at runtime by getFeatures(code) in config/index.ts.
+   */
+  features?: Partial<CountryFeatures>;
+
+  // ── Content ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Ordered list of category IDs enabled for this country.
+   * Controls which categories appear on the landing page CategoryGrid and in
+   * the listings page filter — and in what order.
+   * Omit a category ID to hide it for this country.
+   */
+  enabledCategories: string[];
+
+  // ── Add future config namespaces below ──────────────────────────────────────
+  // footer?: FooterConfig;
+  // header?: HeaderConfig;
+  // payments?: PaymentsConfig;
+}

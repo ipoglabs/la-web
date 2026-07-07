@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 450">
+  <!-- === STRIPES: 14 alternating red/white === -->
+  <rect width="900" height="450" fill="#CC0001"/>
+  <rect y="32"  width="900" height="32" fill="#fff"/>
+  <rect y="96"  width="900" height="32" fill="#fff"/>
+  <rect y="161" width="900" height="32" fill="#fff"/>
+  <rect y="225" width="900" height="32" fill="#fff"/>
+  <rect y="289" width="900" height="32" fill="#fff"/>
+  <rect y="354" width="900" height="32" fill="#fff"/>
+  <rect y="418" width="900" height="32" fill="#fff"/>
+  <!-- === CANTON === -->
+  <rect x="0" y="0" width="450" height="225" fill="#010066"/>
+  <!-- === CRESCENT: yellow outer circle, blue inner cutout === -->
+  <circle cx="175" cy="113" r="74" fill="#FC0"/>
+  <circle cx="210" cy="113" r="62" fill="#010066"/>
+  <!-- === 14-POINTED STAR (center 355,113  R=46  r=19) === -->
+  <path fill="#FC0" d="
+    M355,67 L359,94 L375,72 L367,98 L390,85 L372,104
+    L399,103 L374,113 L399,123 L372,122 L390,141
+    L367,128 L375,154 L359,132 L355,158 L351,132
+    L336,154 L344,128 L320,141 L337,122 L311,123
+    L336,113 L311,103 L337,104 L320,85 L344,98
+    L336,72 L351,94 Z"/>
+</svg>

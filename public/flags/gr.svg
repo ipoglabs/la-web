@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="24" height="16">
+  <rect width="24" height="16" fill="#0d5eaf" />
+  <!-- simplified horizontal stripes -->
+  <rect y="1.777" width="24" height="1.777" fill="#fff" />
+  <rect y="4.444" width="24" height="1.777" fill="#0d5eaf" />
+  <rect y="7.111" width="24" height="1.777" fill="#fff" />
+  <rect y="9.888" width="24" height="1.777" fill="#0d5eaf" />
+  <rect y="12.666" width="24" height="1.777" fill="#fff" />
+</svg>
