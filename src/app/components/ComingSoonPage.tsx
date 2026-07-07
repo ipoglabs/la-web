@@ -1,8 +1,8 @@
 'use client';
 
 // import SimpleHeader from './AppHeader/simpleHeader';
-import AppHeader from './AppHeader/appHeader';
-import AppFooter from './AppFooter/appFooter';
+import AppHeader from "@/components/la-blocks/AppHeader";
+import AppFooter from "@/components/la-blocks/AppFooter";
 import Image from 'next/image';
 import Link from 'next/link';
 import Logo from '@/app/assets/la-logo-symbol-color.svg';
