@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import AppHeader from "../../components/AppHeader/appHeader";
+import AppHeader from "@/components/la-blocks/AppHeader";
 import { getSocket, disconnectSocket } from "@/lib/wsClient";
 import type { Socket } from "socket.io-client";
 import {

@@ -18,8 +18,8 @@ import { OtpInput } from "@/components/ui/otp-input";
 import { useResendTimer } from "@/hooks/useResendTimer";
 import { useRegisterStore } from "@/store/registerStore";
 import { cn } from "@/lib/utils";
-import AppHeader from "@/app/components/AppHeader/appHeader";
-import AppFooter from "@/app/components/AppFooter/appFooter";
+import AppHeader from "@/components/la-blocks/AppHeader";
+import AppFooter from "@/components/la-blocks/AppFooter";
 
 const MAX_NUMBERS = 3;
 const LABELS = ["Primary", "Secondary 1", "Secondary 2"] as const;

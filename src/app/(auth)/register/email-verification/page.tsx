@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { OtpInput } from "@/components/ui/otp-input";
 import { useResendTimer } from "@/hooks/useResendTimer";
 import { useRegisterStore } from "@/store/registerStore";
-import AppHeader from "@/app/components/AppHeader/appHeader";
-import AppFooter from "@/app/components/AppFooter/appFooter";
+import AppHeader from "@/components/la-blocks/AppHeader";
+import AppFooter from "@/components/la-blocks/AppFooter";
 
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
