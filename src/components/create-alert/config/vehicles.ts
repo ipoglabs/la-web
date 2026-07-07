@@ -1,0 +1,232 @@
+import type { MainCategory } from "../types";
+import { conditionFull, fuelType } from "./shared";
+
+export const vehicles: MainCategory = {
+  id: "vehicles",
+  label: "Vehicles",
+  description: "Buy, sell, or rent cars, bikes and more.",
+  icon: "car",
+  iconBg: "bg-amber-100",
+  iconColor: "text-amber-600",
+  subcategories: [
+    {
+      id: "cars",
+      label: "Cars",
+      icon: "car",
+      filters: [
+        conditionFull,
+        fuelType,
+        {
+          id: "transmission",
+          label: "Transmission",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",    value: "any"    },
+            { label: "Auto",   value: "auto"   },
+            { label: "Manual", value: "manual" },
+          ],
+        },
+        {
+          id: "body_type",
+          label: "Body Type",
+          type: "toggle",
+          options: [
+            { label: "Sedan",     value: "sedan"     },
+            { label: "SUV",       value: "suv"       },
+            { label: "Hatchback", value: "hatchback" },
+            { label: "MPV",       value: "mpv"       },
+            { label: "Pickup",    value: "pickup"    },
+            { label: "Coupe",     value: "coupe"     },
+          ],
+        },
+      ],
+    },
+    {
+      id: "motorcycle",
+      label: "Motorcycle",
+      icon: "bike",
+      filters: [
+        conditionFull,
+        {
+          id: "moto_type",
+          label: "Type",
+          type: "toggle",
+          options: [
+            { label: "Scooter",   value: "scooter"   },
+            { label: "Sport",     value: "sport"     },
+            { label: "Cruiser",   value: "cruiser"   },
+            { label: "Adventure", value: "adventure" },
+            { label: "Off-road",  value: "offroad"   },
+            { label: "Electric",  value: "electric"  },
+          ],
+        },
+        {
+          id: "engine_cc",
+          label: "Engine CC",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",       value: "any"    },
+            { label: "< 150cc",   value: "sub150" },
+            { label: "150-500cc", value: "mid"    },
+            { label: "500cc+",    value: "large"  },
+          ],
+        },
+      ],
+    },
+    {
+      id: "van",
+      label: "Van",
+      icon: "truck",
+      filters: [
+        conditionFull,
+        {
+          id: "van_type",
+          label: "Van Type",
+          type: "toggle",
+          options: [
+            { label: "Cargo",        value: "cargo"        },
+            { label: "Passenger",    value: "passenger"    },
+            { label: "Minibus",      value: "minibus"      },
+            { label: "Refrigerated", value: "refrigerated" },
+          ],
+        },
+        {
+          id: "van_seats",
+          label: "Seats",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",     value: "any" },
+            { label: "Up to 7", value: "s7"  },
+            { label: "8-12",    value: "s12" },
+            { label: "13-20",   value: "s20" },
+            { label: "21+",     value: "s21" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "truck",
+      label: "Truck",
+      icon: "truck",
+      filters: [
+        conditionFull,
+        {
+          id: "truck_type",
+          label: "Truck Type",
+          type: "toggle",
+          options: [
+            { label: "Pickup",  value: "pickup"  },
+            { label: "Light",   value: "light"   },
+            { label: "Medium",  value: "medium"  },
+            { label: "Heavy",   value: "heavy"   },
+            { label: "Flatbed", value: "flatbed" },
+            { label: "Tipper",  value: "tipper"  },
+          ],
+        },
+        {
+          id: "payload",
+          label: "Payload",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",         value: "any"   },
+            { label: "< 1 tonne",   value: "sub1"  },
+            { label: "1-3 tonnes",  value: "1to3"  },
+            { label: "3-10 tonnes", value: "3to10" },
+            { label: "10+ tonnes",  value: "10up"  },
+          ],
+        },
+      ],
+    },
+    {
+      id: "boats",
+      label: "Boats",
+      icon: "ship",
+      filters: [
+        conditionFull,
+        {
+          id: "boat_type",
+          label: "Boat Type",
+          type: "toggle",
+          options: [
+            { label: "Speedboat", value: "speedboat" },
+            { label: "Sailboat",  value: "sailboat"  },
+            { label: "Yacht",     value: "yacht"     },
+            { label: "Fishing",   value: "fishing"   },
+            { label: "Pontoon",   value: "pontoon"   },
+            { label: "Jet Ski",   value: "jetski"    },
+          ],
+        },
+        {
+          id: "engine_type",
+          label: "Engine",
+          type: "toggle",
+          options: [
+            { label: "Inboard",  value: "inboard"  },
+            { label: "Outboard", value: "outboard" },
+            { label: "Electric", value: "electric" },
+            { label: "Sail",     value: "sail"     },
+          ],
+        },
+      ],
+    },
+    {
+      id: "parts_accessories",
+      label: "Parts & Accessories",
+      icon: "settings",
+      filters: [
+        {
+          id: "for_vehicle",
+          label: "For Vehicle",
+          type: "toggle",
+          options: [
+            { label: "Car",        value: "car"        },
+            { label: "Motorcycle", value: "motorcycle" },
+            { label: "Van",        value: "van"        },
+            { label: "Truck",      value: "truck"      },
+            { label: "Boat",       value: "boat"       },
+          ],
+        },
+        conditionFull,
+        {
+          id: "part_category",
+          label: "Category",
+          type: "toggle",
+          options: [
+            { label: "Engine & Drive",  value: "engine"      },
+            { label: "Body & Exterior", value: "body"        },
+            { label: "Interior",        value: "interior"    },
+            { label: "Tyres & Rims",    value: "tyres"       },
+            { label: "Electrical",      value: "electrical"  },
+            { label: "Accessories",     value: "accessories" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "wanted",
+      label: "Wanted",
+      icon: "search",
+      filters: [
+        {
+          id: "vehicle_type",
+          label: "Looking For",
+          type: "toggle",
+          options: [
+            { label: "Car",          value: "car"        },
+            { label: "Motorcycle",   value: "motorcycle" },
+            { label: "Van",          value: "van"        },
+            { label: "Truck",        value: "truck"      },
+            { label: "Boat",         value: "boat"       },
+            { label: "Parts & Acc.", value: "parts"      },
+          ],
+        },
+        conditionFull,
+        fuelType,
+      ],
+    },
+  ],
+};
