@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import FormField from "@/app/components/form/fields/FormField";
 import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";

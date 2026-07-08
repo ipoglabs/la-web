@@ -3,7 +3,7 @@
 
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 
 type Props = {
   label: string;

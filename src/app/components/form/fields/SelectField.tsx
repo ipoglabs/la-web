@@ -10,7 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 
 type Option = { value: string | number; label?: string };
 

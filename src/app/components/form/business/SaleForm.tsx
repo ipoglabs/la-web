@@ -4,7 +4,7 @@ import * as React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { useCountryConfig } from "@/hooks/useCountryConfig";
 
 export default function BusinessSaleLeaseForm() {

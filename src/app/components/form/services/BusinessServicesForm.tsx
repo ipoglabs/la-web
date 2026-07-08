@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { Card, CardContent } from "@/components/ui/card";
 import FormField from "@/app/components/form/fields/FormField";
 

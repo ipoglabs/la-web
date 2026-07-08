@@ -7,7 +7,7 @@ import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/
 import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
 import { toast } from "sonner";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { usePropertyConfig } from "@/hooks/usePropertyConfig";
 import { useCountryConfig } from "@/hooks/useCountryConfig";
 

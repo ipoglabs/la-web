@@ -5,7 +5,7 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 
 // ✅ Add "time" to supported types
 type FieldType = "text" | "number" | "email" | "tel" | "date" | "time" | "textarea"| "password"| "url"| "search"| "color";

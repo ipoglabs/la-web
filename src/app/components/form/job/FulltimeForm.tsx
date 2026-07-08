@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import FormField from "@/app/components/form/fields/FormField";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
-import { usePostFormStore } from "@/app/post/store/postFormStore";
+import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { useJobConfig } from "@/hooks/useJobConfig";
 import { useCountryConfig } from "@/hooks/useCountryConfig";
 import { toast } from "sonner";

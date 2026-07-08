@@ -18,7 +18,7 @@
  *   <AppHeader variant="default" user={user} />
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -49,12 +49,66 @@ interface AppHeaderProps {
   user?: AuthUser | null;
 }
 
+/** Derive up-to-2-char initials from a display name (mirrors la-avatar.tsx) */
+function getInitials(name?: string): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function AppHeader({ variant = "default", user = null }: AppHeaderProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const isLoggedIn = user !== null;
   const { config } = useCountryConfig();
   const pathname = usePathname();
   const isLanding = pathname === "/";
+
+  // ── Auth state ─────────────────────────────────────────────────────────────
+  // Seed from the server-rendered `user` prop (getSession() in layout.tsx) so
+  // there's no flash of "logged out" on first paint, then re-validate against
+  // /api/auth/me client-side — same checkAuth() + "auth-changed" event pattern
+  // used on the develop branch. This is what the POST button below reads.
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(user);
+  const isLoggedIn = currentUser !== null;
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (!res.ok) {
+        setCurrentUser(null);
+        return;
+      }
+      const { user: apiUser } = await res.json();
+      if (!apiUser) {
+        setCurrentUser(null);
+        return;
+      }
+      const displayName = apiUser.fullName || apiUser.username || "Member";
+      setCurrentUser({
+        id: apiUser.id,
+        name: displayName,
+        initials: getInitials(displayName) || "?",
+        avatarUrl: apiUser.image || undefined,
+        role: apiUser.role === "admin" ? "admin" : "member",
+        status: "online",
+      });
+    } catch {
+      setCurrentUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+    const handler = () => checkAuth();
+    window.addEventListener("auth-changed", handler);
+    return () => window.removeEventListener("auth-changed", handler);
+  }, [checkAuth]);
+
+  // If the server-rendered prop changes (e.g. a client-side nav re-runs the
+  // layout with a fresh session), stay in sync with it too.
+  useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
 
   const items = useFavouritesStore((s) => s.items);
   const remove = useFavouritesStore((s) => s.remove);
@@ -156,11 +210,11 @@ export default function AppHeader({ variant = "default", user = null }: AppHeade
           <div className="flex items-center px-1">
             <AvatarDropdown
               isLoggedIn={isLoggedIn}
-              name={user?.name}
-              subtitle={user?.role === "admin" ? "Admin" : "Member"}
-              initials={user?.initials}
-              src={user?.avatarUrl}
-              status={user?.status}
+              name={currentUser?.name}
+              subtitle={currentUser?.role === "admin" ? "Admin" : "Member"}
+              initials={currentUser?.initials}
+              src={currentUser?.avatarUrl}
+              status={currentUser?.status}
             />
           </div>
 
