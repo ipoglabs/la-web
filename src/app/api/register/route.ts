@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       gender: String(body.gender || "other").trim(),
 
       nationality: body.nationality ? String(body.nationality).trim() : undefined,
-      residence: body.residence ? String(body.residence).trim() : undefined,
+      residency: body.residency ? String(body.residency).trim() : undefined,
 
       locality: String(body.locality || "").trim(),
       email: String(body.email || "").trim().toLowerCase(),

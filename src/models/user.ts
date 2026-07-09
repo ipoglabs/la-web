@@ -57,7 +57,7 @@ const UserSchema = new mongoose.Schema(
     gender: { type: String },
 
     nationality: { type: String, trim: true },
-    residence: { type: String, trim: true },
+    residency: { type: String, trim: true },
 
     locality: { type: String, required: true, trim: true },
     address: AddressSchema,
@@ -133,8 +133,5 @@ deleteFeedback: { type: String, trim: true },
   },
   { timestamps: true }
 );
-
-// indexes
-UserSchema.index({ userId: 1 }, { unique: true });
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);
