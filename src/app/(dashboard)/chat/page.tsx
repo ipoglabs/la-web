@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import AppHeader from "@/components/la-blocks/AppHeader";
 import { getSocket, disconnectSocket } from "@/lib/wsClient";
 import type { Socket } from "socket.io-client";
 import {
@@ -940,7 +939,6 @@ function ChatPageContent() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-white">
-      <AppHeader />
 
       <main className="flex flex-1 overflow-hidden">
 

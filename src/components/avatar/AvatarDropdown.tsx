@@ -185,12 +185,24 @@ function MenuBody({
       <div className="border-t border-slate-100 py-1">
         <button
           type="button"
-          onClick={() => {
-            // TODO: call signOut from your auth provider before closing:
-            //   NextAuth v5:   signOut()  (from "next-auth/react")
-            //   Lucia:         POST /api/auth/logout then router.refresh()
-            //   better-auth:   authClient.signOut()
+          onClick={async () => {
+            try {
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+              });
+            } catch {
+              // even if the request fails, proceed to close + redirect —
+              // user intent is to leave the logged-in view either way
+            }
+
+            // Let AppHeader's checkAuth() (and any other listeners)
+            // know the auth state changed, same pattern as login.
+            window.dispatchEvent(new Event("auth-changed"));
+
             onClose();
+            router.push("/");
+            router.refresh();
           }}
           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
         >
@@ -299,4 +311,3 @@ export function AvatarDropdown({
     </div>
   );
 }
-

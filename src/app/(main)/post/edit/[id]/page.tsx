@@ -8,18 +8,20 @@ import { getPostById } from "@/app/actions/getPostById";
 export const revalidate = 0;
 
 type PageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const post = await getPostById(params.id); // returns a plain object (already serialized)
+  const { id } = await params;
+  const post = await getPostById(id); // returns a plain object (already serialized)
   return {
     title: post?.name ? `Edit: ${post.name}` : "Edit Post",
   };
 }
 
 export default async function EditPostPage({ params }: PageProps) {
-  const post = await getPostById(params.id);
+  const { id } = await params;
+  const post = await getPostById(id);
   if (!post) return notFound();
 
   // Double-defense: even though getPostById returns plain JSON, stringify/parse

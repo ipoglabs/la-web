@@ -50,7 +50,7 @@ const ReportSchema = new mongoose.Schema(
 const UserSchema = new mongoose.Schema(
   {
     // incremental public ID
-    userId: { type: String, required: true, unique: true, index: true },
+    userId: { type: String, required: true, unique: true },
 
     fullName: { type: String, required: true },
     dateOfBirth: { type: Date, required: true },

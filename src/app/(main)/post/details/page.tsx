@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
-import PostHeader from "../components/PostHeader";
 
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
@@ -226,7 +225,6 @@ useEffect(() => {
 
   return (
     <>
-      <PostHeader />
 
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
         <PageHeader

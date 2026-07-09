@@ -2,9 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-
-import AppHeader from "@/components/la-blocks/AppHeader";
 import Section from "./components/Section";
 import Row from "./components/Row";
 import PublicProfileEdit from "./components/PublicProfileEdit";
@@ -138,7 +135,6 @@ export default function ProfileClient({ user }: { user: ProfileUser }) {
 
   return (
     <>
-      <AppHeader />
 
 {/* MAIN */}
 <main className="bg-slate-50 min-h-screen">

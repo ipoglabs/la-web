@@ -6,12 +6,12 @@ import Review from "@/models/review";
 
 export async function GET(
   req: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     await connectDB();
 
-    const { userId } = params;
+    const { userId } = await params;
 
     /* ================= USER ================= */
     const user = await User.findOne({

@@ -4,11 +4,13 @@ import Review from "@/models/review";
 
 export async function GET(
   req: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   await connectDB();
 
-  const reviews = await Review.find({ userId: params.userId })
+  const { userId } = await params;
+
+  const reviews = await Review.find({ userId })
     .sort({ createdAt: -1 })
     .limit(20)
     .lean();

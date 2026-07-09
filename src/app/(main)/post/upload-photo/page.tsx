@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import PostHeader from "../components/PostHeader";
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 
@@ -152,7 +151,6 @@ export default function UploadPhotoPage() {
 
   return (
     <>
-      <PostHeader />
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
         <PageHeader title="Upload Photos" description="Add photos to make your advertisement stand out." />
 
