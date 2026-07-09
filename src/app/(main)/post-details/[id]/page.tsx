@@ -3,8 +3,6 @@
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import ChitChat from "./components/ChitChat";
-import AppHeader from "@/app/components/AppHeader/appHeader";
-import AppFooter from "@/app/components/AppFooter/appFooter";
 import {
   normalizeCategory,
   normalizeSubcategory,
@@ -231,8 +229,6 @@ export default function PostDetailPageClient() {
 
   return (
     <>
-      <AppHeader />
-
       {/* ── Breadcrumb bar ── */}
       <div className="bg-slate-800">
         <div className="max-w-screen-2xl mx-auto sm:px-6 md:px-12 lg:px-20 xl:px-28 h-9 flex items-center">
@@ -481,7 +477,6 @@ export default function PostDetailPageClient() {
         </div>
       </div>
 
-      <AppFooter />
     </>
   );
 }

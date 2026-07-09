@@ -1,4 +1,4 @@
-import connectDB from '@/lib/dbConnect';
+import connectDB from '@/lib/db';
 import User from '@/models/user';
 import { NextResponse } from 'next/server';
 import otpStore from '@/lib/otpStore'; // ✅ Use this

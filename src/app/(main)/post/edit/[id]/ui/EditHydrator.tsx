@@ -3,7 +3,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { usePostFormStore, type PostFormState } from "@/app/post/store/postFormStore";
+import { usePostFormStore, type PostFormState } from "@/app/(main)/post/store/postFormStore";
 
 /** Minimal Post shape coming from your API */
 type AnyPost = {
