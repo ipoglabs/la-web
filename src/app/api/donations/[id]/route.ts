@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import dbConnect from '@/lib/db'
+import Donation from '@/models/donation'
 
 export async function PATCH(
   req: NextRequest,
@@ -9,16 +10,26 @@ export async function PATCH(
     const { id } = await params
     const { status, transactionId, amount, currency, method } = await req.json()
 
-    const donation = await prisma.donation.update({
-      where: { id },
-      data: {
+    await dbConnect()
+
+    const donation = await Donation.findByIdAndUpdate(
+      id,
+      {
         ...(status && { status }),
         ...(transactionId && { transactionId }),
         ...(amount && { amount }),
         ...(currency && { currency }),
         ...(method && { method }),
       },
-    })
+      { new: true }
+    ).lean()
+
+    if (!donation) {
+      return NextResponse.json(
+        { error: 'Donation not found' },
+        { status: 404 }
+      )
+    }
 
     return NextResponse.json({ donation })
   } catch (err) {
