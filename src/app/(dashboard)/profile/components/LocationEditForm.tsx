@@ -8,9 +8,9 @@ import { ChevronDown, X } from "lucide-react";
 import { Country, State, City } from "country-state-city";
 
 import { updateLocation } from "@/app/actions/profile/updateLocation";
-import { Form } from "@/components/shadcn/form";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/FormField";
 import { useMediaQuery } from "@/components/hooks/use-media-query";
 

@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Trash2, Frown, Loader2 } from "lucide-react";
 import { softDeleteAccount } from "@/app/actions/profile/deleteAccount";
 import { toast } from "sonner";
-import AppHeader from "@/components/la-blocks/AppHeader";
-import AppFooter from "@/components/la-blocks/AppFooter";
+
 
 const userName = "User"; // TODO: replace with session user
 
@@ -76,7 +75,6 @@ export default function DeleteAccountConfirmPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[radial-gradient(circle_at_top,#f8fafc,#e2e8f0)]">
-      <AppHeader />
       <div className="flex flex-1 items-center justify-center px-6 py-14">
       <div className="mx-auto w-full max-w-lg">
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -325,7 +323,6 @@ export default function DeleteAccountConfirmPage() {
         </div>
       </div>
       </div>
-      <AppFooter />
     </main>
   );
 }

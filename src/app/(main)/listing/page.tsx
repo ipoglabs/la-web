@@ -1,10 +1,9 @@
 // src/app/listing/page.tsx
-import AppHeader from "@/components/la-blocks/AppHeader";
 import Filter from "../../components/ListingComponents/filter";
 import ListingCard from "../../components/ListingComponents/ListingCard";
 import SortDropdown from "../../components/ListingComponents/SortDropdown";
 import Pagination from "../../components/ListingComponents/Pagination";
-import AppFooter from "@/components/la-blocks/AppFooter";
+
 
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
@@ -81,7 +80,6 @@ export default async function ListingPage({
 
   return (
     <>
-      <AppHeader />
 
       <div className="container mx-auto flex flex-row items-start flex-nowrap gap-4 px-4 sm:px-6 lg:px-16 py-4">
         <Filter />
@@ -145,7 +143,6 @@ export default async function ListingPage({
         </div>
       </div>
 
-      <AppFooter />
     </>
   );
 }

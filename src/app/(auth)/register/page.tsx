@@ -8,16 +8,15 @@
   import { useRegisterStore } from "@/store/registerStore";
   import { generalInfoSchema, type GeneralInfoForm } from "@/lib/validators";
 
-  import { Form } from "@/components/shadcn/form";
-  import { Input } from "@/components/shadcn/input";
-  import { Button } from "@/components/shadcn/button";
+  import { Form } from "@/components/ui/form";
+  import { Input } from "@/components/ui/input";
+  import { Button } from "@/components/ui/button";
   import { DateInput } from "@/components/date-input";
   import { FormField } from "@/components/FormField";
 
   import { FormHelperText } from "@/components/FormHelperText";
   import { useMediaQuery } from "@/components/hooks/use-media-query";
-  import AppHeader from "@/components/la-blocks/AppHeader";
-  import AppFooter from "@/components/la-blocks/AppFooter";
+  
   
 
   /* ---------- utils ---------- */
@@ -194,7 +193,6 @@
 
     return (
       <>
-      <AppHeader />
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="w-full max-w-2xl">
           <CardHeader>
@@ -352,7 +350,6 @@
           </CardContent>
         </Card>
       </div>
-      <AppFooter />
       </>
     );
   }

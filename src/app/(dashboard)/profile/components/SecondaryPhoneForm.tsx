@@ -17,7 +17,7 @@ import {
 } from "../components/phone-number-input/countries";
 
 import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Button } from "@/components/ui/button";
 
 function isIndiaMock(value: string) {
   return value.replace(/\s+/g, "").startsWith("+91");

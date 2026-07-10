@@ -18,8 +18,6 @@ import { OtpInput } from "@/components/ui/otp-input";
 import { useResendTimer } from "@/hooks/useResendTimer";
 import { useRegisterStore } from "@/store/registerStore";
 import { cn } from "@/lib/utils";
-import AppHeader from "@/components/la-blocks/AppHeader";
-import AppFooter from "@/components/la-blocks/AppFooter";
 
 const MAX_NUMBERS = 3;
 const LABELS = ["Primary", "Secondary 1", "Secondary 2"] as const;
@@ -224,7 +222,6 @@ export default function PhoneVerificationPage() {
 
     return (
       <main className="min-h-screen flex flex-col bg-background">
-        <AppHeader />
         <div className="flex flex-1 items-center justify-center px-4 py-10">
           <div className="w-full max-w-sm space-y-3">
             <div className="rounded-lg border border-border bg-card p-6 space-y-4">
@@ -324,7 +321,6 @@ export default function PhoneVerificationPage() {
             </div>
           </div>
         </div>
-        <AppFooter />
       </main>
     );
   }
@@ -335,7 +331,6 @@ export default function PhoneVerificationPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-background">
-      <AppHeader />
       <div className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm space-y-3">
 
@@ -502,7 +497,6 @@ export default function PhoneVerificationPage() {
           </div>
         </div>
       </div>
-      <AppFooter />
     </main>
   );
 }

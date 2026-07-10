@@ -9,8 +9,8 @@ import { useOtpFlow } from "@/hooks/useOtpFlow";
 import { updateContact } from "@/app/actions/profile/updateContact";
 
 import ResponsiveModal from "./ResponsiveModal";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 
 

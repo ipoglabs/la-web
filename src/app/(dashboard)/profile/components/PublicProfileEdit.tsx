@@ -10,7 +10,7 @@ import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 import { userIdSchema } from "@/validators/profile";
 
 import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/FormField";
 
 import type { ProfileUser } from "../types";

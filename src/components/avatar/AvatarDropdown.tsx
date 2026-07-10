@@ -54,7 +54,7 @@ import { OverlayCountrySelect } from "@/components/overlay-country-select";
 
 /* ─── menu config ────────────────────────────────────────────── */
 const NAV_ITEMS = [
-  { label: "My Ads",           icon: LayoutGrid,    href: "/myads" },
+  { label: "My Ads",           icon: LayoutGrid,    href: "/my-ads" },
   { label: "Chat",             icon: MessageCircle, href: "/chat" },
   { label: "Profile",          icon: User,          href: "/profile" },
   { label: "Donation History", icon: History,       href: "/donation-history" },

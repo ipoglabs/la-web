@@ -11,9 +11,9 @@ import { useRegisterStore } from "@/store/registerStore";
 import { profileSchema } from "@/lib/validators";
 import { useAuthStore } from "@/store/authStore";
 
-import { Form } from "@/components/shadcn/form";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/FormField";
 import { FormFieldWrapper } from "@/components/FormFieldWrapper";
 import { FormHelperText } from "@/components/FormHelperText";

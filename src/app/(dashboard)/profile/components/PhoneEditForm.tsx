@@ -13,8 +13,8 @@ import { type Country, COUNTRIES } from "../components/phone-number-input/countr
 
 
 import ResponsiveModal from "./ResponsiveModal";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 function isIndiaMock(value: string) {
   return value.replace(/\s+/g, "").startsWith("+91");

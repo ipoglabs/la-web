@@ -9,8 +9,6 @@ import { Button } from "@/components/ui/button";
 import { OtpInput } from "@/components/ui/otp-input";
 import { useResendTimer } from "@/hooks/useResendTimer";
 import { useRegisterStore } from "@/store/registerStore";
-import AppHeader from "@/components/la-blocks/AppHeader";
-import AppFooter from "@/components/la-blocks/AppFooter";
 
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -139,7 +137,6 @@ export default function EmailVerificationPage() {
   if (emailVerified) {
     return (
       <main className="min-h-screen flex flex-col bg-background">
-        <AppHeader />
         <div className="flex flex-1 items-center justify-center px-4 py-10">
           <div className="w-full max-w-sm">
             <div className="rounded-lg border border-border bg-card p-6 space-y-4">
@@ -171,7 +168,6 @@ export default function EmailVerificationPage() {
             </div>
           </div>
         </div>
-        <AppFooter />
       </main>
     );
   }
@@ -179,7 +175,6 @@ export default function EmailVerificationPage() {
   // ── Verify OTP ────────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen flex flex-col bg-background">
-      <AppHeader />
       <div className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-sm">
           <div className="rounded-lg border border-border bg-card p-6 space-y-4">
@@ -247,7 +242,6 @@ export default function EmailVerificationPage() {
           </div>
         </div>
       </div>
-<AppFooter />
     </main>
   );
 }

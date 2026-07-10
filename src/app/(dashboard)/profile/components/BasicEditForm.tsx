@@ -8,9 +8,9 @@ import { updateProfile } from "@/app/actions/updateProfile";
 import { basicProfileSchema } from "@/validators/profileBasic";
 import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 
-import { Form } from "@/components/shadcn/form";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { FormField } from "@/components/FormField";
 import { FormFieldWrapper } from "@/components/FormFieldWrapper";

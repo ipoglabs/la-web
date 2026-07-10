@@ -1,8 +1,6 @@
 'use client';
 
 // import SimpleHeader from './AppHeader/simpleHeader';
-import AppHeader from "@/components/la-blocks/AppHeader";
-import AppFooter from "@/components/la-blocks/AppFooter";
 import Image from 'next/image';
 import Link from 'next/link';
 import Logo from '@/app/assets/la-logo-symbol-color.svg';
@@ -17,7 +15,6 @@ export default function ComingSoonPage({
 }) {
   return (
     <>
-    <AppHeader/>
     <main className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white px-4 text-center">
       <Link className="flex gap-2 items-center mb-6" href="/">
         <Image className="size-10" src={Logo} alt="logo" />
@@ -29,7 +26,6 @@ export default function ComingSoonPage({
       <h1 className="text-4xl sm:text-5xl font-bold mb-4">{title}</h1>
       <p className="text-lg sm:text-xl text-slate-300 mb-8">{description}</p>
     </main>
-    <AppFooter/>
     </>
   );
 }
