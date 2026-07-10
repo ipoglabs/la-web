@@ -9,7 +9,7 @@ import { checkUserIdAvailability } from "@/app/actions/profile/checkUserId";
 import { useAutoScrollInput } from "@/hooks/useAutoScrollInput";
 import { userIdSchema } from "@/validators/profile";
 
-import { Input } from "@/components/shadcn/input";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/FormField";
 

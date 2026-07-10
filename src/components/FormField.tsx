@@ -1,4 +1,4 @@
-import { Label } from "@/components/shadcn/label";
+import { Label } from "@/components/ui/label";
 import React from "react";
 import { FormHelperText } from "./FormHelperText";
 

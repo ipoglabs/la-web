@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon, CheckCircle2, XCircle } from "lucide-react";
 
-import { Input } from "@/components/shadcn/input";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/FormField";
 import { FormFieldWrapper } from "@/components/FormFieldWrapper";

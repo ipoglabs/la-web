@@ -16,7 +16,7 @@ import {
   COUNTRIES,
 } from "../components/phone-number-input/countries";
 
-import { Input } from "@/components/shadcn/input";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 function isIndiaMock(value: string) {
