@@ -16,6 +16,7 @@ export default function GoogleSuccessPage() {
         if (data.user) {
           setAuth(null, data.user);
         }
+        window.dispatchEvent(new Event("auth-changed"));
       } catch {
         // session cookie is already set — user can still navigate
       }

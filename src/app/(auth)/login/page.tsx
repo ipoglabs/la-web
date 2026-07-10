@@ -211,6 +211,10 @@ const isValidPhone = (v: string, minLen = 6) =>
       setAuth(null, data.user);
     }
 
+    // 🔥 tell AppHeader (and anything else listening) to re-check /api/auth/me
+    // now, instead of waiting for a full page reload to pick up the new session
+    window.dispatchEvent(new Event("auth-changed"));
+
     // 🔥 success toast
     toast.success("Welcome back!");
 
