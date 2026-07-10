@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import dbConnect from "@/lib/db";
+import Donation from "@/models/donation";
 import { getCurrentUser } from "@/app/actions/getCurrentUser";
 
 export const dynamic = "force-dynamic";
@@ -54,10 +55,11 @@ export default async function DonationHistoryPage() {
     redirect("/login?redirect=/donation-history");
   }
 
-  const donations = await prisma.donation.findMany({
-    where: { donorEmail: user.email },
-    orderBy: { createdAt: "desc" },
-  });
+  await dbConnect();
+
+  const donations = await Donation.find({ donorEmail: user.email })
+    .sort({ createdAt: -1 })
+    .lean();
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -94,7 +96,7 @@ export default async function DonationHistoryPage() {
               const status = d.status?.toLowerCase() || "pending";
               return (
                 <div
-                  key={d.id}
+                  key={d._id.toString()}
                   className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100"
                 >
                   <div className="flex items-center justify-between px-4 py-3">
