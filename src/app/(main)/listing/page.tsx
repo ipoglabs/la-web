@@ -39,34 +39,36 @@ function getSort(sort?: string) {
 export default async function ListingPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     sort?: string;
     q?: string;
     category?: string;
     subcategory?: string;
-  };
+  }>;
 }) {
   await connectDB();
 
-  const page = Math.max(1, Number(searchParams?.page ?? "1") || 1);
-  const sort = getSort(searchParams?.sort);
+  const sp = await searchParams;
+
+  const page = Math.max(1, Number(sp?.page ?? "1") || 1);
+  const sort = getSort(sp?.sort);
 
   // ✅ Public listing only shows active (approved) ads
   const filter: Record<string, any> = { status: "active" };
 
-  if (searchParams?.q) {
+  if (sp?.q) {
     filter.$or = [
-      { name: { $regex: searchParams.q, $options: "i" } },
-      { description: { $regex: searchParams.q, $options: "i" } },
-      { category: { $regex: searchParams.q, $options: "i" } },
-      { subcategory: { $regex: searchParams.q, $options: "i" } },
-      { "location.address": { $regex: searchParams.q, $options: "i" } },
+      { name: { $regex: sp.q, $options: "i" } },
+      { description: { $regex: sp.q, $options: "i" } },
+      { category: { $regex: sp.q, $options: "i" } },
+      { subcategory: { $regex: sp.q, $options: "i" } },
+      { "location.address": { $regex: sp.q, $options: "i" } },
     ];
   }
 
-  if (searchParams?.category) filter.category = searchParams.category;
-  if (searchParams?.subcategory) filter.subcategory = searchParams.subcategory;
+  if (sp?.category) filter.category = sp.category;
+  if (sp?.subcategory) filter.subcategory = sp.subcategory;
 
   const [items, total] = await Promise.all([
     Post.find(filter)

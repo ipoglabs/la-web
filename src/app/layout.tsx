@@ -16,11 +16,11 @@ import { BrowserGuard } from "@/components/browser-guard/BrowserGuard";
 const popularCategories = [
   // TODO(content): Drive these from COUNTRY_CONFIGS.enabledCategories per active country
   // rather than a hardcoded list. In the interim these are India-defaults.
-  { label: "Property", href: "/listings?cat=property" },
-  { label: "Jobs", href: "/listings?cat=jobs" },
-  { label: "For Sale", href: "/listings?cat=for-sale" },
-  { label: "Motors", href: "/listings?cat=motors" },
-  { label: "Services", href: "/listings?cat=services" },
+  { label: "Property", href: "/listing?cat=property" },
+  { label: "Jobs", href: "/listing?cat=jobs" },
+  { label: "For Sale", href: "/listing?cat=for-sale" },
+  { label: "Motors", href: "/listing?cat=motors" },
+  { label: "Services", href: "/listing?cat=services" },
 ];
 
 const topLocations = [
@@ -28,11 +28,11 @@ const topLocations = [
   // India: Bengaluru, Mumbai, Delhi, Chennai, Hyderabad
   // UK: London, Manchester, Birmingham, Leeds, Glasgow
   // SG: Singapore (single city-state — remove picker entirely or use neighbourhoods)
-  { label: "Bengaluru", href: "/listings?loc=bengaluru" },
-  { label: "Mumbai", href: "/listings?loc=mumbai" },
-  { label: "Delhi", href: "/listings?loc=delhi" },
-  { label: "Chennai", href: "/listings?loc=chennai" },
-  { label: "Hyderabad", href: "/listings?loc=hyderabad" },
+  { label: "Bengaluru", href: "/listing?loc=bengaluru" },
+  { label: "Mumbai", href: "/listing?loc=mumbai" },
+  { label: "Delhi", href: "/listing?loc=delhi" },
+  { label: "Chennai", href: "/listing?loc=chennai" },
+  { label: "Hyderabad", href: "/listing?loc=hyderabad" },
 ];
 
 const inter = localFont({
