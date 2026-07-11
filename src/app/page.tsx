@@ -8,7 +8,7 @@ import { CATEGORIES } from "@/config/categories";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { LaSearchBar, type SearchQuery } from "@/components/la-search-bar";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
-import StatsSection from "./components/HomeComponents/statsSection";
+import WhyLokalads from "@/components/la-blocks/WhyLokalads";
 
 export default function Home() {
   const router = useRouter();
@@ -99,7 +99,7 @@ export default function Home() {
       </div>
 
       {/* Your existing sections */}
-      <StatsSection />
+      <WhyLokalads />
     </>
   );
 }

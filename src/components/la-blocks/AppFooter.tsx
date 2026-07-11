@@ -18,6 +18,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Solid_Heart_24by24 } from "@/components/icons/la-icons";
 import { getFeatures, COUNTRY_CONFIGS, type CountryCode } from "@/config";
@@ -77,6 +78,14 @@ function SocialLinks({ className }: { className?: string }) {
 export default function AppFooter({ countryCode, countryLabel, variant = "default", popularCategories, topLocations }: AppFooterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Derive effective variant from current pathname — reactive on soft navigation.
+  const SIMPLE_ROUTES = ["/login", "/register", "/signup"];
+  const effectiveVariant = SIMPLE_ROUTES.some(
+    (r) => pathname === r || pathname.startsWith(r + "/")
+  ) ? "simple" : variant;
+
   const features = getFeatures(countryCode);
   const { companyName, companyRegNo } = COUNTRY_CONFIGS[countryCode];
   const colCount = 2 + (popularCategories?.length ? 1 : 0) + (topLocations?.length ? 1 : 0);
@@ -107,7 +116,7 @@ export default function AppFooter({ countryCode, countryLabel, variant = "defaul
             <SocialLinks className="hidden md:flex" />
 
             {/* Toggle — default variant only */}
-            {variant === "default" && (
+            {effectiveVariant === "default" && (
             <button
               type="button"
               onClick={() => setIsOpen((prev) => !prev)}
@@ -169,6 +178,7 @@ export default function AppFooter({ countryCode, countryLabel, variant = "defaul
           <div className="mb-5">
             <div className="mb-2 text-sm text-slate-200 font-bold">About Us</div>
             <Link className="my-1 block text-sm text-slate-200 hover:text-white transition-colors" href="/about">About lokalads</Link>
+            <Link className="my-1 block text-sm text-slate-200 hover:text-white transition-colors" href="/team">Our Team</Link>
             <Link className="my-1 block text-sm text-slate-200 hover:text-white transition-colors" href="/why">Why Advertise?</Link>
             <Link className="my-1 block text-sm text-slate-200 hover:text-white transition-colors" href="/career">Careers</Link>
             <TimelineSheet>
@@ -176,6 +186,9 @@ export default function AppFooter({ countryCode, countryLabel, variant = "defaul
             </TimelineSheet>
             <Link className="my-1 block text-sm text-slate-200 hover:text-white transition-colors" href="/contact">
               Contact <span className="text-teal-200 text-sm px-1">New</span>
+            </Link>
+            <Link className="my-1 block text-sm text-slate-200 hover:text-white transition-colors" href="/our-locations">
+              Our Locations <span className="text-teal-200 text-sm px-1">New</span>
             </Link>
           </div>
         </div>
