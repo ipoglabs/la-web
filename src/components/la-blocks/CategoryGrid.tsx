@@ -51,7 +51,7 @@ function CategoryCard({ category }: { category: CategoryItem }) {
         {visible.map((sub) => (
           <li key={sub.id} className="py-px">
             <Link
-              href={`/listings?cat=${category.id}&sub=${sub.id}`}
+              href={`/listing?cat=${category.id}&sub=${sub.id}`}
               className="flex items-center justify-between px-3 py-1 text-sm text-slate-900 hover:font-semibold hover:text-emerald-800 hover:bg-emerald-100 transition-colors group rounded-md"
             >
               <span className="truncate">{sub.label}</span>
@@ -76,7 +76,7 @@ function CategoryCard({ category }: { category: CategoryItem }) {
           </button>
         )}
         <Link
-          href={`/listings?cat=${category.id}`}
+          href={`/listing?cat=${category.id}`}
           className={cn(
             "flex items-center justify-end gap-0.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-stone-100 transition-colors",
             !hasMore && "flex-1",

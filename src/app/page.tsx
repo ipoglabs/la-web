@@ -36,7 +36,7 @@ export default function Home() {
       params.set("unit",   loc.unit ?? "km");
     }
     if (loc?.label) params.set("loc", loc.label);
-    router.push(`/listings${params.size > 0 ? `?${params}` : ""}`);
+    router.push(`/listing${params.size > 0 ? `?${params}` : ""}`);
   }
 
   return (
