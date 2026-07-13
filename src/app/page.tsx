@@ -2,19 +2,23 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import WhyLokalads from "@/components/la-blocks/WhyLokalads";
 import CategoryGrid from "@/components/la-blocks/CategoryGrid";
 import { CreateAlertBanner, CreateAlertDialog } from "@/components/create-alert";
 import { CATEGORIES } from "@/config/categories";
+import FeaturedListings from "@/components/la-blocks/FeaturedListings";
+import RecentSearches from "@/components/la-blocks/RecentSearches";
+import { getFeaturedForMarket } from "@/lib/mock/country-map";
+import { RECENT_SEARCHES } from "@/lib/mock/mock-searches";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { LaSearchBar, type SearchQuery } from "@/components/la-search-bar";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
-import WhyLokalads from "@/components/la-blocks/WhyLokalads";
 
-export default function Home() {
+export default function LandingPage() {
   const router = useRouter();
   const [alertOpen, setAlertOpen] = React.useState(false);
   const [pickedLocation, setPickedLocation] = React.useState<LocationValue | null>(null);
-  const { config: countryConfig } = useCountryConfig();
+  const { config: countryConfig, countryCode } = useCountryConfig();
 
   const visibleCategories = countryConfig.enabledCategories
     .map((id) => CATEGORIES.find((c) => c.id === id))
@@ -23,11 +27,29 @@ export default function Home() {
   // API shape expected: GET /api/categories?country={countryCode} → CategoryItem[]
   // The API can also drive featured/trending ordering per country dynamically.
 
+  // Homepage "Featured Listings" — cross-category mix, scoped to the active market.
+  // getFeaturedForMarket() replaced the old hand-curated RECENT_POSTS/TOP_PICKS
+  // constants (lib/mock/mock-listings.ts), which were hardcoded to Indian cities
+  // and never varied by country — every market now sees its own listings here.
+  // TODO [INTEGRATION]: replace with GET /api/v1/listings/featured?country={isoCode}&section=recent|top-picks
+  // See the doc comment on getFeaturedForMarket() in lib/mock/country-map.ts for
+  // exactly what the real "recent" vs "top picks" ranking logic should be —
+  // this mock version's "one item per category" curation must NOT be ported as-is.
+  const recentPosts = React.useMemo(
+    () => getFeaturedForMarket(countryCode, 0, 10),
+    [countryCode],
+  );
+  const topPicks = React.useMemo(
+    () => getFeaturedForMarket(countryCode, 1, 10),
+    [countryCode],
+  );
+
   function handleSearch(q: SearchQuery) {
     const params = new URLSearchParams();
     if (q.keyword?.trim())  params.set("q",   q.keyword.trim());
     if (q.scope?.cat)       params.set("cat", q.scope.cat);
     if (q.scope?.sub)       params.set("sub", q.scope.sub);
+    // Use the local location picker state (LaSearchBar returns null for location)
     const loc = pickedLocation;
     if (loc?.lat  != null) params.set("lat",    String(loc.lat));
     if (loc?.lng  != null) params.set("lng",    String(loc.lng));
@@ -36,14 +58,15 @@ export default function Home() {
       params.set("unit",   loc.unit ?? "km");
     }
     if (loc?.label) params.set("loc", loc.label);
-    router.push(`/listing${params.size > 0 ? `?${params}` : ""}`);
+    router.push(`/${countryCode}/listings${params.size > 0 ? `?${params}` : ""}`);
   }
 
   return (
     <>
-    {/* ── Hero ──────────────────────────────────────────────────────────── */}
+
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="bg-slate-800 pt-5 pb-5 shadow-lg">
-        <div className="container-app mx-auto max-w-2xl">
+        <div className="container-app max-w-2xl">
 
           {/* Headline */}
           <h1 className="text-center italic text-slate-50 font-light leading-tight mb-5">
@@ -89,17 +112,60 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Section: Category Grid */}
-      <div className="w-full bg-amber-50">
-        <CategoryGrid
-          categories={visibleCategories}
-          initialVisible={12}
-          className="container-app"
+      {/* Core Layout Section */}
+      <div className="bg-white">
+
+        {/* Section: Category Grid */}
+        <div className="w-full bg-amber-50">
+          <CategoryGrid 
+            categories={visibleCategories}
+            initialVisible={12}
+            className="container-app"
+            />
+        </div>
+        
+
+        {/* Section: Recent Searches */}
+        {/* TODO: replace RECENT_SEARCHES with an API-driven "popular/trending" endpoint per country. */}
+        <RecentSearches
+          title="Popular Searches"
+          items={RECENT_SEARCHES}
+          seeAllHref={`/${countryCode}/listings?view=popular-searches`}
+          className="bg-amber-100"
         />
+
+
+        {/* Section: Featured Listings */}
+        <FeaturedListings 
+          title="Recent Posts" 
+          seeAllHref={`/${countryCode}/listings`}
+          items={recentPosts} 
+          showLocation={false} 
+          showTime={false} 
+          showDetails={false}
+          titleLines={3} 
+          />
+        <FeaturedListings 
+          title="Top Picks for You" 
+          seeAllHref={`/${countryCode}/listings?filter=top-picks`}
+          items={topPicks} 
+          showLocation={false} 
+          showTime={false} 
+          showDetails={false} 
+          titleLines={3} />
+        
+        {/* Section: Create Alert */}
+        <div className="container-app mb-5">
+          <CreateAlertBanner />
+        </div>
+
+        {/* Section: Why to Use LokalAds ? */}
+        <div className="relative overflow-hidden bg-slate-200 border-t border-slate-300">
+          <WhyLokalads />
+        </div>
       </div>
 
-      {/* Your existing sections */}
-      <WhyLokalads />
     </>
   );
 }
+

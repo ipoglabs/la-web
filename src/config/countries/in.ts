@@ -33,6 +33,14 @@ export const IN_CONFIG: CountryConfig = {
     donationFooter: true, // Active donation campaign in India
   },
 
+  // ── Listings source switch by deployment stage ───────────────────────────
+  listingsSourceByStage: {
+    dev: "mock",
+    qa: "mock",
+    staging: "mock",
+    prod: "db",
+  },
+
   // ── Enabled categories (ordered) ────────────────────────────────────────────
   enabledCategories: [
     "property",

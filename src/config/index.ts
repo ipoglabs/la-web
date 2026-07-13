@@ -23,19 +23,33 @@
  *   getConfigByIso()   → look up config by ISO code (e.g. "IN", "GB") — server + middleware
  *   getFeatures()      → resolved feature flags for a country (global + overrides merged)
  *   getDateFormat()    → resolved date format for a country (country override or global)
- *   CountryCode        → type — "in" | "uk" | "sg"
+ *   CountryCode        → type — "in" | "gb" | "sg"
  *   CountryConfig      → type — full config shape
  *   CountryFeatures    → type — feature flag shape
  */
 
 // ─── Re-export types (consumers get everything from one import) ───────────────
-export type { CountryCode, CountryConfig, CountryFeatures } from "@/config/types";
+export type {
+  AppStage,
+  CountryCode,
+  CountryConfig,
+  CountryFeatures,
+  ListingsDataSource,
+  StageFeatures,
+} from "@/config/types";
 
 // ─── Internal imports — used by helpers defined below ────────────────────────
-import type { CountryCode, CountryConfig, CountryFeatures } from "@/config/types";
+import type {
+  AppStage,
+  CountryCode,
+  CountryConfig,
+  CountryFeatures,
+  ListingsDataSource,
+  StageFeatures,
+} from "@/config/types";
 import { GLOBAL_CONFIG } from "@/config/global";
 import { IN_CONFIG } from "@/config/countries/in";
-import { UK_CONFIG } from "@/config/countries/uk";
+import { GB_CONFIG } from "@/config/countries/gb";
 import { SG_CONFIG } from "@/config/countries/sg";
 
 // Re-export GLOBAL_CONFIG so consumers get it from @/config (one import path)
@@ -55,7 +69,7 @@ export { GLOBAL_CONFIG };
  */
 export const COUNTRY_CONFIGS: Record<CountryCode, CountryConfig> = {
   in: IN_CONFIG,
-  uk: UK_CONFIG,
+  gb: GB_CONFIG,
   sg: SG_CONFIG,
 };
 
@@ -69,8 +83,8 @@ export const COUNTRY_CONFIGS: Record<CountryCode, CountryConfig> = {
  * (from the cookie or Cloudflare header) and need the full config:
  *
  *   const entry = getConfigByIso(raw);   // raw = cookie value e.g. "GB"
- *   entry?.code    → "uk"
- *   entry?.config  → UK_CONFIG
+ *   entry?.code    → "gb"
+ *   entry?.config  → GB_CONFIG
  */
 export function getConfigByIso(
   isoCode: string,
@@ -86,7 +100,7 @@ export function getConfigByIso(
  * Returns the effective feature flags for a country.
  * Merges GLOBAL_CONFIG.features with any per-country overrides.
  *
- *   const flags = getFeatures("uk");
+ *   const flags = getFeatures("gb");
  *   flags.donationFooter  → true (global default, no override)
  */
 export function getFeatures(code: CountryCode): CountryFeatures {
@@ -101,4 +115,30 @@ export function getFeatures(code: CountryCode): CountryFeatures {
  */
 export function getDateFormat(code: CountryCode): string {
   return COUNTRY_CONFIGS[code].dateFormat ?? GLOBAL_CONFIG.dateFormat;
+}
+
+/** Resolve current runtime stage from public env var, defaulting to dev. */
+export function getAppStage(): AppStage {
+  const raw = (process.env.NEXT_PUBLIC_APP_STAGE ?? "dev").toLowerCase();
+  if (raw === "qa" || raw === "staging" || raw === "prod") return raw;
+  return "dev";
+}
+
+/** Effective listings source for a country + stage (country override > global default). */
+export function getListingsDataSource(code: CountryCode, stage: AppStage): ListingsDataSource {
+  return COUNTRY_CONFIGS[code].listingsSourceByStage?.[stage]
+    ?? GLOBAL_CONFIG.listingsSourceByStage[stage];
+}
+
+/**
+ * Whether a stage-gated feature flag is enabled for the current (or given) stage.
+ *
+ *   isStageFeatureEnabled("twoFactorAuth")          → true only in dev
+ *   isStageFeatureEnabled("twoFactorAuth", "prod")   → false
+ */
+export function isStageFeatureEnabled(
+  flag: keyof StageFeatures,
+  stage: AppStage = getAppStage(),
+): boolean {
+  return GLOBAL_CONFIG.stageFeatures[stage][flag];
 }

@@ -11,7 +11,7 @@
  * No magic numbers anywhere else in the codebase.
  */
 
-import type { CountryFeatures } from "@/config/types";
+import type { AppStage, CountryFeatures, ListingsDataSource, StageFeatures } from "@/config/types";
 
 export const GLOBAL_CONFIG = {
 
@@ -59,6 +59,42 @@ export const GLOBAL_CONFIG = {
     // premiumListings: false,
     // chat: false,
   } satisfies CountryFeatures,
+
+  // ── Listings data source defaults by stage ───────────────────────────────
+  /**
+   * Global source switch for listings data.
+   * Country configs can override specific stages via listingsSourceByStage.
+   */
+  listingsSourceByStage: {
+    dev: "mock",
+    qa: "mock",
+    staging: "mock",
+    prod: "db",
+  } satisfies Record<AppStage, ListingsDataSource>,
+
+  // ── Stage-gated feature flags ─────────────────────────────────────────────
+  /**
+   * Feature flags gated by deployment stage (not country).
+   * Read via isStageFeatureEnabled(flag) from config/index.ts.
+   *
+   * twoFactorAuth: in-development security feature — only visible in dev so
+   * it can be reviewed/demoed without exposing an unfinished flow in
+   * qa/staging/prod.
+   */
+  stageFeatures: {
+    dev: { twoFactorAuth: true },
+    qa: { twoFactorAuth: false },
+    staging: { twoFactorAuth: false },
+    prod: { twoFactorAuth: false },
+  } satisfies Record<AppStage, StageFeatures>,
+
+  // ── CI/CD stage domains ───────────────────────────────────────────────────
+  domainsByStage: {
+    dev: "dev.lokalads.com",
+    qa: "qa-lokalads.com",
+    staging: "staging.lokalads.com",
+    prod: "lokalads.com",
+  } satisfies Record<AppStage, string>,
 
   // ── Add future global settings below ───────────────────────────────────────
   // timezone: "UTC",

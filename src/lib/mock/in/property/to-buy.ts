@@ -1,0 +1,91 @@
+import type { MockListing } from "@/lib/mock/mock-listing-schema";
+import { SELLERS, img, daysAgo, hrsAgo } from "./sellers";
+// ─────────────────────────────────────────────────────────────────────────────
+export const IN_PROPERTY_BUY: MockListing[] = [
+  {
+    id: "prop-in-buy-01", href: "/listings/prop-in-buy-01", advId: "20101",
+    images: [
+      { src: img(7), alt: "New apartment tower" },
+      { src: img(8), alt: "Clubhouse"           },
+    ],
+    priceLabel: "₹1.15 Cr",
+    title: "Premium 3BHK Apartment — RERA Registered, Whitefield",
+    detailsLabel: "3 BHK • 3 BATHS • APARTMENT",
+    locationLabel: "Whitefield, Bengaluru",
+    postedAt: hrsAgo(3),
+    description: "<p>Under-construction <strong>3BHK apartment</strong> in a RERA-registered township with clubhouse, swimming pool, and landscaped gardens. Vastu-compliant east-facing unit with 1,650 sq ft carpet area.</p><p>Close to ITPL, Prestige Tech Park, and the upcoming Whitefield Metro station — a strong rental and resale market for IT professionals.</p>",
+    keyDetails: [
+      { key: "RERA ID",       value: "PRM/KA/RERA/1251/446" },
+      { key: "Carpet Area",   value: "1,650 sq ft"          },
+      { key: "Facing",        value: "East (Vastu compliant)" },
+      { key: "Maintenance",   value: "₹4/sq ft/mo"          },
+      { key: "Possession",    value: "Dec 2027"             },
+    ],
+    goodToKnow: [
+      { key: "Booking Amount", value: "10% of total"      },
+      { key: "Loan Approved",  value: "SBI, HDFC, ICICI"  },
+      { key: "Parking",        value: "2 covered"         },
+      { key: "Amenities",      value: "Pool, gym, clubhouse" },
+      { key: "Registration",   value: "Included in price" },
+    ],
+    coordinates: { lat: 12.9698, lng: 77.7500 },
+    seller: SELLERS.prestige,
+  },
+  {
+    id: "prop-in-buy-02", href: "/listings/prop-in-buy-02", advId: "20102",
+    images: [
+      { src: img(9), alt: "Resale apartment" },
+    ],
+    priceLabel: "₹1.8 Cr",
+    title: "Ready-to-Move 2BHK Resale Flat — Prime Andheri West Location",
+    detailsLabel: "2 BHK • 2 BATHS • APARTMENT",
+    locationLabel: "Andheri West, Mumbai",
+    postedAt: daysAgo(1),
+    description: "<p>Well-maintained <strong>resale 2BHK</strong> in a 15-year-old society, ready to move with clear title and OC in hand. 850 sq ft carpet area, north-east facing, with a dedicated car park.</p><p>5 minutes' walk to Andheri Station (Western & Harbour lines) and Metro Line 1 — one of Mumbai's most connected residential pockets.</p>",
+    keyDetails: [
+      { key: "Carpet Area",  value: "850 sq ft"     },
+      { key: "Facing",       value: "North-East"     },
+      { key: "Age of Bldg",  value: "15 years"       },
+      { key: "OC / CC",      value: "Available"      },
+      { key: "Maintenance",  value: "₹5,500 / mo"    },
+    ],
+    goodToKnow: [
+      { key: "Brokerage",     value: "1% + GST"          },
+      { key: "Loan Approved", value: "All major banks"   },
+      { key: "Parking",       value: "1 covered"         },
+      { key: "Title",         value: "Clear & marketable" },
+      { key: "Registration",  value: "Buyer to bear"     },
+    ],
+    coordinates: { lat: 19.1364, lng: 72.8296 },
+    seller: SELLERS.priya,
+  },
+  {
+    id: "prop-in-buy-03", href: "/listings/prop-in-buy-03", advId: "20103",
+    images: [
+      { src: img(1), alt: "Independent house" },
+      { src: img(2), alt: "Front garden"       },
+    ],
+    priceLabel: "₹2.4 Cr",
+    title: "Independent 4BHK House — Corner Plot, Anna Nagar",
+    detailsLabel: "4 BHK • 4 BATHS • INDEPENDENT HOUSE",
+    locationLabel: "Anna Nagar, Chennai",
+    postedAt: daysAgo(3),
+    description: "<p>Spacious <strong>independent house</strong> on a 2,400 sq ft corner plot in Anna Nagar's residential 2nd Avenue. Ground + 1 construction with a private garden and terrace, built to Vastu principles.</p><p>Walking distance to Anna Nagar Tower Park and the Chennai Metro; excellent school and hospital access nearby.</p>",
+    keyDetails: [
+      { key: "Plot Area",   value: "2,400 sq ft"        },
+      { key: "Built-Up",    value: "3,600 sq ft"        },
+      { key: "Facing",      value: "South (Vastu)"      },
+      { key: "Age",         value: "8 years"            },
+      { key: "Patta / EC",  value: "Clear, available"   },
+    ],
+    goodToKnow: [
+      { key: "Brokerage",     value: "None — direct owner" },
+      { key: "Loan Approved", value: "All major banks"     },
+      { key: "Parking",       value: "2 open"              },
+      { key: "Terrace",       value: "Private, full"       },
+      { key: "Registration",  value: "Guidance value applies" },
+    ],
+    coordinates: { lat: 13.0850, lng: 80.2101 },
+    seller: SELLERS.anita,
+  },
+];

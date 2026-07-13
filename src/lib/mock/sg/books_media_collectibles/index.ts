@@ -1,0 +1,32 @@
+import type { MockListing } from "@/lib/mock/mock-listing-schema";
+import {
+  SG_BOOKS_BOOKS_COMICS,
+  SG_BOOKS_VINYL_RECORDS,
+  SG_BOOKS_DVDS_BLU_RAY,
+  SG_BOOKS_BOARD_GAMES_PUZZLES,
+  SG_BOOKS_COLLECTIBLES_MEMORABILIA,
+} from "./books_media_collectibles-data";
+
+export {
+  SG_BOOKS_BOOKS_COMICS,
+  SG_BOOKS_VINYL_RECORDS,
+  SG_BOOKS_DVDS_BLU_RAY,
+  SG_BOOKS_BOARD_GAMES_PUZZLES,
+  SG_BOOKS_COLLECTIBLES_MEMORABILIA,
+};
+
+export const SG_BOOKS_MEDIA_COLLECTIBLES_SUBCATEGORY_MAP: Record<string, MockListing[]> = {
+  books_comics: SG_BOOKS_BOOKS_COMICS,
+  vinyl_records: SG_BOOKS_VINYL_RECORDS,
+  dvds_blu_ray: SG_BOOKS_DVDS_BLU_RAY,
+  board_games_puzzles: SG_BOOKS_BOARD_GAMES_PUZZLES,
+  collectibles_memorabilia: SG_BOOKS_COLLECTIBLES_MEMORABILIA,
+};
+
+export const SG_ALL_BOOKS_MEDIA_COLLECTIBLES_LISTINGS: MockListing[] = [
+  ...SG_BOOKS_BOOKS_COMICS,
+  ...SG_BOOKS_VINYL_RECORDS,
+  ...SG_BOOKS_DVDS_BLU_RAY,
+  ...SG_BOOKS_BOARD_GAMES_PUZZLES,
+  ...SG_BOOKS_COLLECTIBLES_MEMORABILIA,
+];

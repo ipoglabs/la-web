@@ -1,0 +1,91 @@
+import type { MockListing } from "@/lib/mock/mock-listing-schema";
+import { SELLERS, img, daysAgo, hrsAgo } from "./sellers";
+// ─────────────────────────────────────────────────────────────────────────────
+export const SG_PROPERTY_BUY: MockListing[] = [
+  {
+    id: "prop-sg-buy-01", href: "/listings/prop-sg-buy-01", advId: "30101",
+    images: [
+      { src: img(5), alt: "Condo exterior" },
+      { src: img(6), alt: "Living room"     },
+    ],
+    priceLabel: "S$1,200,000",
+    title: "3-Bedroom Condo — Waterfront Views, Punggol",
+    detailsLabel: "3 BEDS • 2 BATHS • CONDO",
+    locationLabel: "Punggol",
+    postedAt: hrsAgo(4),
+    description: "<p>Well-maintained <strong>3-bedroom condo</strong> with waterway views, approx 1,100 sq ft, in a development with full condo facilities. TOP in 2019, still under fresh renovation warranty.</p><p>5 minutes' walk to Punggol MRT/LRT and Waterway Point mall — part of Singapore's up-and-coming north-east region.</p>",
+    keyDetails: [
+      { key: "Tenure",   value: "99-year Leasehold" },
+      { key: "PSF",      value: "~S$1,090 psf"      },
+      { key: "Floor Area", value: "1,100 sq ft"     },
+      { key: "TOP",      value: "2019"              },
+      { key: "MRT Distance", value: "5 min walk"    },
+    ],
+    goodToKnow: [
+      { key: "Option Fee",  value: "S$1,000 (OTP)"    },
+      { key: "Loan",        value: "Bank / HDB loan eligible" },
+      { key: "ABSD",        value: "Applies per buyer profile" },
+      { key: "Facilities",  value: "Pool, gym, function room" },
+      { key: "Vacant Possession", value: "Negotiable"  },
+    ],
+    coordinates: { lat: 1.4043, lng: 103.9021 },
+    seller: SELLERS.rajan,
+  },
+  {
+    id: "prop-sg-buy-02", href: "/listings/prop-sg-buy-02", advId: "30102",
+    images: [
+      { src: img(7), alt: "HDB resale flat" },
+    ],
+    priceLabel: "S$650,000",
+    title: "HDB Resale 5-Room Flat — High Floor, Renovated, Toa Payoh",
+    detailsLabel: "5 ROOM • 2 BATHS • HDB",
+    locationLabel: "Toa Payoh",
+    postedAt: daysAgo(1),
+    description: "<p>Beautifully renovated <strong>HDB 5-room resale flat</strong> on a high floor with unblocked views. Fully hacked and re-planned layout with a spacious living/dining area.</p><p>8 minutes' walk to Toa Payoh MRT and the town centre's hawker centres and amenities.</p>",
+    keyDetails: [
+      { key: "Tenure",      value: "HDB 99-year Leasehold" },
+      { key: "Remaining Lease", value: "68 years"          },
+      { key: "Floor Area",  value: "1,184 sq ft"           },
+      { key: "MOP",         value: "Fulfilled"             },
+      { key: "MRT Distance", value: "8 min walk"           },
+    ],
+    goodToKnow: [
+      { key: "Option Fee", value: "S$1,000 (OTP)"      },
+      { key: "COV",        value: "None — sold at valuation" },
+      { key: "Grants",     value: "CPF grants may apply"    },
+      { key: "HDB Loan",   value: "Eligible"                },
+      { key: "Vacant Possession", value: "3 months"        },
+    ],
+    coordinates: { lat: 1.3343, lng: 103.8563 },
+    seller: SELLERS.siti,
+  },
+  {
+    id: "prop-sg-buy-03", href: "/listings/prop-sg-buy-03", advId: "30103",
+    images: [
+      { src: img(8), alt: "Landed house" },
+      { src: img(9), alt: "Garden"        },
+    ],
+    priceLabel: "S$4,800,000",
+    title: "Freehold Semi-Detached House — Bukit Timah, Gated Enclave",
+    detailsLabel: "5 BEDS • 5 BATHS • SEMI-DETACHED",
+    locationLabel: "Bukit Timah",
+    postedAt: daysAgo(3),
+    description: "<p>Elegant <strong>freehold semi-detached house</strong> in a quiet gated enclave off Bukit Timah Road. Private garden, swimming pool, and a rare attic-level study loft.</p><p>Within 1km of top primary schools; close to Beauty World MRT and the Bukit Timah Nature Reserve.</p>",
+    keyDetails: [
+      { key: "Tenure",     value: "Freehold"        },
+      { key: "Land Area",  value: "3,200 sq ft"     },
+      { key: "Built-Up",   value: "4,600 sq ft"     },
+      { key: "Schools",    value: "Within 1km — top primary" },
+      { key: "Pool",       value: "Private, in-ground" },
+    ],
+    goodToKnow: [
+      { key: "Option Fee", value: "S$5,000 (OTP)"        },
+      { key: "ABSD",       value: "Applies per buyer profile" },
+      { key: "Renovation", value: "Fully renovated 2023"  },
+      { key: "Vacant Possession", value: "Flexible"       },
+      { key: "Viewing",    value: "By appointment only"   },
+    ],
+    coordinates: { lat: 1.3294, lng: 103.8021 },
+    seller: SELLERS.huatProperty,
+  },
+];

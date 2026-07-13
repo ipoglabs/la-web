@@ -29,6 +29,10 @@ export type { LaFieldProps }      from "./la-field";
 export { LaBadge }           from "./la-badge";
 export type { LaBadgeProps }  from "./la-badge";
 
+// Chip (dismissible filter pill)
+export { LaChip, LaFilterChipStrip } from "./la-chip";
+export type { LaChipProps, LaFilterChipStripProps, FilterItem } from "./la-chip";
+
 // Card
 export { LaCard } from "./la-card";
 export type { LaCardProps } from "./la-card";

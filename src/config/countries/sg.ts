@@ -31,6 +31,14 @@ export const SG_CONFIG: CountryConfig = {
   // ── Features ────────────────────────────────────────────────────────────────
   // No overrides — all flags inherit GLOBAL_CONFIG.features
 
+  // ── Listings source switch by deployment stage ───────────────────────────
+  listingsSourceByStage: {
+    dev: "mock",
+    qa: "mock",
+    staging: "mock",
+    prod: "db",
+  },
+
   // ── Enabled categories (ordered) ────────────────────────────────────────────
   enabledCategories: [
     "property",

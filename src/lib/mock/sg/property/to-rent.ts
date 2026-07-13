@@ -1,0 +1,90 @@
+import type { MockListing } from "@/lib/mock/mock-listing-schema";
+import { SELLERS, img, daysAgo, hrsAgo } from "./sellers";
+// ─────────────────────────────────────────────────────────────────────────────
+export const SG_PROPERTY_RENT: MockListing[] = [
+  {
+    id: "prop-sg-rent-01", href: "/listings/prop-sg-rent-01", advId: "30001",
+    images: [
+      { src: img(1), alt: "Condo living room" },
+      { src: img(2), alt: "Condo bedroom"     },
+    ],
+    priceLabel: "S$2,800", priceSuffix: "/ mo",
+    title: "Modern 2-Bedroom Condo — Full Facilities, Near MRT",
+    detailsLabel: "2 BEDS • 2 BATHS • CONDO",
+    locationLabel: "Tampines",
+    postedAt: hrsAgo(2),
+    description: "<p>Bright <strong>2-bedroom condo unit</strong> on a high floor with pool and city views. Fully air-conditioned with built-in wardrobes and a modern open kitchen.</p><p>7 minutes' walk to Tampines MRT and the Tampines Mall / Our Tampines Hub precinct — excellent access to the east-west line and downtown line.</p>",
+    keyDetails: [
+      { key: "Tenure",           value: "99-year Leasehold" },
+      { key: "Furnishing",       value: "Fully Furnished"   },
+      { key: "Security Deposit", value: "S$5,600 (2 mo)"    },
+      { key: "Available From",   value: "Immediately"       },
+      { key: "MRT Distance",     value: "7 min walk"        },
+    ],
+    goodToKnow: [
+      { key: "Agent Fee",  value: "Half month rent" },
+      { key: "Facilities", value: "Pool, gym, BBQ pits" },
+      { key: "Parking",    value: "1 lot"           },
+      { key: "Min Lease",  value: "12 months"       },
+      { key: "Pets",       value: "Not allowed (MCST)" },
+    ],
+    coordinates: { lat: 1.3496, lng: 103.9568 },
+    seller: SELLERS.weiMing,
+  },
+  {
+    id: "prop-sg-rent-02", href: "/listings/prop-sg-rent-02", advId: "30002",
+    images: [
+      { src: img(3), alt: "HDB living room" },
+    ],
+    priceLabel: "S$2,400", priceSuffix: "/ mo",
+    title: "Spacious HDB 4-Room Flat — Renovated, Near Junction 8",
+    detailsLabel: "4 ROOM • 2 BATHS • HDB",
+    locationLabel: "Bishan",
+    postedAt: hrsAgo(7),
+    description: "<p>Recently renovated <strong>HDB 4-room flat</strong> with a bright living area, built-in kitchen cabinets, and 3 air-conditioned bedrooms. Whole unit available for rent.</p><p>5 minutes' walk to Bishan MRT interchange and Junction 8 shopping mall — one of the best-connected HDB towns in Singapore.</p>",
+    keyDetails: [
+      { key: "Tenure",           value: "HDB 99-year Leasehold" },
+      { key: "Furnishing",       value: "Partially Furnished"   },
+      { key: "Security Deposit", value: "S$4,800 (2 mo)"        },
+      { key: "Available From",   value: "01 Aug 2026"           },
+      { key: "MRT Distance",     value: "5 min walk"            },
+    ],
+    goodToKnow: [
+      { key: "Agent Fee", value: "Half month rent" },
+      { key: "HDB Rules", value: "Ethnic quota applies" },
+      { key: "Parking",   value: "Season parking nearby" },
+      { key: "Min Lease", value: "12 months"       },
+      { key: "Pets",      value: "Small pets only" },
+    ],
+    coordinates: { lat: 1.3526, lng: 103.8352 },
+    seller: SELLERS.siti,
+  },
+  {
+    id: "prop-sg-rent-03", href: "/listings/prop-sg-rent-03", advId: "30003",
+    images: [
+      { src: img(4), alt: "Studio apartment" },
+    ],
+    priceLabel: "S$3,500", priceSuffix: "/ mo",
+    title: "Designer Studio Apartment — Orchard Road, Fully Furnished",
+    detailsLabel: "STUDIO • 1 BATH • APARTMENT",
+    locationLabel: "Orchard",
+    postedAt: daysAgo(1),
+    description: "<p>Stylish <strong>studio apartment</strong> in the heart of Orchard Road with a designer fit-out, smart home features, and a private balcony. Concierge and gym access included.</p><p>Steps away from ION Orchard and Orchard MRT — ideal for expatriates and professionals wanting a central address.</p>",
+    keyDetails: [
+      { key: "Tenure",           value: "Freehold"        },
+      { key: "Furnishing",       value: "Fully Furnished" },
+      { key: "Security Deposit", value: "S$7,000 (2 mo)"  },
+      { key: "Available From",   value: "Immediately"     },
+      { key: "MRT Distance",     value: "3 min walk"      },
+    ],
+    goodToKnow: [
+      { key: "Agent Fee",  value: "Half month rent" },
+      { key: "Facilities", value: "Gym, concierge, pool" },
+      { key: "Parking",    value: "Available, extra cost" },
+      { key: "Min Lease",  value: "6 months"        },
+      { key: "Pets",       value: "Not allowed"     },
+    ],
+    coordinates: { lat: 1.3048, lng: 103.8318 },
+    seller: SELLERS.era,
+  },
+];

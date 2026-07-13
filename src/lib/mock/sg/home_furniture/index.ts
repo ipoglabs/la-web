@@ -1,0 +1,44 @@
+import type { MockListing } from "@/lib/mock/mock-listing-schema";
+import {
+  SG_HOME_SOFAS_SEATING,
+  SG_HOME_BEDS_BEDROOM,
+  SG_HOME_TABLES_DINING,
+  SG_HOME_KITCHEN_APPLIANCES,
+  SG_HOME_STORAGE_SHELVING,
+  SG_HOME_DECOR,
+  SG_HOME_GARDEN_OUTDOOR,
+  SG_HOME_DIY_TOOLS,
+} from "./home_furniture-data";
+
+export {
+  SG_HOME_SOFAS_SEATING,
+  SG_HOME_BEDS_BEDROOM,
+  SG_HOME_TABLES_DINING,
+  SG_HOME_KITCHEN_APPLIANCES,
+  SG_HOME_STORAGE_SHELVING,
+  SG_HOME_DECOR,
+  SG_HOME_GARDEN_OUTDOOR,
+  SG_HOME_DIY_TOOLS,
+};
+
+export const SG_HOME_FURNITURE_SUBCATEGORY_MAP: Record<string, MockListing[]> = {
+  sofas_seating: SG_HOME_SOFAS_SEATING,
+  beds_bedroom: SG_HOME_BEDS_BEDROOM,
+  tables_dining: SG_HOME_TABLES_DINING,
+  kitchen_appliances: SG_HOME_KITCHEN_APPLIANCES,
+  storage_shelving: SG_HOME_STORAGE_SHELVING,
+  home_decor: SG_HOME_DECOR,
+  garden_outdoor: SG_HOME_GARDEN_OUTDOOR,
+  diy_tools: SG_HOME_DIY_TOOLS,
+};
+
+export const SG_ALL_HOME_FURNITURE_LISTINGS: MockListing[] = [
+  ...SG_HOME_SOFAS_SEATING,
+  ...SG_HOME_BEDS_BEDROOM,
+  ...SG_HOME_TABLES_DINING,
+  ...SG_HOME_KITCHEN_APPLIANCES,
+  ...SG_HOME_STORAGE_SHELVING,
+  ...SG_HOME_DECOR,
+  ...SG_HOME_GARDEN_OUTDOOR,
+  ...SG_HOME_DIY_TOOLS,
+];
