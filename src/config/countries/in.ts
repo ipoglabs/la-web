@@ -22,6 +22,8 @@ export const IN_CONFIG: CountryConfig = {
   radiusUnit:     "km",
   currency:       "INR",
   currencySymbol: "₹",
+  // in.ts — use whatever matches your actual in.ts currencySymbol value there
+locationPlaceholder: "e.g. Mumbai, Delhi, Bengaluru",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────

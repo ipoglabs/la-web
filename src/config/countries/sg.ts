@@ -22,6 +22,8 @@ export const SG_CONFIG: CountryConfig = {
   radiusUnit:     "km",
   currency:       "SGD",
   currencySymbol: "S$",
+  // sg.ts
+locationPlaceholder: "e.g. Orchard, Jurong, Tampines",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────

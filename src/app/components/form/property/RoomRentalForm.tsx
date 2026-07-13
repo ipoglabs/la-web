@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
-import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper
+import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
 import { cn as cx } from "@/lib/utils";
 import { usePropertyConfig } from "@/hooks/usePropertyConfig";
