@@ -4,7 +4,7 @@ import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
-import { FormFieldWrapper } from "@/app/components/form/fields/FormFieldWrapper";
+import { FormFieldWrapper } from "@/app/components/form/fields/FormfieldWrapper";
 import { FormField as FormFieldContainer } from "@/app/components/form/fields/FormFieldContainer";
 import { toast } from "sonner";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
