@@ -165,7 +165,7 @@ export const PhoneNumberInput = React.forwardRef<HTMLInputElement, PhoneNumberIn
             aria-describedby={inputDescribedBy}
             className={cn(
               [
-                "flex h-10 w-full rounded-sm border-[1.5px] border-gray-700/50 bg-gray-50 pr-3 pl-24 py-2 text-base font-normal text-gray-900 caret-gray-900 placeholder:text-gray-400",
+                "flex h-10 w-full rounded-md border-[1.5px] border-gray-700/50 bg-gray-50 pr-3 pl-24 py-2 text-base font-normal text-gray-900 caret-gray-900 placeholder:text-gray-400",
                 "focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 inputClassName,

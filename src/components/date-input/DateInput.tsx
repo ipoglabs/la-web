@@ -258,7 +258,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
       "border-gray-700/50";
 
     const baseInputClass = cn(
-      "flex h-10 w-full rounded-sm border-[1.5px] bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 caret-gray-900 placeholder:text-gray-400 transition-colors",
+      "flex h-10 w-full rounded-md border-[1.5px] bg-gray-50 px-3 py-2 text-base font-normal text-gray-900 caret-gray-900 placeholder:text-gray-400 transition-colors",
       "focus-visible:bg-yellow-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:ring-offset-1",
       "disabled:cursor-not-allowed disabled:opacity-50",
       borderClass,
@@ -282,7 +282,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             onKeyDown={(e) => e.key === "Enter" || e.key === " " ? setFocused(true) : undefined}
             onClick={() => setFocused(true)}
             className={cn(
-              "flex h-10 w-full items-center rounded-sm border-[1.5px] bg-gray-50 px-3 text-base font-normal text-gray-900 cursor-text transition-colors",
+              "flex h-10 w-full items-center rounded-md border-[1.5px] bg-gray-50 px-3 text-base font-normal text-gray-900 cursor-text transition-colors",
               borderClass,
               inputClassName
             )}

@@ -284,7 +284,19 @@ export function AvatarDropdown({
       {/* Mobile — Drawer */}
       {isMobile && (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="pt-0 [&>div:first-child]:hidden border-slate-200 max-h-[80svh]">
+          <DrawerContent
+            className="pt-0 [&>div:first-child]:hidden border-slate-200 max-h-[80svh]"
+            onPointerDownOutside={(e) => {
+              // OverlayCountrySelect renders via createPortal to document.body,
+              // so it's outside this Drawer's DOM subtree — without this, Vaul
+              // treats taps on it as an outside interaction and dismisses the
+              // drawer before the country selection click can complete (only
+              // reproduces on iOS Safari's pointer-event timing).
+              if ((e.target as HTMLElement | null)?.closest("[data-country-select-overlay]")) {
+                e.preventDefault();
+              }
+            }}
+          >
             {/* Header */}
             <div className="rounded-t-2xl bg-linear-to-b from-slate-100 to-slate-50 px-4 pt-1.5 pb-1.5 border-b border-slate-200">
               <div className="mx-auto mb-1.5 h-0.5 w-6 rounded-full bg-slate-400" />
