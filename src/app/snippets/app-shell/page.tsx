@@ -273,9 +273,9 @@ export default function AppShellPage() {
 
       <StateLabel
         title='variant="simple" — UK'
-        code={`<AppFooter countryCode="uk" countryLabel="UK" variant="simple" popularCategories={[...]} topLocations={[...]} />`}
+        code={`<AppFooter countryCode="gb" countryLabel="UK" variant="simple" popularCategories={[...]} topLocations={[...]} />`}
       />
-      <AppFooter countryCode="uk" countryLabel="UK" variant="simple" popularCategories={ukCategories} topLocations={ukLocations} />
+      <AppFooter countryCode="gb" countryLabel="UK" variant="simple" popularCategories={ukCategories} topLocations={ukLocations} />
 
     </div>
   );

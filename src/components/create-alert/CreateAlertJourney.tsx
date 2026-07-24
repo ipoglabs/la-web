@@ -5,9 +5,10 @@ import {
   // UI chrome + step icons
   ArrowRight, ChevronLeft, ChevronRight, Mail, MessageCircle, MapPin, Sparkles, LayoutGrid,
   // Category icons
-  Building2, Car, Briefcase, Wrench, ShoppingBag, PawPrint,
+  Building2, Car, Briefcase, Wrench, PawPrint,
   TrendingUp, Users, Tag,
   GraduationCap, HeartPulse, UtensilsCrossed, Plane, Baby, Dumbbell, Smartphone, Home, Shirt,
+  Music, BookOpen, Ticket, Gift,
 } from "lucide-react";
 import {
   Outline_UnCheckCircle_24by24,
@@ -20,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { LaButton, LaTagInput } from "@/components/la";
 import { cn } from "@/lib/utils";
 import { ALERT_CONFIG } from "./alert-config";
+import { CATEGORIES } from "@/config/categories";
 import type {
   MainCategory,
   SubCategory,
@@ -29,49 +31,59 @@ import type {
 } from "./types";
 
 // ── Icon map ──────────────────────────────────────────────────────────────────
+// TODO [INTEGRATION]: CATEGORY_ICON_MAP and CATEGORY_BG duplicate data that
+// already exists in ALERT_CONFIG (icon, iconBg, iconColor fields on MainCategory).
+// Once integrated, drive both the icon component and the background colour directly
+// from ALERT_CONFIG — remove these two maps and the static CATEGORIES import.
 
 const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
-  property:          Building2,
-  vehicles:          Car,
-  jobs:              Briefcase,
-  services:          Wrench,
-  for_sale:          ShoppingBag,
-  pets:              PawPrint,
-  business:          TrendingUp,
-  community:         Users,
-  special_offers:    Tag,
-  education:         GraduationCap,
-  health_beauty:     HeartPulse,
-  food_dining:       UtensilsCrossed,
-  travel_stays:      Plane,
-  baby_kids:         Baby,
-  sports_outdoors:   Dumbbell,
-  electronics_tech:  Smartphone,
-  home_furniture:    Home,
-  fashion_clothing:  Shirt,
+  property:                Building2,
+  vehicles:                Car,
+  jobs:                    Briefcase,
+  services:                Wrench,
+  pets:                    PawPrint,
+  business:                TrendingUp,
+  community:               Users,
+  special_offers:          Tag,
+  education:               GraduationCap,
+  health_beauty:           HeartPulse,
+  food_dining:             UtensilsCrossed,
+  travel_stays:            Plane,
+  baby_kids:               Baby,
+  sports_outdoors:         Dumbbell,
+  electronics_tech:        Smartphone,
+  home_furniture:          Home,
+  fashion_clothing:        Shirt,
+  musical_instruments:     Music,
+  books_media_collectibles: BookOpen,
+  tickets_vouchers:        Ticket,
+  free_giveaway:           Gift,
 };
 
 // Toned-down mid-soft colors — readable with white text, not overpowering
 // NOTE: Only approved palette families used (see components/la/COLOR_PALETTE.md)
 const CATEGORY_BG: Record<string, string> = {
-  property:          "bg-blue-400",
-  vehicles:          "bg-amber-400",
-  jobs:              "bg-purple-400",
-  services:          "bg-sky-500",
-  for_sale:          "bg-amber-500",
-  pets:              "bg-rose-400",
-  business:          "bg-emerald-500",
-  community:         "bg-yellow-500",
-  special_offers:    "bg-rose-500",
-  education:         "bg-indigo-400",
-  health_beauty:     "bg-pink-400",
-  food_dining:       "bg-orange-400",
-  travel_stays:      "bg-cyan-500",
-  baby_kids:         "bg-pink-300",
-  sports_outdoors:   "bg-green-500",
-  electronics_tech:  "bg-slate-500",
-  home_furniture:    "bg-teal-500",
-  fashion_clothing:  "bg-fuchsia-400",
+  property:                 "bg-blue-400",
+  vehicles:                 "bg-amber-400",
+  jobs:                     "bg-purple-400",
+  services:                 "bg-sky-500",
+  pets:                     "bg-rose-400",
+  business:                 "bg-emerald-500",
+  community:                "bg-yellow-500",
+  special_offers:           "bg-rose-500",
+  education:                "bg-indigo-400",
+  health_beauty:            "bg-pink-400",
+  food_dining:              "bg-orange-400",
+  travel_stays:             "bg-cyan-500",
+  baby_kids:                "bg-pink-300",
+  sports_outdoors:          "bg-green-500",
+  electronics_tech:         "bg-slate-500",
+  home_furniture:           "bg-teal-500",
+  fashion_clothing:         "bg-fuchsia-400",
+  musical_instruments:      "bg-violet-400",
+  books_media_collectibles: "bg-amber-600",
+  tickets_vouchers:         "bg-teal-400",
+  free_giveaway:            "bg-emerald-400",
 };
 
 const DEFAULT_NOTIFY: NotifyChannel[] = ["email", "whatsapp"];
@@ -120,6 +132,8 @@ interface StepCategoryProps {
   isPopup: boolean;
 }
 
+const INITIAL_CATS = 9;
+
 function StepCategory({
   mainCategory,
   subCategory,
@@ -130,6 +144,9 @@ function StepCategory({
   isPopup,
 }: StepCategoryProps) {
   const canProceed = mainCategory !== null && subCategory !== null;
+  const [showAllCats, setShowAllCats] = useState(false);
+  const visibleCats = showAllCats ? CATEGORIES : CATEGORIES.slice(0, INITIAL_CATS);
+  const hiddenCatCount = CATEGORIES.length - INITIAL_CATS;
 
   return (
     <>
@@ -140,13 +157,18 @@ function StepCategory({
           <div className="flex flex-col items-center px-3 pt-3 pb-2 gap-3">
             <p className="text-base font-semibold text-slate-700 text-center self-center">Select a category</p>
             <div className="grid grid-cols-3 gap-2 w-full">
-              {ALERT_CONFIG.map((cat) => {
+              {visibleCats.map((cat) => {
                 const CatIcon = CATEGORY_ICON_MAP[cat.id] ?? LayoutGrid;
                 return (
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => onMainChange(cat)}
+                    onClick={() => {
+                      // Source of truth for display: CATEGORIES
+                      // Source of truth for filters:  ALERT_CONFIG (joined by id)
+                      const alertEntry = ALERT_CONFIG.find((a) => a.id === cat.id);
+                      if (alertEntry) onMainChange(alertEntry);
+                    }}
                     className="relative bg-white rounded-2xl border border-slate-300 px-2 pt-3 pb-2.5 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 active:scale-[0.97] transition-transform"
                   >
                     {/* Tiny arrow — top right */}
@@ -163,6 +185,20 @@ function StepCategory({
                 );
               })}
             </div>
+
+            {/* Show more / less pill */}
+            <button
+              type="button"
+              onClick={() => setShowAllCats((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-400 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                className={cn("size-4 transition-transform duration-200", showAllCats && "rotate-180")}>
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+              {showAllCats ? "Show less" : `Show ${hiddenCatCount} more categories`}
+            </button>
+
           </div>
         )}
 
@@ -329,6 +365,7 @@ function StepFilters({
               placeholder="Select a location"
               showRadius={false}
               trigger="link"
+              searchProvider="google"
               triggerClassName="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
             />
           </div>
@@ -565,6 +602,16 @@ export default function CreateAlertJourney({
   onComplete,
   layout = "default",
 }: CreateAlertJourneyProps) {
+  // TODO [INTEGRATION]: Auth guard — if user is not logged in, redirect to login
+  // before opening this journey. Check session on mount and abort if unauthenticated.
+
+  // TODO [INTEGRATION]: Max alerts limit — fetch user's current alert count via
+  // GET /api/alerts/count. If at limit (e.g. 10), show an upgrade/upsell prompt
+  // instead of the create flow.
+
+  // TODO [INTEGRATION]: Duplicate alert detection — after Step 1 (category +
+  // subcategory selected), check GET /api/alerts?cat=X&sub=Y to warn the user if
+  // they already have an identical or overlapping alert.
   const [step, setStep]                     = useState(1);
   const [mainCategory, setMainCategory]     = useState<MainCategory | null>(null);
   const [subCategory, setSubCategory]       = useState<SubCategory  | null>(null);

@@ -207,6 +207,39 @@ export const vehicles: MainCategory = {
       ],
     },
     {
+      id: "electric_vehicles",
+      label: "Electric Vehicles",
+      icon: "zap",
+      filters: [
+        {
+          id: "ev_type",
+          label: "Type",
+          type: "toggle",
+          options: [
+            { label: "Car",        value: "car"        },
+            { label: "Motorcycle", value: "motorcycle" },
+            { label: "Scooter",    value: "scooter"    },
+            { label: "Van",        value: "van"        },
+            { label: "Truck",      value: "truck"      },
+            { label: "Other",      value: "other"      },
+          ],
+        },
+        conditionFull,
+        {
+          id: "ev_range",
+          label: "Range",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",      value: "any"    },
+            { label: "< 150km",  value: "sub150" },
+            { label: "150–300km",value: "mid"    },
+            { label: "300km+",   value: "300up"  },
+          ],
+        },
+      ],
+    },
+    {
       id: "wanted",
       label: "Wanted",
       icon: "search",

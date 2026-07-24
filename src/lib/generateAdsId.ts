@@ -1,22 +1,24 @@
-import Counter from "@/models/counter";
+import Post from "@/models/post";
 
-export async function generateAdsId(countryCode?: string): Promise<string> {
-  // ✅ normalize & fallback
-  const code = (countryCode || "GLB").toUpperCase();
+/**
+ * Generates a unique adsId for a new Post document.
+ * Post.adsId has a unique index but no fixed format, so this produces a
+ * short random alphanumeric-free numeric code and retries on collision
+ * (extremely unlikely past 1-2 tries at any realistic listing volume).
+ *
+ * Usage: const adsId = await generateAdsId();
+ */
+export async function generateAdsId(length = 8): Promise<string> {
+  const MAX_ATTEMPTS = 5;
 
-  // ✅ atomic increment (safe for concurrency)
-  const counter = await Counter.findOneAndUpdate(
-    { _id: `postAdsId-${code}` }, // ⭐ per-country sequence
-    { $inc: { seq: 1 } },
-    {
-      new: true,
-      upsert: true,
-      setDefaultsOnInsert: true,
-    }
-  );
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const candidate = Array.from({ length }, () =>
+      Math.floor(Math.random() * 10)
+    ).join("");
 
-  // ✅ safety fallback (edge case)
-  const seq = counter?.seq ?? 1;
+    const existing = await Post.findOne({ adsId: candidate }).select("_id").lean();
+    if (!existing) return candidate;
+  }
 
-  return `${code}-${String(seq).padStart(8, "0")}`;
+  throw new Error("Failed to generate a unique adsId after several attempts.");
 }

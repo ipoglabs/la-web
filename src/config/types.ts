@@ -125,8 +125,6 @@ export interface CountryConfig {
   /** Currency symbol — e.g. "₹", "£", "S$" */
   currencySymbol: string;
 
-  /** Placeholder text shown in the location search input — e.g. "e.g. London, Manchester, Birmingham" */
-  locationPlaceholder: string;
   /**
    * Country-specific date format override.
    * If omitted, GLOBAL_CONFIG.dateFormat is used.

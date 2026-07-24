@@ -66,9 +66,9 @@ export const GLOBAL_CONFIG = {
    * Country configs can override specific stages via listingsSourceByStage.
    */
   listingsSourceByStage: {
-    dev: "mock",
-    qa: "mock",
-    staging: "mock",
+    dev: "db",
+    qa: "db",
+    staging: "db",
     prod: "db",
   } satisfies Record<AppStage, ListingsDataSource>,
 

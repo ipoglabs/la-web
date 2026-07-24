@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { laButtonVariants } from "@/components/la/la-button";
+import { ListingsLink } from "@/components/la-blocks/ListingsLink";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -196,9 +197,9 @@ export default function TutorialsPage() {
             Browse listings or post your first ad — it&apos;s completely free.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/listings" className={cn(laButtonVariants({ intent: "primary", size: "default" }))}>
+            <ListingsLink href="/listings" className={cn(laButtonVariants({ intent: "primary", size: "default" }))}>
               Browse listings
-            </Link>
+            </ListingsLink>
             <Link href="/post" className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }))}>
               Post a free ad
             </Link>

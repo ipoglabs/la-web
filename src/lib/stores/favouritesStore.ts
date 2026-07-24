@@ -9,6 +9,7 @@
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { ListingStatus } from "@/types/listing";
 
 export interface FavItem {
   id: string;
@@ -19,7 +20,7 @@ export interface FavItem {
   detailsLabel: string;
   locationLabel: string;
   postedAt: number; // unix ms — serialises cleanly to JSON
-  status?: "active" | "closed" | "off-market";
+  status?: ListingStatus;
 }
 
 interface FavouritesState {

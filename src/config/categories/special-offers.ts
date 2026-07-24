@@ -7,6 +7,8 @@ export const specialOffers: CategoryItem = {
   color: "rose",
   cardIcon: "percent-badge",
   subcategories: [
+  { id: "banking_finance", label: "Banking & Finance" },
+  { id: "travel_tourism", label: "Travel & Tourism" },
   { id: "retail_shopping", label: "Retail & Shopping" },
   { id: "food_dining", label: "Food & Dining" },
   { id: "electronics_gadgets", label: "Electronics & Gadgets" },

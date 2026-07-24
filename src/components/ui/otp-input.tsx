@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils";
 interface Props {
   error?: boolean;
   disabled?: boolean;
+  /** Number of digits to collect before firing onComplete. Default 6. */
+  length?: number;
   onComplete: (otp: string) => void;
   onErrorCleared: () => void;
 }
 
-export function OtpInput({ error = false, disabled = false, onComplete, onErrorCleared }: Props) {
+export function OtpInput({ error = false, disabled = false, length = 6, onComplete, onErrorCleared }: Props) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -30,9 +32,9 @@ export function OtpInput({ error = false, disabled = false, onComplete, onErrorC
   }, [error]);
 
   function handleChange(raw: string) {
-    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    const digits = raw.replace(/\D/g, "").slice(0, length);
     setValue(digits);
-    if (digits.length === 6) onComplete(digits);
+    if (digits.length === length) onComplete(digits);
   }
 
   return (
@@ -41,9 +43,9 @@ export function OtpInput({ error = false, disabled = false, onComplete, onErrorC
       type="text"
       inputMode="numeric"
       autoComplete="one-time-code"
-      maxLength={6}
-      placeholder="••••••"
-      aria-label="6-digit OTP code"
+      maxLength={length}
+      placeholder={"•".repeat(length)}
+      aria-label={`${length}-digit OTP code`}
       disabled={disabled}
       value={value}
       onChange={(e) => handleChange(e.target.value)}

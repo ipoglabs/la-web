@@ -36,11 +36,14 @@ export async function POST(req: Request) {
     await dbConnect();
     const body = await req.json();
 
-    // ✅ New structured fields
+    // NOTE: street1/street2/district removed from here — they were being
+    // collected and validated but AddressSchema on the real User model only
+    // defines { country, state, city, postalCode }, so they were silently
+    // dropped by Mongoose's strict mode on save. Add them back once
+    // AddressSchema is extended to include them (see the accompanying
+    // user.ts patch), or leave removed if that was leftover from an older
+    // address form.
     const address = stripEmpty({
-      street1: body.street1 ? String(body.street1).trim() : undefined,
-      street2: body.street2 ? String(body.street2).trim() : undefined,
-      district: body.district ? String(body.district).trim() : undefined,
       state: body.state ? String(body.state).trim() : undefined,
       country: body.country ? String(body.country).trim() : undefined,
       postalCode: body.postalCode ? String(body.postalCode).trim() : undefined,
@@ -74,12 +77,12 @@ export async function POST(req: Request) {
       roleTitle: body.roleTitle ? String(body.roleTitle).trim() : undefined,
       roleDescription: body.roleDescription ? String(body.roleDescription).trim() : undefined,
 
-      // ✅ Consents
+      // Consents
       isTermsAndConditionAccepted: !!body.isTermsAndConditionAccepted,
       isPrivacyAndPolicyAccepted: !!body.isPrivacyAndPolicyAccepted,
       isCookiesPolicyAccepted: !!body.isCookiesPolicyAccepted,
 
-      // ✅ Marketing
+      // Marketing
       marketingOptIn: !!body.subscribe,
     });
 
@@ -99,23 +102,30 @@ export async function POST(req: Request) {
       );
     }
 
-   const dup = await User.findOne({
-  $and: [
-    {
-      $or: [
-        { email: payload.email },
-        { primaryNumber: payload.primaryNumber },
+    // Duplicate check — now actually enforced. Previously this query ran
+    // but its result was never inspected, so registration silently fell
+    // through to User.create() regardless and relied on the unique-index
+    // error (code 11000) in the catch block to reject duplicates. That
+    // still worked, but gave a generic error message and did a wasted read
+    // on every successful registration. This makes the intent explicit.
+    const dup = await User.findOne({
+      $and: [
+        { $or: [{ email: payload.email }, { primaryNumber: payload.primaryNumber }] },
+        { accountStatus: { $nin: ["Deleted"] } },
       ],
-    },
-    {
-      accountStatus: { $nin: ["Deleted"] },
-    },
-  ],
-});
+    });
 
-    // ✅ generate incremental userId
+    if (dup) {
+      const field = dup.email === payload.email ? "email" : "phone number";
+      return NextResponse.json(
+        { error: `An account with that ${field} already exists.` },
+        { status: 409 }
+      );
+    }
+
+    // generate incremental userId
     const userId = await getNextUserId(12);
-    
+
     const passwordHash = await hash(payload.password, 10);
 
     const created = await User.create({
@@ -123,34 +133,37 @@ export async function POST(req: Request) {
       userId,
       password: passwordHash,
 
-      // ✅ Save structured address + audit only if present
+      // Save structured address + audit only if present
       ...(Object.keys(address).length ? { address } : {}),
       ...(Object.keys(audit).length ? { audit } : {}),
 
-      // ✅ status fields
+      // status fields
       accountStatus: "Pending",
       isNewUser: true,
 
-      // ✅ verification
+      // verification
+      // NOTE: hardcoding both of these to `true` at registration bypasses
+      // the OTP flow your schema is built for (see OtpSchema — code,
+      // expiresAt, attempts, lockedUntil). Confirm whether OTP verification
+      // already happens in an earlier step of this registration wizard
+      // before this route runs; if not, this marks unverified accounts as
+      // verified by default.
       isEmailVerified: true,
       isPrimaryNumberVerified: true,
-
-      // legacy field (keep for backward compat)
-      isPhoneVerified: true,
 
       provider: "credentials",
     });
 
-    // welcome email (don't await, we don't want to block the response if email fails)
-try {
-  await sendWelcomeEmail({
-    fullName: created.fullName,
-    email: created.email,
-    phone: created.primaryNumber,
-  });
-} catch (err) {
-  console.error("Welcome email failed:", err);
-}
+    // welcome email (don't block the response if it fails)
+    try {
+      await sendWelcomeEmail({
+        fullName: created.fullName,
+        email: created.email,
+        country: created.address?.country,
+      });
+    } catch (err) {
+      console.error("Welcome email failed:", err);
+    }
 
     const token = signJwt({
       userId: String(created._id),

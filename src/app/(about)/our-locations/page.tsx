@@ -3,7 +3,7 @@ import Image from "next/image";
 const COUNTRIES = [
   {
     flag: "/flags/gb.svg",
-    iso: "uk",
+    iso: "gb",
     name: "United Kingdom",
     summary:
       "Our UK base — serving England, Scotland, Wales, and Northern Ireland. Fully compliant with UK GDPR, with a small team focused on community and trust.",

@@ -38,6 +38,7 @@ import {
   MessageCircle,
   User,
   History,
+  Settings,
   Globe2,
   LogOut,
   ChevronDown,
@@ -51,12 +52,13 @@ import {
   DrawerContent,
 } from "@/components/ui/drawer";
 import { OverlayCountrySelect } from "@/components/overlay-country-select";
-
+import { useAuthStore } from "@/store/authStore";
 /* ─── menu config ────────────────────────────────────────────── */
 const NAV_ITEMS = [
   { label: "My Ads",           icon: LayoutGrid,    href: "/my-ads" },
   { label: "Chat",             icon: MessageCircle, href: "/chat" },
   { label: "Profile",          icon: User,          href: "/profile" },
+  { label: "Account Settings", icon: Settings,      href: "/account-settings" },
   { label: "Donation History", icon: History,       href: "/donation-history" },
 ] as const;
 
@@ -186,24 +188,12 @@ function MenuBody({
         <button
           type="button"
           onClick={async () => {
-            try {
-              await fetch("/api/auth/logout", {
-                method: "POST",
-                credentials: "include",
-              });
-            } catch {
-              // even if the request fails, proceed to close + redirect —
-              // user intent is to leave the logged-in view either way
-            }
-
-            // Let AppHeader's checkAuth() (and any other listeners)
-            // know the auth state changed, same pattern as login.
-            window.dispatchEvent(new Event("auth-changed"));
-
-            onClose();
-            router.push("/");
-            router.refresh();
-          }}
+  onClose();
+  await fetch("/api/auth/logout", { method: "POST" });
+  useAuthStore.getState().logout();
+  router.push("/");
+  router.refresh();
+}}
           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
         >
           <LogOut aria-hidden="true" className="size-4 shrink-0" />
@@ -311,3 +301,4 @@ export function AvatarDropdown({
     </div>
   );
 }
+

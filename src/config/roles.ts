@@ -20,7 +20,8 @@
  * and made an implicit base identity (`BASE_ROLE`) — every account is one,
  * always, with zero UI to toggle it off. The 12 remaining roles are "extra
  * hats" a user can stack on top. This directly reflects the product's own
- * framing: everyone is a seller first, other roles are what else they do.
+ * framing: everyone starts as an individual account, and the public UI only
+ * shows that fallback badge when no explicit roles have been chosen.
  * A free-text "say it in your own words" custom role (one slot, counted
  * against `MAX_ROLES_PER_ACCOUNT`) was added alongside the 12 for cases the
  * canonical list can't name precisely (e.g. "Egg Farm Owner").
@@ -55,8 +56,8 @@ export interface RoleItem {
 
 /**
  * The one identity every account has, always. Not part of `ROLES` — it
- * can't be selected or deselected, it's simply true. Rendered as the first
- * badge everywhere roles are shown. This is an account TYPE (a person, not
+ * can't be selected or deselected, it's simply true. Rendered only when no
+ * explicit roles have been chosen. This is an account TYPE (a person, not
  * a registered business) — not an activity; see `IntentId` below for why
  * someone is actually here.
  */
@@ -138,7 +139,7 @@ export const ROLES: readonly RoleItem[] = [
 export type RoleId = (typeof ROLES)[number]["id"];
 
 /** Keeps a profile's badge row readable — not a technical limit, a UX one. Applies to canonical roles + the one custom-role slot combined (the implicit `BASE_ROLE` is never counted). */
-export const MAX_ROLES_PER_ACCOUNT = 5;
+export const MAX_ROLES_PER_ACCOUNT = 3;
 
 /** Bounds for the free-text "say it in your own words" custom role. */
 export const CUSTOM_ROLE_MIN_LENGTH = 2;
@@ -153,6 +154,48 @@ export function getRoleById(id: string): RoleItem | undefined {
 
 export function getRoleLabel(id: string): string {
   return getRoleById(id)?.label ?? id;
+}
+
+/**
+ * Condensed labels for tight layouts (e.g. Register's 3-column masonry grid)
+ * where the full "X / Y" labels above wrap and crowd the card. Moved here
+ * 2026-07-15 (was local to `RoleStep.tsx`) so any consumer can opt in —
+ * Profile's `RolesEditor` still uses the full labels via `getRoleLabel`,
+ * this is purely additive.
+ */
+export const SHORT_LABELS: Partial<Record<RoleId, string>> = {
+  property_owner: "Property Owner",
+  agent_broker: "Agent",
+  skilled_worker: "Tradesperson",
+  employer_recruiter: "Recruiter",
+  dealer_reseller: "Reseller",
+  educator_coach: "Educator",
+  animal_care_provider: "Animal Care",
+};
+
+/**
+ * Condensed descriptions paired with `SHORT_LABELS` — the full descriptions
+ * above are tuned for Profile's single-column editor and read slightly long
+ * in tighter layouts. Moved here 2026-07-15 (was local to `RoleStep.tsx`).
+ */
+export const SHORT_DESCRIPTIONS: Partial<Record<RoleId, string>> = {
+  business_owner: "Shop, store, or small business",
+  property_owner: "Rent, lease, or sell property",
+  agent_broker: "Represents others for a fee",
+  service_provider: "Tutoring, consulting, coaching",
+  skilled_worker: "Plumbing, carpentry, electrical",
+  host: "Room, stay, or experience",
+  employer_recruiter: "Posts jobs for hire",
+  job_seeker: "Looking for work",
+  dealer_reseller: "Buys and resells goods",
+  educator_coach: "Teaches, tutors, or coaches",
+  community_member: "Posts for a cause or event",
+  animal_care_provider: "Cares for animals professionally",
+};
+
+/** Falls back to the full label (`getRoleLabel`) if no short version exists for this role. */
+export function getShortRoleLabel(id: RoleId): string {
+  return SHORT_LABELS[id] ?? getRoleLabel(id);
 }
 
 /**

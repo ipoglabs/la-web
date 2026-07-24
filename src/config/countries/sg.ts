@@ -22,8 +22,6 @@ export const SG_CONFIG: CountryConfig = {
   radiusUnit:     "km",
   currency:       "SGD",
   currencySymbol: "S$",
-  // sg.ts
-locationPlaceholder: "e.g. Orchard, Jurong, Tampines",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────
@@ -35,9 +33,9 @@ locationPlaceholder: "e.g. Orchard, Jurong, Tampines",
 
   // ── Listings source switch by deployment stage ───────────────────────────
   listingsSourceByStage: {
-    dev: "mock",
-    qa: "mock",
-    staging: "mock",
+    dev: "db",
+    qa: "db",
+    staging: "db",
     prod: "db",
   },
 

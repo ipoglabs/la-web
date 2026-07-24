@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
+import { toast } from "sonner";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { LaButton, LaField, LaInput, LaTextarea } from "@/components/la";
 import {
   Drawer,
   DrawerTrigger,
@@ -36,22 +38,17 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
     setOpen(false);
     setSubject("");
     setMessage("");
+    toast.success(`Message sent to ${sellerName}`);
   }
 
   const canSend = subject.trim().length > 0 && message.trim().length > 0;
 
   // ── Trigger ──────────────────────────────────────────────────────────────
   const trigger = (
-    <button
-      type="button"
-      className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
-        <path d="M4.913 2.658c2.075-.27 4.19-.408 6.337-.408 2.147 0 4.262.139 6.337.408 1.922.25 3.291 1.861 3.405 3.727a4.403 4.403 0 0 0-1.032-.211 50.89 50.89 0 0 0-8.42 0c-2.358.196-4.04 2.19-4.04 4.434v4.286a4.47 4.47 0 0 0 2.433 3.984L7.28 21.53A.75.75 0 0 1 6 21v-4.03a48.527 48.527 0 0 1-1.087-.128C2.905 16.58 1.5 14.833 1.5 12.862V6.638c0-1.97 1.405-3.718 3.413-3.979Z" />
-        <path d="M15.75 7.5c-1.376 0-2.739.057-4.086.169C10.124 7.797 9 9.103 9 10.609v4.285c0 1.507 1.128 2.814 2.67 2.94 1.243.102 2.5.157 3.768.165l2.782 2.781a.75.75 0 0 0 1.28-.53v-2.39l.33-.026c1.542-.125 2.67-1.433 2.67-2.94v-4.286c0-1.505-1.105-2.8-2.63-2.94A49.4 49.4 0 0 0 15.75 7.5Z" />
-      </svg>
+    <LaButton intent="primary" size="big" className="w-full">
+      <MessageCircle className="size-4" />
       Send a message
-    </button>
+    </LaButton>
   );
 
   // ── Form body ─────────────────────────────────────────────────────────────
@@ -64,35 +61,34 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
       </div>
 
       {/* Subject */}
-      <div>
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-          Subject
-        </label>
-        <input
+      <LaField name="message-subject" label="Subject">
+        <LaInput
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
           placeholder="e.g. Enquiry about your property listing"
         />
-      </div>
+      </LaField>
 
       {/* Message */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+          <label htmlFor="message-body" className="block text-sm font-semibold text-slate-500 uppercase tracking-wide">
             Message
           </label>
-          <span className={`text-[11px] tabular-nums ${message.length > MAX_CHARS * 0.9 ? "text-rose-500" : "text-slate-400"}`}>
+          <span
+            aria-live="polite"
+            className={`text-sm tabular-nums ${message.length > MAX_CHARS * 0.9 ? "text-rose-500" : "text-slate-500"}`}
+          >
             {message.length}/{MAX_CHARS}
           </span>
         </div>
-        <textarea
+        <LaTextarea
+          id="message-body"
           value={message}
           onChange={(e) => {
             if (e.target.value.length <= MAX_CHARS) setMessage(e.target.value);
           }}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
-          placeholder={`Hi ${sellerName}, I'm interested in one of your listings…`}
+          placeholder={`Hi ${sellerName}, I'm interested in one of your listings...`}
           rows={5}
         />
       </div>
@@ -102,37 +98,21 @@ export function MessageResponsiveDialog({ sellerName = "Seller" }: Props) {
   // ── Footer ────────────────────────────────────────────────────────────────
   const footer = (
     <div className="px-5 pb-5 pt-3 flex gap-3">
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        className="flex-none px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:border-slate-400 hover:text-slate-800 transition-colors"
-      >
+      <LaButton intent="outline" size="big" className="flex-none" onClick={() => setOpen(false)}>
         Cancel
-      </button>
-      <button
-        type="button"
-        onClick={handleSend}
-        disabled={!canSend}
-        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-4">
-          <path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405Z" />
-        </svg>
+      </LaButton>
+      <LaButton intent="primary" size="big" className="flex-1" onClick={handleSend} disabled={!canSend}>
+        <Send className="size-4" />
         Send message
-      </button>
+      </LaButton>
     </div>
   );
 
   // ── Close button ──────────────────────────────────────────────────────────
   const closeBtn = (
-    <button
-      type="button"
-      onClick={() => setOpen(false)}
-      className="shrink-0 size-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-    >
-      <X className="size-4 text-slate-500" />
-      <span className="sr-only">Close</span>
-    </button>
+    <LaButton intent="ghost" size="compact" iconOnly onClick={() => setOpen(false)} aria-label="Close">
+      <X className="size-4" />
+    </LaButton>
   );
 
   if (isDesktop) {

@@ -30,6 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# ad hoc build/type-check output redirected to the repo root during debugging
+# (e.g. `npm run build > build-out.txt`) — never commit these
+/build-*.txt
+/tsc-*.txt
+
 # env files (can opt-in for committing if needed)
 .env*
 
@@ -39,5 +44,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-/src/generated/prisma

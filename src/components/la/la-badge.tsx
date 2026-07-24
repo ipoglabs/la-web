@@ -34,8 +34,8 @@ const badgeVariants = cva(
         outline: "border bg-transparent",
       },
       size: {
-        sm: "px-2 py-0.5 text-[10px]",
-        md: "px-2.5 py-1 text-xs",
+        sm: "px-2   py-0.5 text-sm",
+        md: "px-2.5 py-1   text-sm",
       },
     },
     // Compound: intent × variant — change colors here when retheming

@@ -72,3 +72,7 @@ export { default as LaTokenRow } from "./la-token-row";
 // Textarea
 export { LaTextarea } from "./la-textarea";
 export type { LaTextareaProps, LaTextareaStatus } from "./la-textarea";
+
+// Switch
+export { LaSwitch } from "./la-switch";
+export type { LaSwitchProps } from "./la-switch";

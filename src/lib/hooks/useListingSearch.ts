@@ -60,7 +60,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { MockListing } from "@/lib/mock/mock-listing-schema";
 import { resolveListings } from "@/lib/mock/listing-map";
+import { getListingsForCity } from "@/lib/mock/country-map";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
+import type { CountryCode } from "@/config";
+import type { ListingsApiResponse } from "@/types/listings-api";
 
 export const PAGE_SIZE = 12;
 
@@ -68,6 +71,7 @@ export const PAGE_SIZE = 12;
 
 /** All URL params that together define a listing search */
 export interface ListingSearchParams {
+  countryCode: CountryCode;
   cat: string;
   sub: string;
   /** Keyword search term from search bar */
@@ -86,6 +90,12 @@ export interface ListingSearchParams {
   page: number;
   /** Active filter values from useListingFilters.filterValues */
   filterValues: Record<string, string[]>;
+  /**
+   * Free-text location label from LocationPicker or a footer "Top Locations"
+   * link (e.g. "London"). When `cat` is empty, this drives a cross-category
+   * city browse via getListingsForCity() instead of an empty result set.
+   */
+  loc: string;
 }
 
 export interface UseListingSearchResult {
@@ -105,6 +115,21 @@ export interface UseListingSearchResult {
   cachedPages: Set<number>;
 }
 
+async function fetchCountryListings(
+  cat: string,
+  countryCode: CountryCode,
+  sub?: string,
+): Promise<MockListing[]> {
+  const params = new URLSearchParams({ country: countryCode });
+  if (sub) params.set("sub", sub);
+
+  const res = await fetch(`/api/listings/${cat}?${params.toString()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`listings_api_${res.status}`);
+
+  const data = (await res.json()) as ListingsApiResponse;
+  return data.items;
+}
+
 // ── Mock resolver — TODO [INTEGRATION]: replace with real API call ─────────────
 // Real API uses ALL params (keyword, location, filters, sort, page).
 // Mock only uses cat + sub — all other params are ignored.
@@ -118,7 +143,7 @@ const MOCK_DELAY_MS = 700;
 // ── Loading context message ───────────────────────────────────────────────────
 
 function buildLoadingContext(params: ListingSearchParams): string {
-  const { cat, sub, q, lat, page } = params;
+  const { cat, sub, q, lat, page, loc } = params;
   const catLabel = cat ? (CATEGORY_LABELS[cat] ?? cat) : "";
   const subLabel = (cat && sub) ? (SUBCATEGORY_LABELS[cat]?.[sub] ?? sub) : "";
   const scope    = [catLabel, subLabel].filter(Boolean).join(" · ");
@@ -126,6 +151,7 @@ function buildLoadingContext(params: ListingSearchParams): string {
   if (q && lat) return `Searching "${q}" near your location${scope ? ` in ${scope}` : ""}…`;
   if (q)        return `Searching "${q}"${scope ? ` in ${scope}` : ""}…`;
   if (lat)      return `Finding results near your location${scope ? ` in ${scope}` : ""}…`;
+  if (!cat && loc) return `Loading listings in ${loc}…`;
   if (page > 1) return `Loading page ${page}${scope ? ` of ${scope}` : ""}…`;
   if (scope)    return `Loading ${scope}…`;
   return "Loading results…";
@@ -145,12 +171,12 @@ function serializeFilterValues(fv: Record<string, string[]>): string {
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useListingSearch(params: ListingSearchParams): UseListingSearchResult {
-  const { cat, sub, q, lat, lng, radius, unit, sort, page, filterValues } = params;
+  const { countryCode, cat, sub, q, lat, lng, radius, unit, sort, page, filterValues, loc } = params;
 
   // Stable string encoding all non-page search dimensions.
   // Changes here invalidate the page cache and trigger a fresh load.
   const filterKey = serializeFilterValues(filterValues);
-  const cacheKey  = `${cat}|${sub}|${q}|${lat}|${lng}|${radius}|${unit}|${sort}|${filterKey}`;
+  const cacheKey  = `${countryCode}|${cat}|${sub}|${q}|${lat}|${lng}|${radius}|${unit}|${sort}|${filterKey}|${loc}`;
 
   // ── Page cache — persists across renders, not a state variable ─────────────
   const pageCache     = useRef<Map<number, MockListing[]>>(new Map());
@@ -207,16 +233,59 @@ export function useListingSearch(params: ListingSearchParams): UseListingSearchR
     const timer = setTimeout(() => {
       if (cancelled) return;
 
-      const allResults = resolveListingsMock(params);
-      allResultsRef.current = allResults;
-      const total    = allResults.length;
-      const totalPg  = Math.max(1, Math.ceil(total / PAGE_SIZE));
-      const clamped  = Math.min(page, totalPg);
+      if (!cat) {
+        // No category — if a location label is set (e.g. footer "Top Locations"
+        // link, or a LocationPicker pick with no category chosen), fall back to
+        // the cross-category city browse resolver. No API route exists for
+        // category-less browsing, so this resolves straight from mock data.
+        if (loc) {
+          const cityItems = getListingsForCity(countryCode, loc);
+          allResultsRef.current = cityItems;
+          const total = cityItems.length;
+          const totalPg = Math.max(1, Math.ceil(total / PAGE_SIZE));
+          const clamped = Math.min(page, totalPg);
 
-      setTotalCount(total);
-      prefetchWindow(clamped, allResults);        // cache page ±3
-      setItems(pageCache.current.get(clamped) ?? []); // show current page
-      setIsLoading(false);
+          setTotalCount(total);
+          prefetchWindow(clamped, cityItems);
+          setItems(pageCache.current.get(clamped) ?? []);
+          setIsLoading(false);
+          return;
+        }
+
+        allResultsRef.current = [];
+        setTotalCount(0);
+        setItems([]);
+        setIsLoading(false);
+        return;
+      }
+
+      fetchCountryListings(cat, countryCode, sub || undefined)
+        .then((apiItems) => {
+          if (cancelled) return;
+          allResultsRef.current = apiItems;
+          const total = apiItems.length;
+          const totalPg = Math.max(1, Math.ceil(total / PAGE_SIZE));
+          const clamped = Math.min(page, totalPg);
+
+          setTotalCount(total);
+          prefetchWindow(clamped, apiItems);
+          setItems(pageCache.current.get(clamped) ?? []);
+          setIsLoading(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          // Network/API failure fallback — generic (non-country-aware) mock data
+          const fallback = resolveListingsMock(params);
+          allResultsRef.current = fallback;
+          const total = fallback.length;
+          const totalPg = Math.max(1, Math.ceil(total / PAGE_SIZE));
+          const clamped = Math.min(page, totalPg);
+
+          setTotalCount(total);
+          prefetchWindow(clamped, fallback);
+          setItems(pageCache.current.get(clamped) ?? []);
+          setIsLoading(false);
+        });
     }, MOCK_DELAY_MS);
 
     return () => {

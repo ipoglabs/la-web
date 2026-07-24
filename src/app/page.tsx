@@ -2,14 +2,15 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { History } from "lucide-react";
 import WhyLokalads from "@/components/la-blocks/WhyLokalads";
 import CategoryGrid from "@/components/la-blocks/CategoryGrid";
 import { CreateAlertBanner, CreateAlertDialog } from "@/components/create-alert";
 import { CATEGORIES } from "@/config/categories";
-import FeaturedListings from "@/components/la-blocks/FeaturedListings";
-import RecentSearches from "@/components/la-blocks/RecentSearches";
-import { getFeaturedForMarket } from "@/lib/mock/country-map";
-import { RECENT_SEARCHES } from "@/lib/mock/mock-searches";
+import FeaturedListings, { type FeaturedListingItem } from "@/components/la-blocks/FeaturedListings";
+import RecentSearches, { type RecentSearchItem } from "@/components/la-blocks/RecentSearches";
+import { getFeaturedListings } from "@/app/actions/getFeaturedListings";
+import { getPopularSearches } from "@/app/actions/getPopularSearches";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { LaSearchBar, type SearchQuery } from "@/components/la-search-bar";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
@@ -27,22 +28,37 @@ export default function LandingPage() {
   // API shape expected: GET /api/categories?country={countryCode} → CategoryItem[]
   // The API can also drive featured/trending ordering per country dynamically.
 
-  // Homepage "Featured Listings" — cross-category mix, scoped to the active market.
-  // getFeaturedForMarket() replaced the old hand-curated RECENT_POSTS/TOP_PICKS
-  // constants (lib/mock/mock-listings.ts), which were hardcoded to Indian cities
-  // and never varied by country — every market now sees its own listings here.
-  // TODO [INTEGRATION]: replace with GET /api/v1/listings/featured?country={isoCode}&section=recent|top-picks
-  // See the doc comment on getFeaturedForMarket() in lib/mock/country-map.ts for
-  // exactly what the real "recent" vs "top picks" ranking logic should be —
-  // this mock version's "one item per category" curation must NOT be ported as-is.
-  const recentPosts = React.useMemo(
-    () => getFeaturedForMarket(countryCode, 0, 10),
-    [countryCode],
-  );
-  const topPicks = React.useMemo(
-    () => getFeaturedForMarket(countryCode, 1, 10),
-    [countryCode],
-  );
+  // Homepage "Featured Listings" — real Post documents, scoped to the active
+  // market (see getFeaturedListings.ts). Client Component, so this is a
+  // fetch-on-mount rather than a direct server call — same pattern as
+  // ChitChat/chat's other client-side data fetches this app already uses.
+  // Real post volume is currently tiny (no moderation step exists yet, and
+  // few posts have been created) — both lists render empty rather than
+  // falling back to fake mock inventory; see the section guards below.
+  const [recentPosts, setRecentPosts] = React.useState<FeaturedListingItem[]>([]);
+  const [topPicks, setTopPicks] = React.useState<FeaturedListingItem[]>([]);
+  const [popularSearches, setPopularSearches] = React.useState<RecentSearchItem[]>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    getFeaturedListings(countryCode, "recent", 10)
+      .then((items) => { if (!cancelled) setRecentPosts(items); })
+      .catch(() => { if (!cancelled) setRecentPosts([]); });
+    getFeaturedListings(countryCode, "top-picks", 10)
+      .then((items) => { if (!cancelled) setTopPicks(items); })
+      .catch(() => { if (!cancelled) setTopPicks([]); });
+    // "Popular Searches" — derived from real post volume (no search-query
+    // logging exists yet), see getPopularSearches.ts. Icon is attached here
+    // rather than returned from the server action since RecentSearchItem's
+    // icon is a React node, not a value a server action can serialize.
+    getPopularSearches(countryCode, 9)
+      .then((items) => {
+        if (cancelled) return;
+        setPopularSearches(items.map((item) => ({ ...item, icon: <History className="h-3.5 w-3.5" /> })));
+      })
+      .catch(() => { if (!cancelled) setPopularSearches([]); });
+    return () => { cancelled = true; };
+  }, [countryCode]);
 
   function handleSearch(q: SearchQuery) {
     const params = new URLSearchParams();
@@ -92,6 +108,7 @@ export default function LandingPage() {
               onChange={setPickedLocation}
               countryScope={countryConfig.locationScope}
               radiusUnit={countryConfig.radiusUnit}
+              searchProvider="google"
               showRadius
             />
             <button
@@ -125,34 +142,38 @@ export default function LandingPage() {
         </div>
         
 
-        {/* Section: Recent Searches */}
-        {/* TODO: replace RECENT_SEARCHES with an API-driven "popular/trending" endpoint per country. */}
+        {/* Section: Popular Searches — real post volume, see getPopularSearches.ts */}
         <RecentSearches
           title="Popular Searches"
-          items={RECENT_SEARCHES}
+          items={popularSearches}
           seeAllHref={`/${countryCode}/listings?view=popular-searches`}
           className="bg-amber-100"
         />
 
 
         {/* Section: Featured Listings */}
-        <FeaturedListings 
-          title="Recent Posts" 
-          seeAllHref={`/${countryCode}/listings`}
-          items={recentPosts} 
-          showLocation={false} 
-          showTime={false} 
-          showDetails={false}
-          titleLines={3} 
+        {recentPosts.length > 0 && (
+          <FeaturedListings
+            title="Recent Posts"
+            seeAllHref={`/${countryCode}/listings`}
+            items={recentPosts}
+            showLocation={false}
+            showTime={false}
+            showDetails={false}
+            titleLines={3}
           />
-        <FeaturedListings 
-          title="Top Picks for You" 
-          seeAllHref={`/${countryCode}/listings?filter=top-picks`}
-          items={topPicks} 
-          showLocation={false} 
-          showTime={false} 
-          showDetails={false} 
-          titleLines={3} />
+        )}
+        {topPicks.length > 0 && (
+          <FeaturedListings
+            title="Top Picks for You"
+            seeAllHref={`/${countryCode}/listings?filter=top-picks`}
+            items={topPicks}
+            showLocation={false}
+            showTime={false}
+            showDetails={false}
+            titleLines={3}
+          />
+        )}
         
         {/* Section: Create Alert */}
         <div className="container-app mb-5">

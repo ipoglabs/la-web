@@ -311,7 +311,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
         )}
 
         {errorMessage && (
-          <p id={errorId} role="alert" className="mt-1.5 text-xs text-red-500">
+          <p id={errorId} role="alert" className="mt-1.5 text-sm text-red-600">
             {errorMessage}
           </p>
         )}

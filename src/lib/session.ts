@@ -1,33 +1,60 @@
+import { cookies } from "next/headers";
 import type { AuthUser } from "@/types/auth";
-import { getCurrentUser } from "@/app/actions/getCurrentUser";
+import { verifyToken } from "@/lib/auth";
+import { isSessionRevoked } from "@/lib/userSession";
+import dbConnect from "@/lib/db";
+import User from "@/models/user";
 
-/** Derive up-to-2-char initials from a display name (mirrors la-avatar.tsx) */
-function getInitials(name?: string): string {
-  if (!name) return "";
-  const parts = name.trim().split(/\s+/);
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 /**
- * Returns the authenticated user from the real session (JWT `session` cookie,
- * verified + looked up via getCurrentUser()), mapped to the shape AppHeader /
- * AvatarDropdown expect. Returns null if not logged in.
- *
- * This function is safe to call from Server Components and layouts.
+ * Returns the authenticated user from the real session cookie, or null
+ * if not logged in. Safe to call from Server Components and root layouts.
  */
 export async function getSession(): Promise<AuthUser | null> {
-  const user = await getCurrentUser();
-  if (!user) return null;
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get("session")?.value || cookieStore.get("token")?.value;
 
-  const displayName = user.fullName || user.username || "Member";
+  if (!token) return null;
+
+  const payload = verifyToken(token);
+  if (!payload) return null;
+
+  const userId = payload.userId || payload.id;
+  if (!userId) return null;
+
+  await dbConnect();
+
+  if (await isSessionRevoked(payload.sid, userId)) return null;
+
+  const user: any = await User.findById(userId)
+    .select("fullName image role isDeleted isSuspended accountStatus")
+    .lean();
+
+  if (
+    !user ||
+    user.isDeleted === true ||
+    user.isSuspended === true ||
+    user.accountStatus === "Suspended" ||
+    user.accountStatus === "Deleted"
+  ) {
+    return null;
+  }
+
+  const name = user.fullName || "Member";
 
   return {
-    id: user.id,
-    name: displayName,
-    initials: getInitials(displayName) || "?",
+    id: String(user._id),
+    name,
+    initials: getInitials(name),
     avatarUrl: user.image || undefined,
     role: user.role === "admin" ? "admin" : "member",
     status: "online",
-  };
+  } satisfies AuthUser;
 }

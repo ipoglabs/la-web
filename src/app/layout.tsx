@@ -3,7 +3,12 @@ import localFont from "next/font/local";
 import { cookies, headers } from "next/headers";
 import "./globals.css";
 import { COUNTRY_COOKIE, BLOCKED_COOKIE, isAllowedCountry } from "@/lib/country-context";
-import { getConfigByIso } from "@/config";
+import { getConfigByIso, COUNTRY_CONFIGS } from "@/config";
+import type { CountryCode } from "@/config/types";
+import { CATEGORY_LABELS } from "@/lib/category-map";
+import { TOP_LOCATIONS_BY_COUNTRY } from "@/lib/mock/footer-locations";
+import type { NavLink } from "@/components/la-blocks/AppFooter";
+import { SITE_URL } from "@/lib/constants";
 import { CountryProvider } from "@/components/country/CountryProvider";
 import { CountryDetector } from "@/components/country/CountryDetector";
 import { OverlayCountrySelect } from "@/components/overlay-country-select";
@@ -13,32 +18,33 @@ import AppFooter from "@/components/la-blocks/AppFooter";
 import { getSession } from "@/lib/session";
 import { BrowserGuard } from "@/components/browser-guard/BrowserGuard";
 
-const popularCategories = [
-  // TODO(content): Drive these from COUNTRY_CONFIGS.enabledCategories per active country
-  // rather than a hardcoded list. In the interim these are India-defaults.
-  { label: "Property", href: "/listing?cat=property" },
-  { label: "Jobs", href: "/listing?cat=jobs" },
-  { label: "For Sale", href: "/listing?cat=for-sale" },
-  { label: "Motors", href: "/listing?cat=motors" },
-  { label: "Services", href: "/listing?cat=services" },
-];
+/**
+ * Footer nav content is derived per-country from real config (enabledCategories)
+ * and mock data (footer-locations.ts) — no hardcoded India-only lists.
+ * TODO [INTEGRATION]: once a real "top categories/locations by traffic" API
+ * exists, replace these derivations with a server-fetched call; the shape
+ * (NavLink[]) is designed to stay the same either way.
+ */
+function getPopularCategories(countryCode: CountryCode): NavLink[] {
+  const enabled = COUNTRY_CONFIGS[countryCode].enabledCategories;
+  return enabled.slice(0, 5).map((id) => ({
+    label: CATEGORY_LABELS[id] ?? id,
+    href: `/${countryCode}/listings?cat=${id}`,
+  }));
+}
 
-const topLocations = [
-  // TODO(content): Replace with country-appropriate top locations.
-  // India: Bengaluru, Mumbai, Delhi, Chennai, Hyderabad
-  // UK: London, Manchester, Birmingham, Leeds, Glasgow
-  // SG: Singapore (single city-state — remove picker entirely or use neighbourhoods)
-  { label: "Bengaluru", href: "/listing?loc=bengaluru" },
-  { label: "Mumbai", href: "/listing?loc=mumbai" },
-  { label: "Delhi", href: "/listing?loc=delhi" },
-  { label: "Chennai", href: "/listing?loc=chennai" },
-  { label: "Hyderabad", href: "/listing?loc=hyderabad" },
-];
+function getTopLocations(countryCode: CountryCode): NavLink[] {
+  const locations = TOP_LOCATIONS_BY_COUNTRY[countryCode] ?? [];
+  return locations.map((loc) => ({
+    label: loc.label,
+    href: `/${countryCode}/listings?loc=${loc.slug}`,
+  }));
+}
 
 const inter = localFont({
   src: [
-    { path: "../../public/assets/fonts/inter/InterVariable.woff2", style: "normal" },
-    { path: "../../public/assets/fonts/inter/InterVariable-Italic.woff2", style: "italic" },
+    { path: "../../public/assets/fonts/inter/InterVariable.woff2", weight: "100 900", style: "normal" },
+    { path: "../../public/assets/fonts/inter/InterVariable-Italic.woff2", weight: "100 900", style: "italic" },
   ],
   variable: "--font-inter",
   display: "swap",
@@ -70,8 +76,18 @@ const interDisplay = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "poc-next",
-  description: "UI/UX playground — components and experiments",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "LokalAds — Buy & Sell Locally",
+    template: "%s | LokalAds",
+  },
+  description: "The classifieds marketplace for India, United Kingdom, and Singapore.",
+  formatDetection: {
+    telephone: false,
+    date: false,
+    email: false,
+    address: false,
+  },
 };
 
 export default async function RootLayout({
@@ -80,7 +96,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const reqHeaders = await headers();
-  const isBareLayout = reqHeaders.get("x-bare-layout") === "1";
+  const isBareLayout   = reqHeaders.get("x-bare-layout")   === "1";
 
   // Bare routes (/unsupported) skip the full app shell entirely.
   // No country detection, no header/footer — just the page content.
@@ -96,13 +112,21 @@ export default async function RootLayout({
   }
 
   const jar = await cookies();
-  const raw         = jar.get(COUNTRY_COOKIE)?.value ?? "";
+  // Country-prefixed URLs (/in/, /gb/, /sg/) set this header in middleware —
+  // it always wins over the cookie so the very first server render already
+  // reflects the URL's country (no flash of the wrong country on hard nav).
+  const urlCountryIso = reqHeaders.get("x-url-country") ?? "";
+  const raw         = urlCountryIso || (jar.get(COUNTRY_COOKIE)?.value ?? "");
   const blockedCode = jar.get(BLOCKED_COOKIE)?.value ?? "";
   const allowed     = isAllowedCountry(raw);
   const countryEntry = allowed ? getConfigByIso(raw) : null;
   const countryCode  = countryEntry?.code ?? "in";
   const countryLabel = countryEntry?.config.displayName ?? "";
   const user = await getSession();
+
+  // Footer nav content — resolved per the active country, not hardcoded.
+  const popularCategories = getPopularCategories(countryCode);
+  const topLocations = getTopLocations(countryCode);
 
   return (
     <html
@@ -115,17 +139,20 @@ export default async function RootLayout({
             <CountryProvider country={raw}>
 
               <div className="min-h-screen flex flex-col">
-                <AppHeader variant="default" user={user} />
+                {/* No variant prop — both self-derive it from the live
+                    pathname (see AppHeader.tsx / AppFooter.tsx), so the
+                    simple/default switch is correct on soft navigation too,
+                    not just on the first server-rendered request. */}
+                <AppHeader user={user} />
                 <main className="flex-1">{children}</main>
                 <AppFooter
                   countryCode={countryCode}
                   countryLabel={countryLabel}
-                  variant="default"
                   popularCategories={popularCategories}
                   topLocations={topLocations}
                 />
               </div>
-              
+
               <Toaster />
             </CountryProvider>
           ) : blockedCode ? (

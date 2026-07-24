@@ -48,7 +48,8 @@ export default function RelativeDateBlockPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Relative Date</h1>
           <p className="text-sm text-muted-foreground">
             Click any label to toggle between relative time and exact date.
-            Click again to revert.
+            Click again to revert. Use <code className="text-slate-700">relativeStyle</code> to choose
+            between the compact form (&quot;2w&quot;) and the spelled-out form (&quot;2 weeks ago&quot;).
           </p>
         </div>
 
@@ -103,9 +104,51 @@ export default function RelativeDateBlockPage() {
           <Row label="3 months (90 days)"><LaRelativeDate value={NOW - 90 * D} /></Row>
         </Section>
 
-        {/* Use Case 5 — Exact date & format options */}
+        {/* Use Case 5 — relativeStyle: short vs long */}
         <Section
-          title="Use Case 5 — Exact date & format variants"
+          title="Use Case 5 — relativeStyle: short vs long"
+          description='Pass relativeStyle="long" for spelled-out labels (e.g. reviews, activity feeds). Default is "short" (e.g. thumbnail cards).'
+        >
+          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <span>Elapsed</span>
+            <span>short (default)</span>
+            <span>long</span>
+          </div>
+          <Row label="1 minute">
+            <div className="flex items-center gap-6">
+              <LaRelativeDate value={NOW - 1 * MIN} relativeStyle="short" />
+              <LaRelativeDate value={NOW - 1 * MIN} relativeStyle="long" />
+            </div>
+          </Row>
+          <Row label="1 hour">
+            <div className="flex items-center gap-6">
+              <LaRelativeDate value={NOW - 1 * H} relativeStyle="short" />
+              <LaRelativeDate value={NOW - 1 * H} relativeStyle="long" />
+            </div>
+          </Row>
+          <Row label="1 day">
+            <div className="flex items-center gap-6">
+              <LaRelativeDate value={NOW - 1 * D} relativeStyle="short" />
+              <LaRelativeDate value={NOW - 1 * D} relativeStyle="long" />
+            </div>
+          </Row>
+          <Row label="2 weeks">
+            <div className="flex items-center gap-6">
+              <LaRelativeDate value={NOW - 14 * D} relativeStyle="short" />
+              <LaRelativeDate value={NOW - 14 * D} relativeStyle="long" />
+            </div>
+          </Row>
+          <Row label="2 months">
+            <div className="flex items-center gap-6">
+              <LaRelativeDate value={NOW - 60 * D} relativeStyle="short" />
+              <LaRelativeDate value={NOW - 60 * D} relativeStyle="long" />
+            </div>
+          </Row>
+        </Section>
+
+        {/* Use Case 6 — Exact date & format options */}
+        <Section
+          title="Use Case 6 — Exact date & format variants"
           description="Values older than 91 days always show exact date. Pass dateFormatOptions to customise the format."
         >
           <Row label='Default — { month: &quot;short&quot;, day: &quot;2-digit&quot;, year: &quot;numeric&quot; }'>

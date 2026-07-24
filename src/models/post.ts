@@ -14,6 +14,15 @@ export interface IPost {
   category: string;
   subcategory: string;
 
+  /**
+   * Market this post belongs to (lowercase ISO code, e.g. "in" | "gb" | "sg").
+   * Set from the country cookie at creation time (see app/actions/addPost.ts).
+   * Optional because posts created before this field existed have none — the
+   * public listings read paths (getFeaturedListings, /api/listings/[category])
+   * treat a missing country as visible in every market rather than nowhere.
+   */
+  country?: string;
+
   /** NEW: owner link (for "My Ads") */
   ownerId?: mongoose.Types.ObjectId;
   adsId?: string;
@@ -187,6 +196,19 @@ export interface IPost {
   // Service → Wanted
   urgency?: string;
 
+  /** ===== Moderation ===== */
+  reported?: boolean;
+  reports?: {
+    reason?: string;
+    by?: mongoose.Types.ObjectId;
+    at?: Date;
+  }[];
+  reportedAt?: Date;
+  reportedBy?: mongoose.Types.ObjectId;
+  isSuspended?: boolean;
+  suspendedAt?: Date;
+  suspendedBy?: mongoose.Types.ObjectId;
+
   /** timestamps (added by Mongoose) */
   createdAt?: Date;
   updatedAt?: Date;
@@ -201,6 +223,7 @@ const PostSchema = new Schema<IPost>(
     images: { type: [String], default: [] },
     category: { type: String, required: true, index: true },
     subcategory: { type: String, required: true, index: true },
+    country: { type: String, lowercase: true, trim: true, index: true },
 
     /** NEW: owner & lifecycle */
     ownerId: { type: Schema.Types.ObjectId, ref: "User", index: true },

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Autocomplete, useLoadScript } from "@react-google-maps/api";
 import { toast } from "sonner";
 
-import LocationPickerMap from "@/app/components/LocationPickerMap";
+import LocationPickerMap from "@/components/LocationPickerMap";
 import PostFooter from "../components/PostFooter";
 import PostHeader from "../components/PostHeader";
 import PageHeader from "../components/PageHeader";

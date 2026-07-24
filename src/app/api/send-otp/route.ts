@@ -1,29 +1,23 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/config/database";
-import { getSession } from "@/lib/auth";
 import { sendOtpService } from "@/lib/otpService";
 
 export async function POST(req: Request) {
   try {
-    await connectDB();
+    const { email } = await req.json();
 
-    const body = await req.json();
+    const trimmed = String(email || "").trim().toLowerCase();
+    if (!trimmed) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
 
-    const session = await getSession();
-
-    const userId = session?.userId; // optional for register
-
-    await sendOtpService({
-      userId,
-      channel: body.channel || "email",
-      value: body.value || body.email,
-    });
+    await sendOtpService({ channel: "email", value: trimmed });
 
     return NextResponse.json({ success: true });
-  } catch (e: any) {
+  } catch (err: any) {
+    console.error("send-otp error:", err);
     return NextResponse.json(
-      { error: e.message || "Failed to send OTP" },
-      { status: 400 }
+      { error: err?.message || "Failed to send OTP" },
+      { status: 500 }
     );
   }
 }

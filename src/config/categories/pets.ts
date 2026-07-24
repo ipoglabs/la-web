@@ -9,7 +9,7 @@ export const pets: CategoryItem = {
   subcategories: [
   { id: "for_sale", label: "For Sale" },
   { id: "adoption", label: "Adoption" },
-  { id: "pet_care", label: "Pet Care" },
+  { id: "service", label: "Pet Care" },
   { id: "accessories", label: "Accessories" },
   { id: "lost_found", label: "Lost & Found" },
   { id: "wanted", label: "Wanted" },

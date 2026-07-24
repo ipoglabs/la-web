@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation'
 import QRCode from 'qrcode'
 import Script from 'next/script'
 import { useDonationStore } from '@/app/store/donationStore'
-import StripeProvider from '@/app/components/StripeProvider'
-import CheckoutForm from '@/app/components/CheckoutForm'
+import StripeProvider from '@/components/StripeProvider'
+import CheckoutForm from '@/components/CheckoutForm'
 import { cn } from '@/lib/utils'
-import WalletPayButton from '@/app/components/WalletPayButton'
-import RazorpayCheckoutButton from '@/app/components/Razorpaycheckoutbutton'
+import WalletPayButton from '@/components/WalletPayButton'
+import RazorpayCheckoutButton from '@/components/Razorpaycheckoutbutton'
 
 // ─── Step Progress Bar ────────────────────────────────────────────────────────
 const StepProgress = ({ step }: { step: number }) => {

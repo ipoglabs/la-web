@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { CategoryItem } from "@/config/categories";
 import { resolveCardColor, resolveCardIcon } from "@/config/categories/visuals";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
+import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { cn } from "@/lib/utils";
 
 const VISIBLE_SUBS = 6;
@@ -19,6 +20,7 @@ const VISIBLE_SUBS = 6;
 // ─── CategoryCard ─────────────────────────────────────────────────────────────
 
 function CategoryCard({ category }: { category: CategoryItem }) {
+  const { countryCode } = useCountryConfig();
   const [expanded, setExpanded] = useState(false);
   const subs = category.subcategories;
   const visible = expanded ? subs : subs.slice(0, VISIBLE_SUBS);
@@ -51,7 +53,7 @@ function CategoryCard({ category }: { category: CategoryItem }) {
         {visible.map((sub) => (
           <li key={sub.id} className="py-px">
             <Link
-              href={`/listing?cat=${category.id}&sub=${sub.id}`}
+              href={`/${countryCode}/listings?cat=${category.id}&sub=${sub.id}`}
               className="flex items-center justify-between px-3 py-1 text-sm text-slate-900 hover:font-semibold hover:text-emerald-800 hover:bg-emerald-100 transition-colors group rounded-md"
             >
               <span className="truncate">{sub.label}</span>
@@ -76,7 +78,7 @@ function CategoryCard({ category }: { category: CategoryItem }) {
           </button>
         )}
         <Link
-          href={`/listing?cat=${category.id}`}
+          href={`/${countryCode}/listings?cat=${category.id}`}
           className={cn(
             "flex items-center justify-end gap-0.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-stone-100 transition-colors",
             !hasMore && "flex-1",

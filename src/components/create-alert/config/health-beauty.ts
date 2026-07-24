@@ -10,7 +10,7 @@ export const healthBeauty: MainCategory = {
   subcategories: [
     {
       id: "gyms_fitness",
-      label: "Gyms & Fitness",
+      label: "Fitness Classes & Training",
       icon: "activity",
       filters: [
         {
@@ -112,6 +112,36 @@ export const healthBeauty: MainCategory = {
             { label: "Any",  value: "any"  },
             { label: "New",  value: "new"  },
             { label: "Used", value: "used" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "mental_health",
+      label: "Mental Health & Counselling",
+      icon: "brain",
+      filters: [
+        {
+          id: "mh_type",
+          label: "Type",
+          type: "toggle",
+          options: [
+            { label: "Counselling",    value: "counselling"  },
+            { label: "Therapy",        value: "therapy"      },
+            { label: "Life Coaching",  value: "coaching"     },
+            { label: "Support Group",  value: "support_group" },
+            { label: "Online Session", value: "online"       },
+          ],
+        },
+        {
+          id: "mh_format",
+          label: "Format",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "In-person", value: "inperson" },
+            { label: "Online",    value: "online"   },
+            { label: "Hybrid",    value: "hybrid"   },
           ],
         },
       ],

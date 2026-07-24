@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import LaSection from "@/components/la/la-section";
-import { LaAmount, LaMinMax, LaSeparator, LaText, LaTokenRow, formatAmount, type LaAmountCurrency } from "@/components/la";
+import { LaAmount, LaMinMax, LaSeparator, LaText, LaTokenRow, formatAmount, type LaAmountCurrency, type LaMinMaxValue } from "@/components/la";
 
 function Code({ children }: { children: string }) {
   return (
@@ -38,8 +38,8 @@ export default function AmountInputPage() {
   const [currency] = useState<LaAmountCurrency>("SGD");
   const [amount, setAmount] = useState<number | null>(25558);
   const [hideCurrencyAmount, setHideCurrencyAmount] = useState<number | null>(1200);
-  const [range, setRange] = useState({ min: 555555, max: 25558 });
-  const [validRange, setValidRange] = useState({ min: 100, max: 3000 });
+  const [range, setRange] = useState<LaMinMaxValue>({ min: 555555, max: 25558 });
+  const [validRange, setValidRange] = useState<LaMinMaxValue>({ min: 100, max: 3000 });
 
   return (
     <>

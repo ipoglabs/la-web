@@ -4,10 +4,19 @@ import { cookies } from "next/headers";
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { verifyToken } from "@/lib/auth";
-import type { ProfileUser } from "@/app/profile/types";
+import { isSessionRevoked } from "@/lib/userSession";
+import type { ProfileUser } from "@/app/(dashboard)/profile/types";
+
+type RawSavedLocation = {
+  _id: unknown;
+  flagCode?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  primary?: boolean;
+};
 
 export async function getCurrentUser(): Promise<ProfileUser | null> {
-  // JWT-only verify — no DB call for auth check
   const cookieStore = await cookies();
   const token =
     cookieStore.get("session")?.value ||
@@ -21,12 +30,16 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
   const userId = payload.userId || payload.id;
   if (!userId) return null;
 
+  // Per-device revocation check (Devices list in account-settings) needs a
+  // DB round-trip, so this is no longer JWT-only — see lib/userSession.ts.
+  if (await isSessionRevoked(payload.sid, userId)) return null;
+
   await connectDB();
 
   // ONE query — fetch full doc and check status in the same round-trip
   const user: any = await User.findById(userId)
     .select(
-      "userId username fullName dateOfBirth gender nationality residency email primaryNumber secondaryNumber1 secondaryNumber2 role roleTitle roleDescription image marketingOptIn locality address isDeleted isSuspended accountStatus"
+      "userId username fullName dateOfBirth gender nationality residency email primaryNumber secondaryNumber1 secondaryNumber2 role roleTitle roleDescription image marketingOptIn locality address savedLocations isDeleted isSuspended accountStatus"
     )
     .lean();
 
@@ -67,5 +80,13 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
       city: user.address?.city || "",
       postalCode: user.address?.postalCode || "",
     },
+    savedLocations: (user.savedLocations || []).map((loc: RawSavedLocation) => ({
+      id: String(loc._id),
+      flagCode: loc.flagCode || "un",
+      city: loc.city || "",
+      region: loc.region || "",
+      country: loc.country || "",
+      primary: Boolean(loc.primary),
+    })),
   };
 }

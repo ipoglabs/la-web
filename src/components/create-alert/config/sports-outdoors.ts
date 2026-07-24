@@ -10,7 +10,7 @@ export const sportsOutdoors: MainCategory = {
   subcategories: [
     {
       id: "gym_fitness_equipment",
-      label: "Gym & Fitness Equipment",
+      label: "Fitness Equipment",
       icon: "dumbbell",
       filters: [
         {

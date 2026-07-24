@@ -8,7 +8,7 @@
  * Clicking ✕ removes the pill (local state only).
  *
  * Usage:
- * <RecentSearches items={RECENT_SEARCHES} />
+ * <RecentSearches items={popularSearches} />
  */
 
 import * as React from "react";

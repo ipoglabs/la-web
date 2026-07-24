@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { laButtonVariants } from "@/components/la/la-button";
 import { cn } from "@/lib/utils";
+import { ListingsLink } from "@/components/la-blocks/ListingsLink";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -155,9 +156,9 @@ export default function WhyPage() {
             <Link href="/post" className={cn(laButtonVariants({ intent: "primary-rose", size: "big" }))}>
               Post a free ad
             </Link>
-            <Link href="/listings" className={cn(laButtonVariants({ intent: "secondary", size: "big" }))}>
+            <ListingsLink href="/listings" className={cn(laButtonVariants({ intent: "secondary", size: "big" }))}>
               Browse listings
-            </Link>
+            </ListingsLink>
           </div>
         </div>
       </section>

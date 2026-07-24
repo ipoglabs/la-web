@@ -10,8 +10,8 @@ export const foodDining: MainCategory = {
   subcategories: [
     {
       id: "home_cooked",
-      label: "Home-Cooked Meals",
-      icon: "chef-hat",
+      label: "Home Cooked Meals",
+      icon: "cooking-pot",
       filters: [
         {
           id: "cuisine",
@@ -58,28 +58,30 @@ export const foodDining: MainCategory = {
     },
     {
       id: "tiffin_services",
-      label: "Tiffin & Meal Plans",
-      icon: "box",
+      label: "Tiffin Services",
+      icon: "package",
       filters: [
+        {
+          id: "dietary",
+          label: "Dietary",
+          type: "toggle",
+          options: [
+            { label: "Veg",     value: "veg"    },
+            { label: "Vegan",   value: "vegan"  },
+            { label: "Non-Veg", value: "nonveg" },
+            { label: "Jain",    value: "jain"   },
+          ],
+        },
         {
           id: "plan",
           label: "Plan",
           type: "toggle",
           singleSelect: true,
           options: [
-            { label: "Daily",   value: "daily"   },
-            { label: "Weekly",  value: "weekly"  },
-            { label: "Monthly", value: "monthly" },
-          ],
-        },
-        {
-          id: "dietary",
-          label: "Dietary",
-          type: "toggle",
-          options: [
-            { label: "Veg",     value: "veg"     },
-            { label: "Non-Veg", value: "nonveg"  },
-            { label: "Vegan",   value: "vegan"   },
+            { label: "One-off",  value: "oneoff"  },
+            { label: "Daily",    value: "daily"   },
+            { label: "Weekly",   value: "weekly"  },
+            { label: "Monthly",  value: "monthly" },
           ],
         },
       ],

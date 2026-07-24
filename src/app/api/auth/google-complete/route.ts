@@ -6,6 +6,7 @@ import { hash } from "bcryptjs";
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
 import { getNextUserId } from "@/lib/sequence";
+import { createUserSession } from "@/lib/userSession";
 
 const SESSION_COOKIE = "session";
 const UINFO_COOKIE = "uinfo";
@@ -58,12 +59,14 @@ export async function POST(req: Request) {
     // Race condition guard: user may have been created between callback and now
     const existing = await User.findOne({ email: googleData.email });
     if (existing) {
+      const sid = await createUserSession(String(existing._id), req);
       const token = jwt.sign(
         {
           userId: String(existing._id),
           email: existing.email,
           primaryNumber: existing.primaryNumber,
           role: existing.role ?? "user",
+          sid,
         },
         requireSecret(),
         { expiresIn: MAX_AGE }
@@ -127,12 +130,14 @@ export async function POST(req: Request) {
       isCookiesPolicyAccepted: true,
     });
 
+    const sid = await createUserSession(String(created._id), req);
     const token = jwt.sign(
       {
         userId: String(created._id),
         email: created.email,
         primaryNumber: created.primaryNumber,
         role: created.role ?? "user",
+        sid,
       },
       requireSecret(),
       { expiresIn: MAX_AGE }

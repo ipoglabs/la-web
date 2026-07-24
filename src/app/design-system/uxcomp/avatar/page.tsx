@@ -39,6 +39,7 @@ export default function AvatarDemoPage() {
           <Cell label="md"><Avatar initials="KG" size="md" /></Cell>
           <Cell label="lg"><Avatar initials="KG" size="lg" /></Cell>
           <Cell label="xl"><Avatar initials="KG" size="xl" /></Cell>
+          <Cell label="2xl"><Avatar initials="KG" size="2xl" /></Cell>
         </Row>
 
         {/* ── Status dots ───────────────────────────── */}
@@ -73,6 +74,16 @@ export default function AvatarDemoPage() {
           <Cell label="rounded"><Avatar         src="/img/img5.jpg" initials="R" size="lg" shape="rounded" /></Cell>
           <Cell label="circle initials"><Avatar initials="KG" size="lg" shape="circle"  status="online" /></Cell>
           <Cell label="rounded initials"><Avatar initials="KG" size="lg" shape="rounded" status="busy"   /></Cell>
+        </Row>
+
+        {/* ── Ring ─────────────────────────────────── */}
+        <LaText type="small" as="p" className="text-sm font-semibold uppercase tracking-widest text-slate-400 mt-2">
+          Ring (grey ring + white gap — hero/profile-header use)
+        </LaText>
+        <Row>
+          <Cell label="ring"><Avatar src="/img/img4.jpg" initials="R" size="xl" ring /></Cell>
+          <Cell label="ring + status"><Avatar initials="KG" size="xl" ring status="online" /></Cell>
+          <Cell label="ring, 2xl"><Avatar src="/img/img5.jpg" initials="R" size="2xl" ring status="online" /></Cell>
         </Row>
       </LaSection>
 

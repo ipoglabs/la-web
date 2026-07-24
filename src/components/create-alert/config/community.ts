@@ -289,5 +289,45 @@ export const community: MainCategory = {
         },
       ],
     },
+    {
+      id: "rideshare_carpool",
+      label: "Rideshare & Carpool",
+      icon: "car",
+      filters: [
+        {
+          id: "route_type",
+          label: "Route",
+          type: "toggle",
+          options: [
+            { label: "Daily Commute",  value: "commute"   },
+            { label: "One-way Trip",   value: "oneway"    },
+            { label: "Weekend",        value: "weekend"   },
+            { label: "Outstation",     value: "outstation" },
+          ],
+        },
+        {
+          id: "seats",
+          label: "Seats Available",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "1", value: "1" },
+            { label: "2", value: "2" },
+            { label: "3", value: "3" },
+            { label: "4+", value: "4plus" },
+          ],
+        },
+        {
+          id: "ride_offer",
+          label: "I am",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Offering Ride",  value: "offering" },
+            { label: "Looking for Ride", value: "seeking" },
+          ],
+        },
+      ],
+    },
   ],
 };

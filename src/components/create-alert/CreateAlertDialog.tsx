@@ -92,7 +92,7 @@ export function CreateAlertDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
         // TODO [INTEGRATION]: Allow dismiss after Step 3 (alert already saved), block during Steps 1–2
         className={cn(
-          "h-[88dvh] max-h-170 w-full max-w-md overflow-hidden rounded-3xl p-0",
+          "max-h-[88dvh] w-full max-w-md overflow-hidden rounded-3xl p-0",
           "flex flex-col ring-1 ring-slate-900/8 shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_0_32px_rgba(0,0,0,0.35)]",
           className,
         )}
@@ -117,7 +117,7 @@ export function CreateAlertDialog({
         </button>
 
         <CreateAlertJourney
-          className="h-full max-w-none rounded-none border-0 shadow-none"
+          className="flex-1 min-h-0 max-w-none rounded-none border-0 shadow-none"
           layout="popup"
           onSubmit={onSubmit}
           onComplete={handleComplete}

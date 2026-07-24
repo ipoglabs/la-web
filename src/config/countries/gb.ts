@@ -25,7 +25,6 @@ export const GB_CONFIG: CountryConfig = {
   radiusUnit:     "mi",   // UK uses miles, not kilometres
   currency:       "GBP",
   currencySymbol: "£",
-locationPlaceholder: "e.g. London, Manchester, Birmingham",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────
@@ -37,9 +36,9 @@ locationPlaceholder: "e.g. London, Manchester, Birmingham",
 
   // ── Listings source switch by deployment stage ───────────────────────────
   listingsSourceByStage: {
-    dev: "mock",
-    qa: "mock",
-    staging: "mock",
+    dev: "db",
+    qa: "db",
+    staging: "db",
     prod: "db",
   },
 

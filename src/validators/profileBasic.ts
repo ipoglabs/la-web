@@ -1,104 +1,102 @@
 import { z } from "zod";
 
-/* ===== helper ===== */
-const isAdult = (dob: string) => {
-  const date = new Date(dob);
-  if (isNaN(date.getTime())) return false;
+/* ----------------------------- Helpers ----------------------------- */
+function isAdult(dobISO: string) {
+  const dob = new Date(dobISO);
+  if (Number.isNaN(dob.getTime())) return false;
 
   const today = new Date();
-  let age = today.getFullYear() - date.getFullYear();
-  const m = today.getMonth() - date.getMonth();
-
-  if (m < 0 || (m === 0 && today.getDate() < date.getDate())) {
-    age--;
-  }
-
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
   return age >= 18;
-};
+}
 
-/* ===== regex ===== */
 const ALPHA_ONLY = /^[A-Za-z]+$/;
+const optionalString = z.string().trim().optional().or(z.literal(""));
 
-/* ===== schema ===== */
+/**
+ * Schema for the "basic info" section of the profile edit form:
+ * full name, date of birth, and role (+ custom role title/description).
+ */
 export const basicProfileSchema = z
   .object({
     fullName: z
       .string()
       .trim()
-      .min(1, "Full name is required")
-      .refine(
-        (v) => v.trim().split(/\s+/).filter(Boolean).every((p) => ALPHA_ONLY.test(p)),
-        "Only alphabets (A–Z) allowed"
-      ),
-
-    role: z
-      .string()
-      .min(1, "Please select a role"),
-
-    roleTitle: z
-      .string()
-      .optional()
-      .or(z.literal("")),
-
-    roleDescription: z
-      .string()
-      .optional()
-      .or(z.literal("")),
+      .min(1, "Please enter your full name.")
+      .refine((v) => {
+        const parts = v.trim().split(/\s+/).filter(Boolean);
+        return parts.every((p) => ALPHA_ONLY.test(p));
+      }, "Only alphabets (A–Z) allowed"),
 
     dateOfBirth: z
       .string()
-      .min(1, "Date of birth is required")
-      .refine(isAdult, {
-        message: "You must be at least 18 years old",
+      .refine((v) => !Number.isNaN(new Date(v).getTime()), {
+        message: "Invalid date",
+      })
+      .refine((v) => isAdult(v), {
+        message: "You must be 18 or older",
       }),
-  })
 
-  /* ===== CONDITIONAL VALIDATION ===== */
+    role: z.enum(["individual", "business", "agency", "other"] as const, {
+      error: "Please select a role.",
+    }),
+
+    roleTitle: optionalString,
+    roleDescription: optionalString,
+  })
   .superRefine((data, ctx) => {
     if (data.role === "other") {
-      const title = (data.roleTitle || "").trim();
-      const desc = (data.roleDescription || "").trim();
+      const title = data.roleTitle?.trim() || "";
+      const desc = data.roleDescription?.trim() || "";
 
-      /* ===== roleTitle ===== */
       if (!title) {
         ctx.addIssue({
-          path: ["roleTitle"],
-          message: "Role title is required",
           code: "custom",
+          path: ["roleTitle"],
+          message: "Role title required",
         });
       } else if (title.length < 2) {
         ctx.addIssue({
+          code: "custom",
           path: ["roleTitle"],
           message: "Minimum 2 characters required",
-          code: "custom",
         });
       } else if (title.length > 80) {
         ctx.addIssue({
+          code: "custom",
           path: ["roleTitle"],
           message: "Max 80 characters allowed",
+        });
+      } else if (!/^[A-Za-z0-9\s,|&()\-]+$/.test(title)) {
+        ctx.addIssue({
           code: "custom",
+          path: ["roleTitle"],
+          message: "Invalid characters used",
         });
       }
 
-      /* ===== roleDescription ===== */
       if (!desc) {
         ctx.addIssue({
-          path: ["roleDescription"],
-          message: "Role description is required",
           code: "custom",
+          path: ["roleDescription"],
+          message: "Description is required",
         });
       } else if (desc.length < 2) {
         ctx.addIssue({
+          code: "custom",
           path: ["roleDescription"],
           message: "Minimum 2 characters required",
-          code: "custom",
         });
       } else if (desc.length > 300) {
         ctx.addIssue({
+          code: "custom",
           path: ["roleDescription"],
           message: "Max 300 characters allowed",
-          code: "custom",
         });
       }
     }
   });
+
+export type BasicProfileForm = z.infer<typeof basicProfileSchema>;

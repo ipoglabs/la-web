@@ -98,6 +98,7 @@ export default function SwitchCountryPage() {
           currentCode={countryCode}
           onSelect={handleSelect}
           onClose={() => setShowOverlay(false)}
+          navigateOnSelect={false}
         />
       )}
     </div>

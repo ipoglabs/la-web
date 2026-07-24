@@ -114,8 +114,7 @@ export default function PreviewPage() {
       phone:
         existing?.phone ||
         user.primaryNumber ||
-        user.phone ||
-        user.mobile ||
+        user.secondaryNumber1 ||
         "",
     });
   }, [user, setField]);
@@ -131,8 +130,7 @@ export default function PreviewPage() {
       phone:
         data.sellerInfo?.phone ||
         user?.primaryNumber ||
-        user?.phone ||
-        user?.mobile ||
+        user?.secondaryNumber1 ||
         "",
     }),
     [data.sellerInfo, user]

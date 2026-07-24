@@ -7,7 +7,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import {
   STATIC_SUGGESTIONS,
-  mockGoogleSearch,
+  realGoogleSearch,
   matchesScope,
   SearchSuggestion,
 } from "./LocationSearch";
@@ -264,7 +264,7 @@ function PanelContent({
         setLoading(true);
         setFetchError(null);
         try {
-          let suggestions = await mockGoogleSearch(q);
+          let suggestions = await realGoogleSearch(q);
           if (countryScope?.length) {
             suggestions = suggestions.filter((s) => matchesScope(s.sublabel, countryScope));
           }

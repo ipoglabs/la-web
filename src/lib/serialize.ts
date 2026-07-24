@@ -1,37 +1,15 @@
-// src/lib/serialize.ts
-
-export type Plain<T> = T & {
-  id: string;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  lastBumpedAt?: string | null; // ✅ added
-};
-
-export function toClientPost(d: any) {
-  if (!d) return null;
-
-  // strip ObjectId / Date via JSON (safe because caller uses .lean())
-  const obj = JSON.parse(JSON.stringify(d));
-
-  // normalize id
-  obj.id = String(d._id ?? obj._id);
-  delete obj._id;
-
-  // normalize ownerId
-  if (d.ownerId != null) obj.ownerId = String(d.ownerId);
-
-  // normalize dates
-  if (d.createdAt != null)
-    obj.createdAt = new Date(d.createdAt).toISOString();
-
-  if (d.updatedAt != null)
-    obj.updatedAt = new Date(d.updatedAt).toISOString();
-
-  // ✅ normalize bump date (THIS IS IMPORTANT)
-  if (d.lastBumpedAt != null)
-    obj.lastBumpedAt = new Date(d.lastBumpedAt).toISOString();
-  else
-    obj.lastBumpedAt = null;
-
-  return obj as Plain<typeof obj>;
+/**
+ * Converts a Mongoose Post document (or .lean() result) into a plain
+ * client-safe object — required whenever a Server Component/Server Action
+ * passes data to a Client Component, since Mongoose documents, ObjectIds,
+ * and nested Dates aren't serializable across that boundary as-is.
+ *
+ * The JSON round-trip works because Mongoose's ObjectId and Date both
+ * implement toJSON (ObjectId → hex string, Date → ISO string), and a
+ * hydrated Document's own toJSON applies the schema's toJSON transform
+ * (if any) before this ever touches it. Safe for both .lean() results
+ * (plain objects with ObjectId instances) and full hydrated documents.
+ */
+export function toClientPost<T>(doc: T): T {
+  return JSON.parse(JSON.stringify(doc));
 }

@@ -25,6 +25,7 @@ import { getFeatures, COUNTRY_CONFIGS, type CountryCode } from "@/config";
 import { LegalDrawer } from "@/components/la-blocks/LegalDrawer";
 import { FeedbackPopup } from "@/components/feedback";
 import { TimelineSheet } from "@/components/la-blocks/TimelineSheet";
+import { isSimpleLayoutRoute } from "@/lib/layout-routes";
 
 export type AppFooterVariant = "default" | "simple";
 
@@ -75,16 +76,16 @@ function SocialLinks({ className }: { className?: string }) {
   );
 }
 
-export default function AppFooter({ countryCode, countryLabel, variant = "default", popularCategories, topLocations }: AppFooterProps) {
+export default function AppFooter({ countryCode, countryLabel, variant, popularCategories, topLocations }: AppFooterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const pathname = usePathname();
 
-  // Derive effective variant from current pathname — reactive on soft navigation.
-  const SIMPLE_ROUTES = ["/login", "/register", "/signup"];
-  const effectiveVariant = SIMPLE_ROUTES.some(
-    (r) => pathname === r || pathname.startsWith(r + "/")
-  ) ? "simple" : variant;
+  // Derived from the live pathname so it's correct on soft navigation in
+  // both directions (see AppHeader.tsx for the full rationale — same
+  // shared route list). `variant` still works as an explicit override for
+  // callers that pass it directly (e.g. /snippets/app-shell, /feedback).
+  const effectiveVariant = variant ?? (isSimpleLayoutRoute(pathname) ? "simple" : "default");
 
   const features = getFeatures(countryCode);
   const { companyName, companyRegNo } = COUNTRY_CONFIGS[countryCode];
@@ -103,7 +104,7 @@ export default function AppFooter({ countryCode, countryLabel, variant = "defaul
             <Link className="flex gap-2 items-center shrink-0" href="/">
               <Image className="size-11" src="/assets/la-logo-symbol-black.svg" alt="lokalads logo" width={44} height={44} />
               <div className="relative">
-                <Image className="w-24" src="/assets/la-text-white.svg" alt="lokalads" width={96} height={24} />
+                <Image className="w-24 h-auto" src="/assets/la-text-white.svg" alt="lokalads" width={96} height={24} />
                 {countryLabel && (
                   <span className="absolute right-0 -bottom-3.5 text-[10px] font-normal text-white whitespace-nowrap subpixel-antialiased">{countryLabel}</span>
                 )}
@@ -236,8 +237,10 @@ export default function AppFooter({ countryCode, countryLabel, variant = "defaul
         </div>
       </div>
 
-      {/* Donation banner — controlled by features.donationFooter in country-config */}
-      {features.donationFooter && (
+      {/* Donation banner — controlled by features.donationFooter in country-config;
+          hidden on "simple" variant (login/register/signup) since a growth/goodwill
+          CTA has no place on a conversion-critical single-purpose screen. */}
+      {features.donationFooter && effectiveVariant === "default" && (
         <div className="bg-white">
           <div className="container-app py-3 flex flex-col sm:flex-row flex-wrap gap-3 items-center justify-center text-center max-w-5xl">
             <p className="text-lg text-slate-700 italic">&ldquo;Your support makes lokalads possible. Lets grow together!&rdquo;</p>

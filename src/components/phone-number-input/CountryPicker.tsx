@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose, DrawerFooter } from "@/components/ui/drawer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose as DClose } from "@/components/ui/dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { COUNTRIES, Country } from "./countries";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -17,28 +17,8 @@ type Props = {
 
 export function CountryPicker({ open, onClose, selected, onSelect, countries }: Props) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [search, setSearch] = React.useState("");
-  const inputRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (open) {
-      setSearch("");
-      setTimeout(() => inputRef.current?.focus(), 80);
-    }
-  }, [open]);
 
   const list = countries && countries.length ? countries : COUNTRIES;
-
-  const filtered = React.useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.dial.includes(q) ||
-        c.code.toLowerCase().includes(q)
-    );
-  }, [list, search]);
 
   const isThumbnail = list.length >= 2 && list.length <= 6;
 
@@ -68,49 +48,42 @@ export function CountryPicker({ open, onClose, selected, onSelect, countries }: 
   );
 
   const content = (
-    <div>
-      <div className="px-3 py-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search country or dial code…"
-          className="w-full h-9 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-        />
-      </div>
-      <div className="max-h-[45vh] overflow-auto">
-        <div className="divide-y divide-slate-200">
-          {filtered.length === 0 && (
-            <p className="px-4 py-6 text-center text-sm text-slate-400">No countries found</p>
-          )}
-          {filtered.map((c) => {
-            const isSelected = selected?.code === c.code;
-            return (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => { onSelect(c); onClose(); }}
-                className={`w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-200 ${isSelected ? "bg-blue-50" : ""}`}
-              >
-                <span className="flex-none">
-                  <c.Flag className="rounded-sm" />
-                </span>
-                <span className="flex-1">
-                  <div className={`text-sm font-normal ${isSelected ? "text-blue-900" : ""}`}>
-                    {c.name} <span className="text-sm text-slate-500">(+{c.dial})</span>
-                  </div>
-                </span>
-                <span className="flex-none">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${isSelected ? "bg-blue-700" : "bg-transparent"}`}
-                    aria-hidden
-                  />
-                </span>
-              </button>
-            );
-          })}
-        </div>
+    <div className="max-h-[50vh] overflow-auto">
+      <div className="divide-y divide-slate-200">
+        {list.map((c) => {
+          const isSelected = selected?.code === c.code;
+          return (
+            <button
+              key={c.code}
+              onClick={() => {
+                onSelect(c);
+                onClose();
+              }}
+              className={
+                `w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-200 ${
+                  isSelected ? "bg-blue-50" : ""
+                }`
+              }
+            >
+              <span className="flex-none">
+                <c.Flag className="rounded-sm" />
+              </span>
+              <span className="flex-1">
+                <div className={`text-sm font-normal ${isSelected ? "text-blue-900" : ""}`}>{c.name} <span className="text-sm text-slate-500">(+{c.dial})</span></div>
+              </span>
+              <span className="flex-none">
+                <span
+                  className={
+                    `inline-block h-2 w-2 rounded-full ${
+                      isSelected ? "bg-blue-700" : "bg-transparent"
+                    }`
+                  }
+                  aria-hidden
+                />
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -119,15 +92,8 @@ export function CountryPicker({ open, onClose, selected, onSelect, countries }: 
     return (
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className={cn("w-full p-0", isThumbnail ? "max-w-sm" : "max-w-sm")}>
-          <DialogHeader>
+          <DialogHeader className="p-4 pb-0">
             <DialogTitle>Select Country</DialogTitle>
-            <DClose asChild>
-              <button type="button" aria-label="Close" className="flex h-7 w-7 flex-none items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-300 hover:text-slate-800">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-                  <path d="M18 6L6 18M6 6l12 12" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </DClose>
           </DialogHeader>
           {isThumbnail ? thumbnailContent : content}
         </DialogContent>

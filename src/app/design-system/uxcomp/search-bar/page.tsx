@@ -78,7 +78,6 @@ function UC3() {
       <DarkBand>
         <LaSearchBar
           initialScope={{ cat: "property", label: "Property" }}
-          initialLocation={{ label: "London", sublabel: "Greater London, UK", lat: 51.5074, lng: -0.1278, radius: 10, unit: "km" }}
           placeholder="Search properties in London…"
           onSearch={setQ}
         />
@@ -117,7 +116,6 @@ function UC5() {
       <DarkBand>
         <LaSearchBar
           initialScope={{ cat: "jobs", label: "Jobs" }}
-          initialLocation={{ label: "Manchester", sublabel: "Greater Manchester, UK", lat: 53.4808, lng: -2.2426, radius: 20, unit: "km" }}
           placeholder="Job title, skill, or company…"
           onSearch={setQ}
         />

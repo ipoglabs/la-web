@@ -10,6 +10,17 @@ const AddressSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Saved Locations (account-settings) — scopes which local listings a user
+// sees. Kept `_id: true` (the default) so each entry has its own stable id
+// for add/remove — see app/actions/profile/{add,remove}SavedLocation.ts.
+const SavedLocationSchema = new mongoose.Schema({
+  flagCode: { type: String, required: true, trim: true },
+  city: { type: String, required: true, trim: true },
+  region: { type: String, trim: true, default: "" },
+  country: { type: String, required: true, trim: true },
+  primary: { type: Boolean, default: false },
+});
+
 const OtpSchema = new mongoose.Schema(
   {
     channel: {
@@ -59,31 +70,46 @@ const UserSchema = new mongoose.Schema(
     nationality: { type: String, trim: true },
     residency: { type: String, trim: true },
 
-    locality: { type: String, required: true, trim: true },
+    locality: { type: String, trim: true },
     address: AddressSchema,
+    savedLocations: { type: [SavedLocationSchema], default: [] },
 
     email: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
     },
 
     isEmailVerified: { type: Boolean, default: false },
 
-    primaryNumber: { type: String, required: true, unique: true, trim: true },
+    // sparse (not required): passwordless accounts created via email-only
+    // magic-link/Google/Apple never collect a phone number. At least one
+    // of email/primaryNumber is enforced below in the pre-validate hook.
+    primaryNumber: { type: String, unique: true, sparse: true, trim: true },
     isPrimaryNumberVerified: { type: Boolean, default: false },
 
     secondaryNumber1: { type: String, trim: true },
     secondaryNumber2: { type: String, trim: true },
 
-    password: { type: String, required: true },
+    // optional — passwordless accounts (magic-link/phone-OTP/Google/Apple,
+    // see july16 register/login journey) never set this.
+    password: { type: String },
 
     role: { type: String, required: true },
 
     roleTitle: { type: String, trim: true },
     roleDescription: { type: String, trim: true },
+
+    // Additive — from the july16 multi-select RoleStep (config/roles.ts).
+    // `role` above stays the single required string used elsewhere in the
+    // app for permissions (set to the first selected role, or the
+    // implicit BASE_ROLE "individual" default); these hold the full
+    // multi-select picture alongside it.
+    roles: { type: [String], default: [] },
+    roleSpecialties: { type: mongoose.Schema.Types.Mixed, default: {} },
+    customRole: { type: String, trim: true },
     
     provider: {
       type: String,
@@ -129,9 +155,28 @@ deleteFeedback: { type: String, trim: true },
 
  otp: { type: OtpSchema, default: null },
 
+    // Derived, not user-settable — kept in sync by the pre-validate hook
+    // below on every save. True only once email, primaryNumber,
+    // dateOfBirth, and locality are all present.
+    isFullyRegistered: { type: Boolean, default: false },
+
     image: { type: String },
   },
   { timestamps: true }
 );
+
+// Since email and primaryNumber are each now optional+sparse (to support
+// passwordless accounts created with only one identifier), enforce that at
+// least one of them is always present — an account with neither would be
+// unreachable/unloginable.
+UserSchema.pre("validate", function (this: any) {
+  if (!this.email && !this.primaryNumber) {
+    throw new Error("At least one of email or primaryNumber is required.");
+  }
+
+  this.isFullyRegistered = Boolean(
+    this.email && this.primaryNumber && this.dateOfBirth && this.locality
+  );
+});
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);

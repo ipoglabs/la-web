@@ -5,12 +5,12 @@
  *
  * Relative time thresholds (auto-selected based on elapsed time):
  *   < 1 min    →  "just now"
- *   < 1 hour   →  "3min", "10min", "59min"
- *   < 1 day    →  "1h", "2h", "23h"
- *   < 7 days   →  "1d", "2d", "6d"
- *   < 30 days  →  "1w", "2w", "3w", "4w"
- *   < 91 days  →  "1mo", "2mo", "3mo"
- *   ≥ 91 days  →  exact date e.g. "Jun 09, 2025"
+ *   < 1 hour   →  short "3min" / long "3 minutes ago"
+ *   < 1 day    →  short "1h"   / long "1 hour ago"
+ *   < 7 days   →  short "1d"   / long "1 day ago"
+ *   < 30 days  →  short "1w"   / long "1 week ago"
+ *   < 91 days  →  short "1mo"  / long "1 month ago"
+ *   ≥ 91 days  →  exact date e.g. "Jun 09, 2025" (both styles)
  *
  * Toggle on click:
  *   Click the label to switch to exact date. Click again to revert to relative.
@@ -18,6 +18,8 @@
  *
  * Props:
  *   value             — timestamp (Date | number | ISO string)
+ *   relativeStyle     — "short" (default, e.g. "2w") or "long" (e.g. "2 weeks ago").
+ *                       "long" is locale-aware via Intl.RelativeTimeFormat.
  *   dateFormatOptions — Intl.DateTimeFormatOptions to customise exact date output.
  *                       Default: { month: "short", day: "2-digit", year: "numeric" }
  *                       Example long:    { month: "long",  day: "numeric", year: "numeric" }
@@ -27,6 +29,7 @@
  *
  * Usage:
  *   <LaRelativeDate value={listing.postedAt} />
+ *   <LaRelativeDate value={review.date} relativeStyle="long" />
  *   <LaRelativeDate value={msg.sentAt} dateFormatOptions={{ month: "long", day: "numeric", year: "numeric" }} />
  *   <LaRelativeDate value={event.date} locale="en-GB" />
  */
@@ -38,6 +41,8 @@ import { cn } from "@/lib/utils";
 
 export interface LaRelativeDateProps {
   value: string | number | Date;
+  /** "short" (default, e.g. "2w") or "long" (e.g. "2 weeks ago"). */
+  relativeStyle?: "short" | "long";
   /** Intl.DateTimeFormatOptions for the exact date display. */
   dateFormatOptions?: Intl.DateTimeFormatOptions;
   /** BCP 47 locale string. Default: "en-US" */
@@ -58,6 +63,15 @@ const DEFAULT_DATE_FORMAT: Intl.DateTimeFormatOptions = {
   year:  "numeric",
 };
 
+// Only the singular forms are ever produced by relativeParts() below.
+// Intl.RelativeTimeFormatUnit also includes plural forms ("years", "months", …)
+// which this lookup table deliberately omits — it is a subset, not the full union.
+type ShortUnit = "year" | "quarter" | "month" | "week" | "day" | "hour" | "minute" | "second";
+
+const SHORT_UNIT_SUFFIX: Record<ShortUnit, string> = {
+  year: "y", quarter: "q", month: "mo", week: "w", day: "d", hour: "h", minute: "min", second: "s",
+};
+
 // ── Pure helpers (module-level, not called directly in render) ─────────────────
 
 function toTimestamp(value: string | number | Date): number | null {
@@ -65,14 +79,28 @@ function toTimestamp(value: string | number | Date): number | null {
   return Number.isFinite(time) ? time : null;
 }
 
-function relativeSegment(elapsed: number): string | null {
-  if (elapsed < MINUTE)     return "just now";
-  if (elapsed < HOUR)       return `${Math.floor(elapsed / MINUTE)}min`;
-  if (elapsed < DAY)        return `${Math.floor(elapsed / HOUR)}h`;
-  if (elapsed < 7  * DAY)   return `${Math.floor(elapsed / DAY)}d`;
-  if (elapsed < 30 * DAY)   return `${Math.floor(elapsed / WEEK)}w`;
-  if (elapsed < 91 * DAY)   return `${Math.max(1, Math.floor(elapsed / (30 * DAY)))}mo`;
+/** Buckets elapsed ms into a unit + value, or null once past the 91-day exact-date cutoff. */
+function relativeParts(elapsed: number): { value: number; unit: ShortUnit } | null {
+  if (elapsed < HOUR)       return { value: Math.floor(elapsed / MINUTE), unit: "minute" };
+  if (elapsed < DAY)        return { value: Math.floor(elapsed / HOUR), unit: "hour" };
+  if (elapsed < 7  * DAY)   return { value: Math.floor(elapsed / DAY), unit: "day" };
+  if (elapsed < 30 * DAY)   return { value: Math.floor(elapsed / WEEK), unit: "week" };
+  if (elapsed < 91 * DAY)   return { value: Math.max(1, Math.floor(elapsed / (30 * DAY))), unit: "month" };
   return null;
+}
+
+function formatRelative(
+  elapsed: number,
+  style: "short" | "long",
+  locale: string,
+): string | null {
+  if (elapsed < MINUTE) return "just now";
+  const parts = relativeParts(elapsed);
+  if (!parts) return null;
+  if (style === "long") {
+    return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(-parts.value, parts.unit);
+  }
+  return `${parts.value}${SHORT_UNIT_SUFFIX[parts.unit]}`;
 }
 
 // Wraps Date.now() inside a user function — avoids React compiler flagging it
@@ -80,11 +108,13 @@ function relativeSegment(elapsed: number): string | null {
 function computeRelativeLabel(
   value: string | number | Date,
   exactFallback: string,
+  style: "short" | "long",
+  locale: string,
 ): string {
   const time = toTimestamp(value);
   if (time === null) return "-";
   const elapsed = Math.max(0, Date.now() - time);
-  return relativeSegment(elapsed) ?? exactFallback;
+  return formatRelative(elapsed, style, locale) ?? exactFallback;
 }
 
 function computeExactLabel(
@@ -101,6 +131,7 @@ function computeExactLabel(
 
 export default function LaRelativeDate({
   value,
+  relativeStyle = "short",
   dateFormatOptions,
   locale = "en-US",
   className,
@@ -109,7 +140,7 @@ export default function LaRelativeDate({
 
   const options      = dateFormatOptions ?? DEFAULT_DATE_FORMAT;
   const exactLabel   = computeExactLabel(value, locale, options);
-  const defaultLabel = computeRelativeLabel(value, exactLabel);
+  const defaultLabel = computeRelativeLabel(value, exactLabel, relativeStyle, locale);
   const displayLabel = showExact ? exactLabel : defaultLabel;
   const toggleable   = defaultLabel !== exactLabel;
 

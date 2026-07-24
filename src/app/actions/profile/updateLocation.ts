@@ -9,12 +9,12 @@ export async function updateLocation({
   country,
   state,
   locality,
-  postalCode,
+  postalCode = "",
 }: {
   country: string;
   state: string;
   locality: string;
-  postalCode: string;
+  postalCode?: string;
 }) {
   await connectDB();
 
@@ -38,7 +38,6 @@ export async function updateLocation({
   if (!country) throw new Error("Country is required");
   if (!state) throw new Error("State is required");
   if (!locality) throw new Error("City is required");
-  if (!postalCode) throw new Error("Postal code is required");
 
   /* ================= TRACK CHANGES ================= */
 
@@ -56,10 +55,10 @@ export async function updateLocation({
     });
   }
 
-  if (user.state !== state) {
+  if (user.address?.state !== state) {
     changes.push({
       field: "State",
-      oldValue: user.state || "-",
+      oldValue: user.address?.state || "-",
       newValue: state,
     });
   }
@@ -83,7 +82,6 @@ export async function updateLocation({
   /* ================= UPDATE ================= */
 
   user.nationality = country;
-  user.state = state;
   user.locality = locality;
 
   user.address = {

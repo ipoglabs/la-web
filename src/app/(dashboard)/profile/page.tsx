@@ -1,16 +1,10 @@
-import { getCurrentUser } from "@/app/actions/getCurrentUser";
-import ProfileClient from "./ProfileClient";
 import { redirect } from "next/navigation";
-
-export const dynamic = "force-dynamic";
+import { getCurrentUser } from "@/app/actions/getCurrentUser";
+import { ProfilePageScreen } from "./ProfilePageScreen";
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
+  if (!user) redirect("/login?redirect=/profile");
 
-  // ✅ handle unauthenticated / deleted users safely
-  if (!user) {
-    redirect("/login"); // or "/account-deleted"
-  }
-
-  return <ProfileClient user={user} />;
+  return <ProfilePageScreen mode="profile" user={user} />;
 }

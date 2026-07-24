@@ -4,7 +4,9 @@ import connectDB from "@/config/database";
 import Post from "@/models/post";
 import { generateAdsId } from "@/lib/generateAdsId";
 import mongoose from "mongoose";
+import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
+import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
 
 type LocationData = {
   address?: string;
@@ -324,13 +326,23 @@ export async function addPost(
       return { ok: false, error: errors.join(" • ") };
     }
 
-    const countryCode = getCountryCode(formData, location);
-    const adsId = await generateAdsId(countryCode);
+    const adsId = await generateAdsId();
+
+    // Market this post belongs to, from the same country cookie the rest of
+    // the app reads (see lib/country-context.ts) — public listings read
+    // paths scope by this field. A post created without a valid cookie (rare
+    // — the country gate normally sets one before /post is reachable) is
+    // left without a country rather than guessed, and stays visible in every
+    // market's read query (see models/post.ts's `country` field comment).
+    const cookieStore = await cookies();
+    const rawCountry = cookieStore.get(COUNTRY_COOKIE)?.value ?? "";
+    const country = isAllowedCountry(rawCountry) ? rawCountry.toLowerCase() : undefined;
 
     const newPost = new Post({
       ...(preGenId ? { _id: preGenId } : {}),
       ...postData,
       adsId,
+      country,
     });
 
     await newPost.save();

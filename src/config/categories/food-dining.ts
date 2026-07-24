@@ -7,8 +7,9 @@ export const foodDining: CategoryItem = {
   color: "lime",
   cardIcon: "cake",
   subcategories: [
-  { id: "home_chefs_tiffin", label: "Home Chefs & Tiffin" },
+  { id: "home_cooked", label: "Home Cooked Meals" },
   { id: "catering", label: "Catering Services" },
+  { id: "tiffin_services", label: "Tiffin Services" },
   { id: "restaurant_deals", label: "Restaurant Deals" },
   { id: "cloud_kitchens", label: "Cloud Kitchens" },
   { id: "baked_goods", label: "Baked Goods & Desserts" },

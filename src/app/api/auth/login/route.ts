@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import User from "@/models/user";
 import { compare } from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { createUserSession } from "@/lib/userSession";
 
 const COOKIE_NAME = "session";
 const UINFO_COOKIE_NAME = "uinfo";
@@ -82,11 +83,13 @@ export async function POST(req: Request) {
       );
     }
 
+    const sid = await createUserSession(String(user._id), req);
     const token = signJwt({
       userId: String(user._id),
       email: user.email,
       primaryNumber: user.primaryNumber,
       role: user.role ?? "user",
+      sid,
     });
 
     const res = NextResponse.json(

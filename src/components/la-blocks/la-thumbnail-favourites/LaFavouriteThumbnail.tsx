@@ -31,10 +31,11 @@ import { X } from "lucide-react";
 import { Outline_MapPin_24by24 } from "@/components/icons/la-icons";
 import { LaRelativeDate } from "@/components/la-blocks/la-relative-date";
 import { cn } from "@/lib/utils";
+import type { ListingStatus } from "@/types/listing";
 
-export type ListingStatus = "active" | "closed" | "off-market";
+export type { ListingStatus };
 
-const STATUS_CONFIG: Record<Exclude<ListingStatus, "active">, { label: string; className: string }> = {
+const STATUS_CONFIG: Partial<Record<ListingStatus, { label: string; className: string }>> = {
   closed:       { label: "Closed",     className: "bg-rose-500 text-white" },
   "off-market": { label: "Off Market", className: "bg-slate-600/90 text-white" },
 };
@@ -110,14 +111,14 @@ export function LaFavouriteThumbnail({
                 <span className="ml-1 text-sm font-medium text-slate-500">{priceSuffix}</span>
               )}
             </p>
-            {status !== "active" && (
+            {status && status !== "active" && STATUS_CONFIG[status] && (
               <span
                 className={cn(
                   "shrink-0 rounded px-2 py-1 text-xs font-bold uppercase leading-none tracking-wide",
-                  STATUS_CONFIG[status].className,
+                  STATUS_CONFIG[status]!.className,
                 )}
               >
-                {STATUS_CONFIG[status].label}
+                {STATUS_CONFIG[status]!.label}
               </span>
             )}
           </div>

@@ -1,27 +1,15 @@
-// lib/otpUtils.ts
-
-export const OTP_MAX_ATTEMPTS = 30;
-export const OTP_LOCK_MINUTES = 0.5; // 30 seconds
-export const OTP_EXPIRE_MINUTES = 10;
-
-export const normalizeEmail = (v: string) =>
-  String(v).toLowerCase().trim();
-
-export const normalizePhone = (v: string) => {
-  const cleaned = String(v).replace(/\s+/g, "");
-
-  if (!/^\+\d{10,15}$/.test(cleaned)) {
-    throw new Error("Invalid phone number");
-  }
-
-  return cleaned; // ✅ E.164 only
-};
-
-export function normalizeTarget(
-  channel: "email" | "phone",
-  value: string
-) {
-  return channel === "email"
-    ? normalizeEmail(value)
-    : normalizePhone(value);
+/**
+ * Normalizes an OTP target (email or phone) to a single canonical form, so
+ * the record written by sendOtpService, the lookup in verifyOtpService, and
+ * the final verified-record check in updateContact.ts all agree on the same
+ * key — otherwise a verified OTP for "+65 9123 4567" would never match a
+ * lookup for "+6591234567" (or vice versa).
+ */
+export function normalizeTarget(channel: "email" | "phone", value: string): string {
+  const trimmed = value.trim();
+  if (channel === "email") return trimmed.toLowerCase();
+  // Phone: keep a leading "+" (if present) and strip everything but digits.
+  const hasPlus = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
+  return hasPlus ? `+${digits}` : digits;
 }

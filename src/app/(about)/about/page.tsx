@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { laButtonVariants } from "@/components/la/la-button";
 import { cn } from "@/lib/utils";
+import { ListingsLink } from "@/components/la-blocks/ListingsLink";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -158,9 +159,9 @@ export default function AboutPage() {
           Join thousands of people already buying, selling, and connecting locally — for free.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/listings" className={cn(laButtonVariants({ intent: "primary", size: "big" }))}>
+          <ListingsLink href="/listings" className={cn(laButtonVariants({ intent: "primary", size: "big" }))}>
             Browse listings
-          </Link>
+          </ListingsLink>
           <Link href="/post" className={cn(laButtonVariants({ intent: "primary-rose", size: "big" }))}>
             Post a free ad
           </Link>

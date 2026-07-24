@@ -123,7 +123,7 @@ export const pets: MainCategory = {
     },
     {
       id: "service",
-      label: "Service",
+      label: "Pet Care",
       icon: "scissors",
       filters: [
         {

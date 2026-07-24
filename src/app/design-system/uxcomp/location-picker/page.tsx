@@ -90,6 +90,7 @@ function CountryGatedCase() {
         <OverlayCountrySelect
           onSelect={(code) => { setCountryCode(code); setShowPicker(false); }}
           onClose={() => setShowPicker(false)}
+          navigateOnSelect={false}
         />
       )}
 

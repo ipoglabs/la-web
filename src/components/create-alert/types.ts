@@ -32,7 +32,11 @@ export type SubCategory = {
   readonly label: string;
   /** Optional sub-text for tooltips or accessibility descriptions */
   readonly description?: string;
-  /** lucide icon name — resolved via ICON_MAP in the journey component */
+  /**
+   * lucide icon name — resolved via ICON_MAP in the journey component.
+   * TODO [INTEGRATION]: Currently unused in the subcategory picker UI. Wire up
+   * to display a small icon on each subcategory toggle button in StepCategory.
+   */
   readonly icon: string;
   readonly filters: readonly FilterConfig[];
 };
@@ -55,11 +59,17 @@ export type NotifyChannel = "email" | "whatsapp";
 
 /**
  * Full location value from LocationPicker. Null when no location is set.
- * Imported inline to avoid a circular dependency — LocationPicker is a
- * UI component, types.ts is a pure data module.
+ * Shape mirrors LocationValue from @/components/location-picker — kept as a
+ * standalone type here to avoid a circular dependency (types.ts is a pure data
+ * module with no component imports).
+ *
+ * TODO [INTEGRATION]: If LocationValue shape changes in LocationPicker, update
+ * this type to match. Consider a shared /types/location.ts to avoid drift.
  */
 export type AlertLocation = {
   label: string;
+  /** Secondary display line, e.g. city/country — mirrors LocationValue.sublabel */
+  sublabel?: string;
   lat?: number;
   lng?: number;
   radius?: number;

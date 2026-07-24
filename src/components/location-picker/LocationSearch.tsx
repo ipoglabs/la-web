@@ -16,19 +16,15 @@
  *    The key is NEVER exposed to the browser — all calls go through /api/places.
  *
  *    SETUP STEPS:
- *    a) Enable "Places API" in Google Cloud Console
+ *    a) Enable "Places API" in Google Cloud Console (same project/key as
+ *       GOOGLE_MAPS_API_KEY, used elsewhere for Geocoding)
  *       → https://console.cloud.google.com/apis/library/places-backend.googleapis.com
- *    b) Add your key to .env.local:
- *       GOOGLE_PLACES_API_KEY=AIza...
+ *    b) No new key needed — the proxy route reuses GOOGLE_MAPS_API_KEY.
  *    c) Create the proxy route (already prepared below at /api/places/route.ts).
  *       The route accepts ?input=<query> and returns normalised suggestions.
  *    d) Pass props to LocationPicker:
  *       <LocationPicker searchProvider="google" />
  *       (all auth is handled server-side via the proxy route)
- *
- *    NOTE: In dev this POC uses MOCK_GOOGLE_RESPONSES below to simulate the
- *    Google API response shape. Remove the mock block and uncomment the real
- *    fetch call once the API route is live.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -110,93 +106,20 @@ export const STATIC_SUGGESTIONS: SearchSuggestion[] = [
   { label: "Toronto", sublabel: "Ontario, Canada", lat: 43.6532, lng: -79.3832 },
 ];
 
-// ─── Mock Google Places API responses ────────────────────────────────────────
-// Simulates the shape returned by /api/places?input=<query>
-// Replace this with a real fetch once the proxy route is live.
-//
-// Real Google Places Autocomplete response shape (simplified):
-// {
-//   predictions: [{
-//     place_id: string,
-//     structured_formatting: {
-//       main_text: string,        // e.g. "London"
-//       secondary_text: string,   // e.g. "UK"
-//     },
-//     geometry: { location: { lat: number, lng: number } }
-//   }]
-// }
-
-const MOCK_GOOGLE_RESPONSES: Record<string, SearchSuggestion[]> = {
-  lon: [
-    { label: "London", sublabel: "Greater London, UK", lat: 51.5074, lng: -0.1278, placeId: "ChIJdd4hrwug2EcRmSrV3Vo6llI" },
-    { label: "London City Airport", sublabel: "London, UK", lat: 51.5048, lng: 0.0495, placeId: "ChIJyWu6mSmC2EcR1MqzPm73yEE" },
-    { label: "London Bridge", sublabel: "Southwark, London, UK", lat: 51.5079, lng: -0.0877, placeId: "ChIJP1tEQSmC2EcRbr2VeMq1ZfA" },
-  ],
-  man: [
-    { label: "Manchester", sublabel: "Greater Manchester, UK", lat: 53.4808, lng: -2.2426, placeId: "ChIJ2_UmUkxNekgRqmv-BDgUitM" },
-    { label: "Manchester Airport", sublabel: "Greater Manchester, UK", lat: 53.3537, lng: -2.275, placeId: "ChIJicOFpD7Re0gRbL25uoEJ2fI" },
-  ],
-  mum: [
-    { label: "Mumbai", sublabel: "Maharashtra, India", lat: 19.076, lng: 72.8777, placeId: "ChIJwe1EZjDG5zsRaYxkjY_tpF0" },
-    { label: "Mumbai Central", sublabel: "Mumbai, Maharashtra, India", lat: 18.9712, lng: 72.8196, placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4" },
-  ],
-  del: [
-    { label: "Delhi", sublabel: "Delhi, India", lat: 28.7041, lng: 77.1025, placeId: "ChIJLbZ-NFv9DDkRzk0gTkm3wlI" },
-    { label: "Delhi Airport (IGI)", sublabel: "New Delhi, India", lat: 28.5562, lng: 77.1, placeId: "ChIJA3-tDkX9DDkRRW6ioS57s9o" },
-  ],
-  ban: [
-    { label: "Bangalore", sublabel: "Karnataka, India", lat: 12.9716, lng: 77.5946, placeId: "ChIJbU60yXAWrjsR4E9-UejD3_g" },
-    { label: "Bangalore Airport (KIA)", sublabel: "Devanahalli, Karnataka, India", lat: 13.198, lng: 77.7066, placeId: "ChIJL5-rfFEUrjsRv2r5YBCK_cY" },
-  ],
-  sin: [
-    { label: "Singapore", sublabel: "Singapore", lat: 1.3521, lng: 103.8198, placeId: "ChIJdZOLiiMR2jERxPWrUs9peIg" },
-    { label: "Singapore Changi Airport", sublabel: "Singapore", lat: 1.3644, lng: 103.9915, placeId: "ChIJM4MFfqdD2jERcQfBQQegjMc" },
-    { label: "Orchard Road", sublabel: "Central, Singapore", lat: 1.3047, lng: 103.8318, placeId: "ChIJZ6K22-0R2jERk_gWKFw7zPU" },
-  ],
-  che: [
-    { label: "Chennai", sublabel: "Tamil Nadu, India", lat: 13.0827, lng: 80.2707, placeId: "ChIJYTN9T-17UjsRIHklnt-ANwM" },
-  ],
-  hyd: [
-    { label: "Hyderabad", sublabel: "Telangana, India", lat: 17.385, lng: 78.4867, placeId: "ChIJx9Lr6tqZyzsRwvu6koO3k64" },
-  ],
-};
-
-/** Simulates a debounced Google Places API call using mock data */
-export function mockGoogleSearch(query: string): Promise<SearchSuggestion[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const q = query.trim().toLowerCase();
-      // Check mock responses first (prefix match on keys)
-      const mockKey = Object.keys(MOCK_GOOGLE_RESPONSES).find((k) => q.startsWith(k) || k.startsWith(q.slice(0, 3)));
-      if (mockKey) {
-        const filtered = MOCK_GOOGLE_RESPONSES[mockKey].filter(
-          (s) => s.label.toLowerCase().includes(q) || (s.sublabel?.toLowerCase().includes(q) ?? false)
-        );
-        resolve(filtered);
-        return;
-      }
-      resolve([]);
-    }, 300); // simulates network latency
-  });
-}
-
 /**
- * Real Google Places fetch via proxy route.
- * Uncomment this and replace mockGoogleSearch() call below once /api/places is live.
- *
- * async function realGoogleSearch(query: string): Promise<SearchSuggestion[]> {
- *   const res = await fetch(`/api/places?input=${encodeURIComponent(query)}`);
- *   if (!res.ok) throw new Error("Places API error");
- *   const data = await res.json();
- *   return data.predictions.map((p: any) => ({
- *     label: p.structured_formatting.main_text,
- *     sublabel: p.structured_formatting.secondary_text,
- *     lat: p.geometry?.location.lat,
- *     lng: p.geometry?.location.lng,
- *     placeId: p.place_id,
- *   }));
- * }
+ * Real Google Places fetch via proxy route (/api/places/route.ts).
+ * Note: that route already returns pre-normalised { label, sublabel, placeId }
+ * objects, so no further reshaping is needed here — lat/lng aren't returned by
+ * Autocomplete and would need a separate Place Details call if a caller needs
+ * coordinates immediately on select.
  */
+export async function realGoogleSearch(query: string): Promise<SearchSuggestion[]> {
+  const res = await fetch(`/api/places?input=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error("Places API error");
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return (data.predictions ?? []) as SearchSuggestion[];
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -226,8 +149,7 @@ export function LocationSearch({
         setLoading(true);
         setFetchError(null);
         try {
-          // ── MOCK: replace mockGoogleSearch with realGoogleSearch when ready ──
-          let suggestions = await mockGoogleSearch(q);
+          let suggestions = await realGoogleSearch(q);
           if (countryScope?.length) {
             suggestions = suggestions.filter((s) => matchesScope(s.sublabel, countryScope));
           }

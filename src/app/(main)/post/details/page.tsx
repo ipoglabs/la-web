@@ -172,8 +172,7 @@ useEffect(() => {
     phone:
       existing?.phone ||
       user.primaryNumber ||
-      user.phone ||
-      user.mobile ||
+      user.secondaryNumber1 ||
       "",
   });
 }, [user, setField]);
@@ -195,7 +194,7 @@ useEffect(() => {
   const SpecificForm = useMemo(() => {
     if (!importKey) return null;
 
-    return dynamic(() => import(`@/app/components/form/${importKey}`), {
+    return dynamic(() => import(`@/components/form/${importKey}`), {
       ssr: false,
       loading: () => <p>Loading form...</p>,
     });

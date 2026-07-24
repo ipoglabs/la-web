@@ -5,10 +5,11 @@ import {
   useFormContext,
   type FieldValues,
   type UseFormReturn,
+  type Path,
 } from "react-hook-form";
 
 // Form context provider
-export const Form = React.forwardRef<HTMLFormElement, React.HTMLAttributes<HTMLFormElement>>(
+export const Form = React.forwardRef<HTMLFormElement, React.FormHTMLAttributes<HTMLFormElement>>(
   function Form({ children, ...props }, ref) {
     return <form ref={ref} {...props}>{children}</form>;
   }
@@ -20,11 +21,11 @@ export function FormField<TFieldValues extends FieldValues = FieldValues>({
   control,
   render,
 }: {
-  name: string;
+  name: Path<TFieldValues>;
   control: UseFormReturn<TFieldValues>["control"];
   render: (props: any) => React.ReactNode;
 }) {
-  return <Controller name={name} control={control} render={render} />;
+  return <Controller name={name} control={control} render={render as any} />;
 }
 
 // FormItem: Wrapper for a field

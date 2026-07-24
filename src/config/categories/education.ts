@@ -9,6 +9,7 @@ export const education: CategoryItem = {
   subcategories: [
   { id: "tutors", label: "Tutors & Coaching" },
   { id: "online_courses", label: "Online Courses" },
+  { id: "study_materials", label: "Study Materials" },
   { id: "schools_colleges", label: "Schools & Colleges" },
   { id: "language_classes", label: "Language Classes" },
   ],

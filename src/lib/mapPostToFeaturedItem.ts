@@ -1,73 +1,94 @@
 import type { IPost } from "@/models/post";
+import type { FeaturedListingItem } from "@/components/la-blocks/FeaturedListings";
+import type { ListingStatus } from "@/components/la-blocks/la-thumbnail-listing/LaThumbnailListingCard";
+import { COUNTRY_CONFIGS, type CountryCode } from "@/config";
 
-export interface FeaturedListingItem {
-  id: string;
-  href: string;
-  images: { src: string; alt?: string }[];
-  priceLabel: string;
-  priceSuffix?: string;
-  title: string;
-  detailsLabel: string;
-  locationLabel: string;
-  postedAt: string | number | Date;
-  status?: "active" | "closed" | "off-market";
-}
+export type LeanPost = IPost & { _id: unknown };
 
-type LeanPost = IPost & { _id: unknown; createdAt?: Date };
-
-function buildPriceLabel(p: LeanPost): { priceLabel: string; priceSuffix?: string } {
-  if (p.category === "property") {
-    if (p.rentPrice) return { priceLabel: formatMoney(p.rentPrice), priceSuffix: "/ mo" };
-    if (p.salePrice) return { priceLabel: formatMoney(p.salePrice) };
-    if (p.rateNightly) return { priceLabel: formatMoney(p.rateNightly), priceSuffix: "/ night" };
+export function mapStatus(status?: IPost["status"]): ListingStatus {
+  switch (status) {
+    case "off":
+      return "off-market";
+    case "pending":
+      return "pending";
+    case "expired":
+      return "expired";
+    case "deleted":
+      return "deleted";
+    case "active":
+    default:
+      return "active";
   }
-  if (p.category === "vehicles" && p.salePrice) return { priceLabel: formatMoney(p.salePrice) };
-  if (p.category === "jobs") {
-    if (p.salary) return { priceLabel: formatMoney(p.salary), priceSuffix: "/ yr" };
-    if (p.hourlyRate) return { priceLabel: formatMoney(p.hourlyRate), priceSuffix: "/ hr" };
-  }
-  if (p.category === "services" && p.price) return { priceLabel: formatMoney(p.price), priceSuffix: "/ hr" };
-  return { priceLabel: "POA" };
 }
 
-function formatMoney(n: number): string {
-  return `£${n.toLocaleString("en-GB")}`; // TODO: use per-country currency symbol from @/config once wired
+// TODO [REVIEW]: this fallback chain guesses which price field applies per
+// category — no per-category currency conversion, just the post's own
+// market's symbol. Revisit once a proper per-country currency formatter
+// exists.
+function currencySymbolFor(post: LeanPost): string {
+  const code = post.country as CountryCode | undefined;
+  return (code && COUNTRY_CONFIGS[code]?.currencySymbol) || "$";
 }
 
-function buildDetailsLabel(p: LeanPost): string {
-  if (p.category === "property") {
+export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
+  const symbol = currencySymbolFor(post);
+  const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
+  if (post.rentPrice != null) return { priceLabel: fmt(post.rentPrice), priceSuffix: "/ mo" };
+  if (post.salePrice != null) return { priceLabel: fmt(post.salePrice) };
+  if (post.rent != null) return { priceLabel: fmt(post.rent), priceSuffix: "/ mo" };
+  if (post.rateNightly != null) return { priceLabel: fmt(post.rateNightly), priceSuffix: "/ night" };
+  if (post.rateMonthly != null) return { priceLabel: fmt(post.rateMonthly), priceSuffix: "/ mo" };
+  if (post.salary != null) return { priceLabel: fmt(post.salary) };
+  if (post.hourlyRate != null) return { priceLabel: fmt(post.hourlyRate), priceSuffix: "/ hr" };
+  if (post.price != null) return { priceLabel: fmt(post.price) };
+  if (post.budget != null) return { priceLabel: fmt(post.budget) };
+  return { priceLabel: "Price on request" };
+}
+
+// TODO [REVIEW]: generic fallback since there's no single "details" field on
+// Post; revisit per-category once category-specific card layouts exist.
+export function resolveDetailsLabel(post: LeanPost): string {
+  if (post.beds != null || post.baths != null) {
     return [
-      p.beds ? `${p.beds} BEDS` : null,
-      p.baths ? `${p.baths} BATHS` : null,
-      p.propertyType?.toUpperCase(),
-    ].filter(Boolean).join(" • ") || p.subcategory?.toUpperCase() || "";
+      post.beds != null ? `${post.beds} BEDS` : null,
+      post.baths != null ? `${post.baths} BATHS` : null,
+      post.propertyType ? post.propertyType.toUpperCase() : null,
+    ]
+      .filter(Boolean)
+      .join(" • ");
   }
-  if (p.category === "vehicles") {
-    return [p.year, p.kms ? `${p.kms.toLocaleString()} MILES` : null, p.fuelType?.toUpperCase()]
-      .filter(Boolean).join(" • ");
-  }
-  if (p.category === "jobs") {
-    return [p.jobType?.toUpperCase(), p.workMode?.toUpperCase(), p.company]
-      .filter(Boolean).join(" • ");
-  }
-  return `${p.category?.toUpperCase() ?? ""}${p.subcategory ? " • " + p.subcategory.toUpperCase() : ""}`;
+  return [post.category, post.subcategory]
+    .filter(Boolean)
+    .join(" • ")
+    .toUpperCase();
 }
 
-export function mapPostToFeaturedItem(p: LeanPost): FeaturedListingItem {
-  const { priceLabel, priceSuffix } = buildPriceLabel(p);
+export type { FeaturedListingItem };
+
+/**
+ * Public identifier for a post's URL — its `adsId` when present, else the
+ * raw Mongo id. Uses `||`, not `??`: some legacy posts have `adsId: ""`
+ * (empty string, not null/undefined — see generateAdsId.ts), which `??`
+ * would let through as a broken empty-string URL segment.
+ */
+export function resolvePostId(post: LeanPost): string {
+  return post.adsId || String(post._id);
+}
+
+export function mapPostToFeaturedItem(post: LeanPost): FeaturedListingItem {
+  const id = resolvePostId(post);
+  const { priceLabel, priceSuffix } = resolvePrice(post);
+
   return {
-    id: String(p._id),
-    // TODO: switch to `/${countryCode}/listings/${id}` once the new country-scoped
-    // listing detail route is wired to real data — pointing at the working real
-    // detail page for now so links don't 404.
-    href: `/post-details/${String(p._id)}`,
-    images: (p.images ?? []).map((src) => ({ src, alt: p.name })),
+    id,
+    href: `/listings/${id}`,
+    images: (post.images ?? []).map((src) => ({ src })),
     priceLabel,
     priceSuffix,
-    title: p.name,
-    detailsLabel: buildDetailsLabel(p),
-    locationLabel: p.location?.address ?? "",
-    postedAt: p.createdAt ?? new Date(),
-    status: p.status === "active" ? "active" : "closed",
+    title: post.name,
+    detailsLabel: resolveDetailsLabel(post),
+    locationLabel: post.location?.address ?? "",
+    postedAt: post.createdAt ?? new Date(),
+    status: mapStatus(post.status),
   };
 }

@@ -33,8 +33,8 @@ export default function FieldPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const stateOptions = values.country ? Object.keys(mockCountryStateCity[values.country] || {}) : [];
-  const cityOptions = values.country && values.state ? (mockCountryStateCity[values.country][values.state] || []) : [];
+  const stateOptions = values.country ? Object.keys(mockCountryStateCity[values.country as keyof typeof mockCountryStateCity] || {}) : [];
+  const cityOptions = values.country && values.state ? ((mockCountryStateCity[values.country as keyof typeof mockCountryStateCity] as Record<string, string[]>)[values.state] || []) : [];
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setValues((s) => ({ ...s, [e.target.name]: e.target.value }));

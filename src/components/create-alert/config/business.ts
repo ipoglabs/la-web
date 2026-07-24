@@ -1,5 +1,5 @@
 import type { MainCategory } from "../types";
-import { field, workArrangement, conditionFull } from "./shared";
+import { field, workArrangement, conditionFull, experience } from "./shared";
 
 export const business: MainCategory = {
   id: "business",
@@ -115,8 +115,14 @@ export const business: MainCategory = {
     },
     {
       id: "freelance_contractors",
-      label: "Freelance / Contractors",
+      label: "Freelance Contractors",
       icon: "user-check",
+      filters: [field, experience, workArrangement],
+    },
+    {
+      id: "partnership",
+      label: "Partnership Opportunities",
+      icon: "handshake",
       filters: [
         field,
         {
@@ -131,54 +137,6 @@ export const business: MainCategory = {
           ],
         },
         workArrangement,
-      ],
-    },
-    {
-      id: "partnership",
-      label: "Partnership Opportunities",
-      icon: "handshake",
-      filters: [
-        {
-          id: "partner_type",
-          label: "Looking For",
-          type: "toggle",
-          options: [
-            { label: "Co-founder",        value: "cofounder"   },
-            { label: "Investor",          value: "investor"    },
-            { label: "Strategic Partner", value: "strategic"   },
-            { label: "Distributor",       value: "distributor" },
-            { label: "Reseller",          value: "reseller"    },
-            { label: "Joint Venture",     value: "jv"          },
-          ],
-        },
-        {
-          id: "industry",
-          label: "Industry",
-          type: "toggle",
-          options: [
-            { label: "Tech",          value: "tech"          },
-            { label: "F&B",           value: "fnb"           },
-            { label: "Retail",        value: "retail"        },
-            { label: "Services",      value: "services"      },
-            { label: "Manufacturing", value: "manufacturing"  },
-            { label: "Healthcare",    value: "healthcare"    },
-            { label: "Education",     value: "education"     },
-            { label: "Finance",       value: "finance"       },
-            { label: "Other",         value: "other"         },
-          ],
-        },
-        {
-          id: "biz_stage",
-          label: "Stage",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Idea Stage",    value: "idea"        },
-            { label: "MVP",           value: "mvp"         },
-            { label: "Early Revenue", value: "early"       },
-            { label: "Established",   value: "established" },
-          ],
-        },
       ],
     },
     {
@@ -264,52 +222,6 @@ export const business: MainCategory = {
       ],
     },
     {
-      id: "training",
-      label: "Training Opportunities",
-      icon: "graduation-cap",
-      filters: [
-        {
-          id: "training_type",
-          label: "Topic",
-          type: "toggle",
-          options: [
-            { label: "Leadership", value: "leadership" },
-            { label: "Sales",      value: "sales"      },
-            { label: "Marketing",  value: "marketing"  },
-            { label: "Finance",    value: "finance"    },
-            { label: "IT & Tech",  value: "it"         },
-            { label: "HR",         value: "hr"         },
-            { label: "Operations", value: "operations" },
-            { label: "Compliance", value: "compliance" },
-            { label: "Other",      value: "other"      },
-          ],
-        },
-        {
-          id: "format",
-          label: "Format",
-          type: "toggle",
-          options: [
-            { label: "Workshop", value: "workshop" },
-            { label: "Seminar",  value: "seminar"  },
-            { label: "Classroom",value: "class"    },
-            { label: "Online",   value: "online"   },
-            { label: "Webinar",  value: "webinar"  },
-          ],
-        },
-        {
-          id: "audience",
-          label: "For",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Individual", value: "individual" },
-            { label: "Team",       value: "team"       },
-            { label: "Corporate",  value: "corporate"  },
-          ],
-        },
-      ],
-    },
-    {
       id: "franchise",
       label: "Franchise Opportunities",
       icon: "layout-grid",
@@ -350,168 +262,6 @@ export const business: MainCategory = {
             { label: "Unit Franchise",   value: "unit"   },
             { label: "Master Franchise", value: "master" },
             { label: "Area Dev",         value: "area"   },
-          ],
-        },
-      ],
-    },
-    {
-      id: "biz_events",
-      label: "Business Events",
-      icon: "calendar",
-      filters: [
-        {
-          id: "event_type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Conference",     value: "conference" },
-            { label: "Exhibition",     value: "exhibition" },
-            { label: "Trade Fair",     value: "trade_fair" },
-            { label: "Networking",     value: "networking" },
-            { label: "Workshop",       value: "workshop"   },
-            { label: "Seminar",        value: "seminar"    },
-            { label: "Pitch Night",    value: "pitch"      },
-            { label: "Award Ceremony", value: "awards"     },
-          ],
-        },
-        {
-          id: "industry",
-          label: "Industry",
-          type: "toggle",
-          options: [
-            { label: "Tech",       value: "tech"       },
-            { label: "F&B",        value: "fnb"        },
-            { label: "Finance",    value: "finance"    },
-            { label: "Healthcare", value: "healthcare" },
-            { label: "Education",  value: "education"  },
-            { label: "General",    value: "general"    },
-          ],
-        },
-        {
-          id: "event_format",
-          label: "Format",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "In-person", value: "inperson" },
-            { label: "Online",    value: "online"   },
-            { label: "Hybrid",    value: "hybrid"   },
-          ],
-        },
-      ],
-    },
-    {
-      id: "financial_services",
-      label: "Financial Services",
-      icon: "landmark",
-      filters: [
-        {
-          id: "fin_type",
-          label: "Service",
-          type: "toggle",
-          options: [
-            { label: "Business Loan",     value: "loan"       },
-            { label: "Invoice Financing", value: "invoice"    },
-            { label: "Trade Finance",     value: "trade"      },
-            { label: "Equity Funding",    value: "equity"     },
-            { label: "Grants",            value: "grants"     },
-            { label: "Insurance",         value: "insurance"  },
-            { label: "Accounting & Tax",  value: "accounting" },
-            { label: "Payroll",           value: "payroll"    },
-          ],
-        },
-        {
-          id: "provider",
-          label: "Provider",
-          type: "toggle",
-          options: [
-            { label: "Bank",         value: "bank"       },
-            { label: "VC",           value: "vc"         },
-            { label: "Angel",        value: "angel"      },
-            { label: "Government",   value: "government" },
-            { label: "Private Firm", value: "private"    },
-          ],
-        },
-        {
-          id: "for_stage",
-          label: "For",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Startup",    value: "startup"    },
-            { label: "SME",        value: "sme"        },
-            { label: "Enterprise", value: "enterprise" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "biz_misc",
-      label: "Miscellaneous",
-      icon: "box",
-      filters: [
-        {
-          id: "biz_misc_category",
-          label: "Category",
-          type: "toggle",
-          options: [
-            { label: "Signage & Branding", value: "signage"  },
-            { label: "Licenses & Permits", value: "licenses" },
-            { label: "Office Space",       value: "office"   },
-            { label: "Business Contacts",  value: "contacts" },
-            { label: "Other",              value: "other"    },
-          ],
-        },
-        {
-          id: "biz_misc_action",
-          label: "Action",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "For Sale", value: "sale"     },
-            { label: "For Rent", value: "rent"     },
-            { label: "Offering", value: "offering" },
-            { label: "Wanted",   value: "wanted"   },
-          ],
-        },
-      ],
-    },
-    {
-      id: "wanted",
-      label: "Wanted",
-      icon: "search",
-      filters: [
-        {
-          id: "biz_looking_for",
-          label: "Looking For",
-          type: "toggle",
-          options: [
-            { label: "Business to Buy / Lease", value: "biz_sale"  },
-            { label: "B2B Service",             value: "b2b"       },
-            { label: "Freelancer / Contractor", value: "freelance" },
-            { label: "Partner",                 value: "partner"   },
-            { label: "Equipment",               value: "equipment" },
-            { label: "Startup Support",         value: "startup"   },
-            { label: "Training",                value: "training"  },
-            { label: "Franchise",               value: "franchise" },
-            { label: "Financial Services",      value: "finance"   },
-            { label: "Other",                   value: "other"     },
-          ],
-        },
-        {
-          id: "industry",
-          label: "Industry",
-          type: "toggle",
-          options: [
-            { label: "Tech",          value: "tech"          },
-            { label: "F&B",           value: "fnb"           },
-            { label: "Retail",        value: "retail"        },
-            { label: "Services",      value: "services"      },
-            { label: "Manufacturing", value: "manufacturing"  },
-            { label: "Healthcare",    value: "healthcare"    },
-            { label: "Education",     value: "education"     },
-            { label: "Finance",       value: "finance"       },
-            { label: "Other",         value: "other"         },
           ],
         },
       ],

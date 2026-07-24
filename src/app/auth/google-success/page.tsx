@@ -16,7 +16,6 @@ export default function GoogleSuccessPage() {
         if (data.user) {
           setAuth(null, data.user);
         }
-        window.dispatchEvent(new Event("auth-changed"));
       } catch {
         // session cookie is already set — user can still navigate
       }
@@ -28,6 +27,11 @@ export default function GoogleSuccessPage() {
       } else {
         router.push("/");
       }
+
+      // 🔄 Force the root layout (Server Component) to re-run getSession()
+      // so AppHeader picks up the freshly-set session cookie immediately —
+      // router.push() alone does NOT re-render Server Components above this page.
+      router.refresh();
     }
 
     hydrate();

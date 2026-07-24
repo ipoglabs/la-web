@@ -142,6 +142,19 @@ export async function updateProfile(payload: any) {
     }
   }
 
+  /* ================= GENDER ================= */
+  if (payload.gender !== undefined) {
+    const v = String(payload.gender).trim();
+    if (user.gender !== v) {
+      changes.push({
+        field: "Gender",
+        oldValue: user.gender || "-",
+        newValue: v,
+      });
+      user.gender = v;
+    }
+  }
+
   await user.save();
 
   /* ================= EMAIL ================= */

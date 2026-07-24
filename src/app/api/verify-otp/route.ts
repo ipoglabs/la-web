@@ -1,29 +1,27 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/config/database";
-import { getSession } from "@/lib/auth";
 import { verifyOtpService } from "@/lib/otpService";
 
 export async function POST(req: Request) {
   try {
-    await connectDB();
+    const { email, otp } = await req.json();
 
-    const body = await req.json();
+    const trimmed = String(email || "").trim().toLowerCase();
+    const code = String(otp || "").trim();
 
-    const session = await getSession();
+    if (!trimmed || !code) {
+      return NextResponse.json(
+        { error: "Email and code are required" },
+        { status: 400 }
+      );
+    }
 
-    const userId = session?.userId;
-
-    await verifyOtpService({
-      userId,
-      channel: body.channel || "email",
-      value: body.value || body.email,
-      otp: body.otp,
-    });
+    await verifyOtpService({ channel: "email", value: trimmed, otp: code });
 
     return NextResponse.json({ success: true });
-  } catch (e: any) {
+  } catch (err: any) {
+    console.error("verify-otp error:", err);
     return NextResponse.json(
-      { error: e.message || "Verification failed" },
+      { error: err?.message || "Invalid code" },
       { status: 400 }
     );
   }

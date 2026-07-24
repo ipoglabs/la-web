@@ -8,7 +8,7 @@ export function FlagImage({ code, name, ...props }: { code: string; name: string
   }
 
   return (
-    // eslint-disable-next-line jsx-a11y/alt-text
+     
     <img
       src={`/flags/${code}.svg`}
       alt={name}

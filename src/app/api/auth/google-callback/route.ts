@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/authOptions";
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
 import jwt from "jsonwebtoken";
+import { createUserSession } from "@/lib/userSession";
 
 const SESSION_COOKIE = "session";
 const UINFO_COOKIE = "uinfo";
@@ -62,12 +63,14 @@ export async function GET(req: NextRequest) {
   }
 
   // Existing user — issue our JWT and redirect to client-side hydration page
+  const sid = await createUserSession(String(user._id), req);
   const token = jwt.sign(
     {
       userId: String(user._id),
       email: user.email,
       primaryNumber: user.primaryNumber,
       role: user.role ?? "user",
+      sid,
     },
     requireSecret(),
     { expiresIn: MAX_AGE }

@@ -1,34 +1,35 @@
 import { create } from "zustand";
+import { softDeleteAccount } from "@/app/actions/profile/deleteAccount";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 export type DeleteStage = 2 | 3 | 4;
 
-// ─── API Placeholders ──────────────────────────────────────────────────────
-// Each function is a self-contained placeholder.
-// Replace the body with the real fetch/axios call — the store handles
-// loading, error, and state transitions for you.
+// ─── API calls ──────────────────────────────────────────────────────────────
 
 async function apiCheckEligibility(): Promise<{ eligible: boolean; reason?: string }> {
-  // TODO: [API] GET /account/delete-eligibility
-  // Check for: active subscriptions, pending transactions, any blockers.
-  // Returns { eligible: true } when safe to proceed.
-  // Returns { eligible: false, reason: "You have an active subscription." } to block.
+  // No separate eligibility rules exist yet (no subscriptions/pending-txn
+  // concept in the User model) — softDeleteAccount() itself still checks
+  // session validity + isDeleted, so this stays a simple pass-through.
   return { eligible: true };
 }
 
 async function apiSubmitFeedback(reasons: string[], details: string): Promise<void> {
-  // TODO: [API] POST /account/delete-feedback
-  // Body: { reasons, details }
-  // Fire-and-forget is fine — failure should NOT block the user from advancing.
+  // TODO: [API] POST /account/delete-feedback — no backend endpoint for
+  // storing delete-reason feedback yet. Fire-and-forget, non-blocking.
   void reasons; void details;
 }
 
-async function apiDeleteAccount(): Promise<void> {
-  // TODO: [API] DELETE /account
-  // On 2xx: store will advance to stage 4 (goodbye screen).
-  // On 4xx/5xx: throw an Error — the store will surface it as `state.error`.
-  // After real success: clear auth tokens / session before advancing.
+async function apiDeleteAccount(feedback?: string): Promise<void> {
+  const result = await softDeleteAccount(feedback);
+  if (!result.success) {
+    throw new Error(result.message || "We couldn't delete your account.");
+  }
+  // Server already cleared the session cookie — tell the rest of the app
+  // (AppHeader's checkAuth listener) to re-check auth state immediately.
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth-changed"));
+  }
 }
 
 // ─── State & Actions ──────────────────────────────────────────────────────
@@ -123,12 +124,19 @@ export const useDeleteAccountStore = create<DeleteAccountState>((set, get) => ({
   },
 
   deleteAccount: async () => {
+    const { reasons, details } = get();
     set({ isLoading: true, error: null });
     try {
-      await apiDeleteAccount();
+      const feedback = [reasons.join("; "), details].filter(Boolean).join(" — ");
+      await apiDeleteAccount(feedback);
       set({ stage: 4 });
-    } catch {
-      set({ error: "We couldn't delete your account. Please try again or contact support." });
+    } catch (err) {
+      set({
+        error:
+          err instanceof Error
+            ? err.message
+            : "We couldn't delete your account. Please try again or contact support.",
+      });
     } finally {
       set({ isLoading: false });
     }

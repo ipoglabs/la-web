@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { useRecentSearches, type RecentSearch } from "@/lib/hooks/use-recent-searches";
 import { suggestCategory, type CategorySuggestion } from "@/lib/search-keywords";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
+import type { LocationValue } from "@/components/location-picker";
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -145,9 +146,14 @@ function ScopeChip({
     return () => document.removeEventListener("mousedown", h);
   }, [catOpen]);
 
-  // Shared category dropdown panel — main + subcategories inline
+  // Shared category dropdown panel — main + subcategories inline.
+  // Anchored to the trigger's RIGHT edge (not left): this chip sits near the
+  // right end of the search bar (after the keyword input, before the arrow
+  // button), so a left-anchored w-64 panel opened further rightward from
+  // there overflows past the bar. Opening leftward from the right edge
+  // keeps it inside the bar instead.
   const catDropdown = catOpen && (
-    <div className="absolute left-0 top-full mt-1 z-50 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+    <div className="absolute right-0 top-full mt-1 z-50 w-64 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
       <div className="px-3 pt-2.5 pb-1">
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Select category</span>
       </div>

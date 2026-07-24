@@ -1,24 +1,47 @@
+/**
+ * lib/db.ts
+ *
+ * Singleton MongoDB connection for Next.js.
+ *
+ * Next.js hot-reloads modules in development, which would create a new
+ * Mongoose connection on every reload. The globalThis cache prevents that.
+ *
+ * SETUP — add to .env.local:
+ *   MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/mydb?retryWrites=true&w=majority
+ *
+ * USAGE:
+ *   import dbConnect from "@/lib/db";
+ *   await dbConnect();
+ */
+
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-if (!MONGODB_URI) throw new Error("MONGODB_URI missing in env");
-
-type MongooseGlobal = typeof globalThis & { _mongoose?: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null } };
-
-const g = global as MongooseGlobal;
-
-if (!g._mongoose) {
-  g._mongoose = { conn: null, promise: null };
+// Extend globalThis to cache the connection across hot-reloads in dev
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongooseCache: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
 }
 
-export default async function connectDB() {
-  if (g._mongoose!.conn) return g._mongoose!.conn;
+const cached = globalThis._mongooseCache ?? { conn: null, promise: null };
+globalThis._mongooseCache = cached;
 
-  if (!g._mongoose!.promise) {
-    g._mongoose!.promise = mongoose
-      .connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || undefined })
-      .then((m) => m);
+export default async function dbConnect(): Promise<typeof mongoose> {
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error(
+      'Missing MONGODB_URI — add it to .env.local:\n  MONGODB_URI=mongodb+srv://...',
+    );
   }
-  g._mongoose!.conn = await g._mongoose!.promise;
-  return g._mongoose!.conn;
+
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+    });
+  }
+
+  cached.conn = await cached.promise;
+  console.log("Connected DB:", cached.conn.connection.db?.databaseName);
+  return cached.conn;
 }

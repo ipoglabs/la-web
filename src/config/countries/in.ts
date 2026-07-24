@@ -22,8 +22,6 @@ export const IN_CONFIG: CountryConfig = {
   radiusUnit:     "km",
   currency:       "INR",
   currencySymbol: "₹",
-  // in.ts — use whatever matches your actual in.ts currencySymbol value there
-locationPlaceholder: "e.g. Mumbai, Delhi, Bengaluru",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────
@@ -37,9 +35,9 @@ locationPlaceholder: "e.g. Mumbai, Delhi, Bengaluru",
 
   // ── Listings source switch by deployment stage ───────────────────────────
   listingsSourceByStage: {
-    dev: "mock",
-    qa: "mock",
-    staging: "mock",
+    dev: "db",
+    qa: "db",
+    staging: "db",
     prod: "db",
   },
 

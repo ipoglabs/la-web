@@ -23,9 +23,10 @@
  *   src?       string                     Image URL. Falls back to initials on error.
  *   alt?       string                     Alt text for the image.
  *   initials?  string                     1–2 characters shown when no image (default "?").
- *   size?      "xs"|"sm"|"md"|"lg"|"xl"   Visual size (default "md").
+ *   size?      "xs"|"sm"|"md"|"lg"|"xl"|"2xl"  Visual size (default "md").
  *   status?    "online"|"busy"|"offline"|"none"  Status dot colour (default "none").
  *   shape?     "circle"|"rounded"         Border-radius variant (default "circle").
+ *   ring?      boolean                    Subtle grey ring + white gap around the avatar (default false).
  *   className? string                     Extra classes on the root element.
  */
 "use client";
@@ -33,7 +34,7 @@ import * as React from "react";
 import { UserIcon } from "@heroicons/react/24/solid";
 import { cn } from "@/lib/utils";
 
-export type AvatarSize   = "xs" | "sm" | "md" | "lg" | "xl";
+export type AvatarSize   = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type AvatarStatus = "online" | "busy" | "offline" | "none";
 export type AvatarShape  = "circle" | "rounded";
 
@@ -44,16 +45,21 @@ export interface AvatarProps {
   size?:      AvatarSize;
   status?:    AvatarStatus;
   shape?:     AvatarShape;
+  ring?:      boolean;
   className?: string;
 }
 
 /* ─── size tokens ──────────────────────────────────────────── */
-const sizeMap: Record<AvatarSize, { container: string; text: string; dot: string }> = {
-  xs: { container: "h-6 w-6",   text: "text-sm font-semibold",  dot: "h-2 w-2 ring-[1.5px]"  },
-  sm: { container: "h-8 w-8",   text: "text-sm font-semibold",  dot: "h-2.5 w-2.5 ring-2"    },
-  md: { container: "h-10 w-10", text: "text-sm font-medium",       dot: "h-3 w-3 ring-2"        },
-  lg: { container: "h-12 w-12", text: "text-base font-medium",     dot: "h-3.5 w-3.5 ring-2"    },
-  xl: { container: "h-16 w-16", text: "text-xl font-semibold",     dot: "h-4 w-4 ring-2"        },
+/* `dotOffset` nudges the status dot inward from the bottom-right corner so
+   it sits on the circle's curve instead of floating in the square bounding
+   box's empty corner (only visible at larger sizes). */
+const sizeMap: Record<AvatarSize, { container: string; text: string; dot: string; dotOffset: string }> = {
+  xs: { container: "h-6 w-6",   text: "text-sm font-semibold",  dot: "h-2 w-2 ring-[1.5px]",  dotOffset: "bottom-0 right-0" },
+  sm: { container: "h-8 w-8",   text: "text-sm font-semibold",  dot: "h-2.5 w-2.5 ring-2",    dotOffset: "bottom-0 right-0" },
+  md: { container: "h-10 w-10", text: "text-sm font-medium",       dot: "h-3 w-3 ring-2",        dotOffset: "bottom-0.5 right-0.5" },
+  lg: { container: "h-12 w-12", text: "text-base font-medium",     dot: "h-3.5 w-3.5 ring-2",    dotOffset: "bottom-0.5 right-0.5" },
+  xl: { container: "h-16 w-16", text: "text-xl font-semibold",     dot: "h-4 w-4 ring-2",        dotOffset: "bottom-1 right-1" },
+  "2xl": { container: "h-24 w-24 sm:h-28 sm:w-28 lg:h-32 lg:w-32", text: "text-2xl sm:text-3xl font-semibold", dot: "h-4 w-4 sm:h-5 sm:w-5 ring-2 sm:ring-[3px]", dotOffset: "bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 lg:bottom-2.5 lg:right-2.5" },
 };
 
 /* ─── status colours ───────────────────────────────────────── */
@@ -78,6 +84,7 @@ export function Avatar({
   size    = "md",
   status  = "none",
   shape   = "circle",
+  ring    = false,
   className,
 }: AvatarProps) {
   const [imgError, setImgError] = React.useState(false);
@@ -90,7 +97,7 @@ export function Avatar({
   }
 
   const showImage = Boolean(src) && !imgError;
-  const { container, text, dot } = sizeMap[size];
+  const { container, text, dot, dotOffset } = sizeMap[size];
   const shapeClass = shapeMap[shape];
 
   return (
@@ -101,6 +108,7 @@ export function Avatar({
           shapeClass,
           "flex items-center justify-center overflow-hidden select-none",
           showImage ? "bg-transparent" : "bg-slate-200 text-slate-700",
+          ring && "ring-2 ring-slate-200 ring-offset-2 ring-offset-white",
         )}
       >
         {showImage ? (
@@ -124,7 +132,8 @@ export function Avatar({
         <span
           aria-label={status}
           className={cn(
-            "absolute bottom-0 right-0 rounded-full ring-white",
+            "absolute rounded-full ring-white",
+            dotOffset,
             dot,
             statusColor[status],
           )}

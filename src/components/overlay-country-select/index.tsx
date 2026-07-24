@@ -41,13 +41,22 @@ interface Props {
    * why the user sees this overlay and listing the supported countries.
    */
   detectedCountry?: string;
-  /** Called after the cookie is committed and router.refresh() fires. Use for UI cleanup only (e.g. close a dropdown). */
+  /** Called after the cookie is committed and navigation/refresh fires. Use for UI cleanup only (e.g. close a dropdown). */
   onSelect?: (code: string) => void;
   /** If provided, a close button is shown and called on dismiss */
   onClose?: () => void;
+  /**
+   * Whether selecting a country navigates to "/" (fresh landing for the new
+   * market) + router.refresh(). Defaults to true — this is required for
+   * correct behaviour anywhere in the real app (see handleSelect for why).
+   * Set to false only for isolated design-system/snippet demos that render
+   * this component purely for visual reference and must never navigate the
+   * user away from the demo page.
+   */
+  navigateOnSelect?: boolean;
 }
 
-export function OverlayCountrySelect({ currentCode, detectedCountry, onSelect, onClose }: Props) {
+export function OverlayCountrySelect({ currentCode, detectedCountry, onSelect, onClose, navigateOnSelect = true }: Props) {
   const router = useRouter();
   // Seed from explicit prop first, then from the active cookie (switch-country flow)
   const [selected, setSelected] = useState<string | null>(
@@ -58,9 +67,26 @@ export function OverlayCountrySelect({ currentCode, detectedCountry, onSelect, o
     if (!isAllowedCountry(code)) return;
     setSelected(code);
     commitCountry(code);
+
+    // Always land on the fresh landing page for the new country — never stay
+    // on the current route. Two reasons this matters:
+    //  1. Country-prefixed routes (/in/listings, /sg/listings/...) treat the
+    //     URL segment as the source of truth (see CountryProvider) — it wins
+    //     over the cookie, so refresh() alone would leave the UI looking
+    //     unchanged until the user manually navigated away.
+    //  2. Listing/browse data is market-specific (ids, currency, mock data) —
+    //     refreshing in place would either show stale data for the old
+    //     market or mix markets. Returning to "/" guarantees a clean start.
+    // push() navigates first, refresh() (same tick) forces the root layout
+    // and every Server Component to re-read the just-committed cookie rather
+    // than serve a cached render — same pattern used everywhere else in the
+    // app, just paired with a navigation this time.
+    if (navigateOnSelect) {
+      router.push("/");
+      router.refresh();
+    }
     // Always refresh immediately — before any parent closes/unmounts.
     // The onSelect callback handles UI cleanup only (close dropdown etc.).
-    router.refresh();
     if (onSelect) onSelect(code);
 
     // TODO(API): Persist country preference to backend when auth is integrated.
