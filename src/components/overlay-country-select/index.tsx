@@ -100,7 +100,6 @@ export function OverlayCountrySelect({ currentCode, detectedCountry, onSelect, o
 
   const overlay = (
     <div
-      data-country-select-overlay
       className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
       onMouseDown={(e) => e.stopPropagation()}
     >
