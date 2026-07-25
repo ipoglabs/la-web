@@ -1,12 +1,8 @@
 // app/api/create-qr-payment/route.ts
-import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
+import { getStripe } from '@/lib/stripe'
 import { razorpay } from '@/lib/razorpay'
 import { getOrCreateRazorpayCustomer } from '@/lib/rzpcustomer'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-06-24.dahlia',
-})
 
 export async function POST(req: Request) {
   try {
@@ -23,6 +19,7 @@ export async function POST(req: Request) {
 
     // ── Singapore: Stripe Payment Link QR (SGD) ──────────────────────────────
     if (country === 'SG') {
+      const stripe = getStripe()
       const product = await stripe.products.create({
         name: `Lokalads Donation — ${donorName || 'Anonymous'}`,
       })
@@ -82,6 +79,7 @@ export async function POST(req: Request) {
 
     // ── UK: Stripe Payment Link QR (GBP) ─────────────────────────────────────
     if (country === 'GB') {
+      const stripe = getStripe()
       const product = await stripe.products.create({
         name: `Lokalads Donation — ${donorName || 'Anonymous'}`,
       })

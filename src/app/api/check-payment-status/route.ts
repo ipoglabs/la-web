@@ -1,11 +1,7 @@
 // app/api/check-payment-status/route.ts
 // Polled by ScanPayPanel every 3 seconds to detect payment completion.
-import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-06-24.dahlia',
-})
+import { getStripe } from '@/lib/stripe'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -16,7 +12,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    const intent = await getStripe().paymentIntents.retrieve(paymentIntentId)
     return NextResponse.json({ status: intent.status })
     // Possible statuses: requires_payment_method | requires_confirmation |
     //   requires_action | processing | requires_capture | canceled | succeeded

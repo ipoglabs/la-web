@@ -8,15 +8,12 @@
 //   2. Confirm with a UPI payment method → Stripe returns next_action.upi_await_notification
 //      which contains a hosted_voucher_url or upi_qr_code
 //
-import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-06-24.dahlia',
-})
+import { getStripe } from '@/lib/stripe'
 
 export async function POST(req: Request) {
   try {
+    const stripe = getStripe()
     const { paymentIntentId } = await req.json()
     if (!paymentIntentId) {
       return NextResponse.json({ error: 'Missing paymentIntentId' }, { status: 400 })

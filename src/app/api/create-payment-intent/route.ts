@@ -1,10 +1,6 @@
 // app/api/create-payment-intent/route.ts
-import Stripe from "stripe";
 import { NextResponse } from "next/server";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-06-24.dahlia",
-});
+import { getStripe } from "@/lib/stripe";
 
 // Supported currencies per country
 const CURRENCY_MAP: Record<string, string> = {
@@ -29,7 +25,7 @@ export async function POST(req: Request) {
     // SGD/GBP/USD: multiply by 100  |  INR: multiply by 100 (paise)
     const amountInSmallestUnit = Math.round(amount * 100);
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: amountInSmallestUnit,
       currency: currency.toLowerCase(),
       automatic_payment_methods: { enabled: true }, // enables cards, UPI, wallets etc
