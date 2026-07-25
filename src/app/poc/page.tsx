@@ -43,7 +43,7 @@ export default function PocIndexPage() {
 
         <div className="mb-14 flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">poc-next</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">LokalAds</h1>
             <p className="text-sm text-muted-foreground mt-1">
               UI/UX playground — components and experiments
             </p>

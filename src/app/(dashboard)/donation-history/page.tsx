@@ -57,7 +57,16 @@ export default async function DonationHistoryPage() {
 
   await dbConnect();
 
-  const donations = await Donation.find({ donorEmail: user.email })
+  // donorUserId is the reliable match (set server-side at donation time,
+  // see POST /api/donations) — donorEmail is only kept as a fallback for
+  // donations made before that field existed, and only when the account
+  // actually has an email (phone-only accounts never will).
+  const donations = await Donation.find({
+    $or: [
+      { donorUserId: user.id },
+      ...(user.email ? [{ donorEmail: user.email }] : []),
+    ],
+  })
     .sort({ createdAt: -1 })
     .lean();
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Donation from "@/models/donation";
+import { getSession } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +16,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Server-derived from the session cookie, never trusted from the
+    // request body — ties the donation to the logged-in account (if any)
+    // regardless of what email the donor typed on the form, so
+    // /donation-history can find it even for phone-only accounts. Guest
+    // donations (not logged in) simply get no donorUserId.
+    const session = await getSession();
+
     const donation = await Donation.create({
+      ...(session?.id ? { donorUserId: session.id } : {}),
       donorName,
       donorEmail,
       amount,
