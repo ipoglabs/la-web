@@ -900,36 +900,45 @@ export default function DonateReviewPage() {
                       </div>
                     )}
 
-                    {/* Secure note — same weight/style as the Stripe panel's note */}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-green-600 shrink-0">
-                        <path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" />
-                      </svg>
-                      Encrypted &amp; processed securely via Razorpay. We never store your card details.
-                    </div>
-
-                    {/* Visual-only "card details" panel styled to mirror the
-                        Stripe form's chrome (bordered block + network badges).
-                        No real input fields here on purpose — actual entry
-                        still happens in Razorpay's secure modal below, since
-                        true inline fields require Razorpay's separate
-                        PCI-compliant Custom Checkout integration, which isn't
-                        set up. Fake-but-unusable input boxes would be more
-                        confusing than this preview + button. */}
-                    <div className="w-full border border-slate-300 rounded-lg bg-slate-50 px-4 py-4 mb-4 text-left">
-                      <p className="text-sm font-medium text-slate-700 mb-2">Card details</p>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        {['VISA', 'Mastercard', 'Amex', 'RuPay'].map((brand) => (
-                          <span
-                            key={brand}
-                            className="text-[10px] font-bold tracking-wide text-slate-500 border border-slate-300 rounded px-1.5 py-0.5 bg-white"
-                          >
-                            {brand}
-                          </span>
-                        ))}
+                    {/* Visual-only "card form" styled to match the Stripe
+                        PaymentElement's chrome (see StripeProvider.tsx's
+                        `appearance` — gray-100 fields, gray-700 borders,
+                        rounded-md), so the India and SG/GB panels look like
+                        the same product. These fields are NOT real inputs —
+                        actual entry still happens in Razorpay's secure modal
+                        below, since true inline fields require Razorpay's
+                        separate PCI-compliant Custom Checkout integration,
+                        which isn't set up. Fake-but-unusable typed input
+                        boxes would be more confusing than this preview. */}
+                    <div className="w-full border border-slate-300 rounded-md p-4 mb-4 space-y-3 text-left">
+                      <div>
+                        <p className="text-sm font-medium text-slate-700 mb-1">Card number</p>
+                        <div className="flex items-center justify-between rounded-md border border-slate-700 bg-slate-100 px-4 py-3">
+                          <span className="text-sm text-slate-500">1234 1234 1234 1234</span>
+                          <div className="flex items-center gap-1">
+                            {['VISA', 'Mastercard', 'RuPay'].map((brand) => (
+                              <span
+                                key={brand}
+                                className="text-[10px] font-bold tracking-wide text-slate-500 border border-slate-300 rounded px-1 py-0.5 bg-white"
+                              >
+                                {brand}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-400">
-                        You'll enter your card number, expiry, and CVC in Razorpay's secure window after tapping below.
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-slate-700 mb-1">Expiry</p>
+                          <div className="rounded-md border border-slate-700 bg-slate-100 px-4 py-3 text-sm text-slate-500">MM / YY</div>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-slate-700 mb-1">CVC</p>
+                          <div className="rounded-md border border-slate-700 bg-slate-100 px-4 py-3 text-sm text-slate-500">CVC</div>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-500 pt-1">
+                        You&apos;ll enter these details in Razorpay&apos;s secure window after tapping below.
                       </p>
                     </div>
 
@@ -943,11 +952,17 @@ export default function DonateReviewPage() {
                       email={donorEmail}
                       method="card"
                       label={`Confirm & Pay ₹${amountRaw}`}
-                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                      className="w-full py-3 rounded-full bg-blue-700 hover:bg-blue-600 text-white font-semibold text-base transition disabled:opacity-50 disabled:cursor-not-allowed"
                       scriptLoaded={rzpScriptLoaded}
                       onSuccess={handleSuccess}
                       onError={handleRazorpayError}
                     />
+
+                    {/* Matches the Stripe panel's caption — same placement
+                        (below the button), size, and color. */}
+                    <p className="text-center text-sm text-slate-400 mt-3">
+                      🔒 Secured by Razorpay · PCI DSS Level 1
+                    </p>
                   </>
                 ) : (
                   <>
