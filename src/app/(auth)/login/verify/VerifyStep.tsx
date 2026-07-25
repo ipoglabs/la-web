@@ -13,10 +13,12 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OtpInput } from "@/components/ui/otp-input";
 import { LaCard } from "@/components/la";
+import ConfettiButton from "@/components/confettibutton";
+import { useConfettiCelebration } from "@/lib/hooks/useConfettiCelebration";
 import { useResendTimer } from "@/lib/hooks/useResendTimer";
 import { maskEmail } from "@/lib/utils";
 import { useLoginStore } from "@/lib/stores/loginStore";
-import { resolveIdentity } from "../resolveIdentity";
+import { resolveIdentity } from "../../resolveIdentity";
 
 function maskPhone(digits: string): string {
   if (digits.length <= 2) return digits;
@@ -35,6 +37,7 @@ export function VerifyStep() {
   const [otpErrorMsg, setOtpErrorMsg] = useState("");
   const [verifying, setVerifying] = useState(false);
   const { seconds, enabled, reset: resetTimer } = useResendTimer(60);
+  const { celebrating, celebrate } = useConfettiCelebration();
 
   const redirectTarget = searchParams.get("redirect") || "/";
 
@@ -79,6 +82,7 @@ export function VerifyStep() {
             redirectParam: searchParams.get("redirect"),
             redirectTarget,
             router,
+            celebrate,
           });
           return;
         }
@@ -108,6 +112,7 @@ export function VerifyStep() {
 
   return (
     <div className="w-full flex items-center justify-center bg-[#e9eef4] px-4 py-12">
+      {celebrating && <ConfettiButton autoFire showButton={false} />}
       <LaCard className="w-full max-w-xs rounded-2xl p-8 flex flex-col gap-5">
 
         {/* Heading */}

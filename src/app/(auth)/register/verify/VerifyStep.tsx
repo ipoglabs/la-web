@@ -21,15 +21,24 @@
  *                real Mongo-generated + emailed code.
  * A network failure (distinct from a wrong code) shows its own message
  * rather than being mistaken for "incorrect code".
+ *
+ * On success, hands off to the shared `resolveIdentity()` helper (mirrors
+ * Login's VerifyStep) instead of always continuing to Details/Role —
+ * someone "registering" with an email/phone that already has an account
+ * gets signed straight into it, rather than filling in Details/Role only
+ * to have `complete-profile` 409 at the very last step.
  */
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OtpInput } from "@/components/ui/otp-input";
 import { LaCard } from "@/components/la";
+import ConfettiButton from "@/components/confettibutton";
+import { useConfettiCelebration } from "@/lib/hooks/useConfettiCelebration";
 import { useResendTimer } from "@/lib/hooks/useResendTimer";
 import { maskEmail, withRedirectParam } from "@/lib/utils";
 import { useOnboardingStore } from "@/lib/stores/onboardingStore";
+import { resolveIdentity } from "../../resolveIdentity";
 
 function maskPhone(digits: string): string {
   if (digits.length <= 2) return digits;
@@ -40,17 +49,16 @@ export function VerifyStep() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectParam = searchParams.get("redirect");
+  const redirectTarget = redirectParam || "/";
   const method = useOnboardingStore((s) => s.method);
   const identifier = useOnboardingStore((s) => s.identifier);
-  const setVerified = useOnboardingStore((s) => s.setVerified);
-  const setProof = useOnboardingStore((s) => s.setProof);
-  const markAccountCreated = useOnboardingStore((s) => s.markAccountCreated);
   const reset = useOnboardingStore((s) => s.reset);
 
   const [otpError, setOtpError] = useState(false);
   const [otpErrorMsg, setOtpErrorMsg] = useState("");
   const [verifying, setVerifying] = useState(false);
   const { seconds, enabled, reset: resetTimer } = useResendTimer(60);
+  const { celebrating, celebrate } = useConfettiCelebration();
 
   const handleOtpErrorCleared = useCallback(() => {
     setOtpError(false);
@@ -85,10 +93,18 @@ export function VerifyStep() {
       .then(async (res) => {
         if (res.ok) {
           const { data } = (await res.json()) as { data: { verified: true; proof: string } };
-          setVerified(true);
-          setProof(data.proof);
-          markAccountCreated();
-          router.push(withRedirectParam("/register/details", redirectParam));
+          // Matched → signs the user into their existing account and
+          // redirects; no match → hands off into this same store and
+          // continues to /register/details exactly as before.
+          await resolveIdentity({
+            method: method as "phone_otp" | "magic_link",
+            identifier,
+            proof: data.proof,
+            redirectParam,
+            redirectTarget,
+            router,
+            celebrate,
+          });
           return;
         }
         if (res.status === 422) {
@@ -117,6 +133,7 @@ export function VerifyStep() {
 
   return (
     <div className="w-full flex items-center justify-center bg-[#e9eef4] px-4 py-12">
+      {celebrating && <ConfettiButton autoFire showButton={false} />}
       <LaCard className="w-full max-w-xs rounded-2xl p-8 flex flex-col gap-5">
 
         {/* Heading */}

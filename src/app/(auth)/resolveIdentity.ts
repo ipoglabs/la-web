@@ -1,7 +1,11 @@
 /**
- * resolveIdentity — shared by Login's MethodStep (Google/Apple) and
- * VerifyStep (Magic Link/Phone OTP) — the one fork point both call right
- * after identity is proven.
+ * resolveIdentity — the one fork point every "identity just got proven"
+ * moment calls through, from both journeys:
+ *   - Login's VerifyStep (Magic Link/Phone OTP) — the original caller.
+ *   - Register's VerifyStep (Magic Link/Phone OTP) — added so registering
+ *     with an email/phone that already has an account signs the user in
+ *     instead of forcing them through Details/Role and then 409-ing on
+ *     `complete-profile` at the very last step.
  *
  * Calls `POST /api/auth/resolve-identity` (passing the `proof` token
  * minted by whichever identity-proof route ran just before this — see
@@ -13,7 +17,9 @@
  *     `setMethod` + `markAccountCreated`, then redirects to
  *     `/register/details` to complete the still-missing DOB/Gender/Role.
  *     This is intentional, not a bug — see `onboardingStore.ts` header
- *     and `DetailsStep.tsx`/`RoleStep.tsx` mount-guard comments.
+ *     and `DetailsStep.tsx`/`RoleStep.tsx` mount-guard comments. When
+ *     Register's own VerifyStep is the caller, `onboardingStore` already
+ *     has this method/identifier — this re-set is a harmless no-op.
  *
  * 2026-07-16 audit fix: for `magic_link`/`phone_otp`, this also calls
  * `setVerified(true)` on the shared store before handing off — without
@@ -30,8 +36,14 @@
 import { toast } from "sonner";
 import type { useRouter } from "next/navigation";
 import { useOnboardingStore } from "@/lib/stores/onboardingStore";
-import type { SignupMethod } from "@/lib/stores/loginStore";
 import { withRedirectParam } from "@/lib/utils";
+
+type Celebrate = () => Promise<void>;
+
+// Structurally identical to loginStore's/onboardingStore's own SignupMethod
+// — defined locally (not imported from either) since this helper now serves
+// both journeys and shouldn't imply ownership by one of them.
+type SignupMethod = "google" | "apple" | "magic_link" | "phone_otp";
 
 interface ResolveIdentityParams {
   method: SignupMethod;
@@ -42,6 +54,10 @@ interface ResolveIdentityParams {
   redirectParam: string | null;
   redirectTarget: string;
   router: ReturnType<typeof useRouter>;
+  /** Shows a confetti burst and resolves once it's had time to actually
+   *  render — see `useConfettiCelebration.ts`. Only relevant to the
+   *  `matched` (login-success) branch; omit for callers that don't want it. */
+  celebrate?: Celebrate;
 }
 
 export async function resolveIdentity({
@@ -52,6 +68,7 @@ export async function resolveIdentity({
   redirectParam,
   redirectTarget,
   router,
+  celebrate,
 }: ResolveIdentityParams): Promise<void> {
   const res = await fetch("/api/auth/resolve-identity", {
     method: "POST",
@@ -64,6 +81,7 @@ export async function resolveIdentity({
   if (data.matched) {
     const firstName = fullName?.trim().split(/\s+/)[0] || "back";
     toast.success(`Welcome ${firstName === "back" ? "back" : firstName}!`);
+    await celebrate?.();
     router.push(redirectTarget);
     // router.push() alone does not re-run the root layout Server Component,
     // so AppHeader's server-seeded `user` prop would stay stale (logged out)

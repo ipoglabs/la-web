@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
-import AppleCompleteForm from "./AppleCompleteForm";
+import AppleBootstrap from "./AppleBootstrap";
 
 /** Mirrors register/google-complete/page.tsx exactly. */
 export default async function AppleCompletePage() {
@@ -21,5 +21,5 @@ export default async function AppleCompletePage() {
     redirect("/login");
   }
 
-  return <AppleCompleteForm appleData={appleData} />;
+  return <AppleBootstrap appleData={appleData} />;
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
@@ -12,25 +13,42 @@ import { BASE_ROLE, type RoleId } from "@/config/roles";
 const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7;
 
-function signJwt(payload: object) {
+// OAuth methods prove identity via the short-lived, httpOnly cookie
+// google-callback/apple-callback already set for a brand-new user — see
+// that route for how it's minted. Reading it server-side here (rather than
+// trusting a client-supplied proof string) means the identity check never
+// leaves the server.
+const OAUTH_PENDING_COOKIE: Record<string, string> = {
+  google: "google_pending",
+  apple: "apple_pending",
+};
+
+function requireSecret() {
   if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is not set");
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: MAX_AGE });
+  return process.env.JWT_SECRET;
+}
+
+function signJwt(payload: object) {
+  return jwt.sign(payload, requireSecret(), { expiresIn: MAX_AGE });
 }
 
 /**
  * POST /api/auth/complete-profile
- * { method, identifier, fullName, gender, dateOfBirthIso, roleIds, specialties, customRole }
+ * { method, identifier, proof, fullName, gender, dateOfBirthIso, roleIds, specialties, customRole }
  *
- * Real account creation for the passwordless Register journey (final
- * step, called by RoleStep's Skip/Continue). Requires a valid
- * `auth-proof` token proving `identifier` was actually verified via OTP
- * (magic_link/phone_otp) in this same journey — google/apple accounts are
- * created by the existing real `/api/auth/google-callback` +
- * `/register/google-complete` flow instead and never reach this route.
+ * Real account creation for the Register journey (final step, called by
+ * RoleStep's Skip/Continue) for every signup method:
+ *   - magic_link / phone_otp: identity proven by `proof`, an auth-proof
+ *     token minted after OTP verification (see lib/auth-proof.ts).
+ *   - google / apple: identity proven by the `google_pending`/`apple_pending`
+ *     cookie google-callback/apple-callback set right after real OAuth
+ *     success (see GoogleBootstrap.tsx/AppleBootstrap.tsx for how the
+ *     onboarding wizard picks the journey up from there).
  *
  * Per the schema migration agreed for this port: email and primaryNumber
  * are each optional+sparse (one is required, enforced by the model's
- * pre-validate hook) and password is optional — this flow never sets one.
+ * pre-validate hook) and password is optional — this flow never sets one,
+ * including for google/apple (they don't use password auth either).
  */
 export async function POST(req: Request) {
   try {
@@ -44,30 +62,60 @@ export async function POST(req: Request) {
     const specialties = body?.specialties && typeof body.specialties === "object" ? body.specialties : {};
     const customRole: string | null = body?.customRole ?? null;
 
-    if (method !== "magic_link" && method !== "phone_otp") {
+    const isOAuth = method === "google" || method === "apple";
+    if (!isOAuth && method !== "magic_link" && method !== "phone_otp") {
       return NextResponse.json({ error: "Unsupported method for this route" }, { status: 400 });
     }
     if (!identifier || !fullName || !dateOfBirthIso) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const proof = String(body?.proof || "");
-    if (!verifyIdentityProof(proof, method, identifier)) {
-      return NextResponse.json({ error: "Identity not verified" }, { status: 401 });
+    let oauthImage: string | undefined;
+    let pendingCookieName: string | undefined;
+
+    if (isOAuth) {
+      pendingCookieName = OAUTH_PENDING_COOKIE[method];
+      const cookieStore = await cookies();
+      const pendingToken = cookieStore.get(pendingCookieName)?.value;
+      if (!pendingToken) {
+        return NextResponse.json(
+          { error: "Your sign-in session expired. Please sign in again." },
+          { status: 401 }
+        );
+      }
+      try {
+        const decoded = jwt.verify(pendingToken, requireSecret()) as { payload: string };
+        const pending = JSON.parse(decoded.payload) as { email: string; name: string; image: string };
+        if (pending.email.toLowerCase() !== identifier.toLowerCase()) {
+          return NextResponse.json({ error: "Identity not verified" }, { status: 401 });
+        }
+        oauthImage = pending.image || undefined;
+      } catch {
+        return NextResponse.json(
+          { error: "Your sign-in session expired. Please sign in again." },
+          { status: 401 }
+        );
+      }
+    } else {
+      const proof = String(body?.proof || "");
+      if (!verifyIdentityProof(proof, method, identifier)) {
+        return NextResponse.json({ error: "Identity not verified" }, { status: 401 });
+      }
     }
 
     await dbConnect();
 
-    const isEmail = method === "magic_link";
-    const target = normalizeTarget(isEmail ? "email" : "phone", identifier);
+    // Every method except phone_otp is keyed off email.
+    const usesEmail = method !== "phone_otp";
+    const target = normalizeTarget(usesEmail ? "email" : "phone", identifier);
 
     const dup = await User.findOne({
-      ...(isEmail ? { email: target } : { primaryNumber: target }),
+      ...(usesEmail ? { email: target } : { primaryNumber: target }),
       accountStatus: { $nin: ["Deleted"] },
     });
     if (dup) {
       return NextResponse.json(
-        { error: `An account with that ${isEmail ? "email" : "phone number"} already exists.` },
+        { error: `An account with that ${usesEmail ? "email" : "phone number"} already exists.` },
         { status: 409 }
       );
     }
@@ -80,12 +128,13 @@ export async function POST(req: Request) {
       fullName,
       dateOfBirth: new Date(dateOfBirthIso),
       gender: gender || undefined,
-      ...(isEmail ? { email: target, isEmailVerified: true } : { primaryNumber: target, isPrimaryNumberVerified: true }),
+      ...(usesEmail ? { email: target, isEmailVerified: true } : { primaryNumber: target, isPrimaryNumberVerified: true }),
+      ...(oauthImage ? { image: oauthImage } : {}),
       role: primaryRole,
       roles: roleIds,
       roleSpecialties: specialties,
       customRole: customRole || undefined,
-      provider: "credentials",
+      provider: isOAuth ? method : "credentials",
       accountStatus: "Active",
       isNewUser: true,
       isTermsAndConditionAccepted: true,
@@ -116,6 +165,9 @@ export async function POST(req: Request) {
       path: "/",
       maxAge: MAX_AGE,
     });
+    if (pendingCookieName) {
+      res.cookies.delete(pendingCookieName);
+    }
 
     return res;
   } catch (err: any) {

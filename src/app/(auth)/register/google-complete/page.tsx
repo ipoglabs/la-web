@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
-import GoogleCompleteForm from "./GoogleCompleteForm";
+import GoogleBootstrap from "./GoogleBootstrap";
 
 export default async function GoogleCompletePage() {
   const cookieStore = await cookies();
@@ -20,5 +20,5 @@ export default async function GoogleCompletePage() {
     redirect("/login");
   }
 
-  return <GoogleCompleteForm googleData={googleData} />;
+  return <GoogleBootstrap googleData={googleData} />;
 }

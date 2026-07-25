@@ -3,10 +3,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import ConfettiButton from "@/components/confettibutton";
+import { useConfettiCelebration } from "@/lib/hooks/useConfettiCelebration";
 
 export default function GoogleSuccessPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const { celebrating, celebrate } = useConfettiCelebration();
 
   useEffect(() => {
     async function hydrate() {
@@ -19,6 +22,8 @@ export default function GoogleSuccessPage() {
       } catch {
         // session cookie is already set — user can still navigate
       }
+
+      await celebrate();
 
       const redirectTo = localStorage.getItem("redirectAfterLogin");
       if (redirectTo) {
@@ -39,6 +44,7 @@ export default function GoogleSuccessPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
+      {celebrating && <ConfettiButton autoFire showButton={false} />}
       <p className="text-slate-500 text-sm animate-pulse">Signing you in...</p>
     </div>
   );

@@ -32,11 +32,13 @@
  * pattern) or `/` is the entire post-signup experience, no extra step.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Lock, Plus, XIcon } from "lucide-react";
 import { LaButton, LaCard, LaInput } from "@/components/la";
+import ConfettiButton from "@/components/confettibutton";
+import { useConfettiCelebration } from "@/lib/hooks/useConfettiCelebration";
 import { cn } from "@/lib/utils";
 import { isMeaningfulText } from "@/lib/validation";
 import { useOnboardingStore } from "@/lib/stores/onboardingStore";
@@ -84,6 +86,13 @@ export function RoleStep() {
   const [customRole, setCustomRole] = useState<string | null>(storeCustomRole);
   const [customInput, setCustomInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { celebrating, celebrate } = useConfettiCelebration();
+  // Set the instant a successful submit starts navigating away — reset()
+  // nulls `method` while this component is still mounted (Next's client
+  // navigation doesn't unmount synchronously), which would otherwise make
+  // the guard effect below fire and redirect to /register, racing the
+  // real redirect to `?redirect=`/"/".
+  const leavingRef = useRef(false);
 
   // Guard: no method chosen yet, verification-required method not yet
   // verified, or Details (Full Name/DOB/Gender) not completed yet.
@@ -92,6 +101,7 @@ export function RoleStep() {
   // The guard logic below is identical either way — it only checks
   // `onboardingStore` state, never which journey called it.
   useEffect(() => {
+    if (leavingRef.current) return;
     if (!method) {
       router.replace("/register");
       return;
@@ -183,10 +193,15 @@ export function RoleStep() {
           customRole: finalCustomRole,
         }),
       });
-      if (!res.ok) throw new Error(`complete-profile failed (${res.status})`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `complete-profile failed (${res.status})`);
+      }
+      leavingRef.current = true;
       setRoles(finalRoleIds, finalSpecialties, finalCustomRole);
       const firstName = fullName.trim().split(/\s+/)[0] || "there";
       toast.success(`Welcome, ${firstName}! Your account is ready.`);
+      await celebrate();
       reset();
       router.push(searchParams.get("redirect") || "/");
       // router.push() alone does not re-run the root layout Server Component,
@@ -194,8 +209,9 @@ export function RoleStep() {
       // out) even though complete-profile already set the session cookie —
       // force it to re-fetch getSession() (mirrors auth/google-success/page.tsx).
       router.refresh();
-    } catch {
-      toast.error("Couldn't finish setting up your account. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      toast.error(message || "Couldn't finish setting up your account. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -216,6 +232,7 @@ export function RoleStep() {
 
   return (
     <div className="w-full flex items-center justify-center bg-[#e9eef4] px-4 pt-4 pb-8 sm:py-8">
+      {celebrating && <ConfettiButton autoFire showButton={false} />}
       <LaCard className="w-full max-w-xs sm:max-w-2xl lg:max-w-3xl rounded-2xl p-4 sm:p-6 flex flex-col gap-4">
         {/* Heading */}
         <div className="flex flex-col gap-1 text-center">
