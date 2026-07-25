@@ -9,6 +9,7 @@ import CheckoutForm from '@/components/CheckoutForm'
 import { cn } from '@/lib/utils'
 import WalletPayButton from '@/components/WalletPayButton'
 import RazorpayCheckoutButton from '@/components/Razorpaycheckoutbutton'
+import { useCountry } from '@/components/country/CountryProvider'
 
 // ─── Step Progress Bar ────────────────────────────────────────────────────────
 const StepProgress = ({ step }: { step: number }) => {
@@ -158,7 +159,12 @@ export default function DonateReviewPage() {
   const [mounted, setMounted]             = useState(false)
 
   // ── Scan Pay state ─────────────────────────────────────────────────────────
-  const [scanCountry, setScanCountry]     = useState<ScanCountry>('SG')
+  // Country comes from the site's own header/URL country context, not a
+  // picker on this page — donations should follow wherever the donor is
+  // already browsing. Falls back to SG if the active market ever isn't one
+  // of the three donation countries below (shouldn't happen today).
+  const siteCountry = useCountry()
+  const scanCountry: ScanCountry = siteCountry in SCAN_PAY_COUNTRIES ? (siteCountry as ScanCountry) : 'SG'
 
   // Tab default follows country: India leads with Scan Pay (most-used there),
   // SG/GB lead with Wallet Pay. `scanCountry` must be declared above this so
@@ -420,28 +426,6 @@ export default function DonateReviewPage() {
                   <span className="text-sm font-normal text-slate-500">{currency.toUpperCase()}</span>
                 </div>
 
-        </div>
-
-        {/* ── Country selector (determines which payment tabs are available) ── */}
-        <div className="flex flex-col items-center gap-2 mb-4">
-          <p className="text-sm font-semibold text-slate-600">Select your country:</p>
-          <div className="flex gap-2 flex-wrap justify-center">
-            {(Object.keys(SCAN_PAY_COUNTRIES) as ScanCountry[]).map(c => (
-              <button
-                key={c}
-                onClick={() => setScanCountry(c)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all',
-                  scanCountry === c
-                    ? 'bg-slate-700 text-white border-slate-700'
-                    : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400'
-                )}
-              >
-                <span>{SCAN_PAY_COUNTRIES[c].flag}</span>
-                <span>{SCAN_PAY_COUNTRIES[c].label}</span>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* ── Payment method toggle (3 tabs, original pill style) ────────── */}
