@@ -12,16 +12,28 @@ import { isAppleConfigured, generateAppleClientSecret } from "@/lib/appleClientS
 // Apple always calls back via a cross-site POST (response_mode=form_post —
 // see node_modules/next-auth/providers/apple.js), never a GET redirect like
 // Google. Browsers strip SameSite=Lax cookies from cross-site POST
-// navigations (Lax only survives top-level GET), so NextAuth's default
-// pkce.code_verifier cookie (Lax) never reaches the callback and it throws
-// "PKCE code_verifier cookie was missing" — confirmed in Vercel runtime
-// logs for /api/auth/[...nextauth] (OAUTH_CALLBACK_ERROR, providerId:
-// 'apple'). Fix: SameSite=None (requires Secure) for that one cookie in
-// production. None is a superset of Lax, so this doesn't change Google's
-// (GET-redirect) behavior. Left at the default Lax in dev, since
-// SameSite=None without Secure is silently rejected by browsers and local
-// dev runs over http:// — moot anyway, Apple can't be tested on localhost
-// regardless (see appleClientSecret.ts).
+// navigations (Lax only survives top-level GET), so two of NextAuth's
+// default Lax cookies never reach the callback:
+//   - pkce.code_verifier — throws "PKCE code_verifier cookie was missing"
+//     (confirmed in Vercel runtime logs, OAUTH_CALLBACK_ERROR, providerId:
+//     'apple')
+//   - callback-url — fails silently. core/lib/callback-url.js's
+//     createCallbackUrl() falls back to `url.origin` (the site root) when
+//     both the cookie AND the callbackUrl query param are absent, and
+//     core/routes/callback.js's OAuth branch redirects straight to that
+//     value with no further checks. So sign-in itself succeeds (session
+//     cookie gets set) but the browser lands on "/" instead of our
+//     callbackUrl ("/api/auth/apple-callback"), skipping the new-vs-
+//     existing-user handling in that route entirely — confirmed via
+//     Vercel runtime logs: POST /api/auth/callback/apple (302) immediately
+//     followed by GET / with zero /api/auth/apple-callback hits anywhere
+//     in between.
+// Fix: SameSite=None (requires Secure) for both cookies in production.
+// None is a superset of Lax, so this doesn't change Google's (GET-redirect)
+// behavior. Left at the default Lax in dev, since SameSite=None without
+// Secure is silently rejected by browsers and local dev runs over
+// http:// — moot anyway, Apple can't be tested on localhost regardless
+// (see appleClientSecret.ts).
 const useSecureCookies = process.env.NODE_ENV === "production";
 
 export const authOptions: NextAuthOptions = {
@@ -52,6 +64,17 @@ export const authOptions: NextAuthOptions = {
         path: "/",
         secure: useSecureCookies,
         maxAge: 60 * 15,
+      },
+    },
+    callbackUrl: {
+      name: useSecureCookies
+        ? "__Secure-next-auth.callback-url"
+        : "next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: useSecureCookies ? "none" : "lax",
+        path: "/",
+        secure: useSecureCookies,
       },
     },
   },
