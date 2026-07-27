@@ -2,7 +2,7 @@
 // Sent when an admin suspends, reinstates, or permanently bans an account.
 // Plain text fallback: accountStatusText()
 
-import { baseEmail, s, esc, APP_URL } from "../_base";
+import { baseEmail, s, esc, APP_URL, emailText, emailButton } from "../_base";
 
 type AccountStatusData = {
   firstName: string;
@@ -55,20 +55,19 @@ const CONFIG = {
 export function AccountStatusEmail(data: AccountStatusData): string {
   const cfg = CONFIG[data.status];
   const reasonBlock = data.reason
-    ? `<div style="${s({ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 20 })}"><p style="${s({ fontSize: 13, fontWeight: 600, color: "#94a3b8", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" })}">Reason</p><p style="${s({ fontSize: 14, color: "#334155", margin: 0, lineHeight: 1.5 })}">${esc(data.reason)}</p></div>`
+    ? `<div style="${s({ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 20 })}"><p style="${s({ ...emailText.eyebrow, margin: "0 0 4px" })}">Reason</p><p style="${s({ fontSize: 14, color: "#334155", margin: 0, lineHeight: 1.5 })}">${esc(data.reason)}</p></div>`
     : "";
   const content = `
-<div style="${s({ marginBottom: 16 })}"><span style="${s({ fontSize: 32 })}">${cfg.icon}</span></div>
-<h1 style="${s({ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", lineHeight: 1.3 })}">${cfg.heading}</h1>
-<p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 20px", lineHeight: 1.6 })}">Hi ${esc(data.firstName)}, ${cfg.intro}</p>
+<h1 style="${s({ ...emailText.h1, margin: "0 0 12px" })}">${cfg.icon} ${cfg.heading}</h1>
+<p style="${s({ ...emailText.body, margin: "0 0 20px" })}">Hi ${esc(data.firstName)}, ${cfg.intro}</p>
 ${reasonBlock}
 <div style="${s({ backgroundColor: cfg.alertBg, border: `1px solid ${cfg.alertBorder}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 })}">
   <p style="${s({ fontSize: 14, color: cfg.alertColor, margin: 0, lineHeight: 1.5 })}">${cfg.alertNote}</p>
 </div>
 <div style="${s({ textAlign: "center", marginBottom: 24 })}">
-  <a href="${APP_URL}${cfg.ctaUrl}" style="${s({ display: "inline-block", backgroundColor: cfg.ctaBg, color: "#ffffff", fontSize: 15, fontWeight: 600, textDecoration: "none", padding: "12px 28px", borderRadius: 8 })}">${cfg.ctaLabel}</a>
+  ${emailButton(cfg.ctaLabel, `${APP_URL}${cfg.ctaUrl}`, { bg: cfg.ctaBg })}
 </div>
-<p style="${s({ fontSize: 13, color: "#94a3b8", margin: 0, lineHeight: 1.5 })}">For more information, visit our <a href="${APP_URL}/support" style="${s({ color: "#2563eb", textDecoration: "underline" })}">support page</a>.</p>
+<p style="${s({ ...emailText.disclaimer, margin: 0 })}">For more information, visit our <a href="${APP_URL}/support" style="${s(emailText.link)}">support page</a>.</p>
 `;
   return baseEmail(content, cfg.preview);
 }

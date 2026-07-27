@@ -2,7 +2,7 @@
 // Sent for three chat events: new_message, reply_received, deal_confirmed.
 // Plain text fallback: chatNotificationText()
 
-import { baseEmail, s, esc, APP_URL } from "../_base";
+import { baseEmail, s, esc, APP_URL, emailText, emailButton } from "../_base";
 
 type ChatNotificationData = {
   firstName: string;
@@ -36,7 +36,7 @@ const CONFIG = {
   },
   deal_confirmed: {
     icon: "🤝",
-    heading: (_: ChatNotificationData) => `Deal confirmed!`,
+    heading: () => `Deal confirmed!`,
     intro: (d: ChatNotificationData) =>
       `You and <strong style="${s({ color: "#0f172a" })}">${esc(d.senderName)}</strong> have confirmed a deal for <strong style="${s({ color: "#0f172a" })}">${esc(d.listingTitle)}</strong>. Congratulations!`,
     noteBg: "#f0fdf4", noteBorder: "#bbf7d0", noteColor: "#15803d",
@@ -51,18 +51,17 @@ export function ChatNotificationEmail(data: ChatNotificationData): string {
   const chatUrl = data.chatUrl.startsWith("http") ? data.chatUrl : `${APP_URL}${data.chatUrl}`;
 
   const content = `
-<div style="${s({ marginBottom: 16 })}"><span style="${s({ fontSize: 32 })}">${cfg.icon}</span></div>
-<h1 style="${s({ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", lineHeight: 1.3 })}">Hi ${esc(data.firstName)}, ${cfg.heading(data)}</h1>
-<p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 20px", lineHeight: 1.6 })}">${cfg.intro(data)}</p>
+<h1 style="${s({ ...emailText.h1, margin: "0 0 12px" })}">${cfg.icon} Hi ${esc(data.firstName)}, ${cfg.heading(data)}</h1>
+<p style="${s({ ...emailText.body, margin: "0 0 20px" })}">${cfg.intro(data)}</p>
 <div style="${s({ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 20 })}">
-  <p style="${s({ fontSize: 12, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 8px" })}">Message preview</p>
+  <p style="${s({ ...emailText.eyebrow, margin: "0 0 8px" })}">Message preview</p>
   <p style="${s({ fontSize: 15, color: "#334155", margin: 0, lineHeight: 1.6, fontStyle: "italic" })}">&ldquo;${esc(data.previewText)}&rdquo;</p>
 </div>
 <div style="${s({ backgroundColor: cfg.noteBg, border: `1px solid ${cfg.noteBorder}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 })}">
   <p style="${s({ fontSize: 14, color: cfg.noteColor, margin: 0, lineHeight: 1.5 })}">${cfg.note}</p>
 </div>
 <div style="${s({ textAlign: "center", marginBottom: 24 })}">
-  <a href="${esc(chatUrl)}" style="${s({ display: "inline-block", backgroundColor: cfg.ctaBg, color: "#ffffff", fontSize: 15, fontWeight: 600, textDecoration: "none", padding: "12px 28px", borderRadius: 8 })}">${cfg.ctaLabel}</a>
+  ${emailButton(cfg.ctaLabel, esc(chatUrl), { bg: cfg.ctaBg })}
 </div>
 `;
   return baseEmail(content, cfg.preview(data));

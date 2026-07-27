@@ -2,7 +2,7 @@
 // Handles all 4 OTP purposes: login, verify-email, verify-phone, password-reset
 // Plain text fallback: otpText()
 
-import { baseEmail, s, esc } from "../_base";
+import { baseEmail, s, esc, emailText } from "../_base";
 
 type OtpData = {
   code: string;
@@ -32,13 +32,13 @@ const COPY: Record<OtpData["purpose"], { heading: string; body: string }> = {
 export function OtpEmail(data: OtpData): string {
   const { heading, body } = COPY[data.purpose];
   const content = `
-<h1 style="${s({ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 8px", lineHeight: 1.3 })}">${esc(heading)}</h1>
-<p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 28px", lineHeight: 1.6 })}">${esc(body)}</p>
+<h1 style="${s({ ...emailText.h1, margin: "0 0 8px" })}">${esc(heading)}</h1>
+<p style="${s({ ...emailText.body, margin: "0 0 28px" })}">${esc(body)}</p>
 <div style="${s({ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "20px 24px", textAlign: "center", marginBottom: 24 })}">
   <span style="${s({ fontSize: 36, fontWeight: 800, color: "#0f172a", letterSpacing: "0.25em", fontFamily: "monospace" })}">${esc(data.code)}</span>
 </div>
 <p style="${s({ fontSize: 14, color: "#64748b", margin: "0 0 16px", lineHeight: 1.5 })}">This code expires in <strong>${data.expiresInMinutes}</strong> minutes. Do not share it with anyone.</p>
-<p style="${s({ fontSize: 13, color: "#94a3b8", margin: 0, lineHeight: 1.5, borderLeft: "3px solid #e2e8f0", paddingLeft: 12 })}">If you didn&#39;t request this, you can safely ignore this email. Your account is not at risk.</p>
+<p style="${s({ ...emailText.disclaimer, margin: 0, borderLeft: "3px solid #e2e8f0", paddingLeft: 12 })}">If you didn&#39;t request this, you can safely ignore this email. Your account is not at risk.</p>
 `;
   return baseEmail(content, `Your code: ${data.code} — expires in ${data.expiresInMinutes} minutes`);
 }

@@ -6,6 +6,7 @@ import connectDB from "@/config/database";
 import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
 import { deleteImageVariants } from "@/lib/media/imageVariants";
+import { sendListingStatusEmail } from "@/lib/listings/sendListingStatusEmail";
 
 /* ---------------------- helpers (unchanged from you) ---------------------- */
 
@@ -359,6 +360,20 @@ export async function updatePost(
 
     if (!doc) {
       return { ok: false, error: "Not found or not authorized to edit this post" };
+    }
+
+    if (doc.seller_info?.email) {
+      try {
+        await sendListingStatusEmail({
+          email: doc.seller_info.email,
+          listingTitle: doc.name ?? "",
+          listingId: doc.adsId ?? String(doc._id),
+          status: "edited",
+          listingUrl: doc.country ? `/${doc.country}/listings/${doc._id}` : `/listings/${doc._id}`,
+        });
+      } catch (err) {
+        console.error("Listing status email failed:", err);
+      }
     }
 
     return { ok: true, id: String(doc._id) };

@@ -3,7 +3,7 @@
 // account is locked after too many failed attempts.
 // Plain text fallback: loginSecurityText()
 
-import { baseEmail, s, esc, APP_URL } from "../_base";
+import { baseEmail, s, esc, APP_URL, emailText, emailButton } from "../_base";
 
 type LoginSecurityData = {
   event: "unrecognised_device" | "account_locked";
@@ -49,8 +49,8 @@ const CONFIG = {
 export function LoginSecurityEmail(data: LoginSecurityData): string {
   const cfg = CONFIG[data.event];
   const detailRows = [
-    data.device ? `<tr><td style="${s({ fontSize: 13, fontWeight: 600, color: "#94a3b8", paddingBottom: 8, paddingRight: 16, verticalAlign: "top", width: 80 })}">Device</td><td style="${s({ fontSize: 14, color: "#334155", paddingBottom: 8, lineHeight: 1.4 })}">${esc(data.device)}</td></tr>` : "",
-    data.ip ? `<tr><td style="${s({ fontSize: 13, fontWeight: 600, color: "#94a3b8", paddingBottom: 8, paddingRight: 16, verticalAlign: "top", width: 80 })}">IP Address</td><td style="${s({ fontSize: 14, color: "#334155", paddingBottom: 8, lineHeight: 1.4 })}">${esc(data.ip)}</td></tr>` : "",
+    data.device ? `<tr><td style="${s({ ...emailText.tableLabel, paddingBottom: 8, paddingRight: 16, verticalAlign: "top", width: 80 })}">Device</td><td style="${s({ fontSize: 14, color: "#334155", paddingBottom: 8, lineHeight: 1.4 })}">${esc(data.device)}</td></tr>` : "",
+    data.ip ? `<tr><td style="${s({ ...emailText.tableLabel, paddingBottom: 8, paddingRight: 16, verticalAlign: "top", width: 80 })}">IP Address</td><td style="${s({ fontSize: 14, color: "#334155", paddingBottom: 8, lineHeight: 1.4 })}">${esc(data.ip)}</td></tr>` : "",
   ].filter(Boolean).join("");
 
   const detailBlock = detailRows
@@ -58,18 +58,17 @@ export function LoginSecurityEmail(data: LoginSecurityData): string {
     : "";
 
   const content = `
-<div style="${s({ marginBottom: 16 })}"><span style="${s({ fontSize: 32 })}">${cfg.icon}</span></div>
-<h1 style="${s({ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", lineHeight: 1.3 })}">${cfg.heading}</h1>
-<p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 20px", lineHeight: 1.6 })}">${cfg.intro}</p>
+<h1 style="${s({ ...emailText.h1, margin: "0 0 12px" })}">${cfg.icon} ${cfg.heading}</h1>
+<p style="${s({ ...emailText.body, margin: "0 0 20px" })}">${cfg.intro}</p>
 ${detailBlock}
 <div style="${s({ backgroundColor: cfg.alertBg, border: `1px solid ${cfg.alertBorder}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 })}">
   <p style="${s({ fontSize: 14, fontWeight: 600, color: cfg.alertColor, margin: "0 0 6px" })}">${cfg.alertHeading}</p>
   <p style="${s({ fontSize: 14, color: cfg.alertColor, margin: 0, lineHeight: 1.5 })}">${cfg.alertBody}</p>
 </div>
 <div style="${s({ textAlign: "center", marginBottom: 24 })}">
-  <a href="${APP_URL}${cfg.ctaUrl}" style="${s({ display: "inline-block", backgroundColor: cfg.ctaBg, color: "#ffffff", fontSize: 15, fontWeight: 600, textDecoration: "none", padding: "12px 28px", borderRadius: 8 })}">${cfg.cta}</a>
+  ${emailButton(cfg.cta, `${APP_URL}${cfg.ctaUrl}`, { bg: cfg.ctaBg })}
 </div>
-<p style="${s({ fontSize: 13, color: "#94a3b8", margin: 0, lineHeight: 1.5 })}">If you need help, contact us at <a href="${APP_URL}/support" style="${s({ color: "#2563eb", textDecoration: "underline" })}">our support page</a>.</p>
+<p style="${s({ ...emailText.disclaimer, margin: 0 })}">If you need help, contact us at <a href="${APP_URL}/support" style="${s(emailText.link)}">our support page</a>.</p>
 `;
   return baseEmail(content, cfg.preview);
 }

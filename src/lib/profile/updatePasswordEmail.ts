@@ -9,7 +9,7 @@ export async function sendPasswordUpdateEmail({ fullName, email }: SendPasswordU
   const firstName = fullName.trim().split(/\s+/)[0] || fullName;
 
   const result = await sendEmail({
-    type: "PROFILE_UPDATED",
+    type: "PASSWORD_CHANGED",
     to: email,
     data: { firstName },
   });

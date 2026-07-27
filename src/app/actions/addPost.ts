@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
+import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
 
 type LocationData = {
   address?: string;
@@ -346,6 +347,19 @@ export async function addPost(
     });
 
     await newPost.save();
+
+    if (postData.seller_info?.email) {
+      try {
+        await sendListingLiveEmail({
+          email: postData.seller_info.email,
+          listingTitle: postData.name ?? "",
+          listingId: adsId,
+          listingUrl: country ? `/${country}/listings/${newPost._id}` : `/listings/${newPost._id}`,
+        });
+      } catch (err) {
+        console.error("Listing live email failed:", err);
+      }
+    }
 
     return { ok: true, id: String(newPost._id) };
   } catch (e: unknown) {

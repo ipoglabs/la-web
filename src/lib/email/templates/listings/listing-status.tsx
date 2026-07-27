@@ -2,7 +2,7 @@
 // Covers 7 listing lifecycle events sent to sellers.
 // Plain text fallback: listingStatusText()
 
-import { baseEmail, s, esc, APP_URL } from "../_base";
+import { baseEmail, s, esc, APP_URL, emailText, emailButton } from "../_base";
 
 type ListingStatusData = {
   listingTitle: string;
@@ -95,7 +95,7 @@ const CONFIG = {
 
 export function ListingStatusEmail(data: ListingStatusData): string {
   const cfg = CONFIG[data.status];
-  const labelStyle = s({ fontSize: 12, fontWeight: 600, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" });
+  const labelStyle = s({ ...emailText.eyebrow, margin: "0 0 4px" });
   const expiresRow = data.expiresIn
     ? `<p style="${labelStyle}">Expires</p><p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 12px" })}">${esc(data.expiresIn)}</p>`
     : "";
@@ -103,19 +103,18 @@ export function ListingStatusEmail(data: ListingStatusData): string {
     ? `<div style="${s({ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 20 })}"><p style="${labelStyle}">Reason</p><p style="${s({ fontSize: 14, color: "#334155", margin: 0, lineHeight: 1.5 })}">${esc(data.reason)}</p></div>`
     : "";
   const viewLink = data.listingUrl
-    ? `<p style="${s({ fontSize: 13, color: "#64748b", margin: "0 0 24px" })}">View your listing: <a href="${esc(data.listingUrl)}" style="${s({ color: "#2563eb", textDecoration: "underline" })}">here</a></p>`
+    ? `<p style="${s({ ...emailText.disclaimer, margin: "0 0 24px" })}">View your listing: <a href="${esc(data.listingUrl)}" style="${s(emailText.link)}">here</a></p>`
     : "";
 
   const content = `
-<div style="${s({ marginBottom: 16 })}"><span style="${s({ fontSize: 32 })}">${cfg.icon}</span></div>
-<h1 style="${s({ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", lineHeight: 1.3 })}">${cfg.heading}</h1>
-<p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 20px", lineHeight: 1.6 })}">${cfg.intro}</p>
+<h1 style="${s({ ...emailText.h1, margin: "0 0 12px" })}">${cfg.icon} ${cfg.heading}</h1>
+<p style="${s({ ...emailText.body, margin: "0 0 20px" })}">${cfg.intro}</p>
 <div style="${s({ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px", marginBottom: 20 })}">
   <p style="${labelStyle}">Listing</p>
   <p style="${s({ fontSize: 16, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" })}">${esc(data.listingTitle)}</p>
-  <p style="${s({ fontSize: 12, color: "#94a3b8", margin: "0 0 12px" })}">ID: ${esc(data.listingId)}</p>
+  <p style="${s({ ...emailText.disclaimer, margin: "0 0 12px" })}">ID: ${esc(data.listingId)}</p>
   <p style="${labelStyle}">Status</p>
-  <span style="${s({ display: "inline-block", backgroundColor: cfg.badgeBg, color: cfg.badgeColor, border: `1px solid ${cfg.badgeBorder}`, borderRadius: 100, fontSize: 13, fontWeight: 600, padding: "2px 10px", marginBottom: data.expiresIn ? "12px" : 0 })}">${cfg.badgeLabel}</span>
+  <span style="${s({ ...emailText.badge, display: "inline-block", backgroundColor: cfg.badgeBg, color: cfg.badgeColor, border: `1px solid ${cfg.badgeBorder}`, borderRadius: 100, padding: "2px 10px", marginBottom: data.expiresIn ? "12px" : 0 })}">${cfg.badgeLabel}</span>
   ${expiresRow}
 </div>
 ${reasonBlock}
@@ -124,7 +123,7 @@ ${viewLink}
   <p style="${s({ fontSize: 14, color: cfg.noteColor, margin: 0, lineHeight: 1.5 })}">${cfg.note}</p>
 </div>
 <div style="${s({ textAlign: "center", marginBottom: 24 })}">
-  <a href="${APP_URL}${cfg.ctaUrl}" style="${s({ display: "inline-block", backgroundColor: cfg.ctaBg, color: "#ffffff", fontSize: 15, fontWeight: 600, textDecoration: "none", padding: "12px 28px", borderRadius: 8 })}">${cfg.ctaLabel}</a>
+  ${emailButton(cfg.ctaLabel, `${APP_URL}${cfg.ctaUrl}`, { bg: cfg.ctaBg })}
 </div>
 `;
   return baseEmail(content, cfg.preview);

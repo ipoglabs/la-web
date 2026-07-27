@@ -3,7 +3,7 @@
 // Tone: warm and low-pressure at 30 days, urgent but respectful at 60.
 // Plain text fallback: winBackText()
 
-import { baseEmail, s, esc, APP_URL } from "../_base";
+import { baseEmail, s, esc, APP_URL, emailText, emailButton } from "../_base";
 
 type WinBackData = {
   firstName: string;
@@ -50,20 +50,19 @@ export function WinBackEmail(data: WinBackData): string {
   ).join("");
 
   const extraBlock = cfg.extra
-    ? `<p style="${s({ fontSize: 13, color: "#94a3b8", margin: "0 0 16px", lineHeight: 1.5, textAlign: "center" })}">${cfg.extra}</p>`
+    ? `<p style="${s({ ...emailText.disclaimer, margin: "0 0 16px", textAlign: "center" })}">${cfg.extra}</p>`
     : "";
 
   const content = `
-<div style="${s({ marginBottom: 16 })}"><span style="${s({ fontSize: 32 })}">${cfg.icon}</span></div>
-<h1 style="${s({ fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 12px", lineHeight: 1.3 })}">Hi ${esc(data.firstName)}, ${cfg.heading}</h1>
-<p style="${s({ fontSize: 15, color: "#475569", margin: "0 0 20px", lineHeight: 1.6 })}">${cfg.intro}</p>
+<h1 style="${s({ ...emailText.h1, margin: "0 0 12px" })}">${cfg.icon} Hi ${esc(data.firstName)}, ${cfg.heading}</h1>
+<p style="${s({ ...emailText.body, margin: "0 0 20px" })}">${cfg.intro}</p>
 <table cellpadding="0" cellspacing="0" style="${s({ marginBottom: 20, width: "100%" })}"><tbody>${rows}</tbody></table>
 <div style="${s({ backgroundColor: cfg.noteBg, border: `1px solid ${cfg.noteBorder}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 })}">
   <p style="${s({ fontSize: 14, fontWeight: 600, color: cfg.noteColor, margin: "0 0 4px" })}">${cfg.noteHeading}</p>
   <p style="${s({ fontSize: 14, color: cfg.noteColor, margin: 0, lineHeight: 1.5 })}">${cfg.note}</p>
 </div>
 <div style="${s({ textAlign: "center", marginBottom: 16 })}">
-  <a href="${APP_URL}" style="${s({ display: "inline-block", backgroundColor: cfg.ctaBg, color: "#ffffff", fontSize: 15, fontWeight: 600, textDecoration: "none", padding: "12px 28px", borderRadius: 8 })}">${cfg.ctaLabel}</a>
+  ${emailButton(cfg.ctaLabel, APP_URL, { bg: cfg.ctaBg })}
 </div>
 ${extraBlock}
 `;
