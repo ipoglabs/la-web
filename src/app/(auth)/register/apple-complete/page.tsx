@@ -12,7 +12,7 @@ export default async function AppleCompletePage() {
     redirect("/login");
   }
 
-  let appleData: { email: string; name: string; image: string };
+  let appleData: { appleEmailId: string; name: string; image: string };
 
   try {
     const decoded = jwt.verify(pendingToken, process.env.JWT_SECRET!) as any;

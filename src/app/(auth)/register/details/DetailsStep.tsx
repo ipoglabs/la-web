@@ -35,6 +35,7 @@ export function DetailsStep() {
   const redirectParam = searchParams.get("redirect");
   const method = useOnboardingStore((s) => s.method);
   const verified = useOnboardingStore((s) => s.verified);
+  const identifier = useOnboardingStore((s) => s.identifier);
   const accountCreated = useOnboardingStore((s) => s.accountCreated);
   const storeFullName = useOnboardingStore((s) => s.fullName);
   const storeGender = useOnboardingStore((s) => s.gender);
@@ -61,11 +62,20 @@ export function DetailsStep() {
     const needsVerify = method === "phone_otp" || method === "magic_link";
     if (needsVerify && !verified) {
       router.replace("/register/verify");
+      return;
     }
-  }, [method, verified, accountCreated, router]);
+    // Apple never gives us a trustworthy email (see apple-callback/route.ts)
+    // — every Apple sign-up must detour through apple-email to collect +
+    // verify a real one (identifier) before Details, same idea as
+    // needsVerify above for phone_otp/magic_link.
+    if (method === "apple" && !identifier) {
+      router.replace("/register/apple-email");
+    }
+  }, [method, verified, identifier, accountCreated, router]);
 
   if (!method || !accountCreated) return null;
   if ((method === "phone_otp" || method === "magic_link") && !verified) return null;
+  if (method === "apple" && !identifier) return null;
 
   const trimmedName = fullName.trim();
   const nameError =

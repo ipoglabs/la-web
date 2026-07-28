@@ -40,10 +40,19 @@ function signJwt(payload: object) {
  * RoleStep's Skip/Continue) for every signup method:
  *   - magic_link / phone_otp: identity proven by `proof`, an auth-proof
  *     token minted after OTP verification (see lib/auth-proof.ts).
- *   - google / apple: identity proven by the `google_pending`/`apple_pending`
- *     cookie google-callback/apple-callback set right after real OAuth
- *     success (see GoogleBootstrap.tsx/AppleBootstrap.tsx for how the
- *     onboarding wizard picks the journey up from there).
+ *   - google: identity proven by the `google_pending` cookie
+ *     google-callback set right after real OAuth success (see
+ *     GoogleBootstrap.tsx for how the onboarding wizard picks the journey
+ *     up from there); `identifier` is Google's own (trustworthy) email,
+ *     matched directly against the cookie.
+ *   - apple: two-factor — the `apple_pending` cookie (apple-callback,
+ *     AppleBootstrap.tsx) proves the Apple sign-in itself, but Apple never
+ *     gives us a trustworthy email (see apple-callback/route.ts), so
+ *     `identifier` is instead a real email the user separately typed +
+ *     OTP-verified via register/apple-email/AppleEmailStep.tsx (reusing
+ *     the magic_link proof flow) — proven by `proof`, not by matching the
+ *     cookie. Apple's own email-or-sub lands in `appleEmailId`
+ *     (models/user.ts), never in `identifier`/`email`.
  *
  * Per the schema migration agreed for this port: email and primaryNumber
  * are each optional+sparse (one is required, enforced by the model's
@@ -72,6 +81,10 @@ export async function POST(req: Request) {
 
     let oauthImage: string | undefined;
     let pendingCookieName: string | undefined;
+    // Apple only — see apple-callback/route.ts and register/apple-email/
+    // AppleEmailStep.tsx. Never set for google (Google's `identifier` IS
+    // its trustworthy email, matched directly against the pending cookie).
+    let appleEmailId: string | undefined;
 
     if (isOAuth) {
       pendingCookieName = OAUTH_PENDING_COOKIE[method];
@@ -85,11 +98,33 @@ export async function POST(req: Request) {
       }
       try {
         const decoded = jwt.verify(pendingToken, requireSecret()) as { payload: string };
-        const pending = JSON.parse(decoded.payload) as { email: string; name: string; image: string };
-        if (pending.email.toLowerCase() !== identifier.toLowerCase()) {
-          return NextResponse.json({ error: "Identity not verified" }, { status: 401 });
+
+        if (method === "google") {
+          const pending = JSON.parse(decoded.payload) as { email: string; name: string; image: string };
+          if (pending.email.toLowerCase() !== identifier.toLowerCase()) {
+            return NextResponse.json({ error: "Identity not verified" }, { status: 401 });
+          }
+          oauthImage = pending.image || undefined;
+        } else {
+          // apple — the pending cookie proves the Apple sign-in happened
+          // (appleEmailId is Apple's own email-or-sub, never a reliably
+          // reachable address — see models/user.ts). `identifier` here is a
+          // DIFFERENT, real email the user just typed and OTP-verified via
+          // the reused magic-link flow (AppleEmailStep) — proven by
+          // `proof`, not by matching the pending cookie the way Google's
+          // identifier is.
+          const pending = JSON.parse(decoded.payload) as {
+            appleEmailId: string;
+            name: string;
+            image: string;
+          };
+          const proof = String(body?.proof || "");
+          if (!verifyIdentityProof(proof, "magic_link", identifier.toLowerCase())) {
+            return NextResponse.json({ error: "Identity not verified" }, { status: 401 });
+          }
+          oauthImage = pending.image || undefined;
+          appleEmailId = pending.appleEmailId;
         }
-        oauthImage = pending.image || undefined;
       } catch {
         return NextResponse.json(
           { error: "Your sign-in session expired. Please sign in again." },
@@ -130,6 +165,7 @@ export async function POST(req: Request) {
       gender: gender || undefined,
       ...(usesEmail ? { email: target, isEmailVerified: true } : { primaryNumber: target, isPrimaryNumberVerified: true }),
       ...(oauthImage ? { image: oauthImage } : {}),
+      ...(appleEmailId ? { appleEmailId } : {}),
       role: primaryRole,
       roles: roleIds,
       roleSpecialties: specialties,

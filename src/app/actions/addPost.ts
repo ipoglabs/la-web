@@ -2,6 +2,7 @@
 
 import connectDB from "@/config/database";
 import Post from "@/models/post";
+import User from "@/models/user";
 import { generateAdsId } from "@/lib/generateAdsId";
 import mongoose from "mongoose";
 import { cookies } from "next/headers";
@@ -106,6 +107,27 @@ export async function addPost(
 
     if (!mongoose.Types.ObjectId.isValid(session.userId)) {
       return { ok: false, error: "Invalid userId" };
+    }
+
+    // Posting requires a fully-registered account, not just a signed-in
+    // one — a partially-registered sign-up (e.g. Apple, before the
+    // separately-collected email in register/apple-email is verified, or
+    // anyone who has never added/verified a phone number) can browse and
+    // hold a session, but can't publish a listing until both contact
+    // channels are verified — buyers/sellers need a reachable email AND
+    // phone for a live ad. Read fresh from the DB rather than trusting the
+    // session JWT, which doesn't carry verification flags and can be stale.
+    const accountUser = await User.findById(session.userId).select(
+      "isEmailVerified isPrimaryNumberVerified"
+    );
+    if (!accountUser) {
+      return { ok: false, error: "Unauthorized user" };
+    }
+    if (!accountUser.isEmailVerified || !accountUser.isPrimaryNumberVerified) {
+      return {
+        ok: false,
+        error: "Please verify your email and phone number before posting an ad.",
+      };
     }
 
     const ownerId = new mongoose.Types.ObjectId(session.userId);

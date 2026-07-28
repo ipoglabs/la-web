@@ -111,13 +111,19 @@ export function RoleStep() {
       router.replace("/register/verify");
       return;
     }
+    // Same Apple detour as DetailsStep's guard — see its comment.
+    if (method === "apple" && !identifier) {
+      router.replace("/register/apple-email");
+      return;
+    }
     if (!dateOfBirthIso) {
       router.replace("/register/details");
     }
-  }, [method, verified, dateOfBirthIso, router]);
+  }, [method, verified, identifier, dateOfBirthIso, router]);
 
   if (!method) return null;
   if ((method === "phone_otp" || method === "magic_link") && !verified) return null;
+  if (method === "apple" && !identifier) return null;
   if (!dateOfBirthIso) return null;
 
   const additionalCount = roleIds.length + (customRole ? 1 : 0);

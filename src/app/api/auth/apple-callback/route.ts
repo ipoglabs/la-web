@@ -7,9 +7,21 @@ import jwt from "jsonwebtoken";
 import { createUserSession } from "@/lib/userSession";
 
 /**
- * Mirrors google-callback/route.ts exactly — see that file for the full
- * rationale. One Apple-specific gap: Apple's id_token carries no `name`
- * claim at all (see node_modules/next-auth/src/providers/apple.ts's
+ * Mirrors google-callback/route.ts, with one deliberate divergence: Apple's
+ * `email` claim is NOT treated as a real, reachable address the way
+ * Google's always is. In practice Apple often sends either a "Hide My
+ * Email" private-relay address or, on plenty of real sign-ins, no email
+ * claim at all — just their opaque per-app `sub` (see authOptions.ts's
+ * session callback, which surfaces `token.sub` as `session.user.id`
+ * specifically so this route has something to fall back to). Whichever of
+ * the two shows up is stored under `appleEmailId` (models/user.ts) purely
+ * to recognize a returning Apple sign-in — never written to `email`. Every
+ * new Apple user is instead routed through `/register/apple-email` to
+ * supply + OTP-verify a real email before their account is created (see
+ * that step, and the Apple branch of complete-profile/route.ts).
+ *
+ * One more Apple-specific gap, same as before: Apple's id_token carries no
+ * `name` claim at all (see node_modules/next-auth/src/providers/apple.ts's
  * `profile()` mapping) — the user's name is only ever delivered once, as
  * a separate form-POST field on the very first authorization, which this
  * basic NextAuth provider config doesn't capture. `session.user.name` will
@@ -30,25 +42,31 @@ function requireSecret() {
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email) {
+  // Prefer whatever email-like value Apple actually sent (real address or
+  // private-relay); fall back to their stable `sub` (session.user.id, see
+  // authOptions.ts) when Apple gives us neither — that's the "created id"
+  // case. Either way this is ONLY a lookup key (appleEmailId), never `email`.
+  const appleEmailId = (
+    session?.user?.email || (session?.user as { id?: string } | undefined)?.id || ""
+  ).toLowerCase();
+
+  if (!appleEmailId) {
     return NextResponse.redirect(new URL("/login?error=apple_failed", req.url));
   }
-
-  const email = session.user.email.toLowerCase();
 
   await dbConnect();
 
   const user = await User.findOne({
-    email,
+    appleEmailId,
     isDeleted: { $ne: true },
   });
 
   // New Apple user — store profile in a short-lived signed cookie, redirect to completion
   if (!user) {
     const payload = JSON.stringify({
-      email,
-      name: session.user.name || "",
-      image: session.user.image || "",
+      appleEmailId,
+      name: session!.user!.name || "",
+      image: session!.user!.image || "",
     });
 
     const pendingToken = jwt.sign({ payload }, requireSecret(), { expiresIn: 3600 });

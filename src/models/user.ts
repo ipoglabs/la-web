@@ -84,6 +84,24 @@ const UserSchema = new mongoose.Schema(
 
     isEmailVerified: { type: Boolean, default: false },
 
+    // Apple's own identifier for this sign-in — either the `email` claim
+    // from their id_token (a real address, or a "Hide My Email" private
+    // relay address) or, when Apple gives us neither (seen in practice on
+    // repeat sign-ins), their stable per-app `sub`. Deliberately NEVER
+    // copied into `email` above — it isn't guaranteed to be a real,
+    // reachable inbox — kept only so a returning Apple sign-in can be
+    // matched back to this account (see apple-callback/route.ts). The
+    // user's actual `email` is always separately collected + OTP-verified
+    // during onboarding (see register/apple-email/AppleEmailStep.tsx)
+    // before the account is created.
+    appleEmailId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+    },
+
     // sparse (not required): passwordless accounts created via email-only
     // magic-link/Google/Apple never collect a phone number. At least one
     // of email/primaryNumber is enforced below in the pre-validate hook.

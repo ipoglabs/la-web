@@ -53,6 +53,19 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
+  callbacks: {
+    // Default next-auth only copies name/email/image from the token onto
+    // session.user (see node_modules/next-auth/core/routes/session.js) —
+    // `token.sub` (the provider's own user id; for Apple, profile.sub, the
+    // "created id" apple-callback/route.ts falls back to when Apple sends
+    // no email claim) never reaches session.user without this.
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as typeof session.user & { id?: string }).id = token.sub;
+      }
+      return session;
+    },
+  },
   cookies: {
     pkceCodeVerifier: {
       name: useSecureCookies
