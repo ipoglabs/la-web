@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LokalAds — Registration Flow</title>
+<meta name="description" content="Sequence diagram of all four sign-up methods (Google, Apple, Email, Phone) converging on the shared Details → Role → complete-profile flow.">
+<style>
+  :root {
+    --bg: #f3f5f9;
+    --surface: #ffffff;
+    --surface-2: #eef1f6;
+    --border: #dbe2ec;
+    --text: #16202f;
+    --text-muted: #57667e;
+    --text-faint: #8695ad;
+    --accent: #2f6fed;
+    --accent-soft: #e8f0fe;
+
+    --google: #b8860a;
+    --apple: #7a4fd6;
+    --email: #0f8f7a;
+    --phone: #d1495b;
+
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1017;
+      --surface: #141a26;
+      --surface-2: #1a2233;
+      --border: #2a3448;
+      --text: #e8edf7;
+      --text-muted: #9aa8c2;
+      --text-faint: #6c7996;
+      --accent: #6a9bff;
+      --accent-soft: #1b2a4a;
+
+      --google: #e0b23a;
+      --apple: #a98af0;
+      --email: #4fd6bc;
+      --phone: #f0808f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c1017;
+    --surface: #141a26;
+    --surface-2: #1a2233;
+    --border: #2a3448;
+    --text: #e8edf7;
+    --text-muted: #9aa8c2;
+    --text-faint: #6c7996;
+    --accent: #6a9bff;
+    --accent-soft: #1b2a4a;
+
+    --google: #e0b23a;
+    --apple: #a98af0;
+    --email: #4fd6bc;
+    --phone: #f0808f;
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f5f9;
+    --surface: #ffffff;
+    --surface-2: #eef1f6;
+    --border: #dbe2ec;
+    --text: #16202f;
+    --text-muted: #57667e;
+    --text-faint: #8695ad;
+    --accent: #2f6fed;
+    --accent-soft: #e8f0fe;
+
+    --google: #b8860a;
+    --apple: #7a4fd6;
+    --email: #0f8f7a;
+    --phone: #d1495b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  header.top {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3vw, 2.35rem);
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .lede {
+    font-size: 1.02rem;
+    color: var(--text-muted);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.25rem;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  .dot.google { background: var(--google); }
+  .dot.apple { background: var(--apple); }
+  .dot.email { background: var(--email); }
+  .dot.phone { background: var(--phone); }
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+
+  .section-note {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 68ch;
+  }
+
+  code {
+    font-family: var(--font-mono);
+  }
+
+  /* ---- Blueprint diagram panel ---- */
+
+  .blueprint {
+    --bp-bg: #0a2540;
+    --bp-grid: rgba(255, 255, 255, 0.055);
+    background:
+      linear-gradient(var(--bp-grid) 1px, transparent 1px) 0 0 / 28px 28px,
+      linear-gradient(90deg, var(--bp-grid) 1px, transparent 1px) 0 0 / 28px 28px,
+      radial-gradient(ellipse at top left, #0e3258, var(--bp-bg) 60%);
+    border: 1px solid #1c4a73;
+    border-radius: 14px;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .blueprint .mermaid {
+    display: flex;
+    justify-content: center;
+    min-width: 900px;
+  }
+
+  figcaption {
+    font-size: 0.85rem;
+    color: var(--text-faint);
+    padding: 0 0.1rem;
+  }
+
+  figcaption b { color: var(--text-muted); }
+
+  /* ---- Reference tables ---- */
+
+  .flow-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .flow-card .method-name {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+  }
+
+  .steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+  }
+
+  .step {
+    padding: 0.3rem 0.55rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .arrow {
+    color: var(--text-faint);
+    font-size: 0.8rem;
+  }
+
+  .ends-with {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+  }
+
+  .ends-with code {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.08rem 0.35rem;
+    color: var(--text);
+  }
+
+  .grid-methods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.9rem;
+  }
+
+  .shared-tail {
+    border: 1px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .shared-tail ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.92rem;
+  }
+
+  .shared-tail code {
+    font-size: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.08rem 0.35rem;
+  }
+
+  footer.foot {
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text-faint);
+  }
+
+  footer.foot code {
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="top">
+    <span class="eyebrow">LokalAds · Auth</span>
+    <h1>Every path to a registered account</h1>
+    <p class="lede">
+      Four sign-up methods, one shared ending. Google and Apple prove identity
+      via OAuth, Email and Phone via a 6-digit code — all four then converge on
+      the same Details → Role → <code>complete-profile</code> tail that actually creates the account.
+    </p>
+    <div class="legend">
+      <span class="chip"><span class="dot google"></span>Google</span>
+      <span class="chip"><span class="dot apple"></span>Apple</span>
+      <span class="chip"><span class="dot email"></span>Email (magic-link)</span>
+      <span class="chip"><span class="dot phone"></span>Phone (OTP)</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2>Sequence diagram</h2>
+      <p class="section-note">
+        Each branch is one sign-up method. The highlighted band at the bottom is the
+        part every method shares. "Match found" notes mark the shortcut for someone
+        who already has an account — signed straight in, registration ends there.
+      </p>
+    </div>
+
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+      <div class="blueprint">
+        <pre class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#0a2540",
+    "primaryColor": "#123a63",
+    "primaryTextColor": "#eaf4ff",
+    "primaryBorderColor": "#4f8fd6",
+    "lineColor": "#8ecbff",
+    "secondaryColor": "#163a55",
+    "tertiaryColor": "#0e2f52",
+    "actorBkg": "#123a63",
+    "actorBorder": "#4f8fd6",
+    "actorTextColor": "#eaf4ff",
+    "actorLineColor": "#4f8fd6",
+    "signalColor": "#8ecbff",
+    "signalTextColor": "#eaf4ff",
+    "labelBoxBkgColor": "#163a55",
+    "labelBoxBorderColor": "#4f8fd6",
+    "labelTextColor": "#eaf4ff",
+    "loopTextColor": "#bcdcff",
+    "noteBorderColor": "#4f8fd6",
+    "noteBkgColor": "#1c4a73",
+    "noteTextColor": "#eaf4ff",
+    "activationBorderColor": "#4f8fd6",
+    "activationBkgColor": "#1c4a73",
+    "sequenceNumberColor": "#0a2540",
+    "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+  }
+}}%%
+sequenceDiagram
+    actor U as User
+    participant B as Browser
+    participant P as Google / Apple
+    participant S as Server
+    participant DB as MongoDB
+
+    U->>B: Open /register, choose method
+
+    alt Google
+        B->>P: signIn("google")
+        U->>P: Approve consent
+        P->>S: GET /api/auth/google-callback
+        S->>DB: findOne({ email })
+        Note over S,DB: Match found → sign in directly<br/>(registration ends here)
+        S-->>B: redirect /register/google-complete<br/>+ google_pending cookie
+        B->>B: setMethod("google", email)<br/>accountCreated = true
+    else Apple
+        B->>P: signIn("apple")
+        U->>P: Approve consent
+        P->>S: id_token { sub, email? }
+        S->>S: appleEmailId = email ?? sub
+        S->>DB: findOne({ appleEmailId })
+        Note over S,DB: Match found → sign in directly<br/>(registration ends here)
+        S-->>B: redirect /register/apple-complete<br/>+ apple_pending cookie { appleEmailId }
+        B->>B: setMethod("apple", null)<br/>accountCreated = true
+        B-->>U: /register/apple-email
+        U->>B: Real email
+        B->>S: POST /api/auth/magic-link { email }
+        S->>DB: Create OTP, send email
+        U->>B: 6-digit code
+        B->>S: POST /api/auth/verify-magic { email, otp }
+        S->>DB: Verify OTP
+        S-->>B: { proof }
+        B->>B: setMethod("apple", email)<br/>setVerified(true), setProof(proof)
+    else Email
+        B->>S: POST /api/auth/magic-link { email }
+        S->>DB: Create OTP, send email
+        B-->>U: /register/verify
+        U->>B: 6-digit code
+        B->>S: POST /api/auth/verify-magic { email, otp }
+        S->>DB: Verify OTP
+        S-->>B: { proof }
+        B->>S: POST /api/auth/resolve-identity
+        S->>DB: findOne({ email })
+        Note over S,DB: Match found → sign in directly<br/>(registration ends here)
+        S-->>B: { matched: false }
+        B->>B: setMethod("magic_link", email)<br/>setVerified(true), setProof(proof)
+    else Phone
+        B->>S: POST /api/auth/phone/send-otp { phone }
+        S->>DB: Create OTP (Twilio, or mock for +91)
+        B-->>U: /register/verify
+        U->>B: 6-digit code
+        B->>S: POST /api/auth/phone/verify-otp { phone, otp }
+        S->>DB: Verify OTP
+        S-->>B: { proof }
+        B->>S: POST /api/auth/resolve-identity
+        S->>DB: findOne({ primaryNumber })
+        Note over S,DB: Match found → sign in directly<br/>(registration ends here)
+        S-->>B: { matched: false }
+        B->>B: setMethod("phone_otp", phone)<br/>setVerified(true), setProof(proof)
+    end
+
+    rect rgb(28, 74, 115)
+    Note over B,DB: Shared tail — every method converges here
+    B-->>U: /register/details
+    U->>B: Full name, DOB, gender
+    B-->>U: /register/role
+    U->>B: Skip or pick roles
+    B->>S: POST /api/auth/complete-profile<br/>{ method, identifier, proof, fullName, dob, roleIds }
+    S->>S: Verify identity<br/>(pending cookie for Google/Apple,<br/>proof for Email/Phone/Apple-email)
+    S->>DB: Duplicate check
+    S->>DB: User.create({ ...fields, appleEmailId if Apple })
+    DB-->>S: New user document
+    S-->>B: 201 { id } + session cookie
+    B-->>U: Redirect home — account created
+    end
+        </pre>
+      </div>
+      <figcaption><b>Note:</b> the "Apple" branch is longer than the other three — Apple never hands back a reachable email, so it detours through its own email-collection step (<code>/register/apple-email</code>) before it can rejoin the shared tail.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Proving identity, by method</h2>
+      <p class="section-note">Where each method actually differs — the real routes and files behind each arrow above.</p>
+    </div>
+
+    <div class="grid-methods">
+      <div class="flow-card">
+        <div class="method-name"><span class="dot google"></span>Google</div>
+        <div class="steps">
+          <span class="step">signIn("google")</span><span class="arrow">→</span>
+          <span class="step">/api/auth/google-callback</span><span class="arrow">→</span>
+          <span class="step">/register/google-complete</span>
+        </div>
+        <div class="ends-with">Pre-fills name + photo. No further verification needed before <code>/register/details</code>.</div>
+      </div>
+
+      <div class="flow-card">
+        <div class="method-name"><span class="dot apple"></span>Apple</div>
+        <div class="steps">
+          <span class="step">signIn("apple")</span><span class="arrow">→</span>
+          <span class="step">/api/auth/apple-callback</span><span class="arrow">→</span>
+          <span class="step">/register/apple-complete</span><span class="arrow">→</span>
+          <span class="step">/register/apple-email</span>
+        </div>
+        <div class="ends-with">Apple's own id/email goes to <code>appleEmailId</code>, never <code>email</code> — a real one is collected + OTP-verified before Details.</div>
+      </div>
+
+      <div class="flow-card">
+        <div class="method-name"><span class="dot email"></span>Email</div>
+        <div class="steps">
+          <span class="step">/api/auth/magic-link</span><span class="arrow">→</span>
+          <span class="step">/register/verify</span><span class="arrow">→</span>
+          <span class="step">/api/auth/verify-magic</span><span class="arrow">→</span>
+          <span class="step">/api/auth/resolve-identity</span>
+        </div>
+        <div class="ends-with">6-digit code, real send via <code>otpService</code>. No name pre-fill.</div>
+      </div>
+
+      <div class="flow-card">
+        <div class="method-name"><span class="dot phone"></span>Phone</div>
+        <div class="steps">
+          <span class="step">/api/auth/phone/send-otp</span><span class="arrow">→</span>
+          <span class="step">/register/verify</span><span class="arrow">→</span>
+          <span class="step">/api/auth/phone/verify-otp</span><span class="arrow">→</span>
+          <span class="step">/api/auth/resolve-identity</span>
+        </div>
+        <div class="ends-with">Twilio Verify where configured; India (+91) always uses a mocked demo code.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Shared tail — identical for all four</h2>
+      <p class="section-note">Once identity is proven, every method lands here and finishes the same way.</p>
+    </div>
+    <div class="shared-tail">
+      <ol>
+        <li><code>/register/details</code> — Full Name, Date of Birth, Gender</li>
+        <li><code>/register/role</code> — optional role picker, Skip or Continue</li>
+        <li><code>POST /api/auth/complete-profile</code> — re-verifies identity server-side, checks for a duplicate email/phone, creates the <code>User</code> document, sets the session cookie</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="foot">
+    Reflects the current registration journey — see <code>src/app/(auth)/register/</code> and <code>src/app/api/auth/</code> in the repo for the underlying code.
+  </footer>
+
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });
+</script>
+</body>
+</html>

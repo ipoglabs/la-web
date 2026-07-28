@@ -1,14 +1,13 @@
 // ── Email Engine — Provider ───────────────────────────────────────────────────
-// Thin wrapper around the email sending provider (Nodemailer + Gmail SMTP).
-// This is the ONLY file that knows about Nodemailer/Gmail. Swap this file to change provider.
+// Thin wrapper around the email sending provider (Resend).
+// This is the ONLY file that knows about Resend. Swap this file to change provider.
 // All other engine files are provider-agnostic.
 //
-// To migrate to a different provider (e.g. Resend, Cloudflare Email Workers):
-//   1. Replace the transporter/client below with the new provider's client
-//   2. Adapt sendViaProvider() to match the new provider's send API shape
-//   3. Zero changes needed in index.ts, renderer.ts, or any caller
+// Domain must be verified in Resend before sends succeed — see the DNS records
+// (DKIM + SPF) added for lokalads.com. RESEND_API_KEY / RESEND_EMAIL_DOMAIN are
+// set by the Vercel Marketplace Resend integration (`vercel env pull`).
 
-import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import type { EmailRenderResult, EmailSendResult } from "./types";
 
 // ── Email format guard (task 2b) ─────────────────────────────────────────────
@@ -20,38 +19,23 @@ function isValidEmail(email: string): boolean {
   return EMAIL_REGEX.test(email.trim());
 }
 
-// ── Gmail SMTP transporter ────────────────────────────────────────────────────
+// ── Resend client ─────────────────────────────────────────────────────────────
 // Lazily initialised — only created when first email is sent.
-// Throws clearly if EMAIL_USER / EMAIL_PASS are missing rather than silently failing.
-//
-// TODO(dev — before first real send):
-//   1. Turn on 2-Step Verification on the Gmail account you're sending from
-//   2. Create an App Password: https://myaccount.google.com/apppasswords
-//      (a regular Gmail password will NOT work here — Google blocks it)
-//   3. Add to .env.local:
-//        EMAIL_USER=youraddress@gmail.com
-//        EMAIL_PASS=your16charapppassword   (no spaces)
-//   4. Optionally add EMAIL_FROM if you want the "From" display name/address
-//      to differ from EMAIL_USER, e.g. EMAIL_FROM="Lokalads <youraddress@gmail.com>"
-let _transporter: Transporter | null = null;
+let _client: Resend | null = null;
 
-function getTransporter(): Transporter {
-  if (!_transporter) {
-    const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASS;
+function getClient(): Resend {
+  if (!_client) {
+    const apiKey = process.env.RESEND_API_KEY;
 
-    if (!user || !pass) {
+    if (!apiKey) {
       throw new Error(
-        "[EmailEngine] EMAIL_USER / EMAIL_PASS is not set. Add them to .env.local to send emails."
+        "[EmailEngine] RESEND_API_KEY is not set. Run `vercel env pull` or add it to .env.local."
       );
     }
 
-    _transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user, pass },
-    });
+    _client = new Resend(apiKey);
   }
-  return _transporter;
+  return _client;
 }
 
 // ── Send function ─────────────────────────────────────────────────────────────
@@ -65,17 +49,20 @@ export async function sendViaProvider(
     return { success: false, error: `Invalid recipient address: "${to}"` };
   }
 
-  const from = process.env.EMAIL_FROM ?? process.env.EMAIL_USER ?? "no-reply@lokalads.com";
+  const from = process.env.EMAIL_FROM ?? "no-reply@lokalads.com";
 
   try {
-    const transporter = getTransporter();
-    await transporter.sendMail({
+    const { error } = await getClient().emails.send({
       from,
       to,
       subject: render.subject,
       html: render.html,
       text: render.text,
     });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
     return { success: true };
   } catch (err) {
