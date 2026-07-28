@@ -63,9 +63,7 @@ const NAV_ITEMS = [
 ] as const;
 
 /* ─── guest menu ─────────────────────────────────────────────── */
-function GuestMenuBody({ onClose }: { onClose: () => void }) {
-  const router = useRouter();
-  const [countryOpen, setCountryOpen] = React.useState(false);
+function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpenCountry: () => void }) {
   return (
     <div>
       <div className="px-4 py-3 border-b border-slate-100">
@@ -92,7 +90,7 @@ function GuestMenuBody({ onClose }: { onClose: () => void }) {
         <div className="border-t border-slate-100 mt-1 pt-1">
           <button
             type="button"
-            onClick={() => setCountryOpen(true)}
+            onClick={onOpenCountry}
             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Globe2 aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
@@ -100,16 +98,6 @@ function GuestMenuBody({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </div>
-
-      {countryOpen && (
-        <OverlayCountrySelect
-          onSelect={() => {
-            setCountryOpen(false);
-            onClose();
-          }}
-          onClose={() => setCountryOpen(false)}
-        />
-      )}
     </div>
   );
 }
@@ -133,9 +121,9 @@ function MenuBody({
   src,
   status = "none",
   onClose,
-}: AvatarDropdownProps & { onClose: () => void }) {
+  onOpenCountry,
+}: AvatarDropdownProps & { onClose: () => void; onOpenCountry: () => void }) {
   const router = useRouter();
-  const [countryOpen, setCountryOpen] = React.useState(false);
   return (
     <div>
       {/* User identity */}
@@ -163,25 +151,13 @@ function MenuBody({
         {/* Switch Country — opens overlay instead of navigating */}
         <button
           type="button"
-          onClick={() => setCountryOpen(true)}
+          onClick={onOpenCountry}
           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
         >
           <Globe2 aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
           Switch Country
         </button>
       </div>
-
-      {/* Country overlay — commitCountry() + router.refresh() are called inside
-           OverlayCountrySelect; onSelect just closes the dropdown. */}
-      {countryOpen && (
-        <OverlayCountrySelect
-          onSelect={() => {
-            setCountryOpen(false);
-            onClose();           // close the avatar dropdown/drawer too
-          }}
-          onClose={() => setCountryOpen(false)}
-        />
-      )}
 
       {/* Separator + Sign out */}
       <div className="border-t border-slate-100 py-1">
@@ -220,6 +196,7 @@ export function AvatarDropdown({
   const [isMobile, setIsMobile] = React.useState(
     () => typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches
   );
+  const [countryOpen, setCountryOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   /* Subscribe to viewport changes after mount */
@@ -234,23 +211,29 @@ export function AvatarDropdown({
   React.useEffect(() => {
     if (isMobile) return;
     function onDoc(e: MouseEvent) {
-      if (!(rootRef.current && e.target instanceof Node)) return;
-      if (rootRef.current.contains(e.target)) return;
-      // OverlayCountrySelect portals to document.body — a click inside it
-      // is never a descendant of rootRef, so without this check every tap
-      // on a country tile reads as "outside" and closes this whole popover
-      // (relying only on OverlayCountrySelect's own onMouseDown
-      // stopPropagation is fragile — it depends on this native document
-      // listener running after React's synthetic dispatch, which isn't
-      // guaranteed on every device/browser).
-      if ((e.target as HTMLElement).closest("[data-country-select-overlay]")) return;
-      setOpen(false);
+      if (rootRef.current && e.target instanceof Node && !rootRef.current.contains(e.target)) {
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [isMobile]);
 
   const close = () => setOpen(false);
+
+  // Switch Country closes the menu (drawer/popover) and opens the country
+  // picker as an independent overlay rendered below, outside the
+  // Drawer/popover's own conditional render. Nesting it inside Vaul's Drawer
+  // (or leaving the desktop popover mounted alongside it) meant its portaled
+  // content — always outside that container's own DOM subtree — fought with
+  // Vaul/Radix's outside-tap dismiss handling and this component's own
+  // outside-click listener; unreliable enough to need two rounds of patches
+  // that still didn't hold up on real iOS Safari. Closing the menu first
+  // removes the competing layer entirely instead of racing it.
+  const openCountry = () => {
+    setOpen(false);
+    setCountryOpen(true);
+  };
 
   return (
     <div ref={rootRef} className="relative inline-block">
@@ -284,8 +267,8 @@ export function AvatarDropdown({
       {!isMobile && open && (
         <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black/5 overflow-hidden">
           {isLoggedIn
-            ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} />
-            : <GuestMenuBody onClose={close} />}
+            ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
+            : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
         </div>
       )}
 
@@ -300,11 +283,21 @@ export function AvatarDropdown({
             </div>
             <div className="flex-1 overflow-y-auto min-h-0">
               {isLoggedIn
-                ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} />
-                : <GuestMenuBody onClose={close} />}
+                ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
+                : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
             </div>
           </DrawerContent>
         </Drawer>
+      )}
+
+      {/* Country picker — rendered independently of the Drawer/popover above
+           (not nested inside their conditional content) so its lifecycle
+           never competes with Vaul/Radix's outside-tap dismiss handling. */}
+      {countryOpen && (
+        <OverlayCountrySelect
+          onSelect={() => setCountryOpen(false)}
+          onClose={() => setCountryOpen(false)}
+        />
       )}
     </div>
   );
