@@ -234,9 +234,17 @@ export function AvatarDropdown({
   React.useEffect(() => {
     if (isMobile) return;
     function onDoc(e: MouseEvent) {
-      if (rootRef.current && e.target instanceof Node && !rootRef.current.contains(e.target)) {
-        setOpen(false);
-      }
+      if (!(rootRef.current && e.target instanceof Node)) return;
+      if (rootRef.current.contains(e.target)) return;
+      // OverlayCountrySelect portals to document.body — a click inside it
+      // is never a descendant of rootRef, so without this check every tap
+      // on a country tile reads as "outside" and closes this whole popover
+      // (relying only on OverlayCountrySelect's own onMouseDown
+      // stopPropagation is fragile — it depends on this native document
+      // listener running after React's synthetic dispatch, which isn't
+      // guaranteed on every device/browser).
+      if ((e.target as HTMLElement).closest("[data-country-select-overlay]")) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);

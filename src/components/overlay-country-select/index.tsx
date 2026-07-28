@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { Branch as DismissableLayerBranch } from "@radix-ui/react-dismissable-layer";
 import { useRouter } from "next/navigation";
 import { ALLOWED_COUNTRY_CODES, isAllowedCountry, COUNTRY_COOKIE } from "@/lib/country-context";
 import { GLOBAL_CONFIG, COUNTRY_CONFIGS } from "@/config";
@@ -100,6 +101,7 @@ export function OverlayCountrySelect({ currentCode, detectedCountry, onSelect, o
 
   const overlay = (
     <div
+      data-country-select-overlay=""
       className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -201,5 +203,22 @@ export function OverlayCountrySelect({ currentCode, detectedCountry, onSelect, o
     </div>
   );
 
-  return createPortal(overlay, document.body);
+  // Wrapped in Radix's DismissableLayerBranch — this component can render
+  // inside a Vaul/Radix Dialog (the mobile avatar-menu Drawer), and it
+  // portals to document.body, which puts it outside that Drawer's own DOM
+  // subtree. Without this, Radix's dismissable-layer treats any pointerdown
+  // OR focus landing here (both happen on a real tap — the tapped <button>
+  // takes focus too) as "outside", closing the Drawer — and unmounting this
+  // picker — before its own onClick ever runs. Branch registers this DOM
+  // node into the same React context the Drawer's dismissable layer reads,
+  // so both checks correctly see it as "inside" instead. React context
+  // flows through portals regardless of DOM placement, so this works even
+  // though the actual DOM node ends up as a document.body sibling, not a
+  // descendant, of the Drawer. No-op when there's no enclosing Dialog/Drawer
+  // (desktop popover, design-system demos) — Branch just registers into an
+  // unused default context then.
+  return createPortal(
+    <DismissableLayerBranch>{overlay}</DismissableLayerBranch>,
+    document.body
+  );
 }
