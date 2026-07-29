@@ -12,6 +12,7 @@ import {
   PaginationItem, PaginationLink, PaginationNext, PaginationPrevious,
 } from "@/components/ui/pagination";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
+import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
 import { cn } from "@/lib/utils";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import FilterContent from "./FilterContent";
@@ -149,6 +150,7 @@ function ContextBar({ currentLocation, onLocationChange, activeFilterCount, onOp
   const router = useRouter();
   const searchParams = useSearchParams();
   const { config, countryCode } = useCountryConfig();
+  const { savedLocations, saveLocation } = useSavedLocations();
   const sort = searchParams.get("sort") ?? "newest";
 
   const SORT_OPTIONS = [
@@ -180,7 +182,8 @@ function ContextBar({ currentLocation, onLocationChange, activeFilterCount, onOp
           <LocationPicker
             trigger="link"
             value={currentLocation}
-            onChange={onLocationChange}
+            onChange={(v) => { onLocationChange(v); saveLocation(v); }}
+            savedLocations={savedLocations}
             showRadius
             countryScope={config.locationScope}
             radiusUnit={config.radiusUnit}

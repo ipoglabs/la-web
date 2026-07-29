@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
@@ -368,7 +369,15 @@ export default function PreviewPage() {
 
           {clientError && (
             <div className="text-red-600 bg-red-50 p-3 rounded mb-4">
-              {clientError}
+              <p>{clientError}</p>
+              {clientError.toLowerCase().includes("verify your email") && (
+                <Link
+                  href="/account-settings"
+                  className="mt-2 inline-block text-sm font-semibold text-red-700 underline underline-offset-2 hover:text-red-800"
+                >
+                  Verify now in Account Settings
+                </Link>
+              )}
             </div>
           )}
 

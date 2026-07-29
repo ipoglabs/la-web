@@ -78,7 +78,16 @@ export async function updateContact({
   if (field === "email") {
     const emailLower = trimmed.toLowerCase();
 
-    if (user.email === emailLower) return { success: true };
+    // Even if it's the same email as before, an OTP was just verified for
+    // it above — this is also the only path that can flip isEmailVerified
+    // for an account that had none (e.g. phone_otp signups), so don't skip
+    // the flag update just because the address string is unchanged.
+    if (user.email === emailLower) {
+      user.isEmailVerified = true;
+      await user.save();
+      await Otp.deleteOne({ target: normalized, verified: true });
+      return { success: true };
+    }
 
     const existing = await User.findOne({
       email: emailLower,
@@ -89,11 +98,20 @@ export async function updateContact({
     if (existing) throw new Error("Email already in use");
 
     user.email = emailLower;
+    user.isEmailVerified = true;
   }
 
   /* ================= PRIMARY PHONE ================= */
   if (field === "primaryNumber") {
-    if (user.primaryNumber === normalized) return { success: true };
+    // Same reasoning as email above — this is the only path that can flip
+    // isPrimaryNumberVerified for accounts missing it (e.g. apple/google/
+    // magic_link signups), so still persist it even if unchanged.
+    if (user.primaryNumber === normalized) {
+      user.isPrimaryNumberVerified = true;
+      await user.save();
+      await Otp.deleteOne({ target: normalized, verified: true });
+      return { success: true };
+    }
 
     const existing = await User.findOne({
       primaryNumber: normalized,
@@ -104,6 +122,7 @@ export async function updateContact({
     if (existing) throw new Error("Phone number already in use");
 
     user.primaryNumber = normalized;
+    user.isPrimaryNumberVerified = true;
   }
 
   /* ================= SECONDARY ================= */

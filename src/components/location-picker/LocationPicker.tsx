@@ -41,6 +41,15 @@ export type LocationPickerProps = {
   trigger?: "pill" | "link";
   /** Extra classes applied directly to the <a> when trigger="link". No default styles — full developer control. */
   triggerClassName?: string;
+  /**
+   * Real per-account saved locations to seed the panel's "Saved" tab with
+   * (e.g. from `models/user.ts`'s `savedLocations`, via `getCurrentUser()`).
+   * When omitted, falls back to `ALL_SAVED` — generic placeholder data for
+   * call sites not yet wired to a real account (kept so this component's
+   * many other usages — search bar, create-alert, etc. — aren't broken by
+   * this prop being additive-only).
+   */
+  savedLocations?: SearchSuggestion[];
 };
 
 // ─── Dummy data for Recent / Saved tabs ──────────────────────────────────────
@@ -437,32 +446,43 @@ function PanelContent({
               )}
             </div>
 
-            {/* ── Recent (hidden when savedOnly) ── */}
+            {/* ── Recent (hidden when savedOnly) ──
+                 The "Saved" button above is a filter toggle, not a section
+                 header — without an explicit label here, this list (mock
+                 recent-search data) read as if it WERE the saved list,
+                 since it sits directly under that pill with nothing to
+                 tell them apart. */}
             {!savedOnly && (
-              recentItems.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-slate-500">No recent searches</p>
-              ) : (
-                <div role="list">
-                  {recentItems.map((s, i) => (
-                    <div key={`r-${i}-${s.label}`} role="listitem">
-                      <LocationRow
-                        suggestion={s}
-                        onSelect={() => onSelect(s)}
-                        onSave={() => onSaveRecent(i)}
-                        isSaved={savedItems.some((sv) => sv.label === s.label)}
-                        onClear={() => onClearRecent(i)}
-                        isActive={current?.label === s.label && current?.sublabel === s.sublabel}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )
+              <>
+                <p className="px-4 pt-2 pb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                  Recent
+                </p>
+                {recentItems.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-slate-500">No recent searches</p>
+                ) : (
+                  <div role="list">
+                    {recentItems.map((s, i) => (
+                      <div key={`r-${i}-${s.label}`} role="listitem">
+                        <LocationRow
+                          suggestion={s}
+                          onSelect={() => onSelect(s)}
+                          onSave={() => onSaveRecent(i)}
+                          isSaved={savedItems.some((sv) => sv.label === s.label)}
+                          onClear={() => onClearRecent(i)}
+                          isActive={current?.label === s.label && current?.sublabel === s.sublabel}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {/* ── Saved ── */}
-            {!savedOnly && (
-              <div className="mt-1 border-t border-slate-100" />
-            )}
+            {!savedOnly && <div className="mt-1 border-t border-slate-100" />}
+            <p className="px-4 pt-2 pb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+              Saved locations
+            </p>
             {savedItems.length === 0 ? (
               <p className="px-4 py-3 text-sm text-slate-500">No saved locations</p>
             ) : (
@@ -621,7 +641,9 @@ export function LocationPicker({
   placeholder = "Search location…",
   disabled = false,
   className,  trigger = "pill",
-  triggerClassName,}: LocationPickerProps) {
+  triggerClassName,
+  savedLocations,
+}: LocationPickerProps) {
   const isTablet = useMediaQuery("(min-width: 768px)");
   const [mounted, setMounted] = React.useState(false);
   const controlled = typeof value !== "undefined";
@@ -637,11 +659,26 @@ export function LocationPicker({
       ? ALL_RECENT.filter((s) => matchesScope(s.sublabel, countryScope))
       : ALL_RECENT
   );
-  const [savedItems, setSavedItems] = React.useState<SearchSuggestion[]>(() =>
-    countryScope?.length
-      ? ALL_SAVED.filter((s) => matchesScope(s.sublabel, countryScope))
-      : ALL_SAVED
-  );
+  const [savedItems, setSavedItems] = React.useState<SearchSuggestion[]>(() => {
+    const source = savedLocations ?? ALL_SAVED;
+    return countryScope?.length
+      ? source.filter((s) => matchesScope(s.sublabel, countryScope))
+      : source;
+  });
+
+  // Real saved-location data (savedLocations prop) can change after mount
+  // (e.g. the account's list loads async, or an add/remove happens while
+  // this picker instance stays mounted) — keep the panel in sync instead of
+  // only ever reflecting whatever was passed in on first render.
+  React.useEffect(() => {
+    if (!savedLocations) return;
+    setSavedItems(
+      countryScope?.length
+        ? savedLocations.filter((s) => matchesScope(s.sublabel, countryScope))
+        : savedLocations
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedLocations]);
 
   React.useEffect(() => { setMounted(true); }, []);
 

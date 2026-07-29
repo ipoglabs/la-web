@@ -8,10 +8,12 @@
  * Stage 2 "verify-new-email":  OtpVerify — proves the user owns the
  *   new address.
  * Stage 3 "verify-phone":      OtpVerify — second factor via the
- *   account's primary phone (guaranteed to exist, see standing rule:
- *   "Primary phone number is mandatory, always"). No back-link here — once
- *   the new email is verified, the only way out is Cancel (discards
- *   everything) or completing this step.
+ *   account's primary phone. Skipped entirely when the account has no
+ *   primary phone yet (e.g. an Apple/Google/magic-link signup that hasn't
+ *   added one) — there's nothing to 2FA against, and the point of this
+ *   editor for that account is often adding a first real email in the first
+ *   place. No back-link here — once the new email is verified, the only way
+ *   out is Cancel (discards everything) or completing this step.
  * Stage 4 "confirm":           real review screen (shows the new email once
  *   more + explicit "Confirm Change") — never auto-commits right after the
  *   phone OTP passes.
@@ -125,6 +127,11 @@ export function ChangeEmailEditor({
     try {
       await verifyOtp({ channel: "email", value: newEmail.trim(), otp });
       setOtpError(false);
+      if (!primaryPhone) {
+        // No phone on file — nothing to 2FA against, skip straight to confirm.
+        setStage("confirm");
+        return;
+      }
       const res = await sendOtp({ channel: "phone", value: primaryPhone });
       if (res.devCode) {
         setDevCode(res.devCode);

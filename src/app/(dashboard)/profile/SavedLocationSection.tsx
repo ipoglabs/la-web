@@ -12,11 +12,14 @@
  * every add/remove through those server actions itself before touching
  * local state, so a failed request never silently diverges from the DB.
  *
- * Exports countryFromToken (also reused by ResidenceEditor.tsx for the
- * same country-name normalizing).
+ * Country-name normalizing + LocationValue mapping now live in
+ * `@/lib/locationUtils` (moved out 2026-07-29 so `useSavedLocations.ts` can
+ * share them outside this route group) — ResidenceEditor.tsx imports
+ * `countryFromToken` from there directly now too.
  */
 
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { MapPin, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LaButton, LaCard } from "@/components/la";
@@ -34,40 +37,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { addSavedLocation } from "@/app/actions/profile/addSavedLocation";
 import { removeSavedLocation } from "@/app/actions/profile/removeSavedLocation";
+import { locationValueToSavedLocationInput } from "@/lib/locationUtils";
 import type { SavedLocation } from "./types";
-
-export function countryFromToken(token: string): { country: string; flagCode: string } {
-  const lower = token.trim().toLowerCase();
-  if (["uk", "united kingdom", "england", "scotland", "wales", "gb"].includes(lower))
-    return { country: "United Kingdom", flagCode: "gb" };
-  if (["sg", "singapore"].includes(lower))
-    return { country: "Singapore", flagCode: "sg" };
-  if (["in", "india"].includes(lower))
-    return { country: "India", flagCode: "in" };
-  return { country: token.trim(), flagCode: "un" };
-}
-
-function mapPickerValueToLocationInput(v: LocationValue): Omit<SavedLocation, "id" | "primary"> {
-  const parts = (v.sublabel ?? "")
-    .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean);
-
-  let country = "";
-  let region = "";
-
-  if (parts.length >= 2) {
-    country = countryFromToken(parts[parts.length - 1]).country;
-    region = parts.slice(0, -1).join(", ");
-  } else if (parts.length === 1) {
-    country = countryFromToken(parts[0]).country;
-  } else {
-    country = countryFromToken(v.label).country;
-  }
-
-  const flag = countryFromToken(country).flagCode;
-  return { flagCode: flag, city: v.label, region, country };
-}
 
 export function SavedLocationSection({
   locations,
@@ -80,6 +51,14 @@ export function SavedLocationSection({
   const [saving, setSaving] = useState(false);
   const pickerHostRef = useRef<HTMLDivElement>(null);
 
+  // Real account data for the picker's "Saved" tab — replaces LocationPicker's
+  // default ALL_SAVED mock (generic Mumbai/Orchard Road/London placeholders
+  // that had nothing to do with the signed-in account).
+  const pickerSavedLocations = locations.map((loc) => ({
+    label: loc.city,
+    sublabel: [loc.region, loc.country].filter(Boolean).join(", "),
+  }));
+
   const openLocationPicker = () => {
     const trigger = pickerHostRef.current?.querySelector<HTMLButtonElement>(
       'button[aria-haspopup="dialog"]',
@@ -89,7 +68,7 @@ export function SavedLocationSection({
 
   const handleAddLocation = async (value: LocationValue | null) => {
     if (!value) return;
-    const next = mapPickerValueToLocationInput(value);
+    const next = locationValueToSavedLocationInput(value);
     const isDuplicate = locations.some(
       (l) =>
         l.city.toLowerCase() === next.city.toLowerCase() &&
@@ -154,6 +133,7 @@ export function SavedLocationSection({
             onChange={handleAddLocation}
             searchProvider="google"
             countryScope={["SG", "UK", "IN"]}
+            savedLocations={pickerSavedLocations}
           />
         </div>
 

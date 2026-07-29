@@ -11,7 +11,8 @@ import { laButtonVariants } from "@/components/la/la-button";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
 import { cn } from "@/lib/utils";
 import { ResponsiveEditor } from "./ResponsiveEditor";
-import { countryFromToken } from "./SavedLocationSection";
+import { countryFromToken } from "@/lib/locationUtils";
+import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
 import type { ResidenceValues, SavedLocation } from "./types";
 
 function pickerValueToResidence(v: LocationValue): ResidenceValues {
@@ -55,6 +56,7 @@ export function ResidenceEditor({
     hasExisting ? residenceToPickerValue(value) : null,
   );
   const [saving, setSaving] = useState(false);
+  const { savedLocations, saveLocation } = useSavedLocations();
 
   useEffect(() => {
     if (open) setPickerValue(value.city ? residenceToPickerValue(value) : null);
@@ -117,7 +119,8 @@ export function ResidenceEditor({
               <p className="text-sm font-medium text-slate-700">Want to change this?</p>
               <LocationPicker
                 value={pickerValue}
-                onChange={setPickerValue}
+                onChange={(v) => { setPickerValue(v); saveLocation(v); }}
+                savedLocations={savedLocations}
                 searchProvider="google"
                 countryScope={["SG", "UK", "IN"]}
                 trigger="link"
@@ -136,7 +139,8 @@ export function ResidenceEditor({
             </p>
             <LocationPicker
               value={pickerValue}
-              onChange={setPickerValue}
+              onChange={(v) => { setPickerValue(v); saveLocation(v); }}
+              savedLocations={savedLocations}
               searchProvider="google"
               countryScope={["SG", "UK", "IN"]}
               trigger="link"

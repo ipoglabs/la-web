@@ -18,7 +18,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ShieldAlert,
   Trash2,
@@ -224,6 +224,22 @@ export function ProfilePageScreen({
 
   const [locations, setLocations] = useState<SavedLocation[]>(user.savedLocations);
   const primaryLocation = locations.find((l) => l.primary) ?? null;
+
+  // Landed here from /post's verification gate (see app/(main)/post/page.tsx)
+  // — surface why, then strip the param so a refresh doesn't re-show it.
+  // Reads window.location directly rather than useSearchParams() so this
+  // doesn't require wrapping the page in a Suspense boundary.
+  // `shownRef` guards against React StrictMode's dev-only double-invoke of
+  // effects on mount — without it, this toast fired twice on every landing.
+  const verifyToastShown = useRef(false);
+  useEffect(() => {
+    if (mode !== "account-settings") return;
+    if (verifyToastShown.current) return;
+    if (new URLSearchParams(window.location.search).get("verify") !== "1") return;
+    verifyToastShown.current = true;
+    toast.info("Verify your email and phone number to start posting ads.");
+    router.replace("/account-settings");
+  }, [mode, router]);
 
   // Devices list only matters in account-settings mode — skip the fetch
   // entirely on /profile.
@@ -576,17 +592,7 @@ export function ProfilePageScreen({
               value={contact.email}
               verified={contact.emailVerified}
               icon={Mail}
-              onEdit={() => {
-                // Guard: the email-change journey's 2nd factor is the primary
-                // phone, which is guaranteed to exist once onboarding is done —
-                // but defend against the edge case anyway (e.g. a fresh/mock
-                // account with zero phones on file).
-                if (contact.phones.length === 0) {
-                  toast.info("Add a phone number before changing your email.");
-                  return;
-                }
-                setChangeEmailEditorOpen(true);
-              }}
+              onEdit={() => setChangeEmailEditorOpen(true)}
             />
 
             {/* Phone list */}

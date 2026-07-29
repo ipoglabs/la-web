@@ -14,12 +14,14 @@ import { getPopularSearches } from "@/app/actions/getPopularSearches";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { LaSearchBar, type SearchQuery } from "@/components/la-search-bar";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
+import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
 
 export default function LandingPage() {
   const router = useRouter();
   const [alertOpen, setAlertOpen] = React.useState(false);
   const [pickedLocation, setPickedLocation] = React.useState<LocationValue | null>(null);
   const { config: countryConfig, countryCode } = useCountryConfig();
+  const { savedLocations, saveLocation } = useSavedLocations();
 
   const visibleCategories = countryConfig.enabledCategories
     .map((id) => CATEGORIES.find((c) => c.id === id))
@@ -105,7 +107,8 @@ export default function LandingPage() {
           <div className="flex items-center justify-between gap-2">
             <LocationPicker
               value={pickedLocation}
-              onChange={setPickedLocation}
+              onChange={(v) => { setPickedLocation(v); saveLocation(v); }}
+              savedLocations={savedLocations}
               countryScope={countryConfig.locationScope}
               radiusUnit={countryConfig.radiusUnit}
               searchProvider="google"

@@ -17,6 +17,7 @@ import {
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { LocationPicker } from "@/components/location-picker";
 import type { LocationValue } from "@/components/location-picker";
+import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
 import { Switch } from "@/components/ui/switch";
 import { LaButton, LaTagInput } from "@/components/la";
 import { cn } from "@/lib/utils";
@@ -338,6 +339,7 @@ function StepFilters({
 }: StepFiltersProps) {
   // At least one of: keyword, filter, or location must be set to enable submission.
   const canSubmit = keywords.length > 0 || Object.values(filterValues).some((v) => v.length > 0) || locationValue !== null;
+  const { savedLocations, saveLocation } = useSavedLocations();
 
   return (
     <>
@@ -361,7 +363,8 @@ function StepFilters({
             <p className="text-sm font-medium text-slate-700">Location</p>
             <LocationPicker
               value={locationValue}
-              onChange={onLocationChange}
+              onChange={(v) => { onLocationChange(v); saveLocation(v); }}
+              savedLocations={savedLocations}
               placeholder="Select a location"
               showRadius={false}
               trigger="link"
