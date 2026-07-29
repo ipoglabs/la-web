@@ -91,7 +91,7 @@ export async function GET(
       .limit(50)
       .populate<{ ownerId: LeanOwner | null }>(
         "ownerId",
-        "fullName image role isEmailVerified isPrimaryNumberVerified createdAt"
+        "userId fullName image role isEmailVerified isPrimaryNumberVerified createdAt"
       )
       .lean();
 

@@ -6,6 +6,7 @@ import { sanitizeDescriptionToHtml } from "@/lib/sanitizeDescription";
 /** Subset of the real User doc this mapper needs — pass a `.populate("ownerId", ...)` result. */
 export type LeanOwner = {
   _id: unknown;
+  userId?: string;
   fullName?: string;
   image?: string;
   role?: string;
@@ -105,6 +106,10 @@ export function mapPostToListing(post: LeanPost, ownerUser?: LeanOwner | null): 
       // messageable seller instead of falling back to its "not set up yet"
       // state (it validates seller.id looks like a real ObjectId).
       id: ownerUser ? String(ownerUser._id) : undefined,
+      // Public profile slug (/u/[handle]) — SellerCard.tsx only links the
+      // avatar/name when this is set. `userId` IS the handle (models/user.ts
+      // has no separate `handle` field).
+      handle: ownerUser?.userId,
       name: sellerName,
       role: ownerUser?.role ? ownerUser.role[0].toUpperCase() + ownerUser.role.slice(1) : "Individual",
       location: post.location?.address ?? "",

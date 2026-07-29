@@ -25,7 +25,7 @@ import { getFeatures, COUNTRY_CONFIGS, type CountryCode } from "@/config";
 import { LegalDrawer } from "@/components/la-blocks/LegalDrawer";
 import { FeedbackPopup } from "@/components/feedback";
 import { TimelineSheet } from "@/components/la-blocks/TimelineSheet";
-import { isSimpleLayoutRoute } from "@/lib/layout-routes";
+import { isSimpleLayoutRoute, isNoFooterRoute } from "@/lib/layout-routes";
 
 export type AppFooterVariant = "default" | "simple";
 
@@ -80,6 +80,11 @@ export default function AppFooter({ countryCode, countryLabel, variant, popularC
   const [isOpen, setIsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const pathname = usePathname();
+
+  // These routes own a fixed, full-height layout (e.g. /chat's header/list/
+  // composer shell) — stacking the footer below would push the page taller
+  // than one viewport, forcing a scroll to reach always-visible content.
+  if (isNoFooterRoute(pathname)) return null;
 
   // Derived from the live pathname so it's correct on soft navigation in
   // both directions (see AppHeader.tsx for the full rationale — same

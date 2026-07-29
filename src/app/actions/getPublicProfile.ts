@@ -82,6 +82,7 @@ export async function getPublicProfileByHandle(
 
   const ownerUser: LeanOwner = {
     _id: user._id,
+    userId: user.userId,
     fullName: user.fullName,
     image: user.image,
     role: user.role,

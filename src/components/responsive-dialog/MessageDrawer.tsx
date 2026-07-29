@@ -34,10 +34,12 @@ type Props = {
 
 const MAX_CHARS = 500;
 // Conversation.adId is required (models/Conversation.ts) but this dialog
-// isn't tied to any specific listing — a fixed sentinel keeps a profile-level
-// "general inquiry" thread distinct from any per-listing chat thread between
-// the same two people, with no schema change needed.
-const PROFILE_INQUIRY_AD_ID = "profile-inquiry";
+// isn't tied to any specific listing. "direct" is the sentinel the /chat
+// dashboard already special-cases (shows the person's name instead of an ad
+// title, hides the "View ad" link) — reusing it here instead of inventing a
+// second one keeps a profile-level "general inquiry" thread distinct from
+// any per-listing chat thread between the same two people, no schema change needed.
+const DIRECT_MESSAGE_AD_ID = "direct";
 
 export function MessageResponsiveDialog({ sellerName = "Seller", sellerId }: Props) {
   const router = useRouter();
@@ -67,7 +69,7 @@ export function MessageResponsiveDialog({ sellerName = "Seller", sellerId }: Pro
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           otherUserId: sellerId,
-          adId: PROFILE_INQUIRY_AD_ID,
+          adId: DIRECT_MESSAGE_AD_ID,
           adTitle: "Profile inquiry",
         }),
       });

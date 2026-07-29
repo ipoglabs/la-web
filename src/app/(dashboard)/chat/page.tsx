@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -336,9 +337,16 @@ function ChatHeader({ conv, otherOnline, isTyping, onBack }: {
         )}
       </div>
 
-      <a href="#" onClick={(e) => e.preventDefault()} className="shrink-0 text-xs text-slate-500 hover:text-slate-900 flex items-center gap-0.5 whitespace-nowrap">
-        View ad <IconChevronRight />
-      </a>
+      {/* "direct" = a conversation not tied to any specific listing (e.g. a
+          public-profile "Send a message") — nothing real to view. */}
+      {conv.adId !== "direct" && (
+        <Link
+          href={`/listings/${conv.adId}`}
+          className="shrink-0 text-sm text-slate-500 hover:text-slate-900 flex items-center gap-0.5 whitespace-nowrap"
+        >
+          View ad <IconChevronRight />
+        </Link>
+      )}
     </div>
   );
 }
@@ -938,7 +946,12 @@ function ChatPageContent() {
     .filter((c) => !searchNorm || c.name.toLowerCase().includes(searchNorm) || c.ad.title.toLowerCase().includes(searchNorm));
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-white">
+    // AppHeader is a fixed h-16 (+ 1px border) above this — subtract it so
+    // this fills exactly the remaining viewport instead of stacking a full
+    // 100dvh box below the header (which pushed content past one screen).
+    // AppFooter is suppressed for this route entirely (see layout-routes.ts's
+    // NO_FOOTER_ROUTES) since a chat app shell should never have page scroll.
+    <div className="h-[calc(100dvh-4.0625rem)] flex flex-col overflow-hidden bg-white">
 
       <main className="flex flex-1 overflow-hidden">
 
