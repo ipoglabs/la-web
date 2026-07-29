@@ -132,7 +132,6 @@ export function RolesEditor({
       const trimmed = value?.trim();
       if (trimmed && isMeaningfulText(trimmed)) cleanSpecialties[id as RoleId] = trimmed;
     }
-    // TODO [INTEGRATION]: PATCH /api/users/me { intent, roleIds, specialties, customRole }
     onSave({
       intent: draftIntent,
       roleIds: draftRoleIds,

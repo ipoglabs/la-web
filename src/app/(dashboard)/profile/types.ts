@@ -71,12 +71,22 @@ export type ProfileUser = {
   nationality: string;
   residency: string;
   email: string;
+  isEmailVerified: boolean;
+  memberSinceYear: number | null;
   primaryNumber: string;
   secondaryNumber1: string;
   secondaryNumber2: string;
   role: string;
   roleTitle: string;
   roleDescription: string;
+  // Raw DB values for the multi-select "Roles" editor (config/roles.ts) —
+  // untyped strings here since the config's canonical list can change over
+  // time; ProfilePageScreen filters/validates against RoleId/IntentId when
+  // seeding editor state.
+  roles: string[];
+  roleSpecialties: Record<string, string>;
+  customRole: string | null;
+  intent: string;
   image: string;
   marketingOptIn: boolean;
   locality: string;

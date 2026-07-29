@@ -8,7 +8,7 @@
  */
 
 import type { ReactNode } from "react";
-import { CheckCircle2, ChevronRight, Lock, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight, Lock, Trash2 } from "lucide-react";
 import { LaBadge, LaButton, LaCard } from "@/components/la";
 import { cn } from "@/lib/utils";
 
@@ -108,10 +108,16 @@ export function ContactRow({
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-center gap-2">
             <p className="text-sm font-medium uppercase tracking-wide text-slate-600">{label}</p>
-            {verified && (
+            {verified === true && (
               <LaBadge intent="success" size="md" className="gap-1 bg-emerald-50 text-emerald-700">
                 <CheckCircle2 className="size-3" />
                 Verified
+              </LaBadge>
+            )}
+            {verified === false && (
+              <LaBadge intent="warning" size="md" className="gap-1 bg-amber-50 text-amber-700">
+                <AlertCircle className="size-3" />
+                Not verified
               </LaBadge>
             )}
           </div>

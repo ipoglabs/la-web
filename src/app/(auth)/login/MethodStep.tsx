@@ -28,7 +28,7 @@
  *     (same Mongo-backed OTP records email verification already uses).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -59,6 +59,18 @@ function IconApple({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
+// Maps NextAuth's `?error=` codes (node_modules/next-auth/core/pages/signin.js)
+// to messages that fit this app's tone — shown via the same sonner toast
+// pattern as every other auth failure on this screen, instead of NextAuth's
+// own unstyled built-in error page (see `pages` in lib/authOptions.ts).
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked:
+    "That account is linked to a different sign-in method. Try email or phone instead.",
+  AccessDenied: "Access was denied. Please try again.",
+  Verification: "That link has expired or was already used.",
+};
+const OAUTH_ERROR_FALLBACK = "Couldn't sign you in. Please try again.";
+
 export function MethodStep() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,6 +92,16 @@ export function MethodStep() {
   const identifierValid = identifierMethod === "email" ? emailValid : phoneValid;
   const redirectParam = searchParams.get("redirect");
   const redirectTarget = redirectParam || "/";
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) return;
+    toast.error(OAUTH_ERROR_MESSAGES[error] ?? OAUTH_ERROR_FALLBACK);
+    const params = new URLSearchParams(searchParams);
+    params.delete("error");
+    router.replace(`/login${params.toString() ? `?${params.toString()}` : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   async function handleGoogle() {
     setGoogleLoading(true);

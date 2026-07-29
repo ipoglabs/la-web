@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Public Profile — refactored 2026-07-12
+ * Public Profile — refactored 2026-07-12, extended 2026-07-29 with a real
+ * DB-backed path.
  *
- * Audit findings that drove this rewrite:
+ * Audit findings that drove the 2026-07-12 rewrite:
  *
  * Technical:
  *  - Old mock data was internally inconsistent — header stat said "37 listings"
@@ -32,6 +33,23 @@
  *    dropping the filter pills (would still be data-driven if a seller ever
  *    has mixed statuses — simply not needed here), and collapsing contact
  *    down to 2 rows (Email/Phone).
+ *
+ * 2026-07-29: real users' `/u/[handle]` (handle = User.userId) no longer 404s
+ * as "Profile not found" — `page.tsx` now falls back to
+ * `getPublicProfileByHandle()` (real User + Post + Review data) whenever the
+ * handle isn't one of the 6 demo sellers below. The 6 demo handles (and the
+ * `anto27` alias) keep their exact pre-existing mock behaviour untouched —
+ * `isMock` branches the few places real accounts differ:
+ *   - No followers/last-active (not tracked on User yet) — that row is hidden.
+ *   - No Contact tab (email/phone are private — see profile page's own
+ *     "Your email is always private" copy) — buyers use "Send a message".
+ *   - Reviews are real (`models/review.ts`, previously unwired) — persisted
+ *     via `submitReview()`, one per (profile, reviewer), no upvote/downvote
+ *     (never had backing data — was a mock-only decoration).
+ *   - Listings are real Posts owned by this user (`status: "active"` only) —
+ *     no DEMO_STATUS_CYCLE (that was explicitly for visually QA-ing every
+ *     badge variant on the one demo seller who has none of the real
+ *     lifecycle states).
  */
 
 import { useState, type ReactNode } from "react";
@@ -47,6 +65,8 @@ import { useFavouritesStore } from "@/lib/stores/favouritesStore";
 import { ALL_PROPERTY_LISTINGS } from "@/lib/mock/gb/property";
 import { toast } from "sonner";
 import { HANDLE_TO_SELLER, type ProfileHandle } from "./handle-map";
+import { submitReview } from "@/app/actions/submitReview";
+import type { PublicProfileResult } from "@/app/actions/getPublicProfile";
 
 /**
  * DEMO ONLY — cycles every listing-lifecycle status across this seller's real
@@ -56,7 +76,7 @@ import { HANDLE_TO_SELLER, type ProfileHandle } from "./handle-map";
  * "draft"/"pending"/"off-market"/"expired"/"rejected"/"blocked" are
  * dashboard-only states (never shown on a public detail page), and "deleted"
  * listings aren't shown anywhere. Kept here purely for design-system-style
- * badge QA — remove this override once status comes from real data.
+ * badge QA — only used on the mock demo sellers, never on real accounts.
  */
 const DEMO_STATUS_CYCLE: ListingStatus[] = [
   "active",
@@ -94,9 +114,8 @@ type ProfileReview = {
  * reachable, but would have shown Bob's reviews/contact under every other
  * seller's hero card the moment `SellerCard.tsx` started linking to them.
  * Keyed by `ProfileHandle` so each of the 6 wired GB-property sellers gets
- * their own (still mock) content.
- * TODO [INTEGRATION]: replace with real reviews/contact API calls, keyed by
- * seller id, once auth/DB ship.
+ * their own (still mock) content. Real accounts use `models/review.ts` via
+ * `getPublicProfileByHandle`/`submitReview` instead — see top-of-file note.
  */
 const REVIEWS_BY_HANDLE: Record<ProfileHandle, ProfileReview[]> = {
   "bob-harrison": [
@@ -277,15 +296,6 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
-function ProfileStat({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="flex flex-col items-center px-4 py-2">
-      <span className="text-lg font-semibold text-slate-900">{value}</span>
-      <span className="text-sm text-slate-500">{label}</span>
-    </div>
-  );
-}
-
 function ContactRow({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-slate-300 px-4 py-3">
@@ -315,14 +325,25 @@ function getPresenceStatus(lastActive: string): "online" | "offline" {
   return "offline";
 }
 
-export default function PublicProfileClient({ handle }: { handle: string }) {
+export default function PublicProfileClient({
+  handle,
+  realProfile,
+}: {
+  handle: string;
+  /** From `getPublicProfileByHandle()` — undefined/omitted for mock demo
+   *  handles (page.tsx doesn't even query the DB for those), null when the
+   *  handle matched neither a demo seller nor a real, active User. */
+  realProfile?: PublicProfileResult | null;
+}) {
   const [contactRevealed, setContactRevealed] = useState(false);
   const [pendingRating, setPendingRating] = useState(0);
   const [pendingComment, setPendingComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewVotes, setReviewVotes] = useState<Record<string, "up" | "down" | null>>({});
-  const [reviews, setReviews] = useState(
+  const [mockReviews, setMockReviews] = useState(
     REVIEWS_BY_HANDLE[handle as ProfileHandle] ?? []
   );
+  const [realReviews, setRealReviews] = useState(realProfile?.reviews ?? []);
 
   const favItems = useFavouritesStore((s) => s.items);
   const addFav = useFavouritesStore((s) => s.add);
@@ -330,8 +351,14 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
 
   const profileSeller = HANDLE_TO_SELLER[handle as ProfileHandle];
   const contact = CONTACT_BY_HANDLE[handle as ProfileHandle];
+  const isMock = Boolean(profileSeller);
+  const real = realProfile?.profile;
 
-  const avgRating = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+  const reviews: { id: string; author: string; rating: number; date: string; comment: string }[] =
+    isMock ? mockReviews : realReviews;
+  const avgRating = reviews.length
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : 0;
   const ratingBreakdown = [5, 4, 3, 2, 1]
     .map((star) => ({ star, count: reviews.filter((r) => r.rating === star).length }))
     .filter(({ count }) => count > 0);
@@ -340,8 +367,8 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
     setReviewVotes((prev) => ({ ...prev, [id]: prev[id] === direction ? null : direction }));
   }
 
-  function handleSubmitReview() {
-    setReviews((prev) => [
+  function handleSubmitMockReview() {
+    setMockReviews((prev) => [
       {
         id: `r-${Date.now()}`,
         author: "You",
@@ -358,7 +385,30 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
     toast.success("Review posted");
   }
 
-  if (!profileSeller) {
+  async function handleSubmitRealReview() {
+    setSubmittingReview(true);
+    const result = await submitReview(handle, pendingRating, pendingComment);
+    setSubmittingReview(false);
+    if ("error" in result) {
+      toast.error(result.error);
+      return;
+    }
+    setRealReviews((prev) => [
+      {
+        id: `pending-${Date.now()}`,
+        author: "You",
+        rating: pendingRating,
+        date: new Date().toISOString(),
+        comment: pendingComment.trim(),
+      },
+      ...prev,
+    ]);
+    setPendingRating(0);
+    setPendingComment("");
+    toast.success("Review posted");
+  }
+
+  if (!isMock && !real) {
     return (
       <div className="mx-auto flex max-w-5xl flex-col items-center px-4 py-24 text-center">
         <h1 className="text-xl font-semibold text-slate-900">Profile not found</h1>
@@ -372,7 +422,23 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
     );
   }
 
-  const sellerListings = ALL_PROPERTY_LISTINGS.filter((l) => l.seller === profileSeller);
+  const sellerListings = isMock
+    ? ALL_PROPERTY_LISTINGS.filter((l) => l.seller === profileSeller)
+    : realProfile!.listings;
+
+  const displayName = isMock ? profileSeller.name : real!.name;
+  const displayInitials = displayName
+    .split(" ")
+    .map((n) => n[0])
+    .join("");
+  const displayAvatar = isMock ? profileSeller.avatar : real!.avatar || undefined;
+  const displayVerified = isMock ? profileSeller.verified : real!.verified;
+  const displayRoleLocation = isMock
+    ? `${profileSeller.role} · ${profileSeller.location}`
+    : [real!.roleLabels.join(" / "), real!.location].filter(Boolean).join(" · ");
+  const displayTagline = isMock ? profileSeller.tagline : real!.tagline;
+  const displayMemberSince = isMock ? profileSeller.memberSince : String(real!.memberSinceYear);
+  const presenceStatus = isMock ? getPresenceStatus(profileSeller.lastActive) : "offline";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4">
@@ -381,21 +447,18 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
             <Avatar
-              src={profileSeller.avatar}
-              alt={profileSeller.name}
-              initials={profileSeller.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+              src={displayAvatar}
+              alt={displayName}
+              initials={displayInitials}
               size="2xl"
-              status={getPresenceStatus(profileSeller.lastActive)}
+              status={presenceStatus}
               ring
             />
 
             <div className="w-full flex-1">
               <div className="flex items-center justify-center gap-1.5 sm:justify-start">
-                <h1 className="text-xl font-semibold text-slate-900">{profileSeller.name}</h1>
-                {profileSeller.verified && (
+                <h1 className="text-xl font-semibold text-slate-900">{displayName}</h1>
+                {displayVerified && (
                   <span className="inline-flex items-center" title="Verified seller">
                     <BadgeCheck
                       width={20}
@@ -409,11 +472,9 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-500">
-                {profileSeller.role} · {profileSeller.location}
-              </p>
+              <p className="text-sm text-slate-500">{displayRoleLocation}</p>
               {/* Not italicised — italics reduce legibility for low-vision reading */}
-              <p className="mt-2 text-sm text-slate-700">{profileSeller.tagline}</p>
+              {displayTagline && <p className="mt-2 text-sm text-slate-700">{displayTagline}</p>}
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <span className="text-2xl font-semibold text-slate-900">{avgRating.toFixed(1)}</span>
@@ -432,29 +493,35 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
                 )}
               </div>
               <p className="mt-1 text-sm text-slate-500">
-                Member since {profileSeller.memberSince} · Active {profileSeller.lastActive}
+                Member since {displayMemberSince}
+                {isMock && ` · Active ${profileSeller.lastActive}`}
               </p>
             </div>
           </div>
 
-          {/* Stat + primary CTA — right-aligned, uses the spare horizontal space on desktop */}
+          {/* Stat + primary CTA — right-aligned, uses the spare horizontal space on desktop.
+              Followers has no real backing data yet, so it's mock-only. */}
           <div className="hidden shrink-0 flex-col items-end gap-3 sm:flex">
-            <LaButton intent="link" size="default" className="h-auto p-0">
-              {profileSeller.followers} Followers
-            </LaButton>
+            {isMock && (
+              <LaButton intent="link" size="default" className="h-auto p-0">
+                {profileSeller.followers} Followers
+              </LaButton>
+            )}
             <div className="w-48">
-              <MessageResponsiveDialog sellerName={profileSeller.name} />
+              <MessageResponsiveDialog sellerName={displayName} sellerId={isMock ? undefined : real!.id} />
             </div>
           </div>
         </div>
 
         {/* Mobile stat + CTA — desktop's side-by-side layout has no room on narrow screens */}
         <div className="mt-4 flex flex-col items-center border-t border-slate-300 pt-4 sm:hidden">
-          <LaButton intent="link" size="default" className="h-auto p-0">
-            {profileSeller.followers} Followers
-          </LaButton>
+          {isMock && (
+            <LaButton intent="link" size="default" className="h-auto p-0">
+              {profileSeller.followers} Followers
+            </LaButton>
+          )}
           <div className="mt-4 w-full">
-            <MessageResponsiveDialog sellerName={profileSeller.name} />
+            <MessageResponsiveDialog sellerName={displayName} />
           </div>
         </div>
       </div>
@@ -464,7 +531,7 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
         <TabsList>
           <TabsTrigger value="listing">Listings ({sellerListings.length})</TabsTrigger>
           <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
-          <TabsTrigger value="contact">Contact</TabsTrigger>
+          {isMock && <TabsTrigger value="contact">Contact</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="listing" className="min-h-105 p-4">
@@ -472,17 +539,21 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
             <p className="py-12 text-center text-sm text-slate-500">No listings yet.</p>
           ) : (
             <>
-              <p className="mb-3 text-sm text-slate-500">
-                Demo: every listing status badge, cycled across these cards for visual QA. In
-                real use only <span className="font-medium text-slate-700">Active</span>,{" "}
-                <span className="font-medium text-slate-700">Closed</span> and{" "}
-                <span className="font-medium text-slate-700">Under Review</span> ever appear on a
-                public profile — the rest are seller-dashboard-only states.
-              </p>
+              {isMock && (
+                <p className="mb-3 text-sm text-slate-500">
+                  Demo: every listing status badge, cycled across these cards for visual QA. In
+                  real use only <span className="font-medium text-slate-700">Active</span>,{" "}
+                  <span className="font-medium text-slate-700">Closed</span> and{" "}
+                  <span className="font-medium text-slate-700">Under Review</span> ever appear on a
+                  public profile — the rest are seller-dashboard-only states.
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {sellerListings.map((item, i) => {
                   const isFav = favItems.some((f) => f.id === item.id);
-                  const demoStatus = DEMO_STATUS_CYCLE[i % DEMO_STATUS_CYCLE.length];
+                  const status = isMock
+                    ? DEMO_STATUS_CYCLE[i % DEMO_STATUS_CYCLE.length]
+                    : (item.status ?? "active");
                   return (
                     <Link key={item.id} href={item.href}>
                       <LaThumbnailListingCard
@@ -493,7 +564,7 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
                         detailsLabel={item.detailsLabel}
                         locationLabel={item.locationLabel}
                         postedAt={item.postedAt}
-                        status={demoStatus}
+                        status={status}
                         favorite={isFav}
                         onFavoriteChange={(next) => {
                           if (next) {
@@ -507,7 +578,7 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
                               locationLabel: item.locationLabel,
                               // postedAt is ISO string in Listing — store expects unix ms
                               postedAt: new Date(item.postedAt).getTime(),
-                              status: demoStatus,
+                              status,
                             });
                           } else {
                             removeFav(item.id);
@@ -554,10 +625,10 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
                 intent="primary-blue"
                 size="compact"
                 className="absolute bottom-2.5 right-2.5"
-                onClick={handleSubmitReview}
-                disabled={pendingRating === 0 || pendingComment.trim().length === 0}
+                onClick={isMock ? handleSubmitMockReview : handleSubmitRealReview}
+                disabled={pendingRating === 0 || pendingComment.trim().length === 0 || submittingReview}
               >
-                Submit
+                {submittingReview ? "Submitting…" : "Submit"}
               </LaButton>
             </div>
           </div>
@@ -571,60 +642,65 @@ export default function PublicProfileClient({ handle }: { handle: string }) {
                 </div>
                 <StarRating rating={review.rating} />
                 <p className="mt-2 text-sm text-slate-700">{review.comment}</p>
-                <div className="mt-2 flex items-center gap-4">
-                  <LaButton
-                    intent="ghost"
-                    size="compact"
-                    className={`h-auto rounded-md px-2 py-1 ${
-                      reviewVotes[review.id] === "up" ? "text-blue-600" : "text-slate-500"
-                    }`}
-                    onClick={() => handleVote(review.id, "up")}
-                  >
-                    <ThumbsUp width={16} height={16} />
-                    {review.upvotes + (reviewVotes[review.id] === "up" ? 1 : 0)}
-                  </LaButton>
-                  <LaButton
-                    intent="ghost"
-                    size="compact"
-                    className={`h-auto rounded-md px-2 py-1 ${
-                      reviewVotes[review.id] === "down" ? "text-rose-600" : "text-slate-500"
-                    }`}
-                    onClick={() => handleVote(review.id, "down")}
-                  >
-                    <ThumbsDown width={16} height={16} />
-                    {review.downvotes + (reviewVotes[review.id] === "down" ? 1 : 0)}
-                  </LaButton>
-                </div>
+                {/* Upvote/downvote never had real backing data — mock-only decoration */}
+                {isMock && (
+                  <div className="mt-2 flex items-center gap-4">
+                    <LaButton
+                      intent="ghost"
+                      size="compact"
+                      className={`h-auto rounded-md px-2 py-1 ${
+                        reviewVotes[review.id] === "up" ? "text-blue-600" : "text-slate-500"
+                      }`}
+                      onClick={() => handleVote(review.id, "up")}
+                    >
+                      <ThumbsUp width={16} height={16} />
+                      {(review as ProfileReview).upvotes + (reviewVotes[review.id] === "up" ? 1 : 0)}
+                    </LaButton>
+                    <LaButton
+                      intent="ghost"
+                      size="compact"
+                      className={`h-auto rounded-md px-2 py-1 ${
+                        reviewVotes[review.id] === "down" ? "text-rose-600" : "text-slate-500"
+                      }`}
+                      onClick={() => handleVote(review.id, "down")}
+                    >
+                      <ThumbsDown width={16} height={16} />
+                      {(review as ProfileReview).downvotes + (reviewVotes[review.id] === "down" ? 1 : 0)}
+                    </LaButton>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="contact" className="min-h-105 p-4">
-          <div className="space-y-3">
-            <ContactRow
-              icon={<Mail width={18} height={18} />}
-              label="Email"
-              value={contactRevealed ? contact.email.revealed : contact.email.masked}
-            />
-            <ContactRow
-              icon={<Phone width={18} height={18} />}
-              label="Phone"
-              value={contactRevealed ? contact.phone.revealed : contact.phone.masked}
-            />
+        {isMock && (
+          <TabsContent value="contact" className="min-h-105 p-4">
+            <div className="space-y-3">
+              <ContactRow
+                icon={<Mail width={18} height={18} />}
+                label="Email"
+                value={contactRevealed ? contact.email.revealed : contact.email.masked}
+              />
+              <ContactRow
+                icon={<Phone width={18} height={18} />}
+                label="Phone"
+                value={contactRevealed ? contact.phone.revealed : contact.phone.masked}
+              />
 
-            {!contactRevealed && (
-              <LaButton intent="link" size="default" className="h-auto p-0" onClick={() => setContactRevealed(true)}>
-                Reveal contact details
-              </LaButton>
-            )}
+              {!contactRevealed && (
+                <LaButton intent="link" size="default" className="h-auto p-0" onClick={() => setContactRevealed(true)}>
+                  Reveal contact details
+                </LaButton>
+              )}
 
-            <p className="mt-4 border-t border-slate-300 pt-4 text-sm text-slate-500">
-              Prefer to message instead? Use the &ldquo;Send a message&rdquo; button above —
-              usually replies within 24 hours · English.
-            </p>
-          </div>
-        </TabsContent>
+              <p className="mt-4 border-t border-slate-300 pt-4 text-sm text-slate-500">
+                Prefer to message instead? Use the &ldquo;Send a message&rdquo; button above —
+                usually replies within 24 hours · English.
+              </p>
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -26,10 +26,10 @@
  * against `MAX_ROLES_PER_ACCOUNT`) was added alongside the 12 for cases the
  * canonical list can't name precisely (e.g. "Egg Farm Owner").
  *
- * TODO [INTEGRATION]: When the real API/DB lands, persist selected role ids
- * on the user document (e.g. `roles: string[]`) plus the optional custom
- * role string, and validate both server-side — never trust an arbitrary
- * client-supplied role id or unsanitized custom text.
+ * Persisted on the user document as `roles`/`roleSpecialties`/`customRole`
+ * (models/user.ts) — written at registration (api/auth/complete-profile) and
+ * edited later via the Profile page's RolesEditor + updateProfile.ts, which
+ * validates every id/length server-side (never trusts client-supplied data).
  *
  * 2026-07-12 (v3): Split "identity" from "intent". `BASE_ROLE` used to be
  * `individual_seller` / "Individual Seller" — wrong, because it forced

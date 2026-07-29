@@ -24,7 +24,24 @@ export async function GET(req: NextRequest) {
   }
 
   const data = await res.json();
-  const address = (data.results as any[])?.[0]?.formatted_address ?? null;
+  const result = (data.results as any[])?.[0];
+  const address = result?.formatted_address ?? null;
 
-  return NextResponse.json({ address });
+  // Structured components — used by callers (e.g. LocationPicker's "Current
+  // Location" GPS button) that need a real city/state/country breakdown
+  // rather than just a display string, since `formatted_address` is often
+  // street-level and not reliably splittable by comma.
+  const components: { long_name: string; types: string[] }[] = result?.address_components ?? [];
+  const findComponent = (type: string) =>
+    components.find((c) => c.types.includes(type))?.long_name ?? null;
+
+  const city =
+    findComponent("locality") ||
+    findComponent("postal_town") ||
+    findComponent("sublocality") ||
+    findComponent("administrative_area_level_2");
+  const state = findComponent("administrative_area_level_1");
+  const country = findComponent("country");
+
+  return NextResponse.json({ address, city, state, country });
 }

@@ -661,12 +661,34 @@ export function LocationPicker({
     setGpsError(null);
     setGpsPermissionDenied(false);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        // Reverse-geocode the coordinates into a real city/state/country —
+        // without this, every GPS pick was labeled the literal string
+        // "Current Location" with no sublabel at all, so any consumer that
+        // needs a real state/country (e.g. ResidenceEditor's "State is
+        // required" save validation) failed on every GPS-based pick.
+        let label = "Current Location";
+        let sublabel: string | undefined;
+        try {
+          const res = await fetch(`/api/geo/reverse?lat=${lat}&lng=${lng}`);
+          const data = res.ok ? await res.json() : null;
+          if (data?.city) {
+            label = data.city;
+            sublabel = [data.state, data.country].filter(Boolean).join(", ") || undefined;
+          } else if (data?.address) {
+            label = data.address;
+          }
+        } catch {
+          // Fall back to the plain "Current Location" label below — GPS
+          // coordinates were still captured, just not resolved to an address.
+        }
         setGpsLoading(false);
         const next: LocationValue = {
-          label: "Current Location",
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
+          label,
+          sublabel,
+          lat,
+          lng,
           radius: current?.radius ?? (showRadius ? RADIUS_OPTIONS[0] : undefined),
           unit: current?.unit ?? radiusUnit,
         };

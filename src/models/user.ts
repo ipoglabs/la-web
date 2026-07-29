@@ -128,6 +128,14 @@ const UserSchema = new mongoose.Schema(
     roles: { type: [String], default: [] },
     roleSpecialties: { type: mongoose.Schema.Types.Mixed, default: {} },
     customRole: { type: String, trim: true },
+
+    // Private "why are you here" preference (config/roles.ts IntentId) —
+    // never shown as a public badge, unlike roles/customRole above.
+    intent: {
+      type: String,
+      enum: ["buying", "selling", "both", "browsing"],
+      default: "both",
+    },
     
     provider: {
       type: String,

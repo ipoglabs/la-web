@@ -53,6 +53,17 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
+  // Without this, NextAuth falls back to its own unstyled built-in pages —
+  // both for the interactive /api/auth/signin form AND for the subset of
+  // error codes (Signin, OAuthSignin, OAuthCallback, OAuthCreateAccount,
+  // EmailCreateAccount, Callback — see node_modules/next-auth/core/index.js)
+  // that it always routes to /signin?error=... regardless of `pages.error`.
+  // Pointing both at our own /login screen means MethodStep.tsx's
+  // `error` search-param handling is what the user actually sees.
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   callbacks: {
     // Default next-auth only copies name/email/image from the token onto
     // session.user (see node_modules/next-auth/core/routes/session.js) —

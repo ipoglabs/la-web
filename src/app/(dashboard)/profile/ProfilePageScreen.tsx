@@ -50,6 +50,8 @@ import {
   BASE_ROLE,
   DEFAULT_INTENT,
   getIntentLabel,
+  ROLES,
+  INTENT_OPTIONS,
   type RoleId,
   type IntentId,
 } from "@/config/roles";
@@ -192,19 +194,26 @@ export function ProfilePageScreen({
       ? (user.gender as BasicInfoValues["gender"])
       : "Prefer not to say",
   });
-  // Roles/intent/specialties are a private preference layer with no matching
-  // field on the User schema yet (schema only has a single flat `role`
-  // string). Left as local-only UI state — wiring this needs a schema
-  // decision (e.g. roles: string[] + intent: string) before it can persist.
-  const [intent, setIntent] = useState<IntentId>(DEFAULT_INTENT);
-  const [roleIds, setRoleIds] = useState<RoleId[]>([]);
-  const [specialties, setSpecialties] = useState<Partial<Record<RoleId, string>>>({});
+  // Roles/intent/specialties/customRole are persisted via updateProfile()
+  // (see RolesEditor's onSave below) — schema fields models/user.ts's
+  // `roles`/`roleSpecialties`/`customRole`/`intent`. Seeded from the DB here,
+  // filtering out any role id no longer in the canonical config/roles.ts list.
+  const [intent, setIntent] = useState<IntentId>(
+    INTENT_OPTIONS.some((o) => o.id === user.intent) ? (user.intent as IntentId) : DEFAULT_INTENT
+  );
+  const [roleIds, setRoleIds] = useState<RoleId[]>(
+    (user.roles || []).filter((id): id is RoleId => ROLES.some((r) => r.id === id))
+  );
+  const [specialties, setSpecialties] = useState<Partial<Record<RoleId, string>>>(
+    (user.roleSpecialties as Partial<Record<RoleId, string>>) || {}
+  );
   const [customRole, setCustomRole] = useState<string | null>(
-    user.role && !["individual", "business", "agency"].includes(user.role) ? user.role : null
+    user.customRole ||
+      (user.role && !["individual", "business", "agency"].includes(user.role) ? user.role : null)
   );
   const [contact, setContact] = useState<ContactValues>({
     email: user.email,
-    emailVerified: true,
+    emailVerified: user.isEmailVerified,
     phones: buildPhonesFromUser(user),
   });
   const [residence, setResidence] = useState<ResidenceValues>({
@@ -418,7 +427,8 @@ export function ProfilePageScreen({
                       {basicInfo.fullName}
                     </h2>
                     <p className="mt-0.5 text-sm text-slate-600">
-                      @{handle} · Member since 2022
+                      @{handle}
+                      {user.memberSinceYear ? ` · Member since ${user.memberSinceYear}` : ""}
                     </p>
                   </div>
                 </div>
@@ -930,11 +940,22 @@ export function ProfilePageScreen({
           open={rolesEditorOpen}
           onOpenChange={setRolesEditorOpen}
           value={{ intent, roleIds, specialties, customRole }}
-          onSave={(next) => {
-            setIntent(next.intent);
-            setRoleIds(next.roleIds);
-            setSpecialties(next.specialties);
-            setCustomRole(next.customRole);
+          onSave={async (next) => {
+            try {
+              await updateProfile({
+                roleIds: next.roleIds,
+                roleSpecialties: next.specialties,
+                customRole: next.customRole,
+                intent: next.intent,
+              });
+              setIntent(next.intent);
+              setRoleIds(next.roleIds);
+              setSpecialties(next.specialties);
+              setCustomRole(next.customRole);
+              toast.success("Roles updated");
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Couldn't update roles");
+            }
           }}
         />
       )}

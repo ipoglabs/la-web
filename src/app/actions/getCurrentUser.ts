@@ -39,7 +39,7 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
   // ONE query — fetch full doc and check status in the same round-trip
   const user: any = await User.findById(userId)
     .select(
-      "userId username fullName dateOfBirth gender nationality residency email primaryNumber secondaryNumber1 secondaryNumber2 role roleTitle roleDescription image marketingOptIn locality address savedLocations isDeleted isSuspended accountStatus"
+      "userId username fullName dateOfBirth gender nationality residency email isEmailVerified primaryNumber secondaryNumber1 secondaryNumber2 role roleTitle roleDescription roles roleSpecialties customRole intent image marketingOptIn locality address savedLocations isDeleted isSuspended accountStatus createdAt"
     )
     .lean();
 
@@ -65,12 +65,18 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
     nationality: user.nationality || "",
     residency: user.residency || "",
     email: user.email || "",
+    isEmailVerified: Boolean(user.isEmailVerified),
+    memberSinceYear: user.createdAt ? new Date(user.createdAt).getFullYear() : null,
     primaryNumber: user.primaryNumber || "",
     secondaryNumber1: user.secondaryNumber1 || "",
     secondaryNumber2: user.secondaryNumber2 || "",
     role: user.role || "",
     roleTitle: user.roleTitle || "",
     roleDescription: user.roleDescription || "",
+    roles: Array.isArray(user.roles) ? user.roles : [],
+    roleSpecialties: user.roleSpecialties || {},
+    customRole: user.customRole || null,
+    intent: user.intent || "both",
     image: user.image || "",
     marketingOptIn: Boolean(user.marketingOptIn),
     locality: user.locality || "",

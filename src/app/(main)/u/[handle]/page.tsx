@@ -27,6 +27,7 @@
 import type { Metadata } from "next";
 import PublicProfileClient from "./PublicProfileClient";
 import { HANDLE_TO_SELLER, type ProfileHandle } from "./handle-map";
+import { getPublicProfileByHandle } from "@/app/actions/getPublicProfile";
 
 interface Props {
   params: Promise<{ handle: string }>;
@@ -36,12 +37,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { handle } = await params;
   const seller = HANDLE_TO_SELLER[handle as ProfileHandle];
 
-  if (!seller) {
+  if (seller) {
+    const title = `${seller.name} — ${seller.role} | LokalAds`;
+    const description = `${seller.tagline} ${seller.location} · Member since ${seller.memberSince}.`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `https://lokalads.com/u/${handle}`,
+        siteName: "LokalAds",
+        type: "profile",
+        images: [{ url: seller.avatar, width: 400, height: 400, alt: seller.name }],
+      },
+      twitter: {
+        card: "summary",
+        title,
+        description,
+        images: [seller.avatar],
+      },
+    };
+  }
+
+  const real = await getPublicProfileByHandle(handle);
+  if (!real) {
     return { title: "Profile Not Found | LokalAds" };
   }
 
-  const title = `${seller.name} — ${seller.role} | LokalAds`;
-  const description = `${seller.tagline} ${seller.location} · Member since ${seller.memberSince}.`;
+  const { profile } = real;
+  const title = `${profile.name} — ${profile.roleLabels.join(", ")} | LokalAds`;
+  const description = `${profile.tagline}${profile.location ? ` ${profile.location}` : ""} · Member since ${profile.memberSinceYear}.`;
 
   return {
     title,
@@ -52,13 +79,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `https://lokalads.com/u/${handle}`,
       siteName: "LokalAds",
       type: "profile",
-      images: [{ url: seller.avatar, width: 400, height: 400, alt: seller.name }],
+      ...(profile.avatar
+        ? { images: [{ url: profile.avatar, width: 400, height: 400, alt: profile.name }] }
+        : {}),
     },
     twitter: {
       card: "summary",
       title,
       description,
-      images: [seller.avatar],
+      ...(profile.avatar ? { images: [profile.avatar] } : {}),
     },
   };
 }
@@ -86,10 +115,15 @@ export default async function PublicProfilePage({ params }: Props) {
   const { handle } = await params;
   const seller = HANDLE_TO_SELLER[handle as ProfileHandle];
 
-  return (
-    <>
-      {seller && <SellerJsonLd handle={handle} seller={seller} />}
-      <PublicProfileClient handle={handle} />
-    </>
-  );
+  if (seller) {
+    return (
+      <>
+        <SellerJsonLd handle={handle} seller={seller} />
+        <PublicProfileClient handle={handle} />
+      </>
+    );
+  }
+
+  const real = await getPublicProfileByHandle(handle);
+  return <PublicProfileClient handle={handle} realProfile={real} />;
 }
