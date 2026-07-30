@@ -72,6 +72,7 @@ export type ProfileUser = {
   residency: string;
   email: string;
   isEmailVerified: boolean;
+  isPrimaryNumberVerified: boolean;
   memberSinceYear: number | null;
   primaryNumber: string;
   secondaryNumber1: string;

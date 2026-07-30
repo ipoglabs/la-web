@@ -27,6 +27,7 @@ import { getSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
+import { getVerificationStatus } from "@/lib/verification";
 
 export async function GET() {
   try {
@@ -124,6 +125,17 @@ export async function POST(req: NextRequest) {
     }
     if (!mongoose.Types.ObjectId.isValid(otherUserId)) {
       return NextResponse.json({ error: "Invalid otherUserId" }, { status: 400 });
+    }
+
+    // Starting a conversation requires a fully-verified account (email +
+    // phone) — same rule as posting an ad (see addPost.ts / post/page.tsx) —
+    // buyers/sellers need a reachable email AND phone before they can chat.
+    const verification = await getVerificationStatus(session.userId);
+    if (!verification?.isFullyVerified) {
+      return NextResponse.json(
+        { error: "Please verify your email and phone number before messaging.", code: "NOT_VERIFIED" },
+        { status: 403 }
+      );
     }
 
     await dbConnect();

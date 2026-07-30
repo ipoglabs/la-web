@@ -39,7 +39,7 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
   // ONE query — fetch full doc and check status in the same round-trip
   const user: any = await User.findById(userId)
     .select(
-      "userId username fullName dateOfBirth gender nationality residency email isEmailVerified primaryNumber secondaryNumber1 secondaryNumber2 role roleTitle roleDescription roles roleSpecialties customRole intent image marketingOptIn locality address savedLocations isDeleted isSuspended accountStatus createdAt"
+      "userId username fullName dateOfBirth gender nationality residency email isEmailVerified primaryNumber isPrimaryNumberVerified secondaryNumber1 secondaryNumber2 role roleTitle roleDescription roles roleSpecialties customRole intent image marketingOptIn locality address savedLocations isDeleted isSuspended accountStatus createdAt"
     )
     .lean();
 
@@ -66,6 +66,7 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
     residency: user.residency || "",
     email: user.email || "",
     isEmailVerified: Boolean(user.isEmailVerified),
+    isPrimaryNumberVerified: Boolean(user.isPrimaryNumberVerified),
     memberSinceYear: user.createdAt ? new Date(user.createdAt).getFullYear() : null,
     primaryNumber: user.primaryNumber || "",
     secondaryNumber1: user.secondaryNumber1 || "",

@@ -50,6 +50,7 @@ function SendIcon() {
 
 export default function ChitChat({ className, listingId, sellerId, sellerName, adTitle, adPrice, adImage }: ChitChatProps) {
   const [myId, setMyId] = React.useState<string | null>(null);
+  const [isFullyVerified, setIsFullyVerified] = React.useState(false);
   const [authChecked, setAuthChecked] = React.useState(false);
   const [conversationId, setConversationId] = React.useState<string | null>(null);
   const [messages, setMessages] = React.useState<ChitMessage[]>([]);
@@ -72,7 +73,11 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
     let cancelled = false;
     fetch("/api/auth/me", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : { user: null }))
-      .then(({ user }) => { if (!cancelled) setMyId(user?.id ?? null); })
+      .then(({ user }) => {
+        if (cancelled) return;
+        setMyId(user?.id ?? null);
+        setIsFullyVerified(Boolean(user?.isEmailVerified && user?.isPrimaryNumberVerified));
+      })
       .catch(() => { if (!cancelled) setMyId(null); })
       .finally(() => { if (!cancelled) setAuthChecked(true); });
     return () => { cancelled = true; };
@@ -82,7 +87,7 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
   // `loading` is only ever read from the myId+sellerId-gated render branch
   // below, so there's nothing to reset when this bails out early.
   React.useEffect(() => {
-    if (!authChecked || !myId || !hasRealSeller) return;
+    if (!authChecked || !myId || !hasRealSeller || !isFullyVerified) return;
     let cancelled = false;
 
     (async () => {
@@ -117,7 +122,7 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
     })();
 
     return () => { cancelled = true; };
-  }, [authChecked, myId, hasRealSeller, sellerId, listingId, adTitle, adPrice, adImage]);
+  }, [authChecked, myId, hasRealSeller, isFullyVerified, sellerId, listingId, adTitle, adPrice, adImage]);
 
   React.useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -192,15 +197,27 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
         </div>
       )}
 
-      {/* Signed in, but this seller has no real account to message yet */}
-      {authChecked && myId && !hasRealSeller && (
+      {/* Signed in, but not fully verified yet */}
+      {authChecked && myId && !isFullyVerified && (
+        <div className="rounded-xl bg-slate-100 px-4 py-4 text-center">
+          <p className="text-sm text-slate-600">
+            <Link href="/account-settings?verify=1" className="font-semibold text-blue-600 hover:underline">
+              Verify your email and phone number
+            </Link>{" "}
+            to message {sellerName}.
+          </p>
+        </div>
+      )}
+
+      {/* Signed in and verified, but this seller has no real account to message yet */}
+      {authChecked && myId && isFullyVerified && !hasRealSeller && (
         <div className="rounded-xl bg-slate-100 px-4 py-4 text-center">
           <p className="text-sm text-slate-500">Messaging isn&apos;t set up for this seller yet.</p>
         </div>
       )}
 
       {/* Real conversation */}
-      {authChecked && myId && hasRealSeller && (
+      {authChecked && myId && isFullyVerified && hasRealSeller && (
         <>
           {setupError ? (
             <p className="text-sm text-rose-600">{setupError}</p>

@@ -28,6 +28,7 @@ import { getSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
+import { getVerificationStatus } from "@/lib/verification";
 
 type MessageLike = {
   _id: mongoose.Types.ObjectId;
@@ -113,6 +114,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (conv.blockedBy.length > 0) {
       return NextResponse.json({ error: "Conversation is blocked" }, { status: 403 });
+    }
+
+    // Same verification gate as starting a conversation (POST
+    // /api/conversations) — an account that has since lost its verified
+    // status shouldn't be able to keep sending messages either.
+    const verification = await getVerificationStatus(session.userId);
+    if (!verification?.isFullyVerified) {
+      return NextResponse.json(
+        { error: "Please verify your email and phone number before messaging.", code: "NOT_VERIFIED" },
+        { status: 403 }
+      );
     }
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>));

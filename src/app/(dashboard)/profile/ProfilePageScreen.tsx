@@ -237,7 +237,7 @@ export function ProfilePageScreen({
     if (verifyToastShown.current) return;
     if (new URLSearchParams(window.location.search).get("verify") !== "1") return;
     verifyToastShown.current = true;
-    toast.info("Verify your email and phone number to start posting ads.");
+    toast.info("Verify your email and phone number to post ads or message other users.");
     router.replace("/account-settings");
   }, [mode, router]);
 

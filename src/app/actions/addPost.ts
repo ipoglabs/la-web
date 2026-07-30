@@ -2,13 +2,13 @@
 
 import connectDB from "@/config/database";
 import Post from "@/models/post";
-import User from "@/models/user";
 import { generateAdsId } from "@/lib/generateAdsId";
 import mongoose from "mongoose";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
 import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
+import { getVerificationStatus } from "@/lib/verification";
 
 type LocationData = {
   address?: string;
@@ -115,15 +115,12 @@ export async function addPost(
     // anyone who has never added/verified a phone number) can browse and
     // hold a session, but can't publish a listing until both contact
     // channels are verified — buyers/sellers need a reachable email AND
-    // phone for a live ad. Read fresh from the DB rather than trusting the
-    // session JWT, which doesn't carry verification flags and can be stale.
-    const accountUser = await User.findById(session.userId).select(
-      "isEmailVerified isPrimaryNumberVerified"
-    );
-    if (!accountUser) {
+    // phone for a live ad.
+    const verification = await getVerificationStatus(session.userId);
+    if (!verification) {
       return { ok: false, error: "Unauthorized user" };
     }
-    if (!accountUser.isEmailVerified || !accountUser.isPrimaryNumberVerified) {
+    if (!verification.isFullyVerified) {
       return {
         ok: false,
         error: "Please verify your email and phone number before posting an ad.",
