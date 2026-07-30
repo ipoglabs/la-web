@@ -3,6 +3,7 @@
 import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
+import { MAX_SAVED_LOCATIONS, SAVED_LOCATIONS_LIMIT_MESSAGE } from "@/lib/locationUtils";
 import type { SavedLocation } from "@/app/(dashboard)/profile/types";
 
 export async function addSavedLocation({
@@ -28,6 +29,10 @@ export async function addSavedLocation({
 
   const user: any = await User.findById(session.userId);
   if (!user || user.isDeleted) throw new Error("User not found");
+
+  if (user.savedLocations.length >= MAX_SAVED_LOCATIONS) {
+    throw new Error(SAVED_LOCATIONS_LIMIT_MESSAGE);
+  }
 
   const isDuplicate = user.savedLocations.some(
     (l: { city: string; country: string }) =>

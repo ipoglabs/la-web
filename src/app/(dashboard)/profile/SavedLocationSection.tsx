@@ -51,9 +51,7 @@ export function SavedLocationSection({
   const [saving, setSaving] = useState(false);
   const pickerHostRef = useRef<HTMLDivElement>(null);
 
-  // Real account data for the picker's "Saved" tab — replaces LocationPicker's
-  // default ALL_SAVED mock (generic Mumbai/Orchard Road/London placeholders
-  // that had nothing to do with the signed-in account).
+  // Real account data for the picker's "Saved" tab.
   const pickerSavedLocations = locations.map((loc) => ({
     label: loc.city,
     sublabel: [loc.region, loc.country].filter(Boolean).join(", "),

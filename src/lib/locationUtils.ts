@@ -1,5 +1,14 @@
 import type { LocationValue } from "@/components/location-picker";
 
+/** Shared cap on saved locations — enforced both client-side (instant feedback
+ *  in LocationPicker/SavedLocationSection) and server-side (addSavedLocation),
+ *  so it holds regardless of which surface a save comes from. */
+export const MAX_SAVED_LOCATIONS = 10;
+
+/** Shared message text so the client-side check and the server action's
+ *  thrown error read identically no matter which path triggered it. */
+export const SAVED_LOCATIONS_LIMIT_MESSAGE = `You can save up to ${MAX_SAVED_LOCATIONS} locations. Remove one to save a new location.`;
+
 /**
  * Normalizes a free-text country token (from a Google Places sublabel, or a
  * raw search string) into a canonical display name + flag code. Shared by

@@ -45,10 +45,7 @@ export type LocationPickerProps = {
   /**
    * Real per-account saved locations to seed the panel's "Saved" tab with
    * (e.g. from `models/user.ts`'s `savedLocations`, via `getCurrentUser()`).
-   * When omitted, falls back to `ALL_SAVED` — generic placeholder data for
-   * call sites not yet wired to a real account (kept so this component's
-   * many other usages — search bar, create-alert, etc. — aren't broken by
-   * this prop being additive-only).
+   * When omitted, the Saved tab is simply empty — no placeholder data.
    */
   savedLocations?: (SearchSuggestion & { id?: string })[];
   /** Persist a location the user bookmarks from the recent/search rows (not necessarily the one they select as current). No-ops silently if omitted (e.g. logged-out visitors). */
@@ -63,28 +60,6 @@ export type SavedSuggestion = SearchSuggestion & { id?: string };
 function suggestionKey(s: SearchSuggestion): string {
   return `${s.label}||${s.sublabel ?? ""}`;
 }
-
-// ─── Dummy data for Recent / Saved tabs ──────────────────────────────────────
-
-const ALL_RECENT: SearchSuggestion[] = [
-  { label: "London", sublabel: "Greater London, UK", lat: 51.5074, lng: -0.1278 },
-  { label: "Birmingham", sublabel: "West Midlands, UK", lat: 52.4862, lng: -1.8904 },
-  { label: "Manchester", sublabel: "Greater Manchester, UK", lat: 53.4808, lng: -2.2426 },
-  { label: "Singapore", sublabel: "Singapore", lat: 1.3521, lng: 103.8198 },
-  { label: "Orchard Road", sublabel: "Central, Singapore", lat: 1.3047, lng: 103.8318 },
-  { label: "Mumbai", sublabel: "Maharashtra, India", lat: 19.076, lng: 72.8777 },
-  { label: "Delhi", sublabel: "Delhi, India", lat: 28.7041, lng: 77.1025 },
-  { label: "Bangalore", sublabel: "Karnataka, India", lat: 12.9716, lng: 77.5946 },
-];
-
-const ALL_SAVED: SearchSuggestion[] = [
-  { label: "Home", sublabel: "Hackney, London, UK", lat: 51.5455, lng: -0.0553 },
-  { label: "Office", sublabel: "Canary Wharf, London, UK", lat: 51.5033, lng: -0.0235 },
-  { label: "Home", sublabel: "Tampines, Singapore", lat: 1.3543, lng: 103.9436 },
-  { label: "Office", sublabel: "Marina Bay, Singapore", lat: 1.2865, lng: 103.8614 },
-  { label: "Home", sublabel: "Bandra, Mumbai, India", lat: 19.0596, lng: 72.8295 },
-  { label: "Office", sublabel: "Connaught Place, Delhi, India", lat: 28.6329, lng: 77.2195 },
-];
 
 // ─── Radius options ───────────────────────────────────────────────────────────
 
@@ -809,14 +784,15 @@ export function LocationPicker({
   const [savingKey, setSavingKey] = React.useState<string | null>(null);
 
   // Recents — persisted to localStorage so they survive across sessions,
-  // not just while this picker instance stays mounted.
+  // not just while this picker instance stays mounted. Starts empty (no
+  // demo/mock cities) until the user actually searches or picks something.
   const [recentItems, setRecentItems] = React.useState<SearchSuggestion[]>(() => {
     let stored: SearchSuggestion[] = [];
     try {
       const raw = localStorage.getItem("la-location-recents");
-      stored = raw ? JSON.parse(raw) : ALL_RECENT;
+      stored = raw ? JSON.parse(raw) : [];
     } catch {
-      stored = ALL_RECENT;
+      stored = [];
     }
     return countryScope?.length
       ? stored.filter((s) => matchesScope(s.sublabel, countryScope))
@@ -833,7 +809,7 @@ export function LocationPicker({
   }, [recentItems]);
 
   const [savedItems, setSavedItems] = React.useState<SavedSuggestion[]>(() => {
-    const source = savedLocations ?? ALL_SAVED;
+    const source = savedLocations ?? [];
     return countryScope?.length
       ? source.filter((s) => matchesScope(s.sublabel, countryScope))
       : source;
@@ -1038,9 +1014,9 @@ export function LocationPicker({
         </a>
       ) : (
       /* ── Split pill — GPS (left) + Location (right) joined as one unit ── */
-      <div className={cn("flex items-center", className)}>
+      <div className={cn("flex min-w-0 items-center", className)}>
       <div className={cn(
-        "flex items-center rounded-full border border-white/20 bg-white/10 backdrop-blur-sm shadow-md overflow-hidden",
+        "flex min-w-0 items-center rounded-full border border-white/20 bg-white/10 backdrop-blur-sm shadow-md overflow-hidden",
         disabled && "opacity-50 cursor-not-allowed"
       )}>
 
@@ -1077,11 +1053,11 @@ export function LocationPicker({
           aria-haspopup="dialog"
           className="flex h-8 min-w-0 items-center gap-2 px-3 text-sm font-medium text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed"
         >
-          <span className="truncate" title={pillTitle}>{pillLabel}</span>
+          <span className="min-w-0 flex-1 truncate" title={pillTitle}>{pillLabel}</span>
           {pillRadius && (
             <>
-              <span className="font-normal text-white/60">·</span>
-              <span className="whitespace-nowrap font-normal text-white/80">{pillRadius}</span>
+              <span className="flex-none font-normal text-white/60">·</span>
+              <span className="flex-none whitespace-nowrap font-normal text-white/80">{pillRadius}</span>
             </>
           )}
           <IconChevron className={cn("h-3.5 w-3.5 flex-none text-white/40 transition-transform", open && "rotate-180")} />
