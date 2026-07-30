@@ -16,10 +16,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentUser } from "@/app/actions/getCurrentUser";
 import { addSavedLocation } from "@/app/actions/profile/addSavedLocation";
+import { removeSavedLocation } from "@/app/actions/profile/removeSavedLocation";
 import { locationValueToSavedLocationInput } from "@/lib/locationUtils";
-import type { LocationValue } from "@/components/location-picker";
-
-type SavedSuggestion = { label: string; sublabel?: string };
+import type { LocationValue, SavedSuggestion } from "@/components/location-picker";
 
 export function useSavedLocations() {
   const [savedLocations, setSavedLocations] = useState<SavedSuggestion[]>([]);
@@ -30,6 +29,7 @@ export function useSavedLocations() {
     loggedIn.current = Boolean(user);
     setSavedLocations(
       (user?.savedLocations ?? []).map((loc) => ({
+        id: loc.id,
         label: loc.city,
         sublabel: [loc.region, loc.country].filter(Boolean).join(", "),
       }))
@@ -56,5 +56,34 @@ export function useSavedLocations() {
     [refresh]
   );
 
-  return { savedLocations, saveLocation };
+  /** Bookmark a search/recent row without selecting it as the current location. */
+  const saveSuggestion = useCallback(
+    async (s: SavedSuggestion) => {
+      if (!loggedIn.current) return;
+      try {
+        await addSavedLocation(locationValueToSavedLocationInput(s));
+        await refresh();
+      } catch {
+        // Already saved — nothing to surface for a background bookmark toggle.
+      }
+    },
+    [refresh]
+  );
+
+  /** Real delete, called by LocationPicker's confirm-delete dialog. */
+  const removeSavedLocationById = useCallback(
+    async (id: string) => {
+      if (!loggedIn.current) return;
+      try {
+        await removeSavedLocation(id);
+        await refresh();
+      } catch {
+        // Account state changed underneath us — refresh already re-synced
+        // savedLocations to the DB's actual state, nothing further to do.
+      }
+    },
+    [refresh]
+  );
+
+  return { savedLocations, saveLocation, saveSuggestion, removeSavedLocationById };
 }

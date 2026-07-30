@@ -49,7 +49,9 @@ export async function GET(req: NextRequest) {
   const url = new URL("https://maps.googleapis.com/maps/api/place/autocomplete/json");
   url.searchParams.set("input", input);
   url.searchParams.set("key", GOOGLE_API_KEY);
-  url.searchParams.set("types", "(cities)"); // restrict to cities — remove for full address search
+  // No "types" restriction — neighborhood/sublocality-level results (e.g. a
+  // specific residential area) are just as valid a location pick as a city,
+  // and restricting to "(cities)" was hiding them from suggestions entirely.
 
   const googleRes = await fetch(url.toString());
 

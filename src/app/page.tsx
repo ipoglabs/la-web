@@ -21,7 +21,7 @@ export default function LandingPage() {
   const [alertOpen, setAlertOpen] = React.useState(false);
   const [pickedLocation, setPickedLocation] = React.useState<LocationValue | null>(null);
   const { config: countryConfig, countryCode } = useCountryConfig();
-  const { savedLocations, saveLocation } = useSavedLocations();
+  const { savedLocations, saveLocation, saveSuggestion, removeSavedLocationById } = useSavedLocations();
 
   const visibleCategories = countryConfig.enabledCategories
     .map((id) => CATEGORIES.find((c) => c.id === id))
@@ -109,6 +109,8 @@ export default function LandingPage() {
               value={pickedLocation}
               onChange={(v) => { setPickedLocation(v); saveLocation(v); }}
               savedLocations={savedLocations}
+              onSaveLocation={saveSuggestion}
+              onRemoveSavedLocation={removeSavedLocationById}
               countryScope={countryConfig.locationScope}
               radiusUnit={countryConfig.radiusUnit}
               searchProvider="google"

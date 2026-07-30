@@ -150,7 +150,7 @@ function ContextBar({ currentLocation, onLocationChange, activeFilterCount, onOp
   const router = useRouter();
   const searchParams = useSearchParams();
   const { config, countryCode } = useCountryConfig();
-  const { savedLocations, saveLocation } = useSavedLocations();
+  const { savedLocations, saveLocation, saveSuggestion, removeSavedLocationById } = useSavedLocations();
   const sort = searchParams.get("sort") ?? "newest";
 
   const SORT_OPTIONS = [
@@ -184,6 +184,8 @@ function ContextBar({ currentLocation, onLocationChange, activeFilterCount, onOp
             value={currentLocation}
             onChange={(v) => { onLocationChange(v); saveLocation(v); }}
             savedLocations={savedLocations}
+            onSaveLocation={saveSuggestion}
+            onRemoveSavedLocation={removeSavedLocationById}
             showRadius
             countryScope={config.locationScope}
             radiusUnit={config.radiusUnit}

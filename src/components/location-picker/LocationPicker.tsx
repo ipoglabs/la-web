@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import {
   STATIC_SUGGESTIONS,
   realGoogleSearch,
@@ -49,8 +50,19 @@ export type LocationPickerProps = {
    * many other usages — search bar, create-alert, etc. — aren't broken by
    * this prop being additive-only).
    */
-  savedLocations?: SearchSuggestion[];
+  savedLocations?: (SearchSuggestion & { id?: string })[];
+  /** Persist a location the user bookmarks from the recent/search rows (not necessarily the one they select as current). No-ops silently if omitted (e.g. logged-out visitors). */
+  onSaveLocation?: (s: SearchSuggestion) => void | Promise<void>;
+  /** Remove a saved location by its real DB id, called after the confirm dialog. Falls back to local-only removal if omitted. */
+  onRemoveSavedLocation?: (id: string) => void | Promise<void>;
 };
+
+export type SavedSuggestion = SearchSuggestion & { id?: string };
+
+/** Stable identity for a suggestion regardless of source — used to match saved/saving state. */
+function suggestionKey(s: SearchSuggestion): string {
+  return `${s.label}||${s.sublabel ?? ""}`;
+}
 
 // ─── Dummy data for Recent / Saved tabs ──────────────────────────────────────
 
@@ -77,6 +89,91 @@ const ALL_SAVED: SearchSuggestion[] = [
 // ─── Radius options ───────────────────────────────────────────────────────────
 
 const RADIUS_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+// ─── Scope labels ─────────────────────────────────────────────────────────────
+
+// Shown in pill when no location is set — displays scoped country name as hint
+const SCOPE_LABELS: Record<string, string> = {
+  UK: "United Kingdom", SG: "Singapore", IN: "India",
+  US: "United States", AU: "Australia", AE: "UAE", CA: "Canada",
+};
+
+// ─── Check if a reverse-geocoded sublabel falls within the allowed country scope ──
+
+function isWithinScope(sublabel: string | undefined, countryScope: string[]): boolean {
+  if (!countryScope.length) return true;
+  if (!sublabel) return false;
+  return countryScope.some((code) => {
+    const fullName = SCOPE_LABELS[code] ?? code;
+    return (
+      sublabel.toLowerCase().includes(fullName.toLowerCase()) ||
+      sublabel.toLowerCase().includes(code.toLowerCase())
+    );
+  });
+}
+
+// ─── iOS-style Out-of-Scope Alert ─────────────────────────────────────────────
+
+function OutOfScopeAlert({
+  open,
+  onClose,
+  countryScope,
+}: {
+  open: boolean;
+  onClose: () => void;
+  countryScope: string[];
+}) {
+  const scopeName =
+    countryScope.length === 1
+      ? (SCOPE_LABELS[countryScope[0]] ?? countryScope[0])
+      : countryScope.map((c) => SCOPE_LABELS[c] ?? c).join(" or ");
+
+  const scopeLabel =
+    countryScope.length === 1
+      ? (SCOPE_LABELS[countryScope[0]] ?? countryScope[0])
+      : "supported region";
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="mx-6 w-full max-w-[280px] overflow-hidden rounded-2xl bg-[#f2f2f7]/95 backdrop-blur-xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="out-of-scope-title"
+        aria-describedby="out-of-scope-desc"
+      >
+        <div className="px-4 pb-5 pt-5 text-center">
+          <p
+            id="out-of-scope-title"
+            className="text-base font-semibold leading-snug text-[#1c1c1e]"
+          >
+            Location outside {scopeLabel}
+          </p>
+          <p
+            id="out-of-scope-desc"
+            className="mt-1 text-sm leading-[1.4] text-[#1c1c1e]"
+          >
+            Sorry, Lokalads only supports location searches within {scopeName}
+          </p>
+        </div>
+        <div className="h-px bg-[#3c3c43]/20" />
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-[11px] text-center text-base font-normal text-[#007aff] transition-colors active:bg-[#e5e5ea]"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -115,6 +212,7 @@ function LocationRow({
   onClear,
   onSave,
   isSaved,
+  isSaving,
   isActive,
 }: {
   suggestion: SearchSuggestion;
@@ -122,6 +220,7 @@ function LocationRow({
   onClear?: () => void;
   onSave?: () => void;
   isSaved?: boolean;
+  isSaving?: boolean;
   isActive?: boolean;
 }) {
   return (
@@ -136,7 +235,7 @@ function LocationRow({
           <div className={cn("truncate text-sm font-medium", isActive ? "text-blue-700" : "text-slate-800")}>{suggestion.label}</div>
           {suggestion.sublabel && (
             <div className="truncate text-sm font-normal text-slate-500">
-              {suggestion.sublabel.split(", ").slice(0, -1).join(", ") || suggestion.sublabel}
+              {suggestion.sublabel}
             </div>
           )}
         </div>
@@ -145,20 +244,27 @@ function LocationRow({
         <button
           type="button"
           onClick={onSave}
+          disabled={isSaving}
           aria-label={isSaved ? `Unsave ${suggestion.label}` : `Save ${suggestion.label}`}
           title={isSaved ? "Unsave" : "Save"}
           className={cn(
-            "flex h-8 w-8 flex-none items-center justify-center rounded-full transition-colors",
+            "flex h-8 w-8 flex-none items-center justify-center rounded-full transition-colors disabled:opacity-40",
             isSaved
               ? "text-blue-500 hover:bg-blue-50"
               : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           )}
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" aria-hidden
-            fill={isSaved ? "currentColor" : "none"}
-          >
-            <path d="M5 3h14a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" strokeWidth="1.75" strokeLinejoin="round" />
-          </svg>
+          {isSaving ? (
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+              <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" aria-hidden
+              fill={isSaved ? "currentColor" : "none"}
+            >
+              <path d="M5 3h14a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" strokeWidth="1.75" strokeLinejoin="round" />
+            </svg>
+          )}
         </button>
       )}
       {/* Static bookmark badge for saved items (no onSave action) */}
@@ -199,10 +305,12 @@ type PanelContentProps = {
   gpsError: string | null;
   gpsPermissionDenied: boolean;
   recentItems: SearchSuggestion[];
-  savedItems: SearchSuggestion[];
+  savedItems: SavedSuggestion[];
+  savingKey: string | null;
+  isMobile: boolean;
   onClearRecent: (index: number) => void;
-  onSaveRecent: (index: number) => void;
-  onClearSaved: (index: number) => void;
+  onToggleSave: (s: SearchSuggestion) => void;
+  onDeleteSaved: (item: SavedSuggestion) => void;
   onRequestGps: () => void;
   onSelect: (s: SearchSuggestion) => void;
   onRadiusChange: (r: number) => void;
@@ -222,9 +330,11 @@ function PanelContent({
   gpsPermissionDenied,
   recentItems,
   savedItems,
+  savingKey,
+  isMobile,
   onClearRecent,
-  onSaveRecent,
-  onClearSaved,
+  onToggleSave,
+  onDeleteSaved,
   onRequestGps,
   onSelect,
   onRadiusChange,
@@ -234,8 +344,7 @@ function PanelContent({
   const [results, setResults] = React.useState<SearchSuggestion[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [fetchError, setFetchError] = React.useState<string | null>(null);
-  const [confirmSavedIndex, setConfirmSavedIndex] = React.useState<number | null>(null);
-  const [savedOnly, setSavedOnly] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState<SavedSuggestion | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const radiusScrollRef = React.useRef<HTMLDivElement>(null);
@@ -308,74 +417,139 @@ function PanelContent({
   return (
     <div className="flex flex-col flex-1 min-h-0">
 
-      {/* GPS icon + Search input — single combined row */}
-      <div className="flex items-center gap-2 border-t border-b border-blue-100 bg-blue-50 px-3 py-2" role="search">
-        <button
-          type="button"
-          onClick={onRequestGps}
-          disabled={gpsLoading || disabled}
-          aria-label="Use current location"
-          title="Use current location"
-          className={cn(
-            "flex h-8 w-8 flex-none items-center justify-center rounded-lg transition-colors disabled:opacity-50",
-            gpsPermissionDenied ? "text-red-500 hover:bg-red-50" : gpsError ? "text-red-400 hover:bg-slate-100" : "text-slate-500 hover:bg-slate-100"
-          )}
-        >
-          {gpsLoading ? (
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-              <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <IconCrosshair className="h-4 w-4" />
-          )}
-        </button>
+      {/* ── Mobile: GPS button + search bar + Cancel ── */}
+      {isMobile ? (
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5" role="search">
+          <button
+            type="button"
+            onClick={onRequestGps}
+            disabled={gpsLoading || disabled}
+            aria-label="Use current location"
+            title={gpsPermissionDenied ? "Location access blocked" : gpsError ?? "Use current location"}
+            className={cn(
+              "flex h-10 w-10 flex-none items-center justify-center rounded-full border transition-colors disabled:opacity-50",
+              gpsPermissionDenied
+                ? "border-red-200 bg-red-50 text-red-500"
+                : gpsError
+                ? "border-slate-300 bg-slate-100 text-red-400"
+                : "border-slate-300 bg-slate-100 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
+            )}
+          >
+            {gpsLoading ? (
+              <svg className="h-[18px] w-[18px] animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <IconCrosshair className="h-[18px] w-[18px]" />
+            )}
+          </button>
 
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-slate-400 bg-slate-200 px-3 py-1.5">
-          {loading ? (
-            <svg className="h-4 w-4 flex-none animate-spin text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-              <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <svg className="h-4 w-4 flex-none text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-              <circle cx="11" cy="11" r="7" strokeWidth="1.75" />
-              <path d="M21 21l-4.35-4.35" strokeWidth="1.75" strokeLinecap="round" />
-            </svg>
-          )}
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholder}
-            disabled={disabled}
-            className="flex-1 bg-transparent text-sm-plus text-slate-800 placeholder:text-slate-500 outline-none disabled:cursor-not-allowed"
-          />
-          {query && (
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-300 bg-slate-100 px-3 py-2">
+            {loading ? (
+              <svg className="h-4 w-4 flex-none animate-spin text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4 flex-none text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                <circle cx="10" cy="10" r="7" strokeWidth="1.75" />
+                <path d="M21 21l-4.35-4.35" strokeWidth="1.75" strokeLinecap="round" />
+              </svg>
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold text-slate-900 placeholder:text-slate-500 outline-none disabled:cursor-not-allowed"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => { setQuery(""); setFetchError(null); inputRef.current?.focus(); }}
+                aria-label="Clear search"
+                className="text-slate-500 transition-colors hover:text-slate-800"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                  <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+          {onClose && (
             <button
               type="button"
-              onClick={() => { setQuery(""); setFetchError(null); inputRef.current?.focus(); }}
-              aria-label="Clear search"
-              className="text-slate-500 transition-colors hover:text-slate-800"
+              onClick={onClose}
+              className="flex-none text-sm font-medium text-blue-500 transition-colors hover:text-blue-700 active:text-blue-800 px-1 whitespace-nowrap"
             >
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
-                <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              Cancel
             </button>
           )}
         </div>
-        {onClose && (
+      ) : (
+        /* ── Desktop: GPS icon + search input — single combined row ── */
+        <div className="flex items-center gap-2 border-t border-b border-blue-100 bg-blue-50 px-3 py-2" role="search">
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-slate-200 text-slate-600 transition-colors hover:bg-slate-300 hover:text-slate-800"
+            onClick={onRequestGps}
+            disabled={gpsLoading || disabled}
+            aria-label="Use current location"
+            title="Use current location"
+            className={cn(
+              "flex h-8 w-8 flex-none items-center justify-center rounded-lg transition-colors disabled:opacity-50",
+              gpsPermissionDenied ? "text-red-500 hover:bg-red-50" : gpsError ? "text-red-400 hover:bg-slate-100" : "text-slate-500 hover:bg-slate-100"
+            )}
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden>
-              <path d="M18 6L6 18M6 6l12 12" strokeWidth="2.5" />
-            </svg>
+            {gpsLoading ? (
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <IconCrosshair className="h-4 w-4" />
+            )}
           </button>
-        )}
-      </div>
+
+            <div className="flex flex-1 items-center gap-2 rounded-full border border-slate-400 bg-slate-200 px-3 py-1.5">
+            {loading ? (
+              <svg className="h-4 w-4 flex-none animate-spin text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                <circle cx="12" cy="12" r="9" strokeWidth="2" strokeDasharray="28 56" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4 flex-none text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                <circle cx="11" cy="11" r="7" strokeWidth="1.75" />
+                <path d="M21 21l-4.35-4.35" strokeWidth="1.75" strokeLinecap="round" />
+              </svg>
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="flex-1 bg-transparent text-sm-plus text-slate-800 placeholder:text-slate-500 outline-none disabled:cursor-not-allowed"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => { setQuery(""); setFetchError(null); inputRef.current?.focus(); }}
+                aria-label="Clear search"
+                className="text-slate-500 transition-colors hover:text-slate-800"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+                  <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Error messages — shown below the combined row */}
       {gpsError && <p className="px-4 pt-1.5 pb-0 text-sm text-red-500">{gpsError}</p>}
@@ -403,6 +577,9 @@ function PanelContent({
                   <LocationRow
                     suggestion={s}
                     onSelect={() => onSelect(s)}
+                    onSave={() => onToggleSave(s)}
+                    isSaved={savedItems.some((sv) => sv.label === s.label && sv.sublabel === s.sublabel)}
+                    isSaving={savingKey === suggestionKey(s)}
                     isActive={current?.label === s.label && current?.sublabel === s.sublabel}
                   />
                 </div>
@@ -411,88 +588,37 @@ function PanelContent({
           )
         ) : (
           <div>
-            {/* ── Toggle bar ── */}
-            <div className="flex items-center justify-between px-4 pt-2 pb-1">
-              <button
-                type="button"
-                onClick={() => setSavedOnly((v) => !v)}
-                data-state={savedOnly ? "on" : "off"}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold transition-colors",
-                  savedOnly
-                    ? "border-teal-300 bg-teal-50 text-teal-600"
-                    : "border-slate-300 text-slate-500 hover:border-slate-400 hover:text-slate-700"
-                )}
-              >
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  fill={savedOnly ? "currentColor" : "none"}
-                  aria-hidden
-                >
-                  <path d="M5 3h14a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" strokeWidth="1.75" strokeLinejoin="round" />
-                </svg>
-                Saved
-              </button>
-              {!savedOnly && recentItems.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => recentItems.forEach((_, i) => onClearRecent(recentItems.length - 1 - i))}
-                  className="text-sm text-slate-500 transition-colors hover:text-slate-700"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-
-            {/* ── Recent (hidden when savedOnly) ──
-                 The "Saved" button above is a filter toggle, not a section
-                 header — without an explicit label here, this list (mock
-                 recent-search data) read as if it WERE the saved list,
-                 since it sits directly under that pill with nothing to
-                 tell them apart. */}
-            {!savedOnly && (
-              <>
-                <p className="px-4 pt-2 pb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Recent
-                </p>
-                {recentItems.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-slate-500">No recent searches</p>
-                ) : (
-                  <div role="list">
-                    {recentItems.map((s, i) => (
-                      <div key={`r-${i}-${s.label}`} role="listitem">
-                        <LocationRow
-                          suggestion={s}
-                          onSelect={() => onSelect(s)}
-                          onSave={() => onSaveRecent(i)}
-                          isSaved={savedItems.some((sv) => sv.label === s.label)}
-                          onClear={() => onClearRecent(i)}
-                          isActive={current?.label === s.label && current?.sublabel === s.sublabel}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* ── Saved ── */}
-            {!savedOnly && <div className="mt-1 border-t border-slate-100" />}
-            <p className="px-4 pt-2 pb-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Saved locations
-            </p>
-            {savedItems.length === 0 ? (
-              <p className="px-4 py-3 text-sm text-slate-500">No saved locations</p>
+            {recentItems.length === 0 ? (
+              <p className="px-4 pt-3 pb-1 text-sm text-slate-400">No recent searches</p>
             ) : (
               <div role="list">
-                {savedItems.map((s, i) => (
-                  <div key={`sv-${i}-${s.label}`} role="listitem">
+                {recentItems.map((s, i) => (
+                  <div key={`r-${i}-${s.label}`} role="listitem">
                     <LocationRow
                       suggestion={s}
                       onSelect={() => onSelect(s)}
-                      onClear={() => setConfirmSavedIndex(i)}
+                      onSave={() => onToggleSave(s)}
+                      isSaved={savedItems.some((sv) => sv.label === s.label && sv.sublabel === s.sublabel)}
+                      isSaving={savingKey === suggestionKey(s)}
+                      onClear={() => onClearRecent(i)}
+                      isActive={current?.label === s.label && current?.sublabel === s.sublabel}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-1 border-t border-slate-100" />
+            {savedItems.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-slate-400">No saved locations</p>
+            ) : (
+              <div role="list">
+                {savedItems.map((s, i) => (
+                  <div key={s.id ?? `sv-${i}-${s.label}`} role="listitem">
+                    <LocationRow
+                      suggestion={s}
+                      onSelect={() => onSelect(s)}
+                      onClear={() => setConfirmDelete(s)}
                       isSaved
                       isActive={current?.label === s.label && current?.sublabel === s.sublabel}
                     />
@@ -500,14 +626,25 @@ function PanelContent({
                 ))}
               </div>
             )}
+
+            {/* Clear all — clears the recents list */}
+            <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
+              <button
+                type="button"
+                onClick={() => recentItems.forEach((_, i) => onClearRecent(recentItems.length - 1 - i))}
+                className="text-sm text-slate-400 transition-colors hover:text-slate-700"
+              >
+                Clear all
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {/* Confirm dialog — remove saved location */}
       <Dialog
-        open={confirmSavedIndex !== null}
-        onOpenChange={(open) => { if (!open) setConfirmSavedIndex(null); }}
+        open={confirmDelete !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
       >
         <DialogContent className="max-w-xs">
           <DialogHeader>
@@ -520,8 +657,8 @@ function PanelContent({
           </DialogHeader>
           <div className="flex flex-col gap-2 px-5 pt-4 pb-4">
             <p className="text-sm leading-relaxed text-slate-500">
-              {confirmSavedIndex !== null && savedItems[confirmSavedIndex] ? (
-                <><span className="font-medium text-slate-700">&ldquo;{savedItems[confirmSavedIndex].label}&rdquo;</span> will be removed from your saved locations.</>
+              {confirmDelete ? (
+                <><span className="font-medium text-slate-700">&ldquo;{confirmDelete.label}&rdquo;</span> will be removed from your saved locations.</>
               ) : (
                 "This location will be removed from your saved locations."
               )}
@@ -540,9 +677,9 @@ function PanelContent({
             <button
               type="button"
               onClick={() => {
-                if (confirmSavedIndex !== null) {
-                  onClearSaved(confirmSavedIndex);
-                  setConfirmSavedIndex(null);
+                if (confirmDelete) {
+                  onDeleteSaved(confirmDelete);
+                  setConfirmDelete(null);
                 }
               }}
               className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600"
@@ -553,7 +690,7 @@ function PanelContent({
         </DialogContent>
       </Dialog>
 
-      {/* Radius pills — pinned at bottom */}
+      {/* Radius selector — pinned at bottom */}
       {showRadius && (
         <div className="bg-slate-100 border-t border-slate-300 py-3">
           <p className={cn("mb-2 px-4 truncate", current ? "text-sm font-medium text-slate-700" : "text-sm text-slate-400")}>
@@ -561,49 +698,69 @@ function PanelContent({
               ? [current.label, ...(current.sublabel?.split(", ").slice(0, -1) ?? [])].join(", ")
               : "Select a location to set radius"}
           </p>
-          <div
-            ref={radiusScrollRef}
-            className="flex gap-2 overflow-x-auto px-4 pb-0.5 cursor-grab active:cursor-grabbing select-none [&::-webkit-scrollbar]:hidden scrollbar-none [-ms-overflow-style:none]"
-            onMouseDown={(e) => {
-              dragRef.current = {
-                active: true,
-                startX: e.clientX,
-                scrollLeft: radiusScrollRef.current?.scrollLeft ?? 0,
-                moved: false,
-              };
-            }}
-            onMouseMove={(e) => {
-              if (!dragRef.current.active || !radiusScrollRef.current) return;
-              const dx = e.clientX - dragRef.current.startX;
-              if (Math.abs(dx) > 4) dragRef.current.moved = true;
-              radiusScrollRef.current.scrollLeft = dragRef.current.scrollLeft - dx;
-            }}
-            onMouseUp={() => { dragRef.current.active = false; }}
-            onMouseLeave={() => { dragRef.current.active = false; }}
-          >
-            {RADIUS_OPTIONS.map((r) => {
-              const sel = current?.radius === r;
-              const dis = !current;
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => { if (!dragRef.current.moved && !dis) onRadiusChange(r); }}
-                  disabled={dis}
-                  data-pressed={sel}
-                  className={cn(
-                    "flex-none whitespace-nowrap rounded-full border text-sm px-4 py-1 font-normal transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-stone-800 focus:outline-none",
-                    sel
-                      ? "bg-stone-800 text-stone-100 border-stone-800 shadow-sm hover:bg-stone-700"
-                      : "bg-white text-stone-900 border-stone-400 hover:bg-stone-100 hover:border-stone-300",
-                    dis && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {r} {radiusUnit}
-                </button>
-              );
-            })}
-          </div>
+          {isMobile ? (
+            <div
+              ref={radiusScrollRef}
+              className="flex gap-2 overflow-x-auto px-4 pb-0.5 cursor-grab active:cursor-grabbing select-none [&::-webkit-scrollbar]:hidden scrollbar-none [-ms-overflow-style:none]"
+              onMouseDown={(e) => {
+                dragRef.current = {
+                  active: true,
+                  startX: e.clientX,
+                  scrollLeft: radiusScrollRef.current?.scrollLeft ?? 0,
+                  moved: false,
+                };
+              }}
+              onMouseMove={(e) => {
+                if (!dragRef.current.active || !radiusScrollRef.current) return;
+                const dx = e.clientX - dragRef.current.startX;
+                if (Math.abs(dx) > 4) dragRef.current.moved = true;
+                radiusScrollRef.current.scrollLeft = dragRef.current.scrollLeft - dx;
+              }}
+              onMouseUp={() => { dragRef.current.active = false; }}
+              onMouseLeave={() => { dragRef.current.active = false; }}
+            >
+              {RADIUS_OPTIONS.map((r) => {
+                const sel = current?.radius === r;
+                const dis = !current;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => { if (!dragRef.current.moved && !dis) onRadiusChange(r); }}
+                    disabled={dis}
+                    data-pressed={sel}
+                    className={cn(
+                      "flex-none whitespace-nowrap rounded-full border text-sm px-4 py-1 font-normal transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-stone-800 focus:outline-none",
+                      sel
+                        ? "bg-stone-800 text-stone-100 border-stone-800 shadow-sm hover:bg-stone-700"
+                        : "bg-white text-stone-900 border-stone-400 hover:bg-stone-100 hover:border-stone-300",
+                      dis && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    {r} {radiusUnit}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="px-4">
+              <ToggleButtonGroup
+                singleSelect
+                requireSelection
+                value={current?.radius != null ? [String(current.radius)] : []}
+                onChange={(vals) => {
+                  if (!vals[0]) return;
+                  onRadiusChange(parseFloat(vals[0]));
+                }}
+              >
+                {RADIUS_OPTIONS.map((r) => (
+                  <ToggleGroupButton key={r} value={String(r)} size="default" disabled={!current}>
+                    {r} {radiusUnit}
+                  </ToggleGroupButton>
+                ))}
+              </ToggleButtonGroup>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -611,12 +768,6 @@ function PanelContent({
 }
 
 // ─── Pill helpers ───────────────────────────────────────────────────────────────
-
-// Shown in pill when no location is set — displays scoped country name as hint
-const SCOPE_LABELS: Record<string, string> = {
-  UK: "United Kingdom", SG: "Singapore", IN: "India",
-  US: "United States", AU: "Australia", AE: "UAE", CA: "Canada",
-};
 
 // Strips the trailing country segment from sublabel so pill reads "Birmingham, West Midlands"
 // rather than "Birmingham, West Midlands, UK" — user already knows their country context.
@@ -643,6 +794,8 @@ export function LocationPicker({
   className,  trigger = "pill",
   triggerClassName,
   savedLocations,
+  onSaveLocation,
+  onRemoveSavedLocation,
 }: LocationPickerProps) {
   const isTablet = useMediaQuery("(min-width: 768px)");
   const [mounted, setMounted] = React.useState(false);
@@ -652,14 +805,34 @@ export function LocationPicker({
   const [gpsLoading, setGpsLoading] = React.useState(false);
   const [gpsError, setGpsError] = React.useState<string | null>(null);
   const [gpsPermissionDenied, setGpsPermissionDenied] = React.useState(false);
+  const [outOfScopeAlert, setOutOfScopeAlert] = React.useState(false);
+  const [savingKey, setSavingKey] = React.useState<string | null>(null);
 
-  // Persistent across panel opens — cleared items stay cleared
-  const [recentItems, setRecentItems] = React.useState<SearchSuggestion[]>(() =>
-    countryScope?.length
-      ? ALL_RECENT.filter((s) => matchesScope(s.sublabel, countryScope))
-      : ALL_RECENT
-  );
-  const [savedItems, setSavedItems] = React.useState<SearchSuggestion[]>(() => {
+  // Recents — persisted to localStorage so they survive across sessions,
+  // not just while this picker instance stays mounted.
+  const [recentItems, setRecentItems] = React.useState<SearchSuggestion[]>(() => {
+    let stored: SearchSuggestion[] = [];
+    try {
+      const raw = localStorage.getItem("la-location-recents");
+      stored = raw ? JSON.parse(raw) : ALL_RECENT;
+    } catch {
+      stored = ALL_RECENT;
+    }
+    return countryScope?.length
+      ? stored.filter((s) => matchesScope(s.sublabel, countryScope))
+      : stored;
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("la-location-recents", JSON.stringify(recentItems));
+    } catch {
+      // localStorage unavailable (private browsing, quota) — recents just
+      // won't persist across sessions; the picker itself still works.
+    }
+  }, [recentItems]);
+
+  const [savedItems, setSavedItems] = React.useState<SavedSuggestion[]>(() => {
     const source = savedLocations ?? ALL_SAVED;
     return countryScope?.length
       ? source.filter((s) => matchesScope(s.sublabel, countryScope))
@@ -689,6 +862,46 @@ export function LocationPicker({
     onChange?.(v);
   }
 
+  function pushRecent(s: SearchSuggestion) {
+    setRecentItems((prev) => {
+      const filtered = prev.filter(
+        (r) => !(r.label === s.label && r.sublabel === s.sublabel)
+      );
+      return [s, ...filtered].slice(0, 8);
+    });
+  }
+
+  async function toggleSave(s: SearchSuggestion) {
+    const key = suggestionKey(s);
+    const existing = savedItems.find(
+      (sv) => sv.label === s.label && sv.sublabel === s.sublabel
+    );
+    setSavingKey(key);
+    try {
+      if (existing) {
+        if (existing.id && onRemoveSavedLocation) {
+          await onRemoveSavedLocation(existing.id);
+        } else {
+          setSavedItems((prev) => prev.filter((sv) => sv !== existing));
+        }
+      } else if (onSaveLocation) {
+        await onSaveLocation(s);
+      } else {
+        setSavedItems((prev) => [s, ...prev]);
+      }
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function deleteSaved(item: SavedSuggestion) {
+    if (item.id && onRemoveSavedLocation) {
+      await onRemoveSavedLocation(item.id);
+    } else {
+      setSavedItems((prev) => prev.filter((sv) => sv !== item));
+    }
+  }
+
   function requestGps() {
     if (!navigator.geolocation) {
       setGpsError("Geolocation is not supported by your browser");
@@ -700,19 +913,19 @@ export function LocationPicker({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        // Reverse-geocode the coordinates into a real city/state/country —
-        // without this, every GPS pick was labeled the literal string
-        // "Current Location" with no sublabel at all, so any consumer that
-        // needs a real state/country (e.g. ResidenceEditor's "State is
-        // required" save validation) failed on every GPS-based pick.
+        // Reverse-geocode the coordinates into the same neighborhood/locality/
+        // district breakdown Google Places Autocomplete itself returns for a
+        // searched-and-selected result — without this, every GPS pick landed
+        // on whatever component Google happened to call "locality" (often a
+        // small town/taluk name), reading far less precise than a real search.
         let label = "Current Location";
         let sublabel: string | undefined;
         try {
           const res = await fetch(`/api/geo/reverse?lat=${lat}&lng=${lng}`);
           const data = res.ok ? await res.json() : null;
-          if (data?.city) {
-            label = data.city;
-            sublabel = [data.state, data.country].filter(Boolean).join(", ") || undefined;
+          if (data?.label) {
+            label = data.label;
+            sublabel = data.sublabel || undefined;
           } else if (data?.address) {
             label = data.address;
           }
@@ -721,6 +934,14 @@ export function LocationPicker({
           // coordinates were still captured, just not resolved to an address.
         }
         setGpsLoading(false);
+
+        // Scope check — show the iOS-style alert instead of silently
+        // emitting a location outside the markets this picker supports.
+        if (countryScope?.length && !isWithinScope(sublabel, countryScope)) {
+          setOutOfScopeAlert(true);
+          return;
+        }
+
         const next: LocationValue = {
           label,
           sublabel,
@@ -730,6 +951,7 @@ export function LocationPicker({
           unit: current?.unit ?? radiusUnit,
         };
         emit(next);
+        pushRecent({ label, sublabel, lat, lng });
         setOpen(false);
       },
       (err) => {
@@ -762,47 +984,39 @@ export function LocationPicker({
       ? `±${current.radius} ${current.unit ?? radiusUnit}`
       : null;
 
-  // Shared panel content (mounts fresh on each open inside the Drawer/Dialog)
-  const panel = (
-    <PanelContent
-      current={current}
-      showRadius={showRadius}
-      radiusUnit={radiusUnit}
-      countryScope={countryScope}
-      searchProvider={searchProvider}
-      placeholder={placeholder}
-      disabled={disabled}
-      gpsLoading={gpsLoading}
-      gpsError={gpsError}
-      gpsPermissionDenied={gpsPermissionDenied}
-      recentItems={recentItems}
-      savedItems={savedItems}
-      onClearRecent={(i) => setRecentItems((prev) => prev.filter((_, idx) => idx !== i))}
-      onSaveRecent={(i) => {
-        const item = recentItems[i];
-        if (!item) return;
-        const alreadySaved = savedItems.some((sv) => sv.label === item.label);
-        if (alreadySaved) {
-          setSavedItems((prev) => prev.filter((sv) => sv.label !== item.label));
-        } else {
-          setSavedItems((prev) => [item, ...prev]);
-        }
-      }}
-      onClearSaved={(i) => setSavedItems((prev) => prev.filter((_, idx) => idx !== i))}
-      onRequestGps={requestGps}
-      onSelect={(s) => {
-        emit({
-          ...s,
-          radius: current?.radius ?? (showRadius ? RADIUS_OPTIONS[0] : undefined),
-          unit: current?.unit ?? radiusUnit,
-        });
-        setOpen(false);
-      }}
-      onRadiusChange={(r) => {
-        if (current) emit({ ...current, radius: r, unit: radiusUnit });
-      }}
-    />
-  );
+  // Shared panel props — spread into a fresh <PanelContent> per surface
+  // (Dialog for desktop, Drawer for mobile) so each can set its own isMobile/onClose.
+  const panelProps = {
+    current,
+    showRadius,
+    radiusUnit,
+    countryScope,
+    searchProvider,
+    placeholder,
+    disabled,
+    gpsLoading,
+    gpsError,
+    gpsPermissionDenied,
+    recentItems,
+    savedItems,
+    savingKey,
+    onClearRecent: (i: number) => setRecentItems((prev) => prev.filter((_, idx) => idx !== i)),
+    onToggleSave: toggleSave,
+    onDeleteSaved: deleteSaved,
+    onRequestGps: requestGps,
+    onSelect: (s: SearchSuggestion) => {
+      emit({
+        ...s,
+        radius: current?.radius ?? (showRadius ? RADIUS_OPTIONS[0] : undefined),
+        unit: current?.unit ?? radiusUnit,
+      });
+      pushRecent(s);
+      setOpen(false);
+    },
+    onRadiusChange: (r: number) => {
+      if (current) emit({ ...current, radius: r, unit: radiusUnit });
+    },
+  };
 
   return (
     <>
@@ -892,19 +1106,31 @@ export function LocationPicker({
                   </button>
                 </DialogClose>
               </div>
-              {panel}
+              <PanelContent {...panelProps} isMobile={false} />
             </DialogContent>
           </Dialog>
         ) : (
           <Drawer open={open} onOpenChange={setOpen}>
-            <DrawerContent className="flex h-dvh flex-col rounded-none border-0">
+            <DrawerContent className="flex max-h-[85vh] flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
+              {/* Grab handle — signals a draggable bottom sheet, not a full page */}
+              <div className="mx-auto mt-2.5 h-1.5 w-10 flex-none rounded-full bg-slate-300" aria-hidden="true" />
               {/* Visually hidden title for screen readers */}
               <DrawerTitle className="sr-only">Set Location</DrawerTitle>
-              {React.cloneElement(panel as React.ReactElement<PanelContentProps>, { onClose: () => setOpen(false) })}
+              <PanelContent {...panelProps} isMobile={true} onClose={() => setOpen(false)} />
             </DrawerContent>
           </Drawer>
         )
       )}
+
+      {/* ── iOS-style Out-of-Scope Alert ── */}
+      {mounted && countryScope?.length ? (
+        <OutOfScopeAlert
+          open={outOfScopeAlert}
+          onClose={() => setOutOfScopeAlert(false)}
+          countryScope={countryScope}
+        />
+      ) : null}
+
       {/* Location permission denied dialog */}
       {mounted && (
         <Dialog open={gpsPermissionDenied} onOpenChange={(o) => { if (!o) setGpsPermissionDenied(false); }}>

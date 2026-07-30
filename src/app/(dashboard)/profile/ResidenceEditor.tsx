@@ -56,7 +56,7 @@ export function ResidenceEditor({
     hasExisting ? residenceToPickerValue(value) : null,
   );
   const [saving, setSaving] = useState(false);
-  const { savedLocations, saveLocation } = useSavedLocations();
+  const { savedLocations, saveLocation, saveSuggestion, removeSavedLocationById } = useSavedLocations();
 
   useEffect(() => {
     if (open) setPickerValue(value.city ? residenceToPickerValue(value) : null);
@@ -121,6 +121,8 @@ export function ResidenceEditor({
                 value={pickerValue}
                 onChange={(v) => { setPickerValue(v); saveLocation(v); }}
                 savedLocations={savedLocations}
+                onSaveLocation={saveSuggestion}
+                onRemoveSavedLocation={removeSavedLocationById}
                 searchProvider="google"
                 countryScope={["SG", "UK", "IN"]}
                 trigger="link"
@@ -141,6 +143,8 @@ export function ResidenceEditor({
               value={pickerValue}
               onChange={(v) => { setPickerValue(v); saveLocation(v); }}
               savedLocations={savedLocations}
+              onSaveLocation={saveSuggestion}
+              onRemoveSavedLocation={removeSavedLocationById}
               searchProvider="google"
               countryScope={["SG", "UK", "IN"]}
               trigger="link"

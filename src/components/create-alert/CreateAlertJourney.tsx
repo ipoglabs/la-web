@@ -339,7 +339,7 @@ function StepFilters({
 }: StepFiltersProps) {
   // At least one of: keyword, filter, or location must be set to enable submission.
   const canSubmit = keywords.length > 0 || Object.values(filterValues).some((v) => v.length > 0) || locationValue !== null;
-  const { savedLocations, saveLocation } = useSavedLocations();
+  const { savedLocations, saveLocation, saveSuggestion, removeSavedLocationById } = useSavedLocations();
 
   return (
     <>
@@ -365,6 +365,8 @@ function StepFilters({
               value={locationValue}
               onChange={(v) => { onLocationChange(v); saveLocation(v); }}
               savedLocations={savedLocations}
+              onSaveLocation={saveSuggestion}
+              onRemoveSavedLocation={removeSavedLocationById}
               placeholder="Select a location"
               showRadius={false}
               trigger="link"
