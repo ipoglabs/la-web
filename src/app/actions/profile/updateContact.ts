@@ -114,9 +114,13 @@ export async function updateContact({
     }
 
     const existing = await User.findOne({
-      primaryNumber: normalized,
       _id: { $ne: user._id },
       accountStatus: { $ne: "Deleted" },
+      $or: [
+        { primaryNumber: normalized },
+        { secondaryNumber1: normalized },
+        { secondaryNumber2: normalized },
+      ],
     });
 
     if (existing) throw new Error("Phone number already in use");
@@ -127,6 +131,20 @@ export async function updateContact({
 
   /* ================= SECONDARY ================= */
   if (field === "secondaryNumber1" || field === "secondaryNumber2") {
+    if (user[field] !== normalized) {
+      const existing = await User.findOne({
+        _id: { $ne: user._id },
+        accountStatus: { $ne: "Deleted" },
+        $or: [
+          { primaryNumber: normalized },
+          { secondaryNumber1: normalized },
+          { secondaryNumber2: normalized },
+        ],
+      });
+
+      if (existing) throw new Error("Phone number already in use");
+    }
+
     user[field] = normalized;
   }
 
