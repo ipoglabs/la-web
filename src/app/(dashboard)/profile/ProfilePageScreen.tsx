@@ -38,7 +38,7 @@ import {
 import { toast } from "sonner";
 import { useDeleteAccountStore } from "@/lib/stores/deleteAccountStore";
 import { Avatar } from "@/components/avatar/Avatar";
-import { LaBadge, LaButton, LaCard, LaSwitch } from "@/components/la";
+import { LaBadge, LaButton, LaCard, LaSwitch, LaSkeleton } from "@/components/la";
 import { AddPhoneEditor } from "./AddPhoneEditor";
 import { ChangeEmailEditor } from "./ChangeEmailEditor";
 import { updateProfile } from "@/app/actions/updateProfile";
@@ -767,9 +767,17 @@ export function ProfilePageScreen({
             description={`Signed in as ${contact.email || user.primaryNumber} — here are the devices currently signed in to your account.`}
           >
             {devicesLoading ? (
-              <div className="flex items-center gap-2 px-4 py-5 text-sm text-slate-500">
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Loading devices…
+              <div className="divide-y divide-slate-200">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-3 px-4 py-3.5">
+                    <LaSkeleton shape="circle" className="mt-0.5 size-5 shrink-0" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <LaSkeleton shape="text" className="w-1/3" />
+                      <LaSkeleton shape="text" className="w-1/2" />
+                      <LaSkeleton shape="text" className="w-1/4" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : devices.length === 0 ? (
               <div className="px-4 py-5 text-sm text-slate-500">No active devices found.</div>

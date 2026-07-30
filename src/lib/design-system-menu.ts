@@ -23,6 +23,7 @@ export const DESIGN_SYSTEM_MENU: MenuSection[] = [
       { label: "La Tag Input", href: "/design-system/core/la-tag-input" },
       { label: "La Badge", href: "/design-system/core/badge" },
       { label: "La Seperator", href: "/design-system/core/seperator" },
+      { label: "La Skeleton", href: "/design-system/core/skeleton" },
       
     ],
   },

@@ -15,6 +15,26 @@ import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { LaSearchBar, type SearchQuery } from "@/components/la-search-bar";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
 import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
+import { LaSkeleton } from "@/components/la";
+
+function FeaturedListingsSkeleton({ title }: { title: string }) {
+  return (
+    <section className="container-app mt-4 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base-plus font-semibold text-slate-800">{title}</h2>
+      </div>
+      <div className="flex gap-3 px-4 pb-2 overflow-x-hidden">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="shrink-0 w-40 space-y-2">
+            <LaSkeleton shape="block" className="aspect-4/3" />
+            <LaSkeleton shape="text" className="w-2/5" />
+            <LaSkeleton shape="text" className="w-5/6" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function LandingPage() {
   const router = useRouter();
@@ -40,15 +60,19 @@ export default function LandingPage() {
   const [recentPosts, setRecentPosts] = React.useState<FeaturedListingItem[]>([]);
   const [topPicks, setTopPicks] = React.useState<FeaturedListingItem[]>([]);
   const [popularSearches, setPopularSearches] = React.useState<RecentSearchItem[]>([]);
+  const [featuredLoading, setFeaturedLoading] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
-    getFeaturedListings(countryCode, "recent", 10)
-      .then((items) => { if (!cancelled) setRecentPosts(items); })
-      .catch(() => { if (!cancelled) setRecentPosts([]); });
-    getFeaturedListings(countryCode, "top-picks", 10)
-      .then((items) => { if (!cancelled) setTopPicks(items); })
-      .catch(() => { if (!cancelled) setTopPicks([]); });
+    setFeaturedLoading(true);
+    Promise.all([
+      getFeaturedListings(countryCode, "recent", 10)
+        .then((items) => { if (!cancelled) setRecentPosts(items); })
+        .catch(() => { if (!cancelled) setRecentPosts([]); }),
+      getFeaturedListings(countryCode, "top-picks", 10)
+        .then((items) => { if (!cancelled) setTopPicks(items); })
+        .catch(() => { if (!cancelled) setTopPicks([]); }),
+    ]).finally(() => { if (!cancelled) setFeaturedLoading(false); });
     // "Popular Searches" — derived from real post volume (no search-query
     // logging exists yet), see getPopularSearches.ts. Icon is attached here
     // rather than returned from the server action since RecentSearchItem's
@@ -157,27 +181,36 @@ export default function LandingPage() {
 
 
         {/* Section: Featured Listings */}
-        {recentPosts.length > 0 && (
-          <FeaturedListings
-            title="Recent Posts"
-            seeAllHref={`/${countryCode}/listings`}
-            items={recentPosts}
-            showLocation={false}
-            showTime={false}
-            showDetails={false}
-            titleLines={3}
-          />
-        )}
-        {topPicks.length > 0 && (
-          <FeaturedListings
-            title="Top Picks for You"
-            seeAllHref={`/${countryCode}/listings?filter=top-picks`}
-            items={topPicks}
-            showLocation={false}
-            showTime={false}
-            showDetails={false}
-            titleLines={3}
-          />
+        {featuredLoading ? (
+          <>
+            <FeaturedListingsSkeleton title="Recent Posts" />
+            <FeaturedListingsSkeleton title="Top Picks for You" />
+          </>
+        ) : (
+          <>
+            {recentPosts.length > 0 && (
+              <FeaturedListings
+                title="Recent Posts"
+                seeAllHref={`/${countryCode}/listings`}
+                items={recentPosts}
+                showLocation={false}
+                showTime={false}
+                showDetails={false}
+                titleLines={3}
+              />
+            )}
+            {topPicks.length > 0 && (
+              <FeaturedListings
+                title="Top Picks for You"
+                seeAllHref={`/${countryCode}/listings?filter=top-picks`}
+                items={topPicks}
+                showLocation={false}
+                showTime={false}
+                showDetails={false}
+                titleLines={3}
+              />
+            )}
+          </>
         )}
         
         {/* Section: Create Alert */}

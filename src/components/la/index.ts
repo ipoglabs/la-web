@@ -76,3 +76,7 @@ export type { LaTextareaProps, LaTextareaStatus } from "./la-textarea";
 // Switch
 export { LaSwitch } from "./la-switch";
 export type { LaSwitchProps } from "./la-switch";
+
+// Skeleton
+export { LaSkeleton } from "./la-skeleton";
+export type { LaSkeletonProps } from "./la-skeleton";

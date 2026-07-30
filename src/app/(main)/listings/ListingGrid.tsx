@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LaThumbnailListingCard } from "@/components/la-blocks/la-thumbnail-listing";
+import { LaSkeleton } from "@/components/la";
 import type { MockListing } from "@/lib/mock/mock-listing-schema";
 import { PAGE_SIZE } from "@/lib/hooks/useListingSearch";
 import { useFavouritesStore } from "@/lib/stores/favouritesStore";
@@ -13,12 +14,12 @@ import { useFavouritesStore } from "@/lib/stores/favouritesStore";
 function SkeletonCard() {
   return (
     <div className="rounded-lg overflow-hidden bg-white">
-      <div className="aspect-4/3 bg-slate-200 animate-pulse" />
+      <LaSkeleton shape="block" className="aspect-4/3 rounded-none" />
       <div className="p-2 space-y-2">
-        <div className="h-4   bg-slate-200 rounded animate-pulse w-2/5" />
-        <div className="h-3.5 bg-slate-200 rounded animate-pulse w-5/6" />
-        <div className="h-3   bg-slate-200 rounded animate-pulse w-3/4" />
-        <div className="h-3   bg-slate-200 rounded animate-pulse w-1/2" />
+        <LaSkeleton shape="text" className="h-4   w-2/5" />
+        <LaSkeleton shape="text" className="h-3.5 w-5/6" />
+        <LaSkeleton shape="text" className="h-3   w-3/4" />
+        <LaSkeleton shape="text" className="h-3   w-1/2" />
       </div>
     </div>
   );

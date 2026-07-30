@@ -12,6 +12,7 @@ import {
   AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { filterChatChars, hasContactInfo } from "@/lib/chatValidation";
+import { LaSkeleton } from "@/components/la";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TYPES
@@ -721,7 +722,13 @@ function ChatView({ conv, myId, onBack, onUnblock, onConvoUpdate, onTypingChange
         {loadingMore && <div className="flex justify-center py-2"><span className="text-xs text-slate-400">Loading older messages…</span></div>}
 
         {loadingMsgs ? (
-          <div className="flex justify-center py-8"><span className="text-sm text-slate-400">Loading…</span></div>
+          <div className="space-y-3 py-2">
+            {[false, true, false, false, true].map((mine, i) => (
+              <div key={i} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                <LaSkeleton shape="block" className={`h-9 ${i % 2 ? "w-40" : "w-56"} rounded-2xl`} />
+              </div>
+            ))}
+          </div>
         ) : (
           messages.map((msg, i) => (
             <MessageBubble key={msg.id} msg={msg} showTimestamp={showTimestamps[i]} isGrouped={!showTimestamps[i]} />
@@ -982,7 +989,20 @@ function ChatPageContent() {
 
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
             {loading ? (
-              <p className="px-4 py-8 text-sm text-slate-400 text-center">Loading conversations…</p>
+              <div>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                    <LaSkeleton shape="circle" className="size-10 shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <LaSkeleton shape="text" className="w-1/3" />
+                        <LaSkeleton shape="text" className="h-3 w-10" />
+                      </div>
+                      <LaSkeleton shape="text" className="h-3 w-2/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : visibleConvos.length === 0 ? (
               <p className="px-4 py-8 text-sm text-slate-400 text-center">
                 {searchNorm ? `No results for "${searchQuery}".` : "No conversations in this period."}
