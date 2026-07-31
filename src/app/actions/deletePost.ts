@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import connectDB from "@/config/database";
 import Post from "@/models/post";
 import { deleteImageVariants } from "@/lib/media/imageVariants";
+import { logActivity } from "@/lib/activityLog";
 
 export async function deletePost(postId: string, callerEmail: string) {
   if (!postId) return { ok: false, error: "Missing post id" };
@@ -29,6 +30,10 @@ export async function deletePost(postId: string, callerEmail: string) {
   }
 
   await Post.deleteOne({ _id: postId });
+
+  if (doc.ownerId) {
+    await logActivity(doc.ownerId, "POST_DELETED", { postId, title: doc.name });
+  }
 
   revalidatePath("/my-ads");
   return { ok: true };

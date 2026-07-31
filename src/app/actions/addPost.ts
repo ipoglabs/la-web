@@ -9,6 +9,7 @@ import { getSession } from "@/lib/auth";
 import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
 import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
 import { getVerificationStatus } from "@/lib/verification";
+import { logActivity } from "@/lib/activityLog";
 
 type LocationData = {
   address?: string;
@@ -366,6 +367,8 @@ export async function addPost(
     });
 
     await newPost.save();
+
+    await logActivity(ownerId, "POST_CREATED", { postId: String(newPost._id), title: postData.name });
 
     if (postData.seller_info?.email) {
       try {

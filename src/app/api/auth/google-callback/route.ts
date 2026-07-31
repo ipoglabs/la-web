@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import User from "@/models/user";
 import jwt from "jsonwebtoken";
 import { createUserSession } from "@/lib/userSession";
+import { logActivity } from "@/lib/activityLog";
 
 const SESSION_COOKIE = "session";
 const UINFO_COOKIE = "uinfo";
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
 
   // Existing user — issue our JWT and redirect to client-side hydration page
   const sid = await createUserSession(String(user._id), req);
+  await logActivity(user._id, "LOGIN");
   const token = jwt.sign(
     {
       userId: String(user._id),

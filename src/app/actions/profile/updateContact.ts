@@ -5,6 +5,7 @@ import User from "@/models/user";
 import Otp from "@/models/Otp";
 import { getSession } from "@/lib/auth";
 import { normalizeTarget } from "@/lib/otpUtils";
+import { logActivity } from "@/lib/activityLog";
 
 export async function updateContact({
   field,
@@ -150,6 +151,12 @@ export async function updateContact({
 
   /* ================= SAVE ================= */
   await user.save();
+
+  if (field === "email") {
+    await logActivity(user._id, "EMAIL_CHANGED");
+  } else if (field === "primaryNumber") {
+    await logActivity(user._id, "PHONE_CHANGED");
+  }
 
   /* 🧹 CLEAN OTP (only verified one) */
   await Otp.deleteOne({

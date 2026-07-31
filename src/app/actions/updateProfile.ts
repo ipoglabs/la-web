@@ -4,6 +4,7 @@ import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { sendProfileUpdateEmail } from "@/lib/profile/updateProfileMail";
+import { logActivity } from "@/lib/activityLog";
 import {
   ROLES,
   BASE_ROLE,
@@ -222,6 +223,11 @@ export async function updateProfile(payload: any) {
   }
 
   await user.save();
+
+  const nameChange = changes.find((c) => c.field === "Full Name");
+  if (nameChange) {
+    await logActivity(user._id, "NAME_CHANGED", { from: nameChange.oldValue, to: nameChange.newValue });
+  }
 
   /* ================= EMAIL ================= */
   try {

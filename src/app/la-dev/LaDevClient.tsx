@@ -5,8 +5,12 @@ import { LaButton, LaCard, LaInput, LaBadge, LaTabs, LaTabsList, LaTabsTrigger, 
 import { listUsers } from "@/app/actions/la-dev/listUsers";
 import type { LaDevUser } from "@/app/actions/la-dev/types";
 import { hardDeleteUser } from "@/app/actions/la-dev/hardDeleteUser";
+import { getUserActivity } from "@/app/actions/la-dev/getUserActivity";
+import type { LaDevUserActivity } from "@/app/actions/la-dev/getUserActivity";
 import { toast } from "sonner";
 import DeletedUsersPanel from "./DeletedUsersPanel";
+import ActivityPanel from "./ActivityPanel";
+import { ACTIVITY_LABELS } from "./activityLabels";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -23,6 +27,7 @@ export default function LaDevClient() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activity, setActivity] = useState<LaDevUserActivity | null>(null);
 
   async function refresh() {
     setUsers(null);
@@ -48,6 +53,12 @@ export default function LaDevClient() {
   }, [users, filter]);
 
   const selected = users?.find((u) => u.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!selectedId) return;
+    setActivity(null);
+    getUserActivity(selectedId).then(setActivity);
+  }, [selectedId]);
 
   async function handleDelete() {
     if (!selected) return;
@@ -78,6 +89,7 @@ export default function LaDevClient() {
         <LaTabsList className="bg-slate-100 rounded-lg p-1">
           <LaTabsTrigger value="users" variant="card">Users</LaTabsTrigger>
           <LaTabsTrigger value="deleted" variant="card">Deleted users</LaTabsTrigger>
+          <LaTabsTrigger value="activity" variant="card">Activity</LaTabsTrigger>
         </LaTabsList>
 
         <LaTabsContent value="users" className="flex flex-col gap-6 pt-4">
@@ -157,6 +169,40 @@ export default function LaDevClient() {
               <Row label="New user">{selected.isNewUser ? "Yes" : "No"}</Row>
               <Row label="Created">{new Date(selected.createdAt).toLocaleString()}</Row>
 
+              <div className="pt-3 mt-2 border-t border-slate-100">
+                <p className="text-sm font-medium text-slate-500 mb-2">Activity</p>
+                {activity === null ? (
+                  <p className="text-sm text-slate-500">Loading…</p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {Object.entries(ACTIVITY_LABELS).map(([action, label]) => (
+                        <span
+                          key={action}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700"
+                        >
+                          {label}
+                          <span className="font-semibold text-slate-900">{activity.counts[action] ?? 0}</span>
+                        </span>
+                      ))}
+                    </div>
+                    {activity.recent.length === 0 ? (
+                      <p className="text-sm text-slate-500">No recorded activity yet.</p>
+                    ) : (
+                      <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
+                        {activity.recent.map((entry) => (
+                          <p key={entry.id} className="text-sm text-slate-700">
+                            <span className="font-medium">{ACTIVITY_LABELS[entry.action] ?? entry.action}</span>
+                            {" — "}
+                            {new Date(entry.at).toLocaleString()}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
               <div className="pt-4 mt-2 border-t border-slate-100">
                 {!confirming ? (
                   <LaButton intent="danger" onClick={() => setConfirming(true)}>
@@ -184,6 +230,10 @@ export default function LaDevClient() {
 
         <LaTabsContent value="deleted" className="pt-4">
           <DeletedUsersPanel />
+        </LaTabsContent>
+
+        <LaTabsContent value="activity" className="pt-4">
+          <ActivityPanel />
         </LaTabsContent>
       </LaTabs>
     </div>

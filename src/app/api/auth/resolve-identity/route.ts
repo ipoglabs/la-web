@@ -5,6 +5,7 @@ import User from "@/models/user";
 import { verifyIdentityProof } from "@/lib/auth-proof";
 import { normalizeTarget } from "@/lib/otpUtils";
 import { createUserSession } from "@/lib/userSession";
+import { logActivity } from "@/lib/activityLog";
 
 const COOKIE_NAME = "session";
 const UINFO_COOKIE_NAME = "uinfo";
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
     }
 
     const sid = await createUserSession(String(user._id), req);
+    await logActivity(user._id, "LOGIN");
     const token = signJwt({
       userId: String(user._id),
       email: user.email,

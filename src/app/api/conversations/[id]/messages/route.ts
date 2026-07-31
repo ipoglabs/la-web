@@ -30,6 +30,7 @@ import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
 import User from "@/models/user";
 import { getVerificationStatus } from "@/lib/verification";
+import { logActivity } from "@/lib/activityLog";
 
 type MessageLike = {
   _id: mongoose.Types.ObjectId;
@@ -161,6 +162,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       lastMessage: trimmed.length > 80 ? `${trimmed.slice(0, 80)}…` : trimmed,
       lastMessageAt: new Date(),
     });
+
+    await logActivity(myId, "MESSAGE_SENT", { conversationId: id });
 
     return NextResponse.json(
       { message: serializeMessage(msg, { senderId: session.userId, readBy: [session.userId] }) },

@@ -1,0 +1,47 @@
+import mongoose, { Schema, type HydratedDocument, type Model } from "mongoose";
+
+/**
+ * Per-event user activity — separate from User.audit[] (kept for
+ * infrequent account-level milestones like ACCOUNT_DELETED). Some of these
+ * actions (MESSAGE_SENT in particular) are high-frequency, and an array
+ * embedded in the User document would risk hitting Mongo's 16MB document
+ * cap for an active user — a dedicated, indexed collection scales to any
+ * volume and supports counting/filtering per user.
+ */
+export type ActivityAction =
+  | "LOGIN"
+  | "EMAIL_CHANGED"
+  | "PHONE_CHANGED"
+  | "NAME_CHANGED"
+  | "POST_CREATED"
+  | "POST_DELETED"
+  | "MESSAGE_SENT";
+
+export interface IActivityLog {
+  userId: mongoose.Types.ObjectId;
+  action: ActivityAction;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export type IActivityLogDoc = HydratedDocument<IActivityLog>;
+
+const ActivityLogSchema = new Schema<IActivityLog>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    action: { type: String, required: true },
+    metadata: { type: Schema.Types.Mixed },
+  },
+  { timestamps: { createdAt: true, updatedAt: false } }
+);
+
+// Primary access pattern: "this user's activity, newest first" (optionally
+// filtered by action) — see getUserActivity.ts in la-dev.
+ActivityLogSchema.index({ userId: 1, createdAt: -1 });
+ActivityLogSchema.index({ userId: 1, action: 1, createdAt: -1 });
+
+const ActivityLog: Model<IActivityLog> =
+  (mongoose.models.ActivityLog as Model<IActivityLog>) ||
+  mongoose.model<IActivityLog>("ActivityLog", ActivityLogSchema);
+
+export default ActivityLog;
