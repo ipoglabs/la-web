@@ -179,6 +179,19 @@ isDeleted: { type: Boolean, default: false, index: true },
 deletedAt: { type: Date },
 deleteFeedback: { type: String, trim: true },
 
+// Admin-only record of who this account used to be, captured at the moment
+// of deletion — the live email/primaryNumber/fullName above get wiped/
+// anonymized right after (see softDeleteAccount) so the identifier can be
+// reused for re-registration. This snapshot is never selected by any
+// public/user-facing read path (getCurrentUser, getPublicProfile,
+// conversation populates, etc. all use explicit field allowlists) — only
+// la-dev's deleted-users lookup reads it.
+deletedIdentitySnapshot: {
+  email: { type: String, trim: true },
+  primaryNumber: { type: String, trim: true },
+  fullName: { type: String, trim: true },
+},
+
  otp: { type: OtpSchema, default: null },
 
     // Derived, not user-settable — kept in sync by the pre-validate hook

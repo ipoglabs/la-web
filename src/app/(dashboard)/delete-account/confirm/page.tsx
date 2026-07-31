@@ -1,13 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Trash2, Frown, Loader2 } from "lucide-react";
 import { useDeleteAccountStore } from "@/lib/stores/deleteAccountStore";
+import { getCurrentUser } from "@/app/actions/getCurrentUser";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
-
-// TODO: [API] Replace with user.firstName from auth session / user store.
-const userName = "Gopinath";
 
 // TODO: [API] Fetch reasons from backend or config service for localization support.
 const REASONS = [
@@ -43,6 +42,16 @@ const REASONS = [
 
 export default function DeleteAccountConfirmPage() {
   const router = useRouter();
+
+  // Captured on mount, before deletion — softDeleteAccount anonymizes
+  // fullName to "Deleted User" server-side, so this must be read up front to
+  // greet the person by name on the Stage 4 goodbye screen.
+  const [firstName, setFirstName] = useState("");
+  useEffect(() => {
+    getCurrentUser().then((user) => {
+      if (user?.fullName) setFirstName(user.fullName.trim().split(/\s+/)[0]);
+    });
+  }, []);
 
   const {
     stage, setStage,
@@ -230,7 +239,9 @@ export default function DeleteAccountConfirmPage() {
               <div className="flex items-center gap-4">
                 <Frown className="h-14 w-14 text-rose-400" />
                 <div>
-                  <h2 className="text-lg font-medium text-slate-900">{userName}, sorry to see you go.</h2>
+                  <h2 className="text-lg font-medium text-slate-900">
+                    {firstName ? `${firstName}, sorry` : "Sorry"} to see you go.
+                  </h2>
                   <p className="mt-0.5 text-sm text-slate-500">
                     Your account and all associated data have been permanently deleted.
                   </p>

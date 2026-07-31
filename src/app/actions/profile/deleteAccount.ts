@@ -2,6 +2,7 @@
 
 import connectDB from "@/config/database";
 import User from "@/models/user";
+import Post from "@/models/post";
 import { getSession, clearSession } from "@/lib/auth";
 import { sendDeleteAccountEmail } from "@/lib/profile/deleteAccountEmail";
 
@@ -14,7 +15,7 @@ export async function softDeleteAccount(feedback?: string) {
       return { success: false, message: "Unauthorized" };
     }
 
-    const user: any = await User.findById(session.userId);
+    const user: any = await User.findById(session.userId).select("isDeleted email fullName primaryNumber");
     if (!user) {
       return { success: false, message: "User not found" };
     }
@@ -24,28 +25,57 @@ export async function softDeleteAccount(feedback?: string) {
       return { success: false, message: "Account already deleted" };
     }
 
-    user.isDeleted = true;
-    user.accountStatus = "Deleted";
-    user.isSuspended = false;
+    const { email, fullName, primaryNumber } = user;
 
-    user.deletedAt = new Date();
-    user.deleteFeedback = feedback || "";
+    // Anonymize immediately (no grace period): $unset — not null/undefined —
+    // is required so the sparse unique indexes on email/primaryNumber/
+    // appleEmailId treat this account as if the field were never set,
+    // freeing the identifier for a genuinely fresh re-registration. Bypasses
+    // the pre-validate hook (which would otherwise reject a doc with neither
+    // email nor primaryNumber) since updateOne doesn't run document
+    // middleware — that invariant only matters for live, loggable-in accounts.
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          fullName: "Deleted User",
+          isDeleted: true,
+          accountStatus: "Deleted",
+          isSuspended: false,
+          deletedAt: new Date(),
+          deleteFeedback: feedback || "",
+          isEmailVerified: false,
+          isPrimaryNumberVerified: false,
+          deletedIdentitySnapshot: { email, primaryNumber, fullName },
+        },
+        $unset: {
+          email: "",
+          primaryNumber: "",
+          appleEmailId: "",
+          secondaryNumber1: "",
+          secondaryNumber2: "",
+          image: "",
+        },
+        $push: {
+          audit: { action: "ACCOUNT_DELETED", at: new Date() },
+        },
+      }
+    );
 
-    user.audit.push({
-      action: "ACCOUNT_DELETED",
-      at: new Date(),
-    });
-
-    await user.save();
+    // Hide this user's listings from every public/owner-facing read path —
+    // getPublicProfile, /api/listings, etc. all filter on status: "active".
+    // The documents (and their seller_info/chat history) stay in Mongo, just
+    // no longer reachable outside a direct DB/admin lookup.
+    await Post.updateMany(
+      { ownerId: user._id, status: { $ne: "deleted" } },
+      { $set: { status: "deleted", deletedAt: new Date() } }
+    );
 
     await clearSession();
 
     try {
-      if (user.email) {
-        await sendDeleteAccountEmail({
-          fullName: user.fullName || "",
-          email: user.email,
-        });
+      if (email) {
+        await sendDeleteAccountEmail({ fullName: fullName || "", email });
       }
     } catch (err) {
       console.error(err);

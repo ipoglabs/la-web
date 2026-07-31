@@ -28,6 +28,7 @@ import { getSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Conversation from "@/models/Conversation";
 import Message from "@/models/Message";
+import User from "@/models/user";
 import { getVerificationStatus } from "@/lib/verification";
 
 type MessageLike = {
@@ -114,6 +115,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (conv.blockedBy.length > 0) {
       return NextResponse.json({ error: "Conversation is blocked" }, { status: 403 });
+    }
+
+    // Can't continue a conversation with someone who has since deleted their
+    // account — history stays readable (GET above), but there's no one left
+    // to receive a reply.
+    const otherId = conv.participants.find((p: mongoose.Types.ObjectId) => !p.equals(myId));
+    if (otherId) {
+      const other = await User.findById(otherId).select("isDeleted").lean();
+      if (other?.isDeleted) {
+        return NextResponse.json(
+          { error: "This user has deleted their account.", code: "RECIPIENT_DELETED" },
+          { status: 403 }
+        );
+      }
     }
 
     // Same verification gate as starting a conversation (POST

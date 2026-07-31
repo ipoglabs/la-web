@@ -39,7 +39,7 @@ export async function GET() {
 
     type PopulatedConversation = {
       _id: mongoose.Types.ObjectId;
-      participants: { _id: mongoose.Types.ObjectId; fullName: string; username: string; image: string }[];
+      participants: { _id: mongoose.Types.ObjectId; fullName: string; username: string; image: string; isDeleted?: boolean }[];
       blockedBy: mongoose.Types.ObjectId[];
       adId: string;
       adTitle: string;
@@ -55,7 +55,7 @@ export async function GET() {
       deletedBy: { $ne: myId },
     })
       .sort({ lastMessageAt: -1 })
-      .populate("participants", "fullName username image _id")
+      .populate("participants", "fullName username image _id isDeleted")
       .lean()) as unknown as PopulatedConversation[];
 
     const unreadAgg = await Message.aggregate([
@@ -83,6 +83,7 @@ export async function GET() {
           id: other?._id?.toString() ?? "",
           name: other?.fullName || other?.username || "Unknown",
           image: other?.image ?? "",
+          isDeleted: other?.isDeleted ?? false,
         },
         adId: conv.adId,
         adTitle: conv.adTitle,

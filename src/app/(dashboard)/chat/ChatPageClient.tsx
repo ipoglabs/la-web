@@ -43,6 +43,7 @@ type Convo = {
   role:         "buying" | "selling";
   blocked:      boolean;
   iBlockedThem: boolean;
+  otherDeleted: boolean;
   otherUserId:  string;
   adId:         string;
   ad:           Ad;
@@ -51,7 +52,7 @@ type Convo = {
 
 type ApiConversation = {
   id:             string;
-  otherUser:      { id: string; name: string; image: string };
+  otherUser:      { id: string; name: string; image: string; isDeleted: boolean };
   adId:           string;
   adTitle:        string;
   adPrice:        string;
@@ -117,6 +118,7 @@ function mapConversation(api: ApiConversation, myId: string, idx: number): Convo
     role:         api.createdBy === myId ? "buying" : "selling",
     blocked:      api.isBlocked,
     iBlockedThem: api.iBlockedThem,
+    otherDeleted: api.otherUser.isDeleted,
     otherUserId:  api.otherUser.id,
     adId:         api.adId,
     ad: {
@@ -385,8 +387,8 @@ function resolveTimestamps(messages: Message[]): boolean[] {
 // CHAT INPUT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ChatInput({ onSend, blocked, onUnblock, onTyping }: {
-  onSend: (text: string) => void; blocked: boolean;
+function ChatInput({ onSend, blocked, otherDeleted, onUnblock, onTyping }: {
+  onSend: (text: string) => void; blocked: boolean; otherDeleted: boolean;
   onUnblock: () => void; onTyping?: (t: boolean) => void;
 }) {
   const [text,        setText]        = useState("");
@@ -439,6 +441,14 @@ function ChatInput({ onSend, blocked, onUnblock, onTyping }: {
     const el = textareaRef.current;
     if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 120)}px`; }
   };
+
+  if (otherDeleted) {
+    return (
+      <div className="px-4 py-4 border-t border-slate-100 bg-white shrink-0 text-center">
+        <p className="text-sm text-slate-500">This user has deleted their account. You can't send new messages here.</p>
+      </div>
+    );
+  }
 
   if (blocked) {
     return (
@@ -749,7 +759,7 @@ function ChatView({ conv, myId, onBack, onUnblock, onConvoUpdate, onTypingChange
         <div ref={bottomRef} />
       </div>
 
-      <ChatInput onSend={handleSend} blocked={conv.blocked} onUnblock={onUnblock} onTyping={handleTyping} />
+      <ChatInput onSend={handleSend} blocked={conv.blocked} otherDeleted={conv.otherDeleted} onUnblock={onUnblock} onTyping={handleTyping} />
     </div>
   );
 }

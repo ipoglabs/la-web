@@ -14,3 +14,50 @@ export interface LaDevUser {
   isNewUser: boolean;
   createdAt: string;
 }
+
+export interface LaDevDeletedUser {
+  id: string;
+  userId: string;
+  fullName: string;
+  accountStatus: string;
+  deletedAt?: string;
+  deleteFeedback?: string;
+  createdAt: string;
+  audit: { action: string; at: string }[];
+  originalEmail?: string;
+  originalPrimaryNumber?: string;
+  originalFullName?: string;
+}
+
+export interface LaDevDeletedUserListing {
+  id: string;
+  adsId?: string;
+  name: string;
+  category: string;
+  subcategory: string;
+  status: string;
+  sellerInfo: { name: string; phone: string; email: string };
+  createdAt: string;
+}
+
+export interface LaDevDeletedUserConversation {
+  id: string;
+  adId: string;
+  adTitle: string;
+  otherParticipant: { id: string; name: string };
+  lastMessage: string;
+  lastMessageAt: string;
+}
+
+export interface LaDevDeletedUserData {
+  listings: LaDevDeletedUserListing[];
+  conversations: LaDevDeletedUserConversation[];
+}
+
+export interface LaDevConversationMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+}

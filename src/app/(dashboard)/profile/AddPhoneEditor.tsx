@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PhoneNumberInput } from "@/components/phone-number-input/PhoneNumberInput";
 import { COUNTRIES, type Country } from "@/components/phone-number-input/countries";
+import { useCountry } from "@/components/country/CountryProvider";
 import { OtpInput } from "@/components/ui/otp-input";
 import { useResendTimer } from "@/lib/hooks/useResendTimer";
 import { isValidPhone, normalizePhoneDigits } from "@/lib/validation";
@@ -40,7 +41,17 @@ import { ResponsiveEditor } from "./ResponsiveEditor";
 export const ALLOWED_COUNTRIES = ["SG", "IN", "GB"];
 const MIN_DIGITS = 5;
 
-function defaultCountryFor(hint: string | undefined): Country {
+/**
+ * `isoCode` is the app-wide active market (useCountry() — cookie/geo-IP
+ * resolved by the country gate, see proxy.ts) and takes priority since it's
+ * always resolved for a logged-in session. `hint` (residence.country, a
+ * free-text address field) is a fallback for when it's more specific than
+ * the market — e.g. it's often just plain empty since address is optional.
+ */
+function defaultCountryFor(isoCode: string | undefined, hint: string | undefined): Country {
+  const isoMatch = COUNTRIES.find((c) => c.code === (isoCode ?? "").toUpperCase());
+  if (isoMatch) return isoMatch;
+
   const lower = (hint ?? "").trim().toLowerCase();
   const code = lower.includes("india")
     ? "IN"
@@ -63,7 +74,7 @@ export function parsePhoneNumber(value: string): { country: Country; digits: str
     const found = COUNTRIES.find((c) => ALLOWED_COUNTRIES.includes(c.code) && c.dial === match[1]);
     if (found) return { country: found, digits: match[2].replace(/\D/g, "") };
   }
-  return { country: defaultCountryFor(undefined), digits: trimmed.replace(/\D/g, "") };
+  return { country: defaultCountryFor(undefined, undefined), digits: trimmed.replace(/\D/g, "") };
 }
 
 type Stage = "enter-phone" | "verify-otp";
@@ -88,9 +99,10 @@ export function AddPhoneEditor({
   onVerified: (fullNumber: string) => void;
 }) {
   const isEditing = !!initialValue;
+  const activeCountry = useCountry();
   const [stage, setStage] = useState<Stage>("enter-phone");
   const [country, setCountry] = useState<Country>(() =>
-    initialValue ? parsePhoneNumber(initialValue).country : defaultCountryFor(defaultCountryHint)
+    initialValue ? parsePhoneNumber(initialValue).country : defaultCountryFor(activeCountry, defaultCountryHint)
   );
   const [phone, setPhone] = useState(() => (initialValue ? parsePhoneNumber(initialValue).digits : ""));
   const [phoneError, setPhoneError] = useState("");
@@ -109,7 +121,7 @@ export function AddPhoneEditor({
         setCountry(parsed.country);
         setPhone(parsed.digits);
       } else {
-        setCountry(defaultCountryFor(defaultCountryHint));
+        setCountry(defaultCountryFor(activeCountry, defaultCountryHint));
         setPhone("");
       }
       setPhoneError("");
