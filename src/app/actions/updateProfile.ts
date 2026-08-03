@@ -224,9 +224,20 @@ export async function updateProfile(payload: any) {
 
   await user.save();
 
-  const nameChange = changes.find((c) => c.field === "Full Name");
-  if (nameChange) {
-    await logActivity(user._id, "NAME_CHANGED", { from: nameChange.oldValue, to: nameChange.newValue });
+  // ADO-style field-level history: log every changed field with its old→new
+  // value, not just name — see ActivityAction in models/ActivityLog.ts.
+  const FIELD_ACTIONS: Record<string, import("@/models/ActivityLog").ActivityAction> = {
+    "Full Name": "NAME_CHANGED",
+    "Profile ID": "USERID_CHANGED",
+    Role: "ROLE_CHANGED",
+    "Date of Birth": "DOB_CHANGED",
+    Gender: "GENDER_CHANGED",
+  };
+  for (const change of changes) {
+    const action = FIELD_ACTIONS[change.field];
+    if (action) {
+      await logActivity(user._id, action, { from: change.oldValue, to: change.newValue });
+    }
   }
 
   /* ================= EMAIL ================= */

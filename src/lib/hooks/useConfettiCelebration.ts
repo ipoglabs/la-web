@@ -9,12 +9,7 @@
  * `router.push()` (which would never actually render).
  */
 import { useCallback, useState } from "react";
-
-// react-confetti's own particle-count ramp is forced to ~400ms (see
-// ConfettiButton's `tweenDuration`) — this just needs to comfortably outlast
-// that ramp plus a beat to actually register with the user before whatever
-// called celebrate() navigates away.
-const CELEBRATION_MS = 1800;
+import { CONFETTI_CELEBRATION_MS } from "@/config/confetti";
 
 export function useConfettiCelebration() {
   const [celebrating, setCelebrating] = useState(false);
@@ -25,7 +20,7 @@ export function useConfettiCelebration() {
       setTimeout(() => {
         setCelebrating(false);
         resolve();
-      }, CELEBRATION_MS);
+      }, CONFETTI_CELEBRATION_MS);
     });
   }, []);
 

@@ -29,6 +29,11 @@ export async function updateContact({
   const trimmed = value.trim();
   if (!trimmed) throw new Error("Value is required");
 
+  // ADO-style history: capture the pre-change value so logActivity below
+  // can record from→to, not just "it changed".
+  let emailFrom: string | null = null;
+  let phoneFrom: string | null = null;
+
   const channel = field === "email" ? "email" : "phone";
   const normalized = normalizeTarget(channel, trimmed);
 
@@ -98,6 +103,7 @@ export async function updateContact({
 
     if (existing) throw new Error("Email already in use");
 
+    emailFrom = user.email || "-";
     user.email = emailLower;
     user.isEmailVerified = true;
   }
@@ -126,6 +132,7 @@ export async function updateContact({
 
     if (existing) throw new Error("Phone number already in use");
 
+    phoneFrom = user.primaryNumber || "-";
     user.primaryNumber = normalized;
     user.isPrimaryNumberVerified = true;
   }
@@ -153,9 +160,9 @@ export async function updateContact({
   await user.save();
 
   if (field === "email") {
-    await logActivity(user._id, "EMAIL_CHANGED");
+    await logActivity(user._id, "EMAIL_CHANGED", { from: emailFrom ?? "-", to: user.email });
   } else if (field === "primaryNumber") {
-    await logActivity(user._id, "PHONE_CHANGED");
+    await logActivity(user._id, "PHONE_CHANGED", { from: phoneFrom ?? "-", to: user.primaryNumber });
   }
 
   /* 🧹 CLEAN OTP (only verified one) */

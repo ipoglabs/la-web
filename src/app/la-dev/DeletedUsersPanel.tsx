@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LaCard, LaBadge, LaInput, LaButton } from "@/components/la";
+import { LaCard, LaBadge, LaInput, LaButton, LaSkeleton } from "@/components/la";
 import { listDeletedUsers } from "@/app/actions/la-dev/listDeletedUsers";
 import { getDeletedUserData } from "@/app/actions/la-dev/getDeletedUserData";
 import { getConversationMessages } from "@/app/actions/la-dev/getConversationMessages";
@@ -99,7 +99,15 @@ export default function DeletedUsersPanel() {
 
       <LaCard className="divide-y divide-slate-100 overflow-hidden">
         {users === null ? (
-          <p className="text-sm text-slate-500 p-4">Loading deleted users…</p>
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <LaSkeleton shape="text" className="w-1/3" />
+                <LaSkeleton shape="text" className="h-3 w-1/2" />
+              </div>
+              <LaSkeleton shape="text" className="h-3 w-20 shrink-0" />
+            </div>
+          ))
         ) : filtered.length === 0 ? (
           <p className="text-sm text-slate-500 p-4">No deleted users found.</p>
         ) : (
@@ -160,7 +168,17 @@ export default function DeletedUsersPanel() {
           <div className="pt-4 mt-2 border-t border-slate-100">
             <p className="text-sm font-semibold text-slate-900 mb-2">Listings</p>
             {loadingData ? (
-              <p className="text-sm text-slate-500">Loading…</p>
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <LaSkeleton shape="text" className="w-1/2" />
+                      <LaSkeleton shape="block" className="h-5 w-16 rounded-full" />
+                    </div>
+                    <LaSkeleton shape="text" className="h-3 w-2/3" />
+                  </div>
+                ))}
+              </div>
             ) : !data || data.listings.length === 0 ? (
               <p className="text-sm text-slate-500">No listings.</p>
             ) : (
@@ -188,7 +206,17 @@ export default function DeletedUsersPanel() {
           <div className="pt-4 mt-2 border-t border-slate-100">
             <p className="text-sm font-semibold text-slate-900 mb-2">Conversations</p>
             {loadingData ? (
-              <p className="text-sm text-slate-500">Loading…</p>
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border border-slate-200 p-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <LaSkeleton shape="text" className="w-1/2" />
+                      <LaSkeleton shape="text" className="h-3 w-1/3" />
+                    </div>
+                    <LaSkeleton shape="block" className="h-9 w-28 rounded-full shrink-0" />
+                  </div>
+                ))}
+              </div>
             ) : !data || data.conversations.length === 0 ? (
               <p className="text-sm text-slate-500">No conversations.</p>
             ) : (
@@ -213,9 +241,13 @@ export default function DeletedUsersPanel() {
                     </div>
 
                     {openConvoId === c.id && (
-                      <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-2 max-h-80 overflow-y-auto">
+                      <div className="mt-3 pt-3 border-t border-slate-100 max-h-80 overflow-y-auto space-y-2">
                         {loadingMessages ? (
-                          <p className="text-sm text-slate-500">Loading messages…</p>
+                          <div className="flex flex-col gap-2">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <LaSkeleton key={i} shape="text" className="w-2/3" />
+                            ))}
+                          </div>
                         ) : !messages || messages.length === 0 ? (
                           <p className="text-sm text-slate-500">No messages.</p>
                         ) : (

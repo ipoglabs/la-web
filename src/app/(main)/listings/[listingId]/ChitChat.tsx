@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { filterChatChars, hasContactInfo } from "@/lib/chatValidation";
+import { LaSkeleton } from "@/components/la";
 
 /**
  * ChitChat — inline "message the seller" widget on the listing-detail page.
@@ -224,7 +225,13 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
           ) : (
             <div ref={listRef} className="overflow-y-auto max-h-64 bg-slate-100 rounded-xl px-4 py-4 flex flex-col gap-3">
               {loading ? (
-                <p className="text-sm text-slate-400 text-center">Loading…</p>
+                <div className="flex flex-col gap-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className={cn("flex", i % 2 === 0 ? "justify-start" : "justify-end")}>
+                      <LaSkeleton shape="block" className="h-9 w-2/5 rounded-2xl" />
+                    </div>
+                  ))}
+                </div>
               ) : messages.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center">Say hello to {sellerName}.</p>
               ) : (

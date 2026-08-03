@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LaCard, LaInput, LaBadge } from "@/components/la";
+import { LaCard, LaInput, LaBadge, LaSkeleton } from "@/components/la";
 import { listActivity } from "@/app/actions/la-dev/listActivity";
 import type { LaDevActivityFeedEntry } from "@/app/actions/la-dev/listActivity";
 import { ACTIVITY_LABELS } from "./activityLabels";
@@ -82,7 +82,18 @@ export default function ActivityPanel() {
 
       <LaCard className="divide-y divide-slate-100 overflow-hidden">
         {entries === null ? (
-          <p className="text-sm text-slate-500 p-4">Loading activity…</p>
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <LaSkeleton shape="text" className="w-1/4" />
+                  <LaSkeleton shape="block" className="h-5 w-20 rounded-full" />
+                </div>
+                <LaSkeleton shape="text" className="h-3 w-1/2" />
+              </div>
+              <LaSkeleton shape="text" className="h-3 w-24 shrink-0" />
+            </div>
+          ))
         ) : filtered.length === 0 ? (
           <p className="text-sm text-slate-500 p-4">No activity found.</p>
         ) : (

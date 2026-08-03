@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { LaButton, LaCard, LaInput, LaBadge, LaTabs, LaTabsList, LaTabsTrigger, LaTabsContent } from "@/components/la";
+import { LaButton, LaCard, LaInput, LaBadge, LaTabs, LaTabsList, LaTabsTrigger, LaTabsContent, LaSkeleton } from "@/components/la";
 import { listUsers } from "@/app/actions/la-dev/listUsers";
 import type { LaDevUser } from "@/app/actions/la-dev/types";
 import { hardDeleteUser } from "@/app/actions/la-dev/hardDeleteUser";
@@ -10,7 +10,7 @@ import type { LaDevUserActivity } from "@/app/actions/la-dev/getUserActivity";
 import { toast } from "sonner";
 import DeletedUsersPanel from "./DeletedUsersPanel";
 import ActivityPanel from "./ActivityPanel";
-import { ACTIVITY_LABELS } from "./activityLabels";
+import { ACTIVITY_LABELS, FIELD_NAMES } from "./activityLabels";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -19,6 +19,19 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
       <span className="text-sm text-slate-900 text-right">{children}</span>
     </div>
   );
+}
+
+/** ADO-style relative timestamp for revision headers. */
+function relativeTime(iso: string): string {
+  const diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.round(diffHr / 24);
+  if (diffDay < 30) return `${diffDay}d ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
 export default function LaDevClient() {
@@ -106,7 +119,15 @@ export default function LaDevClient() {
 
           <LaCard className="divide-y divide-slate-100 overflow-hidden">
             {users === null ? (
-              <p className="text-sm text-slate-500 p-4">Loading users…</p>
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <LaSkeleton shape="text" className="w-1/3" />
+                    <LaSkeleton shape="text" className="h-3 w-1/2" />
+                  </div>
+                  <LaSkeleton shape="block" className="h-6 w-24 rounded-full" />
+                </div>
+              ))
             ) : filtered.length === 0 ? (
               <p className="text-sm text-slate-500 p-4">No users found.</p>
             ) : (
@@ -170,9 +191,19 @@ export default function LaDevClient() {
               <Row label="Created">{new Date(selected.createdAt).toLocaleString()}</Row>
 
               <div className="pt-3 mt-2 border-t border-slate-100">
-                <p className="text-sm font-medium text-slate-500 mb-2">Activity</p>
+                <p className="text-sm font-medium text-slate-500 mb-2">History</p>
                 {activity === null ? (
-                  <p className="text-sm text-slate-500">Loading…</p>
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <LaSkeleton shape="text" className="w-1/3" />
+                          <LaSkeleton shape="text" className="h-3 w-16" />
+                        </div>
+                        <LaSkeleton shape="text" className="h-3 w-2/3" />
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -189,14 +220,49 @@ export default function LaDevClient() {
                     {activity.recent.length === 0 ? (
                       <p className="text-sm text-slate-500">No recorded activity yet.</p>
                     ) : (
-                      <div className="flex flex-col gap-1 max-h-60 overflow-y-auto">
-                        {activity.recent.map((entry) => (
-                          <p key={entry.id} className="text-sm text-slate-700">
-                            <span className="font-medium">{ACTIVITY_LABELS[entry.action] ?? entry.action}</span>
-                            {" — "}
-                            {new Date(entry.at).toLocaleString()}
-                          </p>
-                        ))}
+                      <div className="max-h-96 overflow-y-auto pr-1 space-y-3">
+                        {activity.recent.map((entry, i) => {
+                          const from = entry.metadata?.from;
+                          const to = entry.metadata?.to;
+                          const hasDiff = from !== undefined && to !== undefined;
+                          const rev = activity.recent.length - i;
+                          return (
+                            <div key={entry.id} className="rounded-lg border border-slate-200 overflow-hidden">
+                              <div className="flex items-center justify-between gap-3 px-3 py-2 bg-slate-50 border-b border-slate-200">
+                                <span className="text-sm font-semibold text-slate-900">
+                                  Rev {rev}
+                                  <span className="font-normal text-slate-500"> · {ACTIVITY_LABELS[entry.action] ?? entry.action}</span>
+                                </span>
+                                <span
+                                  className="text-sm text-slate-500 shrink-0"
+                                  title={new Date(entry.at).toLocaleString()}
+                                >
+                                  {relativeTime(entry.at)}
+                                </span>
+                              </div>
+                              {hasDiff && (
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="text-left text-slate-500">
+                                      <th className="font-medium px-3 pt-2 pb-1 w-1/3">Field</th>
+                                      <th className="font-medium px-3 pt-2 pb-1 w-1/3">Old value</th>
+                                      <th className="font-medium px-3 pt-2 pb-1 w-1/3">New value</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td className="px-3 pb-2 text-slate-700">
+                                        {FIELD_NAMES[entry.action] ?? entry.action}
+                                      </td>
+                                      <td className="px-3 pb-2 text-rose-600 line-through">{String(from)}</td>
+                                      <td className="px-3 pb-2 text-slate-900 font-medium">{String(to)}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </>

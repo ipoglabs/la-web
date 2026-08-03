@@ -13,6 +13,10 @@ export type ActivityAction =
   | "EMAIL_CHANGED"
   | "PHONE_CHANGED"
   | "NAME_CHANGED"
+  | "USERID_CHANGED"
+  | "ROLE_CHANGED"
+  | "DOB_CHANGED"
+  | "GENDER_CHANGED"
   | "POST_CREATED"
   | "POST_DELETED"
   | "MESSAGE_SENT";

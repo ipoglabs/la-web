@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 import ConfettiButton from "@/components/confettibutton";
 import { useConfettiCelebration } from "@/lib/hooks/useConfettiCelebration";
@@ -19,6 +20,12 @@ export default function GoogleSuccessPage() {
         if (data.user) {
           setAuth(null, data.user);
         }
+        // Toast survives the router.push() below (<Toaster/> lives in the
+        // root layout) so the success moment is still visible after the
+        // confetti burst itself gets cut off — see resolveIdentity.ts's
+        // identical pairing for the OTP/magic-link sign-in path.
+        const firstName = data.user?.fullName?.trim().split(/\s+/)[0];
+        toast.success(firstName ? `Welcome, ${firstName}!` : "Signed in successfully!");
       } catch {
         // session cookie is already set — user can still navigate
       }

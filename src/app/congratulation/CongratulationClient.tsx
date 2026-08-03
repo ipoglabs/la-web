@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { LaSkeleton } from "@/components/la";
 
 type PostLocation = {
   address?: string;
@@ -82,9 +83,14 @@ export default function CongratulationClient() {
       </h1>
 
       {loading && (
-        <p className="text-gray-500 mb-6">
-          Preparing your advertisement summary...
-        </p>
+        <div className="w-full max-w-3xl flex flex-col sm:flex-row items-center gap-4 bg-white border border-gray-200 rounded-lg shadow mb-6 px-4 py-4">
+          <LaSkeleton shape="block" className="size-24 shrink-0" />
+          <div className="flex-1 w-full space-y-2">
+            <LaSkeleton shape="text" className="h-5 w-2/3" />
+            <LaSkeleton shape="text" className="w-1/2" />
+            <LaSkeleton shape="text" className="w-1/3" />
+          </div>
+        </div>
       )}
 
       {!loading && post && (
