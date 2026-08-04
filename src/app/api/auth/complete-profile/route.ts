@@ -8,6 +8,7 @@ import { verifyIdentityProof } from "@/lib/auth-proof";
 import { normalizeTarget } from "@/lib/otpUtils";
 import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
 import { createUserSession } from "@/lib/userSession";
+import { logActivity } from "@/lib/activityLog";
 import { BASE_ROLE, type RoleId } from "@/config/roles";
 
 const COOKIE_NAME = "session";
@@ -175,6 +176,8 @@ export async function POST(req: Request) {
       isNewUser: true,
       isTermsAndConditionAccepted: true,
     });
+
+    await logActivity(created._id, "REGISTERED", { method });
 
     if (created.email) {
       try {

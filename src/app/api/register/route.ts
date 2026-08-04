@@ -5,6 +5,7 @@ import { getNextUserId } from "@/lib/sequence";
 import { hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
+import { logActivity } from "@/lib/activityLog";
 
 const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -153,6 +154,8 @@ export async function POST(req: Request) {
 
       provider: "credentials",
     });
+
+    await logActivity(created._id, "REGISTERED", { method: "credentials" });
 
     // welcome email (don't block the response if it fails)
     try {

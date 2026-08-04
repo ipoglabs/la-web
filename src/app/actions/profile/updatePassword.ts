@@ -4,6 +4,7 @@ import connectDB from "@/config/database";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { sendPasswordUpdateEmail } from "@/lib/profile/updatePasswordEmail";
+import { logActivity } from "@/lib/activityLog";
 import bcrypt from "bcryptjs";
 
 export async function updatePassword({
@@ -89,6 +90,8 @@ export async function updatePassword({
 
     user.password = hashedPassword;
     await user.save();
+
+    await logActivity(user._id, "PASSWORD_CHANGED");
 
     /* ================= EMAIL ================= */
     try {

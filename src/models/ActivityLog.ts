@@ -9,6 +9,7 @@ import mongoose, { Schema, type HydratedDocument, type Model } from "mongoose";
  * volume and supports counting/filtering per user.
  */
 export type ActivityAction =
+  | "REGISTERED"
   | "LOGIN"
   | "EMAIL_CHANGED"
   | "PHONE_CHANGED"
@@ -17,7 +18,10 @@ export type ActivityAction =
   | "ROLE_CHANGED"
   | "DOB_CHANGED"
   | "GENDER_CHANGED"
+  | "PASSWORD_CHANGED"
   | "POST_CREATED"
+  | "POST_UPDATED"
+  | "POST_BUMPED"
   | "POST_DELETED"
   | "MESSAGE_SENT";
 

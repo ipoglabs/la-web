@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { verifyToken } from "@/lib/auth";
+import { logActivity } from "@/lib/activityLog";
 
 function extractEmailFromDecoded(decoded: any): string | undefined {
   if (!decoded || typeof decoded !== "object") return undefined;
@@ -75,6 +76,10 @@ export async function bumpPost(postId: string) {
 
     post.lastBumpedAt = new Date();
     await post.save();
+
+    if (post.ownerId) {
+      await logActivity(post.ownerId, "POST_BUMPED", { postId: String(post._id), title: post.name });
+    }
 
     return {
       ok: true as const,

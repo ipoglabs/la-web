@@ -7,6 +7,7 @@ import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
 import { deleteImageVariants } from "@/lib/media/imageVariants";
 import { sendListingStatusEmail } from "@/lib/listings/sendListingStatusEmail";
+import { logActivity } from "@/lib/activityLog";
 
 /* ---------------------- helpers (unchanged from you) ---------------------- */
 
@@ -361,6 +362,8 @@ export async function updatePost(
     if (!doc) {
       return { ok: false, error: "Not found or not authorized to edit this post" };
     }
+
+    await logActivity(sessionOwnerId, "POST_UPDATED", { postId: String(doc._id), title: doc.name });
 
     if (doc.seller_info?.email) {
       try {

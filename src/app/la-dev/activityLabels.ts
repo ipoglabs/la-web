@@ -1,5 +1,6 @@
 /** Shared between LaDevClient's per-user activity section and ActivityPanel's global feed. */
 export const ACTIVITY_LABELS: Record<string, string> = {
+  REGISTERED: "Registrations",
   LOGIN: "Logins",
   EMAIL_CHANGED: "Email changes",
   PHONE_CHANGED: "Phone changes",
@@ -8,7 +9,10 @@ export const ACTIVITY_LABELS: Record<string, string> = {
   ROLE_CHANGED: "Role changes",
   DOB_CHANGED: "Date of birth changes",
   GENDER_CHANGED: "Gender changes",
+  PASSWORD_CHANGED: "Password changes",
   POST_CREATED: "Ads posted",
+  POST_UPDATED: "Ads edited",
+  POST_BUMPED: "Ads bumped",
   POST_DELETED: "Ads deleted",
   MESSAGE_SENT: "Messages sent",
 };
