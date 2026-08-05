@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { LaCard, LaInput, LaAvatar, LaSkeleton } from "@/components/la";
+import { LaCard, LaInput, LaAvatar, LaBadge, LaSkeleton } from "@/components/la";
 import { listActivity } from "@/app/actions/la-dev/listActivity";
 import type { LaDevActivityFeedEntry } from "@/app/actions/la-dev/listActivity";
 import { ACTIVITY_LABELS, FIELD_NAMES } from "./activityLabels";
@@ -53,6 +53,27 @@ function fullTimestamp(iso: string): string {
 
 function hasDiff(entry: LaDevActivityFeedEntry): boolean {
   return entry.metadata?.from !== undefined && entry.metadata?.to !== undefined;
+}
+
+interface DetailField {
+  label: string;
+  newValue: unknown;
+  oldValue?: unknown;
+}
+
+/** Rows for the detail pane's field/value pills — ADO-style revision compare. */
+function detailFields(entry: LaDevActivityFeedEntry): DetailField[] {
+  if (hasDiff(entry)) {
+    return [
+      {
+        label: FIELD_NAMES[entry.action] ?? ACTIVITY_LABELS[entry.action] ?? entry.action,
+        newValue: entry.metadata!.to,
+        oldValue: entry.metadata!.from,
+      },
+    ];
+  }
+  if (!entry.metadata) return [];
+  return Object.entries(entry.metadata).map(([label, newValue]) => ({ label, newValue }));
 }
 
 /** One-line sentence for the list row and detail header, ADO's "X changed Y to Z" style. */
@@ -230,41 +251,31 @@ export default function ActivityPanel() {
                   </div>
 
                   <div className="border-t border-slate-100 pt-4">
-                    {hasDiff(selectedEntry) ? (
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-left text-slate-500">
-                            <th className="font-medium pb-2 w-1/3">Field</th>
-                            <th className="font-medium pb-2 w-1/3">Old value</th>
-                            <th className="font-medium pb-2 w-1/3">New value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className="py-1 text-slate-700">
-                              {FIELD_NAMES[selectedEntry.action] ?? ACTIVITY_LABELS[selectedEntry.action]}
-                            </td>
-                            <td className="py-1 text-rose-600 line-through">
-                              {String(selectedEntry.metadata!.from)}
-                            </td>
-                            <td className="py-1 text-slate-900 font-medium">
-                              {String(selectedEntry.metadata!.to)}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    ) : selectedEntry.metadata && Object.keys(selectedEntry.metadata).length > 0 ? (
-                      <dl className="flex flex-col gap-2">
-                        {Object.entries(selectedEntry.metadata).map(([k, v]) => (
-                          <div key={k} className="flex items-center justify-between gap-4 text-sm">
-                            <dt className="text-slate-500">{k}</dt>
-                            <dd className="text-slate-900 font-medium text-right">{String(v)}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    ) : (
-                      <p className="text-sm text-slate-500">No additional details recorded for this event.</p>
-                    )}
+                    {(() => {
+                      const fields = detailFields(selectedEntry);
+                      if (fields.length === 0) {
+                        return <p className="text-sm text-slate-500">No additional details recorded for this event.</p>;
+                      }
+                      return (
+                        <div className="grid grid-cols-[10rem_1fr] items-center gap-x-4 gap-y-3">
+                          {fields.map((field) => (
+                            <Fragment key={field.label}>
+                              <span className="text-sm text-slate-500">{field.label}</span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <LaBadge intent="success" dot>
+                                  {String(field.newValue)}
+                                </LaBadge>
+                                {field.oldValue !== undefined && (
+                                  <LaBadge intent="neutral" dot className="opacity-70 line-through">
+                                    {String(field.oldValue)}
+                                  </LaBadge>
+                                )}
+                              </div>
+                            </Fragment>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="border-t border-slate-100 pt-4 text-sm text-slate-500">
