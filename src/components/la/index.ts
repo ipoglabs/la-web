@@ -80,3 +80,7 @@ export type { LaSwitchProps } from "./la-switch";
 // Skeleton
 export { LaSkeleton } from "./la-skeleton";
 export type { LaSkeletonProps } from "./la-skeleton";
+
+// Avatar
+export { LaAvatar } from "./la-avatar";
+export type { LaAvatarProps } from "./la-avatar";

@@ -102,7 +102,7 @@ export default function LaDevClient() {
         <LaTabsList className="bg-slate-100 rounded-lg p-1">
           <LaTabsTrigger value="users" variant="card">Users</LaTabsTrigger>
           <LaTabsTrigger value="deleted" variant="card">Deleted users</LaTabsTrigger>
-          <LaTabsTrigger value="activity" variant="card">Activity</LaTabsTrigger>
+          <LaTabsTrigger value="activity" variant="card">Audit History</LaTabsTrigger>
         </LaTabsList>
 
         <LaTabsContent value="users" className="flex flex-col gap-6 pt-4">
