@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
       userId: String(user._id),
       email: user.email,
       primaryNumber: user.primaryNumber,
-      role: user.role ?? "user",
+      publicRole: user.publicRole ?? "user",
       sid,
     },
     requireSecret(),

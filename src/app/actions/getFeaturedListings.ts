@@ -3,6 +3,7 @@
 import connectDB from "@/config/database";
 import Post from "@/models/post";
 import { mapPostToFeaturedItem, type FeaturedListingItem } from "@/lib/mapPostToFeaturedItem";
+import { publicPostFilter } from "@/lib/postVisibility";
 
 export async function getFeaturedListings(
   countryCode: string,
@@ -11,13 +12,8 @@ export async function getFeaturedListings(
 ): Promise<FeaturedListingItem[]> {
   await connectDB();
 
-  // No moderation/approval step exists yet (nothing in this codebase ever
-  // transitions a Post from "pending" to "active" — see addPost.ts/
-  // updatePost.ts), so every real post is permanently "pending". Treating
-  // "active" as the only visible status would mean this never returns
-  // anything at all. Excludes only genuinely hidden/removed states.
   const filter: Record<string, unknown> = {
-    status: { $nin: ["off", "expired", "deleted"] },
+    ...publicPostFilter(),
     // Country-scoped via the real `country` field (models/post.ts), set at
     // creation from the country cookie. Posts predating that field (or
     // created without a resolved cookie) have none — treat those as

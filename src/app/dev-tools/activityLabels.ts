@@ -1,4 +1,4 @@
-/** Shared between LaDevClient's per-user activity section and ActivityPanel's global feed. */
+/** Shared between DevToolsClient's per-user activity section and ActivityPanel's global feed. */
 export const ACTIVITY_LABELS: Record<string, string> = {
   REGISTERED: "Registrations",
   LOGIN: "Logins",
@@ -15,6 +15,13 @@ export const ACTIVITY_LABELS: Record<string, string> = {
   POST_BUMPED: "Ads bumped",
   POST_DELETED: "Ads deleted",
   MESSAGE_SENT: "Messages sent",
+  AD_APPROVED: "Ads approved",
+  AD_REJECTED: "Ads rejected",
+  AD_SET_PENDING: "Ads marked pending",
+  AD_SUSPENDED: "Ads suspended",
+  AD_RESTORED: "Ads restored",
+  AD_REPORT_REVIEWED: "Reports reviewed",
+  AD_REPORT_DISMISSED: "Reports dismissed",
 };
 
 /** Field name shown in the History revision table — only actions that carry {from, to} metadata need an entry. */

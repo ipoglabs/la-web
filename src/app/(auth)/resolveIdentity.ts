@@ -76,13 +76,15 @@ export async function resolveIdentity({
     body: JSON.stringify({ method, identifier, fullName, proof }),
   });
   if (!res.ok) throw new Error(`resolve-identity failed (${res.status})`);
-  const { data } = (await res.json()) as { data: { matched: boolean } };
+  const { data } = (await res.json()) as { data: { matched: boolean; isAdmin?: boolean } };
 
   if (data.matched) {
     const firstName = fullName?.trim().split(/\s+/)[0] || "back";
     toast.success(`Welcome ${firstName === "back" ? "back" : firstName}!`);
     await celebrate?.();
-    router.push(redirectTarget);
+    // The admin account always lands on /admin, ignoring any ?redirect= —
+    // see lib/admin.ts for how "admin" is decided.
+    router.push(data.isAdmin ? "/admin" : redirectTarget);
     // router.push() alone does not re-run the root layout Server Component,
     // so AppHeader's server-seeded `user` prop would stay stale (logged out)
     // even though the session cookie above is already set — force it to

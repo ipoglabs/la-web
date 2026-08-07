@@ -15,6 +15,7 @@ import {
 } from "@/lib/mock/country-map";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
+import { publicPostFilter } from "@/lib/postVisibility";
 import type { ListingsApiResponse } from "@/types/listings-api";
 
 const COUNTRY_CODES = Object.keys(COUNTRY_CONFIGS) as CountryCode[];
@@ -73,9 +74,7 @@ export async function GET(
     const categoryLabel = CATEGORY_LABELS[category];
     const query: Record<string, unknown> = {
       category: categoryLabel ? { $in: [category, categoryLabel] } : category,
-      // No moderation/approval step exists yet — see getFeaturedListings.ts's
-      // matching comment. Only exclude genuinely hidden/removed states.
-      status: { $nin: ["off", "expired", "deleted"] },
+      ...publicPostFilter(),
       // Country-scoped via the real `country` field (models/post.ts). Posts
       // with none (predating that field, or created without a resolved
       // cookie) are treated as visible in every market rather than nowhere.
@@ -91,7 +90,7 @@ export async function GET(
       .limit(50)
       .populate<{ ownerId: LeanOwner | null }>(
         "ownerId",
-        "userId fullName image role isEmailVerified isPrimaryNumberVerified createdAt"
+        "userId fullName image publicRole isEmailVerified isPrimaryNumberVerified createdAt"
       )
       .lean();
 

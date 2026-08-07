@@ -9,10 +9,12 @@ import { normalizeTarget } from "@/lib/otpUtils";
 import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
 import { createUserSession } from "@/lib/userSession";
 import { logActivity } from "@/lib/activityLog";
-import { BASE_ROLE, type RoleId } from "@/config/roles";
+import { BASE_ROLE, ROLES, type RoleId } from "@/config/roles";
+import { isAdminEmail } from "@/lib/admin";
 
 const COOKIE_NAME = "session";
 const MAX_AGE = 60 * 60 * 24 * 7;
+const VALID_ROLE_IDS = new Set<string>(ROLES.map((r) => r.id));
 
 // OAuth methods prove identity via the short-lived, httpOnly cookie
 // google-callback/apple-callback already set for a brand-new user — see
@@ -68,7 +70,12 @@ export async function POST(req: Request) {
     const fullName = String(body?.fullName || "").trim();
     const gender = String(body?.gender || "").trim();
     const dateOfBirthIso = String(body?.dateOfBirthIso || "");
-    const roleIds: RoleId[] = Array.isArray(body?.roleIds) ? body.roleIds : [];
+    // Never trust client-supplied role ids — mirrors updateProfile.ts's
+    // VALID_ROLE_IDS check for the same field (config/roles.ts's fixed list).
+    const rawRoleIds: unknown = body?.roleIds;
+    const roleIds: RoleId[] = Array.isArray(rawRoleIds)
+      ? (rawRoleIds.filter((id): id is RoleId => typeof id === "string" && VALID_ROLE_IDS.has(id)))
+      : [];
     const specialties = body?.specialties && typeof body.specialties === "object" ? body.specialties : {};
     const customRole: string | null = body?.customRole ?? null;
 
@@ -167,7 +174,7 @@ export async function POST(req: Request) {
       ...(usesEmail ? { email: target, isEmailVerified: true } : { primaryNumber: target, isPrimaryNumberVerified: true }),
       ...(oauthImage ? { image: oauthImage } : {}),
       ...(appleEmailId ? { appleEmailId } : {}),
-      role: primaryRole,
+      publicRole: primaryRole,
       roles: roleIds,
       roleSpecialties: specialties,
       customRole: customRole || undefined,
@@ -192,11 +199,14 @@ export async function POST(req: Request) {
       userId: String(created._id),
       email: created.email,
       primaryNumber: created.primaryNumber,
-      role: created.role ?? "user",
+      publicRole: created.publicRole ?? "user",
       sid,
     });
 
-    const res = NextResponse.json({ data: { id: String(created._id) } }, { status: 201 });
+    const res = NextResponse.json(
+      { data: { id: String(created._id), isAdmin: isAdminEmail(created.email) } },
+      { status: 201 }
+    );
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

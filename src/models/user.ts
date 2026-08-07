@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { randomUUID } from "crypto";
 
 const AddressSchema = new mongoose.Schema(
   {
@@ -43,7 +44,7 @@ const AuditSchema = new mongoose.Schema(
     action: { type: String },
     IPAddress: { type: String, trim: true },
     Device: { type: String, trim: true },
-    by: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     at: { type: Date, default: Date.now },
   },
   { _id: false }
@@ -52,7 +53,7 @@ const AuditSchema = new mongoose.Schema(
 const ReportSchema = new mongoose.Schema(
   {
     reason: { type: String, trim: true },
-    by: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     at: { type: Date, default: Date.now },
   },
   { _id: false }
@@ -60,6 +61,17 @@ const ReportSchema = new mongoose.Schema(
 
 const UserSchema = new mongoose.Schema(
   {
+    // Internal-only stable identifier — never selected by default (`select:
+    // false`), so every existing query/lean read across the app (none of
+    // which ask for it) keeps excluding it automatically; only a query that
+    // explicitly opts in with `.select("+uuid")` will ever see it. Not the
+    // same as `userId` below (the sequential, user-facing @handle) or Mongo's
+    // own `_id` (already returned to clients in several places, e.g.
+    // getCurrentUser/getPublicProfile `id`) — this exists specifically so an
+    // opaque, non-enumerable, non-public identifier is available for
+    // internal/cross-system use without ever reaching the client.
+    uuid: { type: String, required: true, unique: true, default: randomUUID, select: false },
+
     // incremental public ID
     userId: { type: String, required: true, unique: true },
 
@@ -115,16 +127,22 @@ const UserSchema = new mongoose.Schema(
     // see july16 register/login journey) never set this.
     password: { type: String },
 
-    role: { type: String, required: true },
+    // Self-declared, user-editable "how I participate in the marketplace"
+    // identity (individual/business/agency/other, or the first pick from
+    // the multi-select roles[] below) — shown as a public badge, zero
+    // permission implications. Deliberately NOT named `role` so it can
+    // never be mistaken for (or wired into) an access-level check — real
+    // admin access is a fixed verified-email allowlist, see lib/admin.ts.
+    publicRole: { type: String, required: true },
 
     roleTitle: { type: String, trim: true },
     roleDescription: { type: String, trim: true },
 
     // Additive — from the july16 multi-select RoleStep (config/roles.ts).
-    // `role` above stays the single required string used elsewhere in the
-    // app for permissions (set to the first selected role, or the
-    // implicit BASE_ROLE "individual" default); these hold the full
-    // multi-select picture alongside it.
+    // `publicRole` above stays the single required string used elsewhere in
+    // the app for display (set to the first selected role, or the implicit
+    // BASE_ROLE "individual" default); these hold the full multi-select
+    // picture alongside it.
     roles: { type: [String], default: [] },
     roleSpecialties: { type: mongoose.Schema.Types.Mixed, default: {} },
     customRole: { type: String, trim: true },
@@ -167,7 +185,7 @@ const UserSchema = new mongoose.Schema(
     },
 
     reportClearedAt: Date,
-    reportClearedBy: { type: mongoose.Schema.Types.ObjectId, ref: "AdminUser" },
+    reportClearedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
     // audit history
     audit: {
@@ -185,7 +203,7 @@ deleteFeedback: { type: String, trim: true },
 // reused for re-registration. This snapshot is never selected by any
 // public/user-facing read path (getCurrentUser, getPublicProfile,
 // conversation populates, etc. all use explicit field allowlists) — only
-// la-dev's deleted-users lookup reads it.
+// dev-tools's deleted-users lookup reads it.
 deletedIdentitySnapshot: {
   email: { type: String, trim: true },
   primaryNumber: { type: String, trim: true },

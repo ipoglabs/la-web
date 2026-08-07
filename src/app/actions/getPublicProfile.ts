@@ -74,7 +74,7 @@ export async function getPublicProfileByHandle(
     accountStatus: "Active",
   })
     .select(
-      "userId fullName image role roleTitle roleDescription roles roleSpecialties customRole locality address isEmailVerified isPrimaryNumberVerified createdAt"
+      "userId fullName image publicRole roleTitle roleDescription roles roleSpecialties customRole locality address isEmailVerified isPrimaryNumberVerified createdAt"
     )
     .lean();
 
@@ -85,7 +85,7 @@ export async function getPublicProfileByHandle(
     userId: user.userId,
     fullName: user.fullName,
     image: user.image,
-    role: user.role,
+    publicRole: user.publicRole,
     isEmailVerified: user.isEmailVerified,
     isPrimaryNumberVerified: user.isPrimaryNumberVerified,
     createdAt: user.createdAt,

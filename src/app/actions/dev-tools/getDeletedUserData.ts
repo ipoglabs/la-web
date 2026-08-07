@@ -4,7 +4,7 @@ import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import Post from "@/models/post";
 import Conversation from "@/models/Conversation";
-import type { LaDevDeletedUserData } from "./types";
+import type { DevToolsDeletedUserData } from "./types";
 
 type PostLean = {
   _id: unknown;
@@ -30,12 +30,12 @@ type ConversationLean = {
 
 /**
  * Listings + conversations belonging to a deleted user — admin-only lookup,
- * see src/app/la-dev/page.tsx. Unlike every public/user-facing read path,
+ * see src/app/dev-tools/page.tsx. Unlike every public/user-facing read path,
  * this deliberately does NOT filter Post by status: "active" — the whole
  * point is to see the listing as it originally was, including the
  * status: "deleted" flip softDeleteAccount applies on account deletion.
  */
-export async function getDeletedUserData(userId: string): Promise<LaDevDeletedUserData> {
+export async function getDeletedUserData(userId: string): Promise<DevToolsDeletedUserData> {
   if (!Types.ObjectId.isValid(userId)) return { listings: [], conversations: [] };
   await dbConnect();
 

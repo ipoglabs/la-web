@@ -106,7 +106,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
         name: displayName,
         initials: getInitials(displayName) || "?",
         avatarUrl: apiUser.image || undefined,
-        role: apiUser.role === "admin" ? "admin" : "member",
+        role: apiUser.isAdmin ? "admin" : "member",
         status: "online",
       });
     } catch {

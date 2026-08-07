@@ -4,6 +4,7 @@ import connectDB from "@/config/database";
 import { Types } from "mongoose";
 import Post from "@/models/post";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
+import { publicPostFilter } from "@/lib/postVisibility";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import type { Listing } from "@/types/listing";
 import type { CountryCode } from "@/config";
@@ -43,9 +44,8 @@ function resolveSubcategoryId(catId: string, raw: string): string {
  * listings/[listingId]/page.tsx can try this first and fall back to the
  * mock resolver with minimal branching.
  *
- * Returns null for anything not meant to be publicly visible (see the
- * status filter note in getFeaturedListings.ts — same reasoning applies
- * here: no moderation step exists yet, so "pending" counts as visible).
+ * Returns null for anything not meant to be publicly visible (pending
+ * approval, rejected, or suspended — see lib/postVisibility.ts).
  */
 export async function resolvePostListingContext(publicId: string): Promise<{
   listing: Listing;
@@ -62,11 +62,11 @@ export async function resolvePostListingContext(publicId: string): Promise<{
 
   const post = await Post.findOne({
     ...query,
-    status: { $nin: ["off", "expired", "deleted"] },
+    ...publicPostFilter(),
   })
     .populate<{ ownerId: LeanOwner | null }>(
       "ownerId",
-      "userId fullName image role isEmailVerified isPrimaryNumberVerified createdAt"
+      "userId fullName image publicRole isEmailVerified isPrimaryNumberVerified createdAt"
     )
     .lean();
 

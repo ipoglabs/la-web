@@ -113,16 +113,21 @@ account-scoped query a real user or the public can trigger.
 
 ## What's intentionally out of scope
 
-- **No admin UI** — no `AdminUser` model or admin dashboard exists yet in
-  this codebase (only schema fields that reference one). "Admin visibility"
-  today means the data isn't hard-deleted and stays queryable directly, not
-  that a page exists to browse it.
-- **`la-dev`'s `hardDeleteUser`** (`src/app/actions/la-dev/hardDeleteUser.ts`)
-  is a separate, Basic-Auth-gated dev tool that actually removes the Mongo
-  document — used only to unblock re-registration during manual testing. It
-  is deliberately **not** merged with or reused by the real deletion flow
-  above; they solve different problems (test cleanup vs. real user
-  privacy/data-retention semantics) and should stay decoupled.
+- **No admin UI for *this* flow** — `/admin` (Posts, Reports, Users) exists,
+  but nothing there browses soft-deleted accounts specifically; "admin
+  visibility" for this flow today still just means the data isn't
+  hard-deleted and stays queryable directly, not that a page exists to
+  browse it (`/dev-tools` → Deleted users is the only UI that does, and it's
+  a Basic-Auth-gated dev tool, not a production admin feature).
+- **`admin/hardDeleteUser`** (`src/app/actions/admin/hardDeleteUser.ts`) is a
+  separate, real-admin-session-gated tool that actually removes the Mongo
+  document — used only to unblock re-registration during manual testing.
+  (Moved out of `/dev-tools`, formerly `/la-dev`, on 2026-08-07 — a
+  destructive, irreversible action warranted the real per-admin session gate
+  over shared Basic Auth.) It is deliberately **not** merged with or reused
+  by the real deletion flow above; they solve different problems (test
+  cleanup vs. real user privacy/data-retention semantics) and should stay
+  decoupled.
 - **`seller_info`** embedded on old `Post` documents (a name/phone/email
   snapshot taken at posting time) is not separately scrubbed — it's moot
   since those posts are `status: "deleted"` and invisible everywhere.

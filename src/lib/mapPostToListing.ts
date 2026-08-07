@@ -9,7 +9,7 @@ export type LeanOwner = {
   userId?: string;
   fullName?: string;
   image?: string;
-  role?: string;
+  publicRole?: string;
   isEmailVerified?: boolean;
   isPrimaryNumberVerified?: boolean;
   createdAt?: Date;
@@ -95,7 +95,7 @@ export function mapPostToListing(post: LeanPost, ownerUser?: LeanOwner | null): 
     detailsLabel: resolveDetailsLabel(post),
     locationLabel: post.location?.address ?? "",
     postedAt: new Date(post.createdAt ?? Date.now()).toISOString(),
-    status: mapStatus(post.status),
+    status: mapStatus(post.status, post.isSuspended),
     description: sanitizeDescriptionToHtml(post.description ?? ""),
     keyDetails: buildKeyDetails(post),
     goodToKnow: buildGoodToKnow(post, sellerName),
@@ -111,7 +111,7 @@ export function mapPostToListing(post: LeanPost, ownerUser?: LeanOwner | null): 
       // has no separate `handle` field).
       handle: ownerUser?.userId,
       name: sellerName,
-      role: ownerUser?.role ? ownerUser.role[0].toUpperCase() + ownerUser.role.slice(1) : "Individual",
+      role: ownerUser?.publicRole ? ownerUser.publicRole[0].toUpperCase() + ownerUser.publicRole.slice(1) : "Individual",
       location: post.location?.address ?? "",
       tagline: "LokalAds member",
       memberSince: String(new Date(ownerUser?.createdAt ?? post.createdAt ?? Date.now()).getFullYear()),

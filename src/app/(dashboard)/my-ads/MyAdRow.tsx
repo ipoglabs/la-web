@@ -114,21 +114,37 @@ export default function MyAdRow({
       </div>
 
       <div className="flex items-center gap-3">
-        <span
-          className={`px-3 py-1 rounded-full text-sm font-medium ${
-            row.status === "active"
-              ? "bg-green-100 text-green-700"
+        <div className="flex flex-col items-end gap-1">
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-medium ${
+              row.isSuspended
+                ? "bg-red-100 text-red-700"
+                : row.status === "active"
+                ? "bg-green-100 text-green-700"
+                : row.status === "pending"
+                ? "bg-yellow-100 text-yellow-700"
+                : row.status === "rejected"
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {row.isSuspended
+              ? "Blocked"
               : row.status === "pending"
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {row.status === "pending"
-            ? "Waiting for approval..."
-            : row.status}
-        </span>
+              ? "Waiting for approval..."
+              : row.status === "rejected"
+              ? "Rejected"
+              : row.status}
+          </span>
 
-        {row.status === "active" && (
+          {row.status === "rejected" && row.rejectionReason && (
+            <span className="text-sm text-slate-500 text-right max-w-48">
+              {row.rejectionReason}
+            </span>
+          )}
+        </div>
+
+        {row.status === "active" && !row.isSuspended && (
           <button
             onClick={handleBump}
             disabled={pending}

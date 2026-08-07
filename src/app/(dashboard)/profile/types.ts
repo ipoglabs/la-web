@@ -77,7 +77,10 @@ export type ProfileUser = {
   primaryNumber: string;
   secondaryNumber1: string;
   secondaryNumber2: string;
-  role: string;
+  publicRole: string;
+  // Real admin-panel access, derived server-side from a fixed verified-email
+  // allowlist (lib/admin.ts) — NOT from `publicRole` above (see that file for why).
+  isAdmin: boolean;
   roleTitle: string;
   roleDescription: string;
   // Raw DB values for the multi-select "Roles" editor (config/roles.ts) —

@@ -2,7 +2,7 @@
 
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
-import type { LaDevDeletedUser } from "./types";
+import type { DevToolsDeletedUser } from "./types";
 
 type DeletedUserLean = {
   _id: unknown;
@@ -18,12 +18,12 @@ type DeletedUserLean = {
 
 /**
  * Deleted (anonymized) accounts, newest-deleted first — Basic-Auth gated,
- * see src/app/la-dev/page.tsx. Their email/phone/name are already scrubbed
+ * see src/app/dev-tools/page.tsx. Their email/phone/name are already scrubbed
  * (see softDeleteAccount, src/app/actions/profile/deleteAccount.ts) — this
  * is a read-only view onto what's left (userId, audit trail, deletion
  * metadata) plus their listings/chat history via getDeletedUserData.
  */
-export async function listDeletedUsers(): Promise<LaDevDeletedUser[]> {
+export async function listDeletedUsers(): Promise<DevToolsDeletedUser[]> {
   await dbConnect();
 
   const users = await User.find({ isDeleted: true })

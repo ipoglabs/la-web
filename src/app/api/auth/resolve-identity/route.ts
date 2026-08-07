@@ -6,6 +6,7 @@ import { verifyIdentityProof } from "@/lib/auth-proof";
 import { normalizeTarget } from "@/lib/otpUtils";
 import { createUserSession } from "@/lib/userSession";
 import { logActivity } from "@/lib/activityLog";
+import { isAdminEmail } from "@/lib/admin";
 
 const COOKIE_NAME = "session";
 const UINFO_COOKIE_NAME = "uinfo";
@@ -71,11 +72,11 @@ export async function POST(req: Request) {
       userId: String(user._id),
       email: user.email,
       primaryNumber: user.primaryNumber,
-      role: user.role ?? "user",
+      publicRole: user.publicRole ?? "user",
       sid,
     });
 
-    const res = NextResponse.json({ data: { matched: true } });
+    const res = NextResponse.json({ data: { matched: true, isAdmin: isAdminEmail(user.email) } });
 
     res.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,

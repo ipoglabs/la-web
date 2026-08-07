@@ -31,8 +31,11 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import AdReport from "@/components/report-ad/model";
 import { getSession } from "@/lib/session";
+import { reviewReport } from "@/lib/moderation";
 
-const VALID_STATUSES = ["pending", "reviewed", "actioned", "dismissed"] as const;
+// "pending" is a report's starting state, not a decision an admin makes —
+// review only ever moves it forward to one of these three.
+const VALID_STATUSES = ["reviewed", "actioned", "dismissed"] as const;
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
@@ -100,19 +103,19 @@ export async function PATCH(
 
     await dbConnect();
 
-    const report = await AdReport.findOneAndUpdate(
-      { ticketId },
-      {
-        status:     body.status,
+    let report;
+    try {
+      report = await reviewReport({
+        ticketId,
+        decision: body.status,
         resolution: body.resolution ?? null,
-        reviewedAt: new Date(),
-        reviewedBy: session.id,
-      },
-      { new: true, select: "ticketId status reviewedAt" },
-    );
-
-    if (!report) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+        adminId: session.id,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.message === "report_not_found") {
+        return NextResponse.json({ error: "not_found" }, { status: 404 });
+      }
+      throw err;
     }
 
     return NextResponse.json({

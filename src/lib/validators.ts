@@ -86,13 +86,13 @@ export const profileSchema = z
         "Must include a special character"
       ),
 
-    role: z.enum(["individual", "business", "agency", "other"]),
+    publicRole: z.enum(["individual", "business", "agency", "other"]),
 
     roleTitle: optionalString,
     roleDescription: optionalString,
   })
   .superRefine((data, ctx) => {
-    if (data.role === "other") {
+    if (data.publicRole === "other") {
       const title = data.roleTitle?.trim() || "";
       const desc = data.roleDescription?.trim() || "";
 

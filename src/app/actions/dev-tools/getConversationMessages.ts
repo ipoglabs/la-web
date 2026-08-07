@@ -3,7 +3,7 @@
 import { Types } from "mongoose";
 import dbConnect from "@/lib/db";
 import Message from "@/models/Message";
-import type { LaDevConversationMessage } from "./types";
+import type { DevToolsConversationMessage } from "./types";
 
 type PopulatedSender = { _id: Types.ObjectId; fullName?: string } | Types.ObjectId;
 
@@ -15,7 +15,7 @@ type MessageLean = {
 };
 
 /** Full message thread for one conversation — admin-only lookup, see getDeletedUserData.ts. */
-export async function getConversationMessages(conversationId: string): Promise<LaDevConversationMessage[]> {
+export async function getConversationMessages(conversationId: string): Promise<DevToolsConversationMessage[]> {
   if (!Types.ObjectId.isValid(conversationId)) return [];
   await dbConnect();
 

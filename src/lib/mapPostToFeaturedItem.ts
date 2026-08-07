@@ -5,12 +5,15 @@ import { COUNTRY_CONFIGS, type CountryCode } from "@/config";
 
 export type LeanPost = IPost & { _id: unknown };
 
-export function mapStatus(status?: IPost["status"]): ListingStatus {
+export function mapStatus(status?: IPost["status"], isSuspended?: boolean): ListingStatus {
+  if (isSuspended) return "blocked";
   switch (status) {
     case "off":
       return "off-market";
     case "pending":
       return "pending";
+    case "rejected":
+      return "rejected";
     case "expired":
       return "expired";
     case "deleted":
@@ -89,6 +92,6 @@ export function mapPostToFeaturedItem(post: LeanPost): FeaturedListingItem {
     detailsLabel: resolveDetailsLabel(post),
     locationLabel: post.location?.address ?? "",
     postedAt: post.createdAt ?? new Date(),
-    status: mapStatus(post.status),
+    status: mapStatus(post.status, post.isSuspended),
   };
 }

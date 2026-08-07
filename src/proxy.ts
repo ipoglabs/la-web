@@ -36,7 +36,7 @@ function getUrlCountryCode(pathname: string): CountryCode | null {
  * rejected (fail closed) rather than silently accepting a well-known
  * dev/dev123-style default that would also work in production.
  * ───────────────────────────────────────────────────────────────────────── */
-const INTERNAL_PREFIXES = ["/design-system", "/snippets", "/la-dev"];
+const INTERNAL_PREFIXES = ["/design-system", "/snippets", "/dev-tools"];
 
 function requiresAuth(pathname: string): boolean {
   return INTERNAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -110,7 +110,7 @@ function isObsoleteUA(ua: string): boolean {
 
 // Routes that render with their own full-page layout — no AppHeader/AppFooter.
 // Defined at module level so both the auth check and the bare-layout block can use it.
-const BARE_LAYOUT_ROUTES = ["/unsupported", "/design-system", "/snippets", "/la-dev"];
+const BARE_LAYOUT_ROUTES = ["/unsupported", "/design-system", "/snippets", "/dev-tools"];
 
 function isBareLayoutRoute(pathname: string): boolean {
   return BARE_LAYOUT_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));

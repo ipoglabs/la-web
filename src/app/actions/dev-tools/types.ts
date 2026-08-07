@@ -1,4 +1,4 @@
-export interface LaDevUser {
+export interface DevToolsUser {
   id: string;
   userId: string;
   fullName: string;
@@ -15,7 +15,7 @@ export interface LaDevUser {
   createdAt: string;
 }
 
-export interface LaDevDeletedUser {
+export interface DevToolsDeletedUser {
   id: string;
   userId: string;
   fullName: string;
@@ -29,7 +29,7 @@ export interface LaDevDeletedUser {
   originalFullName?: string;
 }
 
-export interface LaDevDeletedUserListing {
+export interface DevToolsDeletedUserListing {
   id: string;
   adsId?: string;
   name: string;
@@ -40,7 +40,7 @@ export interface LaDevDeletedUserListing {
   createdAt: string;
 }
 
-export interface LaDevDeletedUserConversation {
+export interface DevToolsDeletedUserConversation {
   id: string;
   adId: string;
   adTitle: string;
@@ -49,12 +49,12 @@ export interface LaDevDeletedUserConversation {
   lastMessageAt: string;
 }
 
-export interface LaDevDeletedUserData {
-  listings: LaDevDeletedUserListing[];
-  conversations: LaDevDeletedUserConversation[];
+export interface DevToolsDeletedUserData {
+  listings: DevToolsDeletedUserListing[];
+  conversations: DevToolsDeletedUserConversation[];
 }
 
-export interface LaDevConversationMessage {
+export interface DevToolsConversationMessage {
   id: string;
   senderId: string;
   senderName: string;

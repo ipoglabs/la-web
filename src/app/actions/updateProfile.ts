@@ -91,11 +91,11 @@ export async function updateProfile(payload: any) {
     }
   }
 
-  /* ================= ROLE ================= */
-  if (payload.role !== undefined) {
-    if (!payload.role) throw new Error("Role is required");
+  /* ================= PUBLIC ROLE ================= */
+  if (payload.publicRole !== undefined) {
+    if (!payload.publicRole) throw new Error("Role is required");
 
-    if (payload.role === "other") {
+    if (payload.publicRole === "other") {
       const title = payload.roleTitle?.trim();
       const desc = payload.roleDescription?.trim();
 
@@ -107,31 +107,31 @@ export async function updateProfile(payload: any) {
         throw new Error("Invalid role description");
       }
 
-      if (user.role !== title || user.roleDescription !== desc) {
+      if (user.publicRole !== title || user.roleDescription !== desc) {
         changes.push({
           field: "Role",
-          oldValue: user.role || "-",
+          oldValue: user.publicRole || "-",
           newValue: title,
         });
 
-        user.role = title;
+        user.publicRole = title;
         user.roleTitle = title;
         user.roleDescription = desc;
       }
 
     } else {
-      if (!PREDEFINED_ROLES.includes(payload.role)) {
+      if (!PREDEFINED_ROLES.includes(payload.publicRole)) {
         throw new Error("Invalid role");
       }
 
-      if (user.role !== payload.role) {
+      if (user.publicRole !== payload.publicRole) {
         changes.push({
           field: "Role",
-          oldValue: user.role || "-",
-          newValue: payload.role,
+          oldValue: user.publicRole || "-",
+          newValue: payload.publicRole,
         });
 
-        user.role = payload.role;
+        user.publicRole = payload.publicRole;
         user.roleTitle = "";
         user.roleDescription = "";
       }
@@ -139,7 +139,7 @@ export async function updateProfile(payload: any) {
   }
 
   /* ================= MULTI-SELECT ROLES (Profile page RolesEditor) =================
-   * Separate from the legacy `payload.role` ("individual"/"business"/"agency"/"other")
+   * Separate from the legacy `payload.publicRole` ("individual"/"business"/"agency"/"other")
    * block above — this is config/roles.ts's 12-option multi-select + custom
    * role, mirroring exactly how registration persists them
    * (see api/auth/complete-profile/route.ts). Never trust client-supplied
@@ -169,16 +169,16 @@ export async function updateProfile(payload: any) {
       }
     }
 
-    // Mirrors complete-profile/route.ts: `role` stays the single required
-    // string used elsewhere for permissions — set to the first selected role
-    // (or the implicit BASE_ROLE "individual" default).
+    // Mirrors complete-profile/route.ts: `publicRole` stays the single
+    // required display string — set to the first selected role (or the
+    // implicit BASE_ROLE "individual" default).
     const primaryRole = (roleIds as string[])[0] ?? BASE_ROLE.id;
 
-    if (user.role !== primaryRole) {
-      changes.push({ field: "Role", oldValue: user.role || "-", newValue: primaryRole });
+    if (user.publicRole !== primaryRole) {
+      changes.push({ field: "Role", oldValue: user.publicRole || "-", newValue: primaryRole });
     }
 
-    user.role = primaryRole;
+    user.publicRole = primaryRole;
     user.roles = roleIds;
     user.roleSpecialties = cleanSpecialties;
     user.customRole = customRole || undefined;

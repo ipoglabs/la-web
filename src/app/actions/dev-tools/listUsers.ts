@@ -2,10 +2,10 @@
 
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
-import type { LaDevUser } from "./types";
+import type { DevToolsUser } from "./types";
 
-/** All users, newest first — Basic-Auth gated, see src/app/la-dev/page.tsx. */
-export async function listUsers(): Promise<LaDevUser[]> {
+/** All users, newest first — Basic-Auth gated, see src/app/dev-tools/page.tsx. */
+export async function listUsers(): Promise<DevToolsUser[]> {
   await dbConnect();
 
   const users = await User.find({}).sort({ createdAt: -1 });

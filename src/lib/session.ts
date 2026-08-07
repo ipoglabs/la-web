@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import type { AuthUser } from "@/types/auth";
 import { verifyToken } from "@/lib/auth";
 import { isSessionRevoked } from "@/lib/userSession";
+import { isAdminEmail } from "@/lib/admin";
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
 
@@ -34,7 +35,7 @@ export async function getSession(): Promise<AuthUser | null> {
   if (await isSessionRevoked(payload.sid, userId)) return null;
 
   const user: any = await User.findById(userId)
-    .select("fullName image role isDeleted isSuspended accountStatus")
+    .select("fullName image email isDeleted isSuspended accountStatus")
     .lean();
 
   if (
@@ -54,7 +55,7 @@ export async function getSession(): Promise<AuthUser | null> {
     name,
     initials: getInitials(name),
     avatarUrl: user.image || undefined,
-    role: user.role === "admin" ? "admin" : "member",
+    role: isAdminEmail(user.email) ? "admin" : "member",
     status: "online",
   } satisfies AuthUser;
 }

@@ -40,7 +40,7 @@ export async function getMyPosts({ ownerId, email }: Params = {}) {
 
   const rows = await Post.find(query)
     .sort({ updatedAt: -1 })
-    .select("name category subcategory status images updatedAt lastBumpedAt")
+    .select("name category subcategory status rejectionReason isSuspended images updatedAt lastBumpedAt")
     .limit(100)
     .lean();
 
@@ -50,6 +50,8 @@ export async function getMyPosts({ ownerId, email }: Params = {}) {
     category: r.category,
     subcategory: r.subcategory,
     status: r.status ?? "pending",
+    rejectionReason: r.rejectionReason ?? null,
+    isSuspended: Boolean(r.isSuspended),
     images: Array.isArray(r.images) ? r.images : [],
     updatedAt: r.updatedAt?.toISOString?.() || null,
     lastBumpedAt: r.lastBumpedAt?.toISOString?.() || null,

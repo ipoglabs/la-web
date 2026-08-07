@@ -81,7 +81,6 @@ import { BasicInfoEditor, formatDobLabel, getInitials } from "./BasicInfoEditor"
 import { RolesEditor, formatRoleBadge } from "./RolesEditor";
 import { ResidenceEditor } from "./ResidenceEditor";
 import { SavedLocationSection } from "./SavedLocationSection";
-import { ChangePasswordEditor } from "./ChangePasswordEditor";
 import {
   NotificationsEditor,
   NOTIFICATION_PREF_KEYS,
@@ -172,7 +171,6 @@ export function ProfilePageScreen({
   const [revokeOthersLoading, setRevokeOthersLoading] = useState(false);
 
   // Account Settings
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [notificationsEditorOpen, setNotificationsEditorOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationPrefs>({
     newMessages: true,
@@ -209,7 +207,7 @@ export function ProfilePageScreen({
   );
   const [customRole, setCustomRole] = useState<string | null>(
     user.customRole ||
-      (user.role && !["individual", "business", "agency"].includes(user.role) ? user.role : null)
+      (user.publicRole && !["individual", "business", "agency"].includes(user.publicRole) ? user.publicRole : null)
   );
   const [contact, setContact] = useState<ContactValues>({
     email: user.email,
@@ -847,7 +845,6 @@ export function ProfilePageScreen({
           {/* ── Section 8: Account Settings ── */}
           <div className={mode === "account-settings" ? "" : "hidden"}>
           <Section label="Account Settings">
-            <SettingsRow label="Change Password" onClick={() => setChangePasswordOpen(true)} />
             <SettingsRow
               label="Notifications"
               subtitle={`${notificationsOnCount} of ${NOTIFICATION_PREF_KEYS.length} on`}
@@ -1021,9 +1018,6 @@ export function ProfilePageScreen({
           }}
           primaryLocation={primaryLocation}
         />
-      )}
-      {changePasswordOpen && (
-        <ChangePasswordEditor open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
       )}
       {notificationsEditorOpen && (
         <NotificationsEditor

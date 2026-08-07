@@ -28,7 +28,8 @@ export interface IPost {
   adsId?: string;
 
   /** NEW: lifecycle fields */
-  status?: "pending" | "active" | "off" | "expired" | "deleted";
+  status?: "pending" | "active" | "rejected" | "off" | "expired" | "deleted";
+  rejectionReason?: string;
   expiresAt?: Date;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -230,10 +231,11 @@ const PostSchema = new Schema<IPost>(
     adsId: { type: String, unique: true, index: true }, 
     status: {
       type: String,
-      enum: ["pending", "active", "off", "expired", "deleted"],
+      enum: ["pending", "active", "rejected", "off", "expired", "deleted"],
       default: "pending",
       index: true,
     },
+    rejectionReason: { type: String },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
@@ -415,7 +417,7 @@ const PostSchema = new Schema<IPost>(
 
         by: {
           type: Schema.Types.ObjectId,
-          ref: "AdminUser",
+          ref: "User",
         },
 
         at: {
@@ -429,7 +431,7 @@ const PostSchema = new Schema<IPost>(
 
     reportedBy: {
       type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+      ref: "User",
     },
 
     isSuspended: {
@@ -442,7 +444,7 @@ const PostSchema = new Schema<IPost>(
 
     suspendedBy: {
       type: Schema.Types.ObjectId,
-      ref: "AdminUser",
+      ref: "User",
     },
 
   },

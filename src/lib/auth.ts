@@ -16,7 +16,11 @@ export type SessionPayload = {
   userId: string;
   id?: string;
   email?: string;
-  role?: string;
+  // Self-declared "how I participate" identity carried in the JWT purely for
+  // display convenience — never a permission claim. Real admin access is
+  // decided server-side per-request against a fixed allowlist, never trusted
+  // from a token. See lib/admin.ts.
+  publicRole?: string;
   username?: string;
   primaryNumber?: string;
   sub?: string;

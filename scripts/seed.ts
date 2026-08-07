@@ -35,7 +35,7 @@ async function seed() {
     primaryNumber: "+447700900001",
     isPrimaryNumberVerified: true,
     password: hashedPassword,
-    role: "individual", // guessed — confirm against your real role enum
+    publicRole: "individual", // guessed — confirm against your real role enum
     provider: "credentials",
     accountStatus: "Active",
     isNewUser: false,
@@ -55,7 +55,7 @@ async function seed() {
     primaryNumber: "+447700900002",
     isPrimaryNumberVerified: true,
     password: hashedPassword,
-    role: "agency", // matches the real example document you shared
+    publicRole: "agency", // matches the real example document you shared
     provider: "credentials",
     accountStatus: "Active",
     isNewUser: false,
@@ -76,7 +76,7 @@ async function seed() {
     primaryNumber: "+447700900003",
     isPrimaryNumberVerified: false,
     password: hashedPassword,
-    role: "individual",
+    publicRole: "individual",
     provider: "credentials",
     accountStatus: "Active",
     isNewUser: false,
@@ -123,7 +123,7 @@ async function seed() {
       seller: {
         userId: dave._id,
         fullName: dave.fullName,
-        role: dave.role,
+        role: dave.publicRole,
         locality: dave.locality,
         image: dave.image,
         isEmailVerified: dave.isEmailVerified,
@@ -164,7 +164,7 @@ async function seed() {
       seller: {
         userId: apex._id,
         fullName: apex.fullName,
-        role: apex.role,
+        role: apex.publicRole,
         locality: apex.locality,
         image: apex.image,
         isEmailVerified: apex.isEmailVerified,
@@ -206,7 +206,7 @@ async function seed() {
       seller: {
         userId: alice._id,
         fullName: alice.fullName,
-        role: alice.role,
+        role: alice.publicRole,
         locality: alice.locality,
         image: alice.image,
         isEmailVerified: alice.isEmailVerified,

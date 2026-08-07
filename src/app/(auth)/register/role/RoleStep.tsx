@@ -203,13 +203,16 @@ export function RoleStep() {
         const body = await res.json().catch(() => null);
         throw new Error(body?.error || `complete-profile failed (${res.status})`);
       }
+      const { data } = (await res.json()) as { data: { id: string; isAdmin?: boolean } };
       leavingRef.current = true;
       setRoles(finalRoleIds, finalSpecialties, finalCustomRole);
       const firstName = fullName.trim().split(/\s+/)[0] || "there";
       toast.success(`Welcome, ${firstName}! Your account is ready.`);
       await celebrate();
       reset();
-      router.push(searchParams.get("redirect") || "/");
+      // The admin account always lands on /admin, ignoring any ?redirect= —
+      // see lib/admin.ts for how "admin" is decided.
+      router.push(data.isAdmin ? "/admin" : searchParams.get("redirect") || "/");
       // router.push() alone does not re-run the root layout Server Component,
       // so AppHeader's server-seeded `user` prop would stay stale (logged
       // out) even though complete-profile already set the session cookie —

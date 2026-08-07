@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       userId: String(user._id),
       email: user.email,
       primaryNumber: user.primaryNumber,
-      role: user.role ?? "user",
+      publicRole: user.publicRole ?? "user",
       sid,
     });
 
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
           id: String(user._id),
           email: user.email,
           fullName: user.fullName,
-          role: user.role ?? "user",
+          publicRole: user.publicRole ?? "user",
           primaryNumber: user.primaryNumber,
           locality: user.locality,
         },

@@ -39,7 +39,7 @@ export const basicProfileSchema = z
         message: "You must be 18 or older",
       }),
 
-    role: z.enum(["individual", "business", "agency", "other"] as const, {
+    publicRole: z.enum(["individual", "business", "agency", "other"] as const, {
       error: "Please select a role.",
     }),
 
@@ -47,7 +47,7 @@ export const basicProfileSchema = z
     roleDescription: optionalString,
   })
   .superRefine((data, ctx) => {
-    if (data.role === "other") {
+    if (data.publicRole === "other") {
       const title = data.roleTitle?.trim() || "";
       const desc = data.roleDescription?.trim() || "";
 

@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LaCard, LaBadge, LaInput, LaButton, LaSkeleton } from "@/components/la";
-import { listDeletedUsers } from "@/app/actions/la-dev/listDeletedUsers";
-import { getDeletedUserData } from "@/app/actions/la-dev/getDeletedUserData";
-import { getConversationMessages } from "@/app/actions/la-dev/getConversationMessages";
+import { listDeletedUsers } from "@/app/actions/dev-tools/listDeletedUsers";
+import { getDeletedUserData } from "@/app/actions/dev-tools/getDeletedUserData";
+import { getConversationMessages } from "@/app/actions/dev-tools/getConversationMessages";
 import type {
-  LaDevDeletedUser,
-  LaDevDeletedUserData,
-  LaDevConversationMessage,
-} from "@/app/actions/la-dev/types";
+  DevToolsDeletedUser,
+  DevToolsDeletedUserData,
+  DevToolsConversationMessage,
+} from "@/app/actions/dev-tools/types";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -29,13 +29,13 @@ const statusIntent: Record<string, "success" | "warning" | "danger" | "neutral">
 };
 
 export default function DeletedUsersPanel() {
-  const [users, setUsers] = useState<LaDevDeletedUser[] | null>(null);
+  const [users, setUsers] = useState<DevToolsDeletedUser[] | null>(null);
   const [filter, setFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [data, setData] = useState<LaDevDeletedUserData | null>(null);
+  const [data, setData] = useState<DevToolsDeletedUserData | null>(null);
   const [loadingData, setLoadingData] = useState(false);
   const [openConvoId, setOpenConvoId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<LaDevConversationMessage[] | null>(null);
+  const [messages, setMessages] = useState<DevToolsConversationMessage[] | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   useEffect(() => {

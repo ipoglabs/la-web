@@ -1,4 +1,4 @@
-// Temporary — seeds one deleted user + listing + chat for a la-dev UI smoke test.
+// Temporary — seeds one deleted user + listing + chat for a dev-tools UI smoke test.
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
 import User from "../src/models/user";
@@ -7,7 +7,7 @@ import Conversation from "../src/models/Conversation";
 import Message from "../src/models/Message";
 import fs from "fs";
 
-const TAG = `ladevsmoke${Date.now()}`;
+const TAG = `devtoolssmoke${Date.now()}`;
 
 async function main() {
   await dbConnect();
@@ -17,7 +17,7 @@ async function main() {
     fullName: "Smoke Test Seller",
     dateOfBirth: new Date("1990-01-01"),
     email: `${TAG}-seller@example.com`,
-    role: "individual",
+    publicRole: "individual",
     accountStatus: "Active",
   });
 
@@ -41,7 +41,7 @@ async function main() {
     fullName: "Smoke Test Buyer",
     dateOfBirth: new Date("1992-01-01"),
     email: `${TAG}-buyer@example.com`,
-    role: "individual",
+    publicRole: "individual",
     accountStatus: "Active",
   });
 
@@ -72,9 +72,9 @@ async function main() {
   await Message.create({ conversationId: conversation._id, senderId: buyer._id, text: "Sounds good, see you then!", readBy: [buyer._id] });
 
   const ids = { seller: String(seller._id), buyer: String(buyer._id), post: String(post._id), conversation: String(conversation._id) };
-  fs.writeFileSync("/tmp/la-dev-smoke-ids.json", JSON.stringify(ids, null, 2));
+  fs.writeFileSync("/tmp/dev-tools-smoke-ids.json", JSON.stringify(ids, null, 2));
   console.log("Seeded:", ids);
-  console.log("Open /la-dev, Deleted users tab, look for userId:", `${TAG}-seller`);
+  console.log("Open /dev-tools, Deleted users tab, look for userId:", `${TAG}-seller`);
 
   await mongoose.connection.close();
 }

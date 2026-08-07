@@ -50,14 +50,6 @@ export async function POST(req: Request) {
       postalCode: body.postalCode ? String(body.postalCode).trim() : undefined,
     });
 
-    const audit = stripEmpty({
-      IPAddress:
-        String(req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "").trim() ||
-        undefined,
-      Device: String(req.headers.get("user-agent") || "").trim() || undefined,
-      others: body.auditOthers ? String(body.auditOthers).trim() : undefined,
-    });
-
     const payload = stripEmpty({
       fullName: toNameCase(body.fullName),
       dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : undefined,
@@ -74,7 +66,7 @@ export async function POST(req: Request) {
       secondaryNumber2: body.secondaryNumber2 ? String(body.secondaryNumber2).trim() : undefined,
 
       password: String(body.password || ""),
-      role: String(body.role || "individual").trim(),
+      publicRole: String(body.role || "individual").trim(),
       roleTitle: body.roleTitle ? String(body.roleTitle).trim() : undefined,
       roleDescription: body.roleDescription ? String(body.roleDescription).trim() : undefined,
 
@@ -134,9 +126,9 @@ export async function POST(req: Request) {
       userId,
       password: passwordHash,
 
-      // Save structured address + audit only if present
+      // Save structured address only if present — REGISTERED is logged to
+      // ActivityLog below, not User.audit[] (see models/ActivityLog.ts).
       ...(Object.keys(address).length ? { address } : {}),
-      ...(Object.keys(audit).length ? { audit } : {}),
 
       // status fields
       accountStatus: "Pending",
@@ -171,7 +163,7 @@ export async function POST(req: Request) {
     const token = signJwt({
       userId: String(created._id),
       email: created.email,
-      role: created.role ?? "user",
+      publicRole: created.publicRole ?? "user",
     });
 
     const res = NextResponse.json(
@@ -183,7 +175,7 @@ export async function POST(req: Request) {
           email: created.email,
           fullName: created.fullName,
           primaryNumber: created.primaryNumber,
-          role: created.role ?? "user",
+          publicRole: created.publicRole ?? "user",
           locality: created.locality,
           accountStatus: created.accountStatus,
         },

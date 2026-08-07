@@ -27,8 +27,9 @@ function toDbCategory(mockCategoryId: string): string {
 }
 
 // Mock sellers carry a free-text `role` (275 distinct values — "Property
-// Agent", "Vinyl Records Collector & Seller", …) but the DB's User.role only
-// allows individual | business | agency | other. Best-effort classification —
+// Agent", "Vinyl Records Collector & Seller", …) but the DB's
+// User.publicRole only allows individual | business | agency | other.
+// Best-effort classification —
 // this is display/test data, not a field anything downstream branches on.
 function classifyRole(role: string): "individual" | "business" | "agency" | "other" {
   const r = role.toLowerCase();
@@ -86,7 +87,7 @@ async function main() {
 
   // ── Pass 2: create one User per unique seller ──
   const hashedPassword = await hash("password123", 10);
-  const userIdByName = new Map<string, { _id: unknown; fullName: string; role: string; locality?: string; image?: string; isEmailVerified: boolean; isPrimaryNumberVerified: boolean }>();
+  const userIdByName = new Map<string, { _id: unknown; fullName: string; publicRole: string; locality?: string; image?: string; isEmailVerified: boolean; isPrimaryNumberVerified: boolean }>();
 
   let seq = 0;
   for (const [name, seller] of sellersByName) {
@@ -106,7 +107,7 @@ async function main() {
       primaryNumber: `+999${String(seq).padStart(8, "0")}`,
       isPrimaryNumberVerified: seller.verified,
       password: hashedPassword,
-      role: classifyRole(seller.role),
+      publicRole: classifyRole(seller.role),
       provider: "credentials",
       accountStatus: "Active",
       isNewUser: false,
@@ -118,7 +119,7 @@ async function main() {
     userIdByName.set(name, {
       _id: user._id,
       fullName: user.fullName,
-      role: user.role,
+      publicRole: user.publicRole,
       locality: user.locality,
       image: user.image,
       isEmailVerified: user.isEmailVerified,
@@ -159,7 +160,7 @@ async function main() {
       seller: {
         userId: sellerUser._id,
         fullName: sellerUser.fullName,
-        role: sellerUser.role,
+        role: sellerUser.publicRole,
         locality: sellerUser.locality,
         image: sellerUser.image,
         isEmailVerified: sellerUser.isEmailVerified,

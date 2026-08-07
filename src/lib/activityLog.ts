@@ -11,11 +11,12 @@ import ActivityLog, { type ActivityAction } from "@/models/ActivityLog";
 export async function logActivity(
   userId: string | Types.ObjectId,
   action: ActivityAction,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  actorId?: string | Types.ObjectId
 ): Promise<void> {
   try {
     await dbConnect();
-    await ActivityLog.create({ userId, action, metadata });
+    await ActivityLog.create({ userId, action, metadata, actorId });
   } catch (err) {
     console.error("[logActivity]", action, err);
   }
