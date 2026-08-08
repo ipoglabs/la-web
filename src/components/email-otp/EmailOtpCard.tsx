@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Check, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LaButton } from "@/components/la/la-button";
 import { LaInput as Input } from "@/components/la/la-input";
 import { OtpInput } from "@/components/ui/otp-input";
 import { useResendTimer } from "@/lib/hooks/useResendTimer";
@@ -140,7 +140,7 @@ export function EmailOtpCard({ maskMode = "full" }: Props) {
               <p className="text-sm text-muted-foreground mt-0.5 truncate">{maskEmail(email, maskMode)}</p>
             </div>
           </div>
-          <Button className="w-full" onClick={handleReset}>Done</Button>
+          <LaButton className="w-full" onClick={handleReset}>Done</LaButton>
         </div>
       </div>
     );
@@ -177,7 +177,7 @@ export function EmailOtpCard({ maskMode = "full" }: Props) {
                 />
               </div>
               {emailError && <p className="text-sm text-destructive">{emailError}</p>}
-              <Button className="w-full" onClick={handleSend}>Send code</Button>
+              <LaButton className="w-full" onClick={handleSend}>Send code</LaButton>
             </div>
           </>
         )}

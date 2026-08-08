@@ -5,8 +5,9 @@
  * Weekly digest: runs every Monday at 08:00 — cron: 0 8 monday
  *
  * Targets alerts with frequency matching the given parameter ("daily" | "weekly").
- * Same match logic as alert-match.job.ts, but batched into one ALERT_DIGEST
- * email per user per alert rather than notifying on every individual match.
+ * Same match logic as alert-match.job.ts (findAlertMatches in _utils.ts),
+ * but batched into one ALERT_DIGEST email per user per alert rather than
+ * notifying on every individual match.
  *
  * TODO [scalability]: For large alert collections, replace Alert.find().lean()
  * with cursor-based streaming: Alert.find(...).cursor().eachAsync(fn, { parallel: 10 })
@@ -14,12 +15,10 @@
  */
 
 import dbConnect from "@/lib/db";
-import Alert from "@/lib/models/Alert";
-import Listing from "@/lib/db/models/Listing";
+import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
 import type { JobResult } from "@/lib/jobs/_types";
-import { escapeRegex } from "@/lib/jobs/_utils";
-import mongoose from "mongoose";
+import { findAlertMatches, getAlertRecipientEmail } from "@/lib/jobs/_utils";
 
 const MAX_TRACKED_IDS = 500;
 
@@ -35,30 +34,7 @@ export async function runAlertDigestJob(
 
   for (const alert of alerts) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const query: Record<string, any> = {
-        status: "live",
-        category: alert.category,
-        _id: { $nin: alert.lastMatchedListingIds },
-      };
-
-      if (alert.subCategory) query.subCategory = alert.subCategory;
-      if (alert.location) query.location = { $regex: escapeRegex(alert.location), $options: "i" };
-      if (alert.priceMin !== undefined || alert.priceMax !== undefined) {
-        query.price = {};
-        if (alert.priceMin !== undefined) query.price.$gte = alert.priceMin;
-        if (alert.priceMax !== undefined) query.price.$lte = alert.priceMax;
-      }
-      if (alert.keywords && alert.keywords.length > 0) {
-        // OR logic: any keyword present in title OR description triggers a match
-        const orPattern = alert.keywords.map((k) => escapeRegex(k)).join("|");
-        query.$or = [
-          { title: { $regex: orPattern, $options: "i" } },
-          { description: { $regex: orPattern, $options: "i" } },
-        ];
-      }
-
-      const matches = await Listing.find(query).select("_id title").lean();
+      const matches = await findAlertMatches(alert);
 
       if (matches.length === 0) {
         if (!alert.noMatchSince) {
@@ -68,14 +44,17 @@ export async function runAlertDigestJob(
       }
 
       result.matchesFound += matches.length;
-      const matchIds = matches.map((m) => m._id as mongoose.Types.ObjectId);
+      const matchIds = matches.map((m) => m._id);
 
-      // TODO [auth-integration]: Replace placeholder with real user email lookup:
-      //   const user = await User.findById(alert.userId).select("email").lean();
-      //   if (!user?.email) { result.errors++; continue; }
+      const recipientEmail = await getAlertRecipientEmail(alert.userId);
+      if (!recipientEmail) {
+        result.errors++;
+        continue;
+      }
+
       const emailResult = await sendEmail({
         type: "ALERT_DIGEST",
-        to: `user-${alert.userId}@placeholder.invalid`,
+        to: recipientEmail,
         data: {
           alertName: alert.name,
           count: matches.length,

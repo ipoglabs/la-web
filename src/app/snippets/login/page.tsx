@@ -24,9 +24,11 @@ import { IconGoogle } from "@/components/icons/inline";
 import { toast } from "@/components/ui/sonner";
 
 // ─── INTEGRATION ① — Email / Phone + Password Auth ──────────────────────────
-// Replace with your real auth call:
+// Illustrative only — the real app's login flow is passwordless (OTP/magic
+// link/OAuth via /api/auth/resolve-identity, see (auth)/login/MethodStep.tsx).
+// Replace with your real auth call if you actually need password auth:
 //   Next-Auth  → signIn("credentials", { identifier, password, redirect: false })
-//   Custom API → POST /api/auth/login  { identifier, password }
+//   Custom API → POST to your own credentials endpoint { identifier, password }
 //
 // Expected return shape: { ok: true } | { ok: false; error: string }
 async function mockAuthenticate(

@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { mapPostToFeaturedItem, type FeaturedListingItem } from "@/lib/mapPostToFeaturedItem";
 import { publicPostFilter } from "@/lib/postVisibility";

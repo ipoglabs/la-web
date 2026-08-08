@@ -100,6 +100,8 @@ export interface ReportAdTarget {
   title:        string;
   thumbnail?:   string;   // URL — optional, falls back to placeholder
   sellerName:   string;
+  /** Real Mongo User id of the seller, when known — see models/post.ts's `ownerId`. */
+  sellerId?:    string;
   location:     string;
 }
 
@@ -110,6 +112,7 @@ export interface ReportAdPayload {
   adTitle:      string;
   adThumbnail:  string;
   sellerName:   string;
+  sellerId?:    string;
   location:     string;
 
   issues:       ReportIssue[];

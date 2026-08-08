@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Review from "@/models/review";
 import { getCurrentUser } from "@/app/actions/getCurrentUser";
 

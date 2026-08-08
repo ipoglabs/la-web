@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import { Types } from "mongoose";
 import Post from "@/models/post";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";

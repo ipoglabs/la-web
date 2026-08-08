@@ -5,6 +5,7 @@ import { LaCard, LaBadge, LaButton, LaSkeleton, LaTextarea } from "@/components/
 import { listAllPosts, type AdminPostRow, type AdminStatusFilter } from "@/app/actions/admin/listAllPosts";
 import { setPostStatusAction } from "@/app/actions/admin/setPostStatus";
 import type { PostStatusTarget } from "@/lib/moderation";
+import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -154,16 +155,12 @@ function PostRow({ post, onChanged }: { post: AdminPostRow; onChanged: (updated:
 
 export default function AdminPostsPanel() {
   const [tab, setTab] = useState<AdminStatusFilter>("all");
+  const { data: fetchedPosts, error, refresh } = useAsyncList(() => listAllPosts(tab), [tab]);
   const [posts, setPosts] = useState<AdminPostRow[] | null>(null);
 
-  function refresh(filter: AdminStatusFilter) {
-    setPosts(null);
-    listAllPosts(filter).then(setPosts);
-  }
-
   useEffect(() => {
-    refresh(tab);
-  }, [tab]);
+    setPosts(fetchedPosts);
+  }, [fetchedPosts]);
 
   function handleChanged(updated: AdminPostRow) {
     setPosts((prev) => {
@@ -194,7 +191,14 @@ export default function AdminPostsPanel() {
         ))}
       </div>
 
-      {posts === null ? (
+      {error ? (
+        <div className="flex flex-col items-start gap-2 p-4">
+          <p className="text-sm text-rose-600">{error}</p>
+          <LaButton intent="outline" size="compact" onClick={refresh}>
+            Retry
+          </LaButton>
+        </div>
+      ) : posts === null ? (
         <div className="flex flex-col gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <LaSkeleton key={i} shape="block" className="h-20 w-full rounded-xl" />

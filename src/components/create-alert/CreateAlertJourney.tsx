@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   // UI chrome + step icons
   ArrowRight, ChevronLeft, ChevronRight, Mail, MessageCircle, MapPin, Sparkles, LayoutGrid,
@@ -18,8 +19,7 @@ import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/
 import { LocationPicker } from "@/components/location-picker";
 import type { LocationValue } from "@/components/location-picker";
 import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
-import { Switch } from "@/components/ui/switch";
-import { LaButton, LaTagInput } from "@/components/la";
+import { LaButton, LaTagInput, LaSwitch } from "@/components/la";
 import { cn } from "@/lib/utils";
 import { ALERT_CONFIG } from "./alert-config";
 import { CATEGORIES } from "@/config/categories";
@@ -442,6 +442,7 @@ function StepDone({
   onComplete,
   isPopup,
 }: StepDoneProps) {
+  const router = useRouter();
   const [showNotifyError, setShowNotifyError] = useState(false);
   const errorTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -555,7 +556,7 @@ function StepDone({
               <Mail className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-semibold text-slate-800">Email</span>
             </div>
-            <Switch
+            <LaSwitch
               checked={notifyChannels.includes("email")}
               onCheckedChange={(checked: boolean) => handleNotifyChange(checked, "email")}
               // TODO [INTEGRATION]: Disable email toggle if user has no verified email on account
@@ -566,7 +567,7 @@ function StepDone({
               <MessageCircle className="h-4 w-4 text-lime-600" />
               <span className="text-sm font-semibold text-slate-800">WhatsApp</span>
             </div>
-            <Switch
+            <LaSwitch
               checked={notifyChannels.includes("whatsapp")}
               onCheckedChange={(checked: boolean) => handleNotifyChange(checked, "whatsapp")}
               // TODO [INTEGRATION]: Disable WhatsApp toggle if user has no verified phone number on account
@@ -582,8 +583,15 @@ function StepDone({
           <LaButton intent="secondary" size="default" className="shrink-0" onClick={onComplete}>
             Maybe later
           </LaButton>
-          {/* TODO [INTEGRATION]: Navigate to /my-alerts or open alerts management page */}
-          <LaButton intent="primary-blue" size="default" className="flex-1" onClick={onComplete}>
+          <LaButton
+            intent="primary-blue"
+            size="default"
+            className="flex-1"
+            onClick={() => {
+              router.push("/my-alerts");
+              onComplete?.();
+            }}
+          >
             Manage Alerts
           </LaButton>
         </div>
@@ -662,12 +670,14 @@ export default function CreateAlertJourney({
     };
     setIsSubmitting(true);
     try {
-      // TODO [INTEGRATION]: POST to /api/alerts — replace onSubmit? callback with real API call.
-      // Expected response: { alertId: string } — use to deep-link "Manage Alerts" to the right alert.
+      // onSubmit is wired to createAlert (actions/createAlert.ts) at every
+      // render site via useSubmitAlert() — see components/create-alert/
+      // useSubmitAlert.ts, which also shows the success/error toast.
       await onSubmit?.(payload);
       setStep(3);
     } catch {
-      // TODO [INTEGRATION]: Show error toast — e.g. "Failed to create alert. Please try again."
+      // Error toast already shown by useSubmitAlert before it re-threw —
+      // just stay on this step so the user can retry.
       return;
     } finally {
       setIsSubmitting(false);

@@ -1,5 +1,5 @@
 /**
- * lib/models/Alert.ts
+ * models/Alert.ts
  *
  * Mongoose model for user-saved search alerts.
  * The batch runner reads this collection to find alerts to match against live listings.
@@ -44,7 +44,7 @@ const AlertSchema = new Schema<IAlert>(
     },
     notifyVia: [{ type: String }],
     lastNotifiedAt: { type: Date },
-    lastMatchedListingIds: [{ type: Schema.Types.ObjectId }],
+    lastMatchedListingIds: [{ type: Schema.Types.ObjectId, ref: "Post" }],
     noMatchSince: { type: Date },
     isActive: { type: Boolean, required: true, default: true, index: true },
   },

@@ -7,7 +7,11 @@ const OtpSchema = new mongoose.Schema(
 
     code: { type: String, required: true },
 
-    expiresAt: { type: Date, required: true },
+    // TTL index — Mongo's background reaper deletes the document once this
+    // timestamp has passed (expires: 0 = no extra grace period). Every OTP
+    // that's ever requested but never completed (expired, abandoned flow,
+    // typo'd target) previously stayed in this collection forever.
+    expiresAt: { type: Date, required: true, expires: 0 },
     verified: { type: Boolean, default: false },
 
     attempts: { type: Number, default: 0 },

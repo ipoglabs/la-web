@@ -10,8 +10,8 @@
 
 import dbConnect from "../src/lib/db";
 import User from "../src/models/user";
-import Listing from "../src/lib/db/models/Listing";
-import { ADV_ID_RANGES } from "../src/lib/db/models/constants";
+import Listing from "../src/models/Listing";
+import { ADV_ID_RANGES } from "../src/models/listingConstants";
 import { ALL_MAP } from "../src/lib/mock/listing-map";
 import { getSubcategoryIds, getListingsForMarket } from "../src/lib/mock/country-map";
 import type { Listing as MockListing, Seller as MockSeller, KeyValueRow } from "../src/types/listing";
@@ -19,12 +19,6 @@ import type { CountryCode } from "../src/config";
 import { hash } from "bcryptjs";
 
 const COUNTRIES: CountryCode[] = ["in", "gb", "sg"];
-
-// Mock category ids are underscore-separated (e.g. "health_beauty"); the DB
-// enum uses dashes (e.g. "health-beauty") — see constants.ts CATEGORIES.
-function toDbCategory(mockCategoryId: string): string {
-  return mockCategoryId.replace(/_/g, "-");
-}
 
 // Mock sellers carry a free-text `role` (275 distinct values — "Property
 // Agent", "Vinyl Records Collector & Seller", …) but the DB's
@@ -64,7 +58,7 @@ async function main() {
   const sellersByName = new Map<string, MockSeller>();
 
   for (const mockCategoryId of Object.keys(ALL_MAP)) {
-    const dbCategory = toDbCategory(mockCategoryId);
+    const dbCategory = mockCategoryId;
     if (!(dbCategory in ADV_ID_RANGES)) {
       console.warn(`Skipping "${mockCategoryId}" — no matching DB category`);
       continue;

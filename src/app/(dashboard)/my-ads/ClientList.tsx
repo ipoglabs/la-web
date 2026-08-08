@@ -6,14 +6,10 @@ import MyAdRow from "./MyAdRow";
 
 type Props = {
   initialRows?: any[];
-  ownerEmail: string;
-  ownerId: string;
 };
 
 export default function ClientList({
   initialRows,
-  ownerEmail,
-  ownerId,
 }: Props) {
   const router = useRouter();
 
@@ -45,8 +41,6 @@ export default function ClientList({
           <MyAdRow
             key={r.id}
             row={r}
-            ownerEmail={ownerEmail}
-            ownerId={ownerId}
             onDeleted={(id) =>
               setRows((s) => s.filter((x) => x.id !== id))
             }

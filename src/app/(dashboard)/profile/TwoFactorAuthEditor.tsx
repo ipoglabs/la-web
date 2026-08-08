@@ -15,16 +15,16 @@ import { cn } from "@/lib/utils";
 import { OtpInput } from "@/components/ui/otp-input";
 import { VALID_OTP } from "@/lib/constants";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  LaAlertDialog,
+  LaAlertDialogAction,
+  LaAlertDialogCancel,
+  LaAlertDialogContent,
+  LaAlertDialogDescription,
+  LaAlertDialogFooter,
+  LaAlertDialogHeader,
+  LaAlertDialogMedia,
+  LaAlertDialogTitle,
+} from "@/components/la/la-alert-dialog";
 import { ResponsiveEditor } from "./ResponsiveEditor";
 
 const MOCK_2FA_SECRET = "JBSW Y3DP EHPK 3PXP";
@@ -239,26 +239,26 @@ export function TwoFactorAuthEditor({
         )}
       </ResponsiveEditor>
 
-      <AlertDialog open={confirmDisableOpen} onOpenChange={(open) => !disabling && setConfirmDisableOpen(open)}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+      <LaAlertDialog open={confirmDisableOpen} onOpenChange={(open) => !disabling && setConfirmDisableOpen(open)}>
+        <LaAlertDialogContent size="sm">
+          <LaAlertDialogHeader>
+            <LaAlertDialogMedia>
               <AlertCircle className="size-5 text-rose-500" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Disable two-factor authentication?</AlertDialogTitle>
-            <AlertDialogDescription>
+            </LaAlertDialogMedia>
+            <LaAlertDialogTitle>Disable two-factor authentication?</LaAlertDialogTitle>
+            <LaAlertDialogDescription>
               This will make your account less secure — you won&apos;t be asked for a code when
               signing in.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={disabling}>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" disabled={disabling} onClick={handleDisableConfirm}>
+            </LaAlertDialogDescription>
+          </LaAlertDialogHeader>
+          <LaAlertDialogFooter>
+            <LaAlertDialogCancel disabled={disabling}>Cancel</LaAlertDialogCancel>
+            <LaAlertDialogAction intent="danger" disabled={disabling} onClick={handleDisableConfirm}>
               {disabling ? "Disabling..." : "Yes, Disable"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </LaAlertDialogAction>
+          </LaAlertDialogFooter>
+        </LaAlertDialogContent>
+      </LaAlertDialog>
     </>
   );
 }

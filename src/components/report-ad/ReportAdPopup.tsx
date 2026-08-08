@@ -35,6 +35,7 @@ export interface ReportAdPopupProps {
   target:        ReportAdTarget;
   onSubmit?:     (payload: ReportAdPayload) => Promise<ReportAdTicket> | ReportAdTicket | void;
   className?:    string;
+  isAuthenticated?: boolean;
 }
 
 function CloseButton({ onClick }: { onClick: () => void }) {
@@ -52,7 +53,7 @@ function CloseButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function ReportAdPopup({ open, onOpenChange, target, onSubmit, className }: ReportAdPopupProps) {
+export function ReportAdPopup({ open, onOpenChange, target, onSubmit, className, isAuthenticated }: ReportAdPopupProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [journeyKey, setJourneyKey] = useState(0);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -129,6 +130,7 @@ export function ReportAdPopup({ open, onOpenChange, target, onSubmit, className 
             onSubmit={onSubmit}
             onComplete={handleComplete}
             onStepChange={setStep}
+            isAuthenticated={isAuthenticated}
           />
         </DialogPrimitive.Content>
       </DialogPortal>

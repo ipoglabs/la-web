@@ -50,12 +50,17 @@
  *     no DEMO_STATUS_CYCLE (that was explicitly for visually QA-ing every
  *     badge variant on the one demo seller who has none of the real
  *     lifecycle states).
+ *
+ * 2026-08-08: switched `@/components/ui/tabs` → `@/components/la/la-tabs`.
+ * The "Architecture" note above (2026-07-12) predates the `la/` design
+ * system layer — `ui/` is no longer the correct target for product pages,
+ * see CLAUDE.md's component-layers rule.
  */
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { BadgeCheck, Mail, Phone, Star, ThumbsDown, ThumbsUp } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LaTabs, LaTabsContent, LaTabsList, LaTabsTrigger } from "@/components/la/la-tabs";
 import { Avatar } from "@/components/avatar/Avatar";
 import { LaButton, LaTextarea } from "@/components/la";
 import { LaThumbnailListingCard, type ListingStatus } from "@/components/la-blocks/la-thumbnail-listing";
@@ -526,15 +531,15 @@ export default function PublicProfileClient({
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="listing" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="listing">Listings ({sellerListings.length})</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
-          {isMock && <TabsTrigger value="contact">Contact</TabsTrigger>}
-        </TabsList>
+      {/* LaTabs */}
+      <LaTabs defaultValue="listing" className="mt-6">
+        <LaTabsList>
+          <LaTabsTrigger value="listing">Listings ({sellerListings.length})</LaTabsTrigger>
+          <LaTabsTrigger value="reviews">Reviews ({reviews.length})</LaTabsTrigger>
+          {isMock && <LaTabsTrigger value="contact">Contact</LaTabsTrigger>}
+        </LaTabsList>
 
-        <TabsContent value="listing" className="min-h-105 p-4">
+        <LaTabsContent value="listing" className="min-h-105 p-4">
           {sellerListings.length === 0 ? (
             <p className="py-12 text-center text-sm text-slate-500">No listings yet.</p>
           ) : (
@@ -591,9 +596,9 @@ export default function PublicProfileClient({
               </div>
             </>
           )}
-        </TabsContent>
+        </LaTabsContent>
 
-        <TabsContent value="reviews" className="min-h-105 px-4 pb-4 pt-1.5">
+        <LaTabsContent value="reviews" className="min-h-105 px-4 pb-4 pt-1.5">
           <div className="overflow-hidden rounded-md border-[1.5px] border-gray-700/55">
             <div className="flex items-center gap-1 border-b border-slate-200 bg-gray-50 px-3 py-2">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -672,10 +677,10 @@ export default function PublicProfileClient({
               </div>
             ))}
           </div>
-        </TabsContent>
+        </LaTabsContent>
 
         {isMock && (
-          <TabsContent value="contact" className="min-h-105 p-4">
+          <LaTabsContent value="contact" className="min-h-105 p-4">
             <div className="space-y-3">
               <ContactRow
                 icon={<Mail width={18} height={18} />}
@@ -699,9 +704,9 @@ export default function PublicProfileClient({
                 usually replies within 24 hours · English.
               </p>
             </div>
-          </TabsContent>
+          </LaTabsContent>
         )}
-      </Tabs>
+      </LaTabs>
     </div>
   );
 }

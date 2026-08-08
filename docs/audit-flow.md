@@ -67,20 +67,19 @@ export async function logActivity(
 
 | Action | Triggered by | File | `metadata` | `actorId` set? |
 |---|---|---|---|---|
-| `REGISTERED` | Credentials signup completes | `app/api/register/route.ts` | `{ method: "credentials" }` | no |
 | `REGISTERED` | OAuth/passwordless profile completion | `app/api/auth/complete-profile/route.ts` | `{ method }` | no |
-| `LOGIN` | Credentials login | `app/api/auth/login/route.ts` | — | no |
 | `LOGIN` | Google OAuth callback | `app/api/auth/google-callback/route.ts` | — | no |
 | `LOGIN` | Apple OAuth callback | `app/api/auth/apple-callback/route.ts` | — | no |
 | `LOGIN` | Magic-link / OTP resolve | `app/api/auth/resolve-identity/route.ts` | — | no |
 | `EMAIL_CHANGED` | Contact update (email branch) | `app/actions/profile/updateContact.ts` | `{ from, to }` | no |
 | `PHONE_CHANGED` | Contact update (phone branch) | `app/actions/profile/updateContact.ts` | `{ from, to }` | no |
-| `PASSWORD_CHANGED` | Password update | `app/actions/profile/updatePassword.ts` | — | no |
+| `PASSWORD_CHANGED` | *(currently unused — `actions/profile/updatePassword.ts` and its UI were removed; no code path writes this action today)* | — | — | no |
 | `NAME_CHANGED` / `USERID_CHANGED` / `ROLE_CHANGED` / `DOB_CHANGED` / `GENDER_CHANGED` | Profile form save, one entry per changed field | `app/actions/updateProfile.ts` (`FIELD_ACTIONS` map) | `{ from, to }` | no |
 | `POST_CREATED` | New ad submitted | `app/actions/addPost.ts` | `{ postId, title }` | no |
 | `POST_UPDATED` | Ad edited | `app/actions/updatePost.ts` | `{ postId, title }` | no |
 | `POST_BUMPED` | Ad bumped/renewed | `app/actions/bumpPost.ts` | `{ postId, title }` | no |
 | `POST_DELETED` | Ad deleted by owner | `app/actions/deletePost.ts` | `{ postId, title }` | no |
+| `ALERT_CREATED` | Saved-search alert created | `app/actions/createAlert.ts` | `{ alertId, title, category }` | no |
 | `MESSAGE_SENT` | Chat message sent | `app/api/conversations/[id]/messages/route.ts` | `{ conversationId }` | no |
 | `AD_APPROVED` / `AD_REJECTED` / `AD_SET_PENDING` / `AD_SUSPENDED` | Admin sets a post's status | `lib/moderation.ts` → `setPostStatus()` (called by `app/actions/admin/setPostStatus.ts` → `/admin` Posts tab) | `{ postId, title, reason? }` | **yes** — admin's id |
 | `AD_SUSPENDED` | Report actioned | `lib/moderation.ts` → `reviewReport()` | `{ postId, title, ticketId, reason }` | **yes** |
@@ -227,9 +226,7 @@ untyped strings even in the report model itself.
 ```mermaid
 flowchart TD
     subgraph Auth["Auth"]
-        A1["/api/register"]
         A2["/api/auth/complete-profile"]
-        A3["/api/auth/login"]
         A4["/api/auth/google-callback"]
         A5["/api/auth/apple-callback"]
         A6["/api/auth/resolve-identity"]
@@ -237,7 +234,6 @@ flowchart TD
 
     subgraph Profile["Profile"]
         P1["actions/profile/updateContact"]
-        P2["actions/profile/updatePassword"]
         P3["actions/updateProfile"]
     end
 
@@ -257,7 +253,7 @@ flowchart TD
         M2["/api/reports/[ticketId] PATCH\n+ admin/reviewReport action"] --> MR["lib/moderation.ts\nreviewReport()"]
     end
 
-    A1 & A2 & A3 & A4 & A5 & A6 & P1 & P2 & P3 & L1 & L2 & L3 & L4 & C1 --> LA["logActivity(userId, action, metadata?)"]
+    A2 & A4 & A5 & A6 & P1 & P3 & L1 & L2 & L3 & L4 & C1 --> LA["logActivity(userId, action, metadata?)"]
     MM & MR --> LA2["logActivity(post.ownerId, action, metadata, adminId)"]
 
     LA --> DB[("ActivityLog\ncollection")]

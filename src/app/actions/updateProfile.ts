@@ -1,7 +1,8 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
+import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
 import { sendProfileUpdateEmail } from "@/lib/profile/updateProfileMail";
 import { logActivity } from "@/lib/activityLog";
@@ -223,6 +224,16 @@ export async function updateProfile(payload: any) {
   }
 
   await user.save();
+
+  // Keep each ad's contact snapshot (seller_info.name) in sync with the
+  // account's display name so old ads never show a name the seller has
+  // since changed — mirrors the email/phone sync in profile/updateContact.ts.
+  if (changes.some((c) => c.field === "Full Name")) {
+    await Post.updateMany(
+      { ownerId: user._id },
+      { $set: { "seller_info.name": user.fullName } }
+    );
+  }
 
   // ADO-style field-level history: log every changed field with its old→new
   // value, not just name — see ActivityAction in models/ActivityLog.ts.

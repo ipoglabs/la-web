@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LaCard, LaBadge, LaButton, LaSkeleton, LaTextarea } from "@/components/la";
-import { listReportedAds, type AdminReportedAd } from "@/app/actions/admin/listReportedAds";
+import { listReportedAds } from "@/app/actions/admin/listReportedAds";
 import { reviewReportAction } from "@/app/actions/admin/reviewReport";
+import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { toast } from "sonner";
 
 const PRIORITY_INTENT: Record<string, "danger" | "warning" | "neutral"> = {
@@ -13,14 +14,13 @@ const PRIORITY_INTENT: Record<string, "danger" | "warning" | "neutral"> = {
 };
 
 export default function AdminReportsPanel() {
-  const [reports, setReports] = useState<AdminReportedAd[] | null>(null);
+  const { data: reports, error, refresh } = useAsyncList(listReportedAds, []);
+  const [removedTickets, setRemovedTickets] = useState<Set<string>>(new Set());
   const [busyTicket, setBusyTicket] = useState<string | null>(null);
   const [suspendingTicket, setSuspendingTicket] = useState<string | null>(null);
   const [reason, setReason] = useState("");
 
-  useEffect(() => {
-    listReportedAds().then(setReports);
-  }, []);
+  const visibleReports = reports?.filter((r) => !removedTickets.has(r.ticketId)) ?? null;
 
   async function handleDecision(ticketId: string, decision: "dismissed" | "actioned", resolution?: string) {
     setBusyTicket(ticketId);
@@ -28,7 +28,7 @@ export default function AdminReportsPanel() {
       const res = await reviewReportAction(ticketId, decision, resolution);
       if (res.ok) {
         toast.success(decision === "actioned" ? "Ad suspended." : "Report dismissed.");
-        setReports((prev) => prev?.filter((r) => r.ticketId !== ticketId) ?? null);
+        setRemovedTickets((prev) => new Set(prev).add(ticketId));
         setSuspendingTicket(null);
         setReason("");
       } else {
@@ -39,7 +39,18 @@ export default function AdminReportsPanel() {
     }
   }
 
-  if (reports === null) {
+  if (error) {
+    return (
+      <div className="flex flex-col items-start gap-2 p-4">
+        <p className="text-sm text-rose-600">{error}</p>
+        <LaButton intent="outline" size="compact" onClick={refresh}>
+          Retry
+        </LaButton>
+      </div>
+    );
+  }
+
+  if (visibleReports === null) {
     return (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -49,13 +60,13 @@ export default function AdminReportsPanel() {
     );
   }
 
-  if (reports.length === 0) {
+  if (visibleReports.length === 0) {
     return <p className="text-sm text-slate-500 p-4">No open reports.</p>;
   }
 
   return (
     <div className="flex flex-col gap-3">
-      {reports.map((r) => (
+      {visibleReports.map((r) => (
         <LaCard key={r.ticketId} className="p-4">
           <div className="flex items-start gap-3">
             <div className="w-16 h-16 rounded-md overflow-hidden bg-slate-100 shrink-0">

@@ -1,7 +1,8 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
+import Post from "@/models/post";
 import Otp from "@/models/Otp";
 import { getSession } from "@/lib/auth";
 import { normalizeTarget } from "@/lib/otpUtils";
@@ -159,10 +160,22 @@ export async function updateContact({
   /* ================= SAVE ================= */
   await user.save();
 
-  if (field === "email") {
-    await logActivity(user._id, "EMAIL_CHANGED", { from: emailFrom ?? "-", to: user.email });
-  } else if (field === "primaryNumber") {
-    await logActivity(user._id, "PHONE_CHANGED", { from: phoneFrom ?? "-", to: user.primaryNumber });
+  // Keep each ad's contact snapshot (seller_info) in sync with the account's
+  // canonical email/phone so old ads never show a contact detail the seller
+  // can no longer be reached at. Only fires when the value actually changed
+  // (emailFrom/phoneFrom are only set on the real-change branches above).
+  if (field === "email" && emailFrom !== null) {
+    await Post.updateMany(
+      { ownerId: user._id },
+      { $set: { "seller_info.email": user.email } }
+    );
+    await logActivity(user._id, "EMAIL_CHANGED", { from: emailFrom, to: user.email });
+  } else if (field === "primaryNumber" && phoneFrom !== null) {
+    await Post.updateMany(
+      { ownerId: user._id },
+      { $set: { "seller_info.phone": user.primaryNumber } }
+    );
+    await logActivity(user._id, "PHONE_CHANGED", { from: phoneFrom, to: user.primaryNumber });
   }
 
   /* 🧹 CLEAN OTP (only verified one) */

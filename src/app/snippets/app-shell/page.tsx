@@ -26,9 +26,9 @@ const SNIPPET_IMPORT = `import AppHeader from "@/components/la-blocks/AppHeader"
 import type { AuthUser } from "@/types/auth";`;
 
 const SNIPPET_SESSION = `// app/layout.tsx  (Server Component)
-import { getSession } from "@/lib/session";
+import { getAuthUser } from "@/lib/session";
 
-const user = await getSession(); // AuthUser | null
+const user = await getAuthUser(); // AuthUser | null
 // Pass it down — no client context needed
 <AppHeader variant="default" user={user} />`;
 
@@ -37,7 +37,7 @@ const SNIPPET_AUTH_WIRE = `// lib/session.ts
 
 // NextAuth v5
 import { auth } from "@/auth";
-export async function getSession() {
+export async function getAuthUser() {
   const session = await auth();
   if (!session?.user) return null;
   return {
@@ -51,7 +51,7 @@ export async function getSession() {
 }
 
 // Lucia / better-auth — same shape, different source:
-export async function getSession() {
+export async function getAuthUser() {
   const { user } = await validateRequest();
   if (!user) return null;
   return { id: user.id, name: user.name, initials: "...", role: "member", status: "none" };
@@ -188,7 +188,7 @@ export default function AppShellPage() {
             <p className="text-sm font-semibold text-slate-700">AppHeader Props</p>
             <PropsTable rows={[
               ["variant",  '"default" | "simple"',  '"default"', 'default = full header. simple = logo + avatar only.'],
-              ["user",     "AuthUser | null",        "null",      "Pass from getSession() in your server layout. null = logged-out state."],
+              ["user",     "AuthUser | null",        "null",      "Pass from getAuthUser() in your server layout. null = logged-out state."],
             ]} />
           </div>
 
@@ -205,7 +205,7 @@ export default function AppShellPage() {
           </div>
 
           <div className="space-y-1.5">
-            <p className="text-sm font-semibold text-slate-700">Step 1 — Wire getSession() in layout.tsx</p>
+            <p className="text-sm font-semibold text-slate-700">Step 1 — Wire getAuthUser() in layout.tsx</p>
             <CodeBlock code={SNIPPET_SESSION} />
           </div>
 

@@ -16,9 +16,10 @@
  */
 
 import dbConnect from "@/lib/db";
-import Alert from "@/lib/models/Alert";
+import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
 import type { JobResult } from "@/lib/jobs/_types";
+import { getAlertRecipientEmail } from "@/lib/jobs/_utils";
 
 const NO_MATCH_THRESHOLD_DAYS = 14;
 
@@ -39,12 +40,15 @@ export async function runAlertNoMatchJob(): Promise<JobResult> {
 
   for (const alert of alerts) {
     try {
-      // TODO [auth-integration]: Replace placeholder with real user email lookup:
-      //   const user = await User.findById(alert.userId).select("email").lean();
-      //   if (!user?.email) { result.errors++; continue; }
+      const recipientEmail = await getAlertRecipientEmail(alert.userId);
+      if (!recipientEmail) {
+        result.errors++;
+        continue;
+      }
+
       const emailResult = await sendEmail({
         type: "ALERT_NO_MATCHES",
-        to: `user-${alert.userId}@placeholder.invalid`,
+        to: recipientEmail,
         data: {
           alertName: alert.name,
           alertId: String(alert._id),

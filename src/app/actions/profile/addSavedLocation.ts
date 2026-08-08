@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { MAX_SAVED_LOCATIONS, SAVED_LOCATIONS_LIMIT_MESSAGE } from "@/lib/locationUtils";

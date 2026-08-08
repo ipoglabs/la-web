@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LaButton } from "@/components/la/la-button";
 import { PhoneNumberInput } from "@/components/phone-number-input/PhoneNumberInput";
 import { type Country, COUNTRIES } from "@/components/phone-number-input/countries";
 import { OtpInput } from "@/components/ui/otp-input";
@@ -210,14 +210,14 @@ export function PhoneOtpCardV2() {
             </button>
           )}
 
-          <Button className="w-full" onClick={() => {
+          <LaButton className="w-full" onClick={() => {
             setVerified([]);
             setPhone("");
             setCountry(COUNTRIES.find(c => c.code === "SG") ?? COUNTRIES[0]);
             setStage("enter-phone");
           }}>
             Done
-          </Button>
+          </LaButton>
         </div>
       </div>
     );
@@ -314,9 +314,9 @@ export function PhoneOtpCardV2() {
                 inputRef={phoneInputRef}
               />
               {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
-              <Button className="w-full" onClick={handleSend}>
+              <LaButton className="w-full" onClick={handleSend}>
                 Send code
-              </Button>
+              </LaButton>
             </div>
           </>
         )}

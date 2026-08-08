@@ -41,6 +41,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { AuthUser } from "@/types/auth";
 import { useFavouritesStore } from "@/lib/stores/favouritesStore";
+import { getMyFavourites } from "@/app/actions/favourites/getMyFavourites";
+import { addFavourite } from "@/app/actions/favourites/addFavourite";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { isSimpleLayoutRoute } from "@/lib/layout-routes";
 
@@ -81,7 +83,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
   const effectiveVariant = variant ?? (isSimpleLayoutRoute(pathname) ? "hidden" : "default");
 
   // ── Auth state ─────────────────────────────────────────────────────────────
-  // Seed from the server-rendered `user` prop (getSession() in layout.tsx) so
+  // Seed from the server-rendered `user` prop (getAuthUser() in layout.tsx) so
   // there's no flash of "logged out" on first paint, then re-validate against
   // /api/auth/me client-side — same checkAuth() + "auth-changed" event pattern
   // used on the develop branch. This is what the POST button below reads.
@@ -131,10 +133,37 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
   const remove = useFavouritesStore((s) => s.remove);
   const count = items.length;
 
-  // Rehydrate from localStorage after client mount (skipHydration: true prevents SSR mismatch)
+  // Rehydrate from localStorage after client mount (skipHydration: true
+  // prevents SSR mismatch), then — for a signed-in user — push up any
+  // favourites added while logged out (device-local only, never persisted
+  // since addFavourite silently no-ops without a session) before merging in
+  // whatever the DB already has (e.g. favourites added on another device).
+  // Awaiting rehydrate first matters: reading getState().items before it
+  // resolves would see an empty store and wrongly treat every local
+  // favourite as already synced, permanently dropping it from localStorage
+  // the next time anything writes to the persisted store.
   useEffect(() => {
-    useFavouritesStore.persist.rehydrate();
-  }, []);
+    let cancelled = false;
+
+    (async () => {
+      await useFavouritesStore.persist.rehydrate();
+      if (cancelled || !currentUser) return;
+
+      const localItems = useFavouritesStore.getState().items;
+      const serverItems = await getMyFavourites();
+      if (cancelled) return;
+
+      const localOnly = localItems.filter((i) => !serverItems.some((si) => si.id === i.id));
+      await Promise.all(localOnly.map((item) => addFavourite(item).catch(() => {})));
+      if (cancelled) return;
+
+      useFavouritesStore.getState().syncFromServer(serverItems);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
 
   if (effectiveVariant === "hidden") return null;
 

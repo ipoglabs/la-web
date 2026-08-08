@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { LaButton } from "@/components/la/la-button";
 import ClientList from "./ClientList";
 import { getMyPosts } from "@/app/actions/getMyPosts";
 import { getSession } from "@/lib/auth";
@@ -41,18 +41,14 @@ export default async function MyAdsPage() {
       <div className="flex justify-between">
         <h1 className="text-2xl font-semibold">My Ads</h1>
         <Link href="/post/select-category">
-          <Button>New Post</Button>
+          <LaButton>New Post</LaButton>
         </Link>
       </div>
 
       {rows.length === 0 ? (
         <p>No ads found.</p>
       ) : (
-        <ClientList
-          initialRows={rows}
-          ownerEmail={email ?? ""}
-          ownerId={ownerId ?? ""}
-        />
+        <ClientList initialRows={rows} />
       )}
     </main>
   );

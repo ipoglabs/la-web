@@ -1,7 +1,7 @@
 // src/app/actions/getPostById.ts
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { Types } from "mongoose";
 import { toClientPost } from "@/lib/serialize";

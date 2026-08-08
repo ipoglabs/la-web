@@ -15,7 +15,7 @@
  */
 
 import dbConnect from "@/lib/db";
-import JobRun from "@/lib/models/JobRun";
+import JobRun from "@/models/JobRun";
 import type { JobName, JobResult } from "@/lib/jobs/_types";
 
 export async function runJob(

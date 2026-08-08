@@ -5,11 +5,8 @@ import { LaCard, LaBadge, LaInput, LaButton, LaSkeleton } from "@/components/la"
 import { listDeletedUsers } from "@/app/actions/dev-tools/listDeletedUsers";
 import { getDeletedUserData } from "@/app/actions/dev-tools/getDeletedUserData";
 import { getConversationMessages } from "@/app/actions/dev-tools/getConversationMessages";
-import type {
-  DevToolsDeletedUser,
-  DevToolsDeletedUserData,
-  DevToolsConversationMessage,
-} from "@/app/actions/dev-tools/types";
+import type { DevToolsConversationMessage } from "@/app/actions/dev-tools/types";
+import { useAsyncList } from "@/lib/hooks/useAsyncList";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -29,27 +26,29 @@ const statusIntent: Record<string, "success" | "warning" | "danger" | "neutral">
 };
 
 export default function DeletedUsersPanel() {
-  const [users, setUsers] = useState<DevToolsDeletedUser[] | null>(null);
+  const { data: users, error: usersError, refresh: refreshUsers } = useAsyncList(listDeletedUsers, []);
   const [filter, setFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [data, setData] = useState<DevToolsDeletedUserData | null>(null);
-  const [loadingData, setLoadingData] = useState(false);
+  const {
+    data,
+    error: dataError,
+    refresh: refreshData,
+  } = useAsyncList(async () => {
+    if (!selectedId) return null;
+    return getDeletedUserData(selectedId);
+  }, [selectedId]);
   const [openConvoId, setOpenConvoId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DevToolsConversationMessage[] | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
 
-  useEffect(() => {
-    listDeletedUsers().then(setUsers);
-  }, []);
+  const loadingData = !!selectedId && data === null && !dataError;
 
+  // Reset the conversation view whenever the selected user changes.
   useEffect(() => {
-    if (!selectedId) return;
-    setLoadingData(true);
     setOpenConvoId(null);
     setMessages(null);
-    getDeletedUserData(selectedId)
-      .then(setData)
-      .finally(() => setLoadingData(false));
+    setMessagesError(null);
   }, [selectedId]);
 
   const filtered = useMemo(() => {
@@ -68,19 +67,26 @@ export default function DeletedUsersPanel() {
 
   const selected = users?.find((u) => u.id === selectedId) ?? null;
 
-  async function toggleConversation(convoId: string) {
+  async function loadMessages(convoId: string) {
+    setLoadingMessages(true);
+    setMessages(null);
+    setMessagesError(null);
+    try {
+      setMessages(await getConversationMessages(convoId));
+    } catch {
+      setMessagesError("Couldn't load these messages. Please try again.");
+    } finally {
+      setLoadingMessages(false);
+    }
+  }
+
+  function toggleConversation(convoId: string) {
     if (openConvoId === convoId) {
       setOpenConvoId(null);
       return;
     }
     setOpenConvoId(convoId);
-    setLoadingMessages(true);
-    setMessages(null);
-    try {
-      setMessages(await getConversationMessages(convoId));
-    } finally {
-      setLoadingMessages(false);
-    }
+    loadMessages(convoId);
   }
 
   return (
@@ -98,7 +104,14 @@ export default function DeletedUsersPanel() {
       />
 
       <LaCard className="divide-y divide-slate-100 overflow-hidden">
-        {users === null ? (
+        {usersError ? (
+          <div className="flex flex-col items-start gap-2 p-4">
+            <p className="text-sm text-rose-600">{usersError}</p>
+            <LaButton intent="outline" size="compact" onClick={refreshUsers}>
+              Retry
+            </LaButton>
+          </div>
+        ) : users === null ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="min-w-0 flex-1 space-y-2">
@@ -167,7 +180,14 @@ export default function DeletedUsersPanel() {
 
           <div className="pt-4 mt-2 border-t border-slate-100">
             <p className="text-sm font-semibold text-slate-900 mb-2">Listings</p>
-            {loadingData ? (
+            {dataError ? (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-rose-600">{dataError}</p>
+                <LaButton intent="outline" size="compact" onClick={refreshData}>
+                  Retry
+                </LaButton>
+              </div>
+            ) : loadingData ? (
               <div className="flex flex-col gap-2">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
@@ -205,7 +225,14 @@ export default function DeletedUsersPanel() {
 
           <div className="pt-4 mt-2 border-t border-slate-100">
             <p className="text-sm font-semibold text-slate-900 mb-2">Conversations</p>
-            {loadingData ? (
+            {dataError ? (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-rose-600">{dataError}</p>
+                <LaButton intent="outline" size="compact" onClick={refreshData}>
+                  Retry
+                </LaButton>
+              </div>
+            ) : loadingData ? (
               <div className="flex flex-col gap-2">
                 {Array.from({ length: 2 }).map((_, i) => (
                   <div key={i} className="rounded-lg border border-slate-200 p-3 flex items-center gap-3">
@@ -242,7 +269,14 @@ export default function DeletedUsersPanel() {
 
                     {openConvoId === c.id && (
                       <div className="mt-3 pt-3 border-t border-slate-100 max-h-80 overflow-y-auto space-y-2">
-                        {loadingMessages ? (
+                        {messagesError ? (
+                          <div className="flex flex-col items-start gap-2">
+                            <p className="text-sm text-rose-600">{messagesError}</p>
+                            <LaButton intent="outline" size="compact" onClick={() => loadMessages(c.id)}>
+                              Retry
+                            </LaButton>
+                          </div>
+                        ) : loadingMessages ? (
                           <div className="flex flex-col gap-2">
                             {Array.from({ length: 3 }).map((_, i) => (
                               <LaSkeleton key={i} shape="text" className="w-2/3" />

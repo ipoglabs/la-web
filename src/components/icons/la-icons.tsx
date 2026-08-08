@@ -296,8 +296,8 @@ export function TE_FontSizeIcon({ className = "h-6 w-6" }: { className?: string 
       focusable="false"
       role="img"
       >
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M13.0001 3.5C13.2086 3.5 13.3951 3.62929 13.4683 3.82444L16.4642 11.8136C16.4671 11.8208 16.4698 11.828 16.4724 11.8354L17.9683 15.8244C18.0653 16.083 17.9343 16.3712 17.6757 16.4682C17.4171 16.5651 17.1289 16.4341 17.032 16.1756L15.6536 12.5H10.3466L8.9683 16.1756C8.89581 16.3689 8.71199 16.4977 8.50557 16.5C8.29914 16.5022 8.11256 16.3774 8.03589 16.1857L6.96162 13.5H4.03865L2.96437 16.1857C2.86181 16.4421 2.57083 16.5668 2.31444 16.4642C2.05805 16.3617 1.93334 16.0707 2.03589 15.8143L3.23157 12.8251C3.23426 12.8179 3.2371 12.8108 3.2401 12.8038L5.03589 8.3143C5.11183 8.12448 5.29568 8 5.50013 8C5.70459 8 5.88844 8.12448 5.96437 8.3143L7.76016 12.8038C7.76316 12.8108 7.76601 12.8179 7.7687 12.8251L8.48509 14.6161L9.52787 11.8354C9.53042 11.8281 9.53314 11.8208 9.53602 11.8136L12.532 3.82444C12.6052 3.62929 12.7917 3.5 13.0001 3.5ZM10.7216 11.5H15.2786L13.0001 5.424L10.7216 11.5ZM6.56162 12.5L5.50013 9.84629L4.43865 12.5H6.56162Z"></path>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M13.007 3.00003C13.3239 3.0029 13.6049 3.20471 13.7088 3.50417L17.9588 15.7542C18.0945 16.1455 17.8874 16.5728 17.496 16.7086C17.1047 16.8443 16.6774 16.6372 16.5416 16.2458L15.2421 12.5H10.5849L9.20421 16.2586C9.09659 16.5516 8.81878 16.7473 8.50669 16.75C8.19459 16.7527 7.91345 16.5618 7.80078 16.2707L6.92178 14H4.2557L3.45703 16.2508C3.31851 16.6412 2.88976 16.8453 2.4994 16.7068C2.10903 16.5683 1.90487 16.1396 2.04338 15.7492L4.79338 7.99919C4.89826 7.70362 5.17598 7.50452 5.48957 7.50008C5.80317 7.49563 6.08641 7.68678 6.19963 7.97925L8.48183 13.8749L12.2962 3.49139C12.4055 3.19386 12.69 2.99716 13.007 3.00003ZM4.78796 12.5H6.34113L5.53078 10.4066L4.78796 12.5ZM12.98 5.98L14.7217 11H11.1359L12.98 5.98Z"></path>
+        <path fillRule="evenodd" clipRule="evenodd" d="M13.0001 3.5C13.2086 3.5 13.3951 3.62929 13.4683 3.82444L16.4642 11.8136C16.4671 11.8208 16.4698 11.828 16.4724 11.8354L17.9683 15.8244C18.0653 16.083 17.9343 16.3712 17.6757 16.4682C17.4171 16.5651 17.1289 16.4341 17.032 16.1756L15.6536 12.5H10.3466L8.9683 16.1756C8.89581 16.3689 8.71199 16.4977 8.50557 16.5C8.29914 16.5022 8.11256 16.3774 8.03589 16.1857L6.96162 13.5H4.03865L2.96437 16.1857C2.86181 16.4421 2.57083 16.5668 2.31444 16.4642C2.05805 16.3617 1.93334 16.0707 2.03589 15.8143L3.23157 12.8251C3.23426 12.8179 3.2371 12.8108 3.2401 12.8038L5.03589 8.3143C5.11183 8.12448 5.29568 8 5.50013 8C5.70459 8 5.88844 8.12448 5.96437 8.3143L7.76016 12.8038C7.76316 12.8108 7.76601 12.8179 7.7687 12.8251L8.48509 14.6161L9.52787 11.8354C9.53042 11.8281 9.53314 11.8208 9.53602 11.8136L12.532 3.82444C12.6052 3.62929 12.7917 3.5 13.0001 3.5ZM10.7216 11.5H15.2786L13.0001 5.424L10.7216 11.5ZM6.56162 12.5L5.50013 9.84629L4.43865 12.5H6.56162Z"></path>
+  <path fillRule="evenodd" clipRule="evenodd" d="M13.007 3.00003C13.3239 3.0029 13.6049 3.20471 13.7088 3.50417L17.9588 15.7542C18.0945 16.1455 17.8874 16.5728 17.496 16.7086C17.1047 16.8443 16.6774 16.6372 16.5416 16.2458L15.2421 12.5H10.5849L9.20421 16.2586C9.09659 16.5516 8.81878 16.7473 8.50669 16.75C8.19459 16.7527 7.91345 16.5618 7.80078 16.2707L6.92178 14H4.2557L3.45703 16.2508C3.31851 16.6412 2.88976 16.8453 2.4994 16.7068C2.10903 16.5683 1.90487 16.1396 2.04338 15.7492L4.79338 7.99919C4.89826 7.70362 5.17598 7.50452 5.48957 7.50008C5.80317 7.49563 6.08641 7.68678 6.19963 7.97925L8.48183 13.8749L12.2962 3.49139C12.4055 3.19386 12.69 2.99716 13.007 3.00003ZM4.78796 12.5H6.34113L5.53078 10.4066L4.78796 12.5ZM12.98 5.98L14.7217 11H11.1359L12.98 5.98Z"></path>
     </svg>
   );
 }
@@ -350,7 +350,7 @@ export function Solid_X_24by24({ className = "h-6 w-6" }: { className?: string }
       aria-hidden="true"
       focusable="false"
       >
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 22.5C17.799 22.5 22.5 17.799 22.5 12C22.5 6.20101 17.799 1.5 12 1.5C6.20101 1.5 1.5 6.20101 1.5 12C1.5 17.799 6.20101 22.5 12 22.5ZM7.4871 9.09971C7.04776 8.66037 7.04776 7.94806 7.4871 7.50872C7.92644 7.06938 8.63875 7.06938 9.07809 7.50872L12.0172 10.4478L14.9563 7.50872C15.3956 7.06938 16.1079 7.06938 16.5473 7.50872C16.9866 7.94806 16.9866 8.66037 16.5473 9.09971L13.6082 12.0388L16.5473 14.9779C16.9866 15.4173 16.9866 16.1296 16.5473 16.5689C16.1079 17.0082 15.3956 17.0082 14.9563 16.5689L12.0172 13.6298L9.07809 16.5689C8.63875 17.0082 7.92644 17.0082 7.4871 16.5689C7.04776 16.1296 7.04776 15.4173 7.4871 14.9779L10.4262 12.0388L7.4871 9.09971Z" fill="#6B6E73"/>
+        <path fillRule="evenodd" clipRule="evenodd" d="M12 22.5C17.799 22.5 22.5 17.799 22.5 12C22.5 6.20101 17.799 1.5 12 1.5C6.20101 1.5 1.5 6.20101 1.5 12C1.5 17.799 6.20101 22.5 12 22.5ZM7.4871 9.09971C7.04776 8.66037 7.04776 7.94806 7.4871 7.50872C7.92644 7.06938 8.63875 7.06938 9.07809 7.50872L12.0172 10.4478L14.9563 7.50872C15.3956 7.06938 16.1079 7.06938 16.5473 7.50872C16.9866 7.94806 16.9866 8.66037 16.5473 9.09971L13.6082 12.0388L16.5473 14.9779C16.9866 15.4173 16.9866 16.1296 16.5473 16.5689C16.1079 17.0082 15.3956 17.0082 14.9563 16.5689L12.0172 13.6298L9.07809 16.5689C8.63875 17.0082 7.92644 17.0082 7.4871 16.5689C7.04776 16.1296 7.04776 15.4173 7.4871 14.9779L10.4262 12.0388L7.4871 9.09971Z" fill="#6B6E73"/>
     </svg>
   );
 }
@@ -365,9 +365,9 @@ export function Outline_XCircle_24by24({ className = "h-6 w-6" }: { className?: 
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15 9L9 15" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15 15L9 9" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 9L9 15" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 15L9 9" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -382,9 +382,9 @@ export function Outline_PlusCircle_24by24({ className = "h-6 w-6" }: { className
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M8.25 12H15.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 8.25V15.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M8.25 12H15.75" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 8.25V15.75" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -416,8 +416,8 @@ export function Solid_CheckCircle_24by24({ className = "h-6 w-6" }: { className?
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" fill="black" stroke="black" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M16.125 9.75L10.625 15L7.875 12.375" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" fill="black" stroke="black" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M16.125 9.75L10.625 15L7.875 12.375" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -432,8 +432,8 @@ export function Outline_CheckCircle_24by24({ className = "h-6 w-6" }: { classNam
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M16.125 9.75L10.625 15L7.875 12.375" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M16.125 9.75L10.625 15L7.875 12.375" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -448,7 +448,7 @@ export function Outline_UnCheckCircle_24by24({ className = "h-6 w-6" }: { classN
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -463,8 +463,8 @@ export function Outline_Clock_24by24({ className = "h-6 w-6" }: { className?: st
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 6.75V12H17.25" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 6.75V12H17.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -479,15 +479,15 @@ export function Solid_SliderVertical_24by24({ className = "h-6 w-6" }: { classNa
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 10.125L12 20.25" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 3.75L12 6.375" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 10.125C13.0355 10.125 13.875 9.28553 13.875 8.25C13.875 7.21447 13.0355 6.375 12 6.375C10.9645 6.375 10.125 7.21447 10.125 8.25C10.125 9.28553 10.9645 10.125 12 10.125Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M18.75 17.625L18.7501 20.25" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M18.7501 3.75L18.75 13.875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M18.75 17.625C19.7855 17.625 20.625 16.7855 20.625 15.75C20.625 14.7145 19.7855 13.875 18.75 13.875C17.7145 13.875 16.875 14.7145 16.875 15.75C16.875 16.7855 17.7145 17.625 18.75 17.625Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M5.25007 14.625L5.25 20.25" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M5.25 3.75L5.25007 10.875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M5.25 14.625C6.28553 14.625 7.125 13.7855 7.125 12.75C7.125 11.7145 6.28553 10.875 5.25 10.875C4.21447 10.875 3.375 11.7145 3.375 12.75C3.375 13.7855 4.21447 14.625 5.25 14.625Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 10.125L12 20.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 3.75L12 6.375" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 10.125C13.0355 10.125 13.875 9.28553 13.875 8.25C13.875 7.21447 13.0355 6.375 12 6.375C10.9645 6.375 10.125 7.21447 10.125 8.25C10.125 9.28553 10.9645 10.125 12 10.125Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M18.75 17.625L18.7501 20.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M18.7501 3.75L18.75 13.875" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M18.75 17.625C19.7855 17.625 20.625 16.7855 20.625 15.75C20.625 14.7145 19.7855 13.875 18.75 13.875C17.7145 13.875 16.875 14.7145 16.875 15.75C16.875 16.7855 17.7145 17.625 18.75 17.625Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M5.25007 14.625L5.25 20.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M5.25 3.75L5.25007 10.875" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M5.25 14.625C6.28553 14.625 7.125 13.7855 7.125 12.75C7.125 11.7145 6.28553 10.875 5.25 10.875C4.21447 10.875 3.375 11.7145 3.375 12.75C3.375 13.7855 4.21447 14.625 5.25 14.625Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -502,12 +502,12 @@ export function Solid_SliderHorizontal_24by24({ className = "h-6 w-6" }: { class
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M13.875 16.1244L3.75 16.1244" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M20.25 16.1244L17.625 16.1244" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15.75 17.9994C16.7855 17.9994 17.625 17.1599 17.625 16.1244C17.625 15.0889 16.7855 14.2494 15.75 14.2494C14.7145 14.2494 13.875 15.0889 13.875 16.1244C13.875 17.1599 14.7145 17.9994 15.75 17.9994Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M7.875 7.87434L3.75 7.87427" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M20.25 7.87427L11.625 7.87434" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M9.75 9.74939C10.7855 9.74939 11.625 8.90992 11.625 7.87439C11.625 6.83886 10.7855 5.99939 9.75 5.99939C8.71447 5.99939 7.875 6.83886 7.875 7.87439C7.875 8.90992 8.71447 9.74939 9.75 9.74939Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.875 16.1244L3.75 16.1244" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M20.25 16.1244L17.625 16.1244" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15.75 17.9994C16.7855 17.9994 17.625 17.1599 17.625 16.1244C17.625 15.0889 16.7855 14.2494 15.75 14.2494C14.7145 14.2494 13.875 15.0889 13.875 16.1244C13.875 17.1599 14.7145 17.9994 15.75 17.9994Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M7.875 7.87434L3.75 7.87427" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M20.25 7.87427L11.625 7.87434" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M9.75 9.74939C10.7855 9.74939 11.625 8.90992 11.625 7.87439C11.625 6.83886 10.7855 5.99939 9.75 5.99939C8.71447 5.99939 7.875 6.83886 7.875 7.87439C7.875 8.90992 8.71447 9.74939 9.75 9.74939Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -570,8 +570,8 @@ export function Outline_MapPin_24by24({ className = "h-6 w-6" }: { className?: s
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 12.75C13.6569 12.75 15 11.4069 15 9.75C15 8.09315 13.6569 6.75 12 6.75C10.3431 6.75 9 8.09315 9 9.75C9 11.4069 10.3431 12.75 12 12.75Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M19.5 9.75C19.5 16.5 12 21.75 12 21.75C12 21.75 4.5 16.5 4.5 9.75C4.5 7.76088 5.29018 5.85322 6.6967 4.4467C8.10322 3.04018 10.0109 2.25 12 2.25C13.9891 2.25 15.8968 3.04018 17.3033 4.4467C18.7098 5.85322 19.5 7.76088 19.5 9.75V9.75Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 12.75C13.6569 12.75 15 11.4069 15 9.75C15 8.09315 13.6569 6.75 12 6.75C10.3431 6.75 9 8.09315 9 9.75C9 11.4069 10.3431 12.75 12 12.75Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M19.5 9.75C19.5 16.5 12 21.75 12 21.75C12 21.75 4.5 16.5 4.5 9.75C4.5 7.76088 5.29018 5.85322 6.6967 4.4467C8.10322 3.04018 10.0109 2.25 12 2.25C13.9891 2.25 15.8968 3.04018 17.3033 4.4467C18.7098 5.85322 19.5 7.76088 19.5 9.75V9.75Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -587,9 +587,9 @@ export function Outline_MapTriFold_24by24({ className = "h-6 w-6" }: { className
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M9 17.25L3 18.75V5.25L9 3.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15 20.25L9 17.25V3.75L15 6.75V20.25Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M15 6.75L21 5.25V18.75L15 20.25" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 17.25L3 18.75V5.25L9 3.75" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 20.25L9 17.25V3.75L15 6.75V20.25Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 6.75L21 5.25V18.75L15 20.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -604,12 +604,12 @@ export function Outline_CrossHair_24by24({ className = "h-6 w-6" }: { className?
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 20.25C16.5563 20.25 20.25 16.5563 20.25 12C20.25 7.44365 16.5563 3.75 12 3.75C7.44365 3.75 3.75 7.44365 3.75 12C3.75 16.5563 7.44365 20.25 12 20.25Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 1.875V5.625" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M1.875 12H5.625" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 22.125V18.375" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M22.125 12H18.375" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 20.25C16.5563 20.25 20.25 16.5563 20.25 12C20.25 7.44365 16.5563 3.75 12 3.75C7.44365 3.75 3.75 7.44365 3.75 12C3.75 16.5563 7.44365 20.25 12 20.25Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 1.875V5.625" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M1.875 12H5.625" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 22.125V18.375" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M22.125 12H18.375" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -624,11 +624,11 @@ export function Outline_CrossHairSimple_24by24({ className = "h-6 w-6" }: { clas
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M12 20.625C16.7635 20.625 20.625 16.7635 20.625 12C20.625 7.23654 16.7635 3.375 12 3.375C7.23654 3.375 3.375 7.23654 3.375 12C3.375 16.7635 7.23654 20.625 12 20.625Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 3.375V7.125" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M3.375 12H7.125" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 20.625V16.875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M20.625 12H16.875" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 20.625C16.7635 20.625 20.625 16.7635 20.625 12C20.625 7.23654 16.7635 3.375 12 3.375C7.23654 3.375 3.375 7.23654 3.375 12C3.375 16.7635 7.23654 20.625 12 20.625Z" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 3.375V7.125" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M3.375 12H7.125" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 20.625V16.875" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M20.625 12H16.875" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -647,8 +647,8 @@ export function Solid_Plus_50by50_2pt({ className = "h-12 w-12" }: { className?:
       aria-hidden="true"
       focusable="false"
       >
-        <path fill-rule="evenodd" 
-              clip-rule="evenodd" 
+        <path fillRule="evenodd" 
+              clipRule="evenodd" 
               fill="#333333"
               d="M25 46.875C37.0812 46.875 46.875 37.0812 46.875 25C46.875 12.9188 37.0812 3.125 25 3.125C12.9188 3.125 3.125 12.9188 3.125 25C3.125 37.0812 12.9188 46.875 25 46.875ZM25.0355 11.7342C23.7412 11.7343 22.6919 12.7835 22.6919 14.0779V22.7372H14.0326C12.7382 22.7372 11.6889 23.7864 11.6889 25.0808C11.6889 26.3752 12.7382 27.4245 14.0326 27.4245H22.6919V36.0838C22.6919 37.3781 23.7412 38.4274 25.0355 38.4275C26.33 38.4275 27.3792 37.3782 27.3792 36.0838V27.4245H36.0385C37.3329 27.4245 38.3822 26.3752 38.3822 25.0808C38.3822 23.7864 37.3329 22.7372 36.0385 22.7372H27.3792V14.0779C27.3792 12.7834 26.33 11.7342 25.0355 11.7342Z"/>
     </svg>
@@ -665,8 +665,8 @@ export function Outline_Plus_50by50_2pt({ className = "12 w-12" }: { className?:
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M7.8125 25H42.1875" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M25 7.8125V42.1875" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7.8125 25H42.1875" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M25 7.8125V42.1875" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -681,7 +681,7 @@ export function Outline_Heart_50by50_2pt({ className = "12 w-12" }: { className?
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M25 42.1875C25 42.1875 5.46875 31.25 5.46875 17.9688C5.46915 15.6214 6.28253 13.3466 7.7706 11.5311C9.25867 9.71564 11.3296 8.47158 13.6312 8.01045C15.9329 7.54931 18.3232 7.89956 20.3958 9.00164C22.4684 10.1037 24.0953 11.8896 25 14.0557L25 14.0557C25.9046 11.8896 27.5316 10.1037 29.6042 9.00165C31.6768 7.89956 34.0671 7.54931 36.3688 8.01045C38.6704 8.47158 40.7413 9.71564 42.2294 11.5311C43.7175 13.3466 44.5309 15.6214 44.5312 17.9688C44.5313 31.25 25 42.1875 25 42.1875Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M25 42.1875C25 42.1875 5.46875 31.25 5.46875 17.9688C5.46915 15.6214 6.28253 13.3466 7.7706 11.5311C9.25867 9.71564 11.3296 8.47158 13.6312 8.01045C15.9329 7.54931 18.3232 7.89956 20.3958 9.00164C22.4684 10.1037 24.0953 11.8896 25 14.0557L25 14.0557C25.9046 11.8896 27.5316 10.1037 29.6042 9.00165C31.6768 7.89956 34.0671 7.54931 36.3688 8.01045C38.6704 8.47158 40.7413 9.71564 42.2294 11.5311C43.7175 13.3466 44.5309 15.6214 44.5312 17.9688C44.5313 31.25 25 42.1875 25 42.1875Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -711,8 +711,8 @@ export function Outline_MapPin_50by50_2pt({ className = "12 w-12" }: { className
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M25 26.5625C28.4518 26.5625 31.25 23.7643 31.25 20.3125C31.25 16.8607 28.4518 14.0625 25 14.0625C21.5482 14.0625 18.75 16.8607 18.75 20.3125C18.75 23.7643 21.5482 26.5625 25 26.5625Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M40.625 20.3125C40.625 34.375 25 45.3125 25 45.3125C25 45.3125 9.375 34.375 9.375 20.3125C9.375 16.1685 11.0212 12.1942 13.9515 9.26396C16.8817 6.3337 20.856 4.6875 25 4.6875C29.144 4.6875 33.1183 6.3337 36.0485 9.26396C38.9788 12.1942 40.625 16.1685 40.625 20.3125V20.3125Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M25 26.5625C28.4518 26.5625 31.25 23.7643 31.25 20.3125C31.25 16.8607 28.4518 14.0625 25 14.0625C21.5482 14.0625 18.75 16.8607 18.75 20.3125C18.75 23.7643 21.5482 26.5625 25 26.5625Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M40.625 20.3125C40.625 34.375 25 45.3125 25 45.3125C25 45.3125 9.375 34.375 9.375 20.3125C9.375 16.1685 11.0212 12.1942 13.9515 9.26396C16.8817 6.3337 20.856 4.6875 25 4.6875C29.144 4.6875 33.1183 6.3337 36.0485 9.26396C38.9788 12.1942 40.625 16.1685 40.625 20.3125V20.3125Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -727,9 +727,9 @@ export function Outline_MapTriFold_50by50_2pt({ className = "12 w-12" }: { class
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M18.75 35.9375L6.25 39.0625V10.9375L18.75 7.8125" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M31.25 42.1875L18.75 35.9375V7.8125L31.25 14.0625V42.1875Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M31.25 14.0625L43.75 10.9375V39.0625L31.25 42.1875" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18.75 35.9375L6.25 39.0625V10.9375L18.75 7.8125" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M31.25 42.1875L18.75 35.9375V7.8125L31.25 14.0625V42.1875Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M31.25 14.0625L43.75 10.9375V39.0625L31.25 42.1875" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -744,12 +744,12 @@ export function Outline_CrossHair_50by50_2pt({ className = "12 w-12" }: { classN
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M25 42.1875C34.4924 42.1875 42.1875 34.4924 42.1875 25C42.1875 15.5076 34.4924 7.8125 25 7.8125C15.5076 7.8125 7.8125 15.5076 7.8125 25C7.8125 34.4924 15.5076 42.1875 25 42.1875Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M25 3.90625V11.7188" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M3.90625 25H11.7188" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M25 46.0938V38.2812" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M46.0938 25H38.2812" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M25 31.25C28.4518 31.25 31.25 28.4518 31.25 25C31.25 21.5482 28.4518 18.75 25 18.75C21.5482 18.75 18.75 21.5482 18.75 25C18.75 28.4518 21.5482 31.25 25 31.25Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M25 42.1875C34.4924 42.1875 42.1875 34.4924 42.1875 25C42.1875 15.5076 34.4924 7.8125 25 7.8125C15.5076 7.8125 7.8125 15.5076 7.8125 25C7.8125 34.4924 15.5076 42.1875 25 42.1875Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M25 3.90625V11.7188" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M3.90625 25H11.7188" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M25 46.0938V38.2812" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M46.0938 25H38.2812" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M25 31.25C28.4518 31.25 31.25 28.4518 31.25 25C31.25 21.5482 28.4518 18.75 25 18.75C21.5482 18.75 18.75 21.5482 18.75 25C18.75 28.4518 21.5482 31.25 25 31.25Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -764,11 +764,11 @@ export function Outline_CrossHairSimple_50by50_2pt({ className = "12 w-12" }: { 
       aria-hidden="true"
       focusable="false"
       >
-        <path d="M25 42.9688C34.9239 42.9688 42.9688 34.9239 42.9688 25C42.9688 15.0761 34.9239 7.03125 25 7.03125C15.0761 7.03125 7.03125 15.0761 7.03125 25C7.03125 34.9239 15.0761 42.9688 25 42.9688Z" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M25 7.03125V14.8438" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M7.03125 25H14.8438" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M25 42.9688V35.1562" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M42.9688 25H35.1562" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M25 42.9688C34.9239 42.9688 42.9688 34.9239 42.9688 25C42.9688 15.0761 34.9239 7.03125 25 7.03125C15.0761 7.03125 7.03125 15.0761 7.03125 25C7.03125 34.9239 15.0761 42.9688 25 42.9688Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M25 7.03125V14.8438" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M7.03125 25H14.8438" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M25 42.9688V35.1562" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M42.9688 25H35.1562" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -777,13 +777,13 @@ export function Outline_CrossHairSimple_50by50_2pt({ className = "12 w-12" }: { 
 
 export const SCWhatsNextCheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
 <svg {...props} width="24" height="24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-<path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
+<path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
 </svg>
 )
 
 export const SCWhatsNextNoCheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...props} width="24" height="24"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M9 75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+  <svg {...props} width="24" height="24"  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M9 75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
 </svg>
 )
 
@@ -792,10 +792,10 @@ export const CreditCard24 = ({width = 24 ,  height= 24 , color = '#000000'}) => 
   <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M21 5.25H3C2.58579 5.25 2.25 5.58579 2.25 6V18C2.25 18.4142 2.58579 18.75 3 18.75H21C21.4142 18.75 21.75 18.4142 21.75 18V6C21.75 5.58579 21.4142 5.25 21 5.25Z"
       stroke={ color }
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-    <path d="M15.7495 15.75H18.7495" stroke={ color } stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M11.2495 15.75H12.7495" stroke={ color } stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M2.24945 9.07983H21.7494" stroke={ color }stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M15.7495 15.75H18.7495" stroke={ color } strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M11.2495 15.75H12.7495" stroke={ color } strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2.24945 9.07983H21.7494" stroke={ color } strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
 

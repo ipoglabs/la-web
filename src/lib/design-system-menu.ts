@@ -9,6 +9,7 @@ export const DESIGN_SYSTEM_MENU: MenuSection[] = [
       { label: "La Colors", href: "/design-system/core/colors" },
       { label: "La Text", href: "/design-system/core/text" },
       { label: "La Button", href: "/design-system/core/button" },
+      { label: "La Alert Dialog", href: "/design-system/core/alert-dialog" },
       { label: "La Input", href: "/design-system/core/input" },
       { label: "La Amount", href: "/design-system/core/amount-input" },
       { label: "La Textarea", href: "/design-system/core/textarea" },

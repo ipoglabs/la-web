@@ -7,6 +7,22 @@
 export { LaButton }          from "./la-button";
 export type { LaButtonProps } from "./la-button";
 
+// Alert Dialog
+export {
+  LaAlertDialog,
+  LaAlertDialogTrigger,
+  LaAlertDialogPortal,
+  LaAlertDialogOverlay,
+  LaAlertDialogContent,
+  LaAlertDialogHeader,
+  LaAlertDialogFooter,
+  LaAlertDialogMedia,
+  LaAlertDialogTitle,
+  LaAlertDialogDescription,
+  LaAlertDialogAction,
+  LaAlertDialogCancel,
+} from "./la-alert-dialog";
+
 // Input
 export { LaInput }           from "./la-input";
 export type { LaInputProps, LaInputStatus } from "./la-input";

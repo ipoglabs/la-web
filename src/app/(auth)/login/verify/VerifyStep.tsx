@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { OtpInput } from "@/components/ui/otp-input";
 import { LaCard } from "@/components/la";
 import ConfettiButton from "@/components/confettibutton";
@@ -36,6 +37,7 @@ export function VerifyStep() {
   const [otpError, setOtpError] = useState(false);
   const [otpErrorMsg, setOtpErrorMsg] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
   const { seconds, enabled, reset: resetTimer } = useResendTimer(60);
   const { celebrating, celebrate } = useConfettiCelebration();
 
@@ -100,9 +102,31 @@ export function VerifyStep() {
       .finally(() => setVerifying(false));
   }
 
-  function handleResend() {
-    resetTimer();
-    // TODO: [API] re-send OTP / magic link
+  async function handleResend() {
+    setResending(true);
+    try {
+      const endpoint = method === "phone_otp" ? "/api/auth/phone/send-otp" : "/api/auth/magic-link";
+      const body = method === "phone_otp" ? { phone: identifier } : { email: identifier };
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error("resend failed");
+      // devCode only comes back for India phone numbers (mocked — no real
+      // SMS provider wired up for +91 yet, see otpService.ts).
+      const data = await res.json().catch(() => ({}));
+      if (data?.devCode) {
+        toast.info(`Demo code (no SMS sent): ${data.devCode}`);
+      } else {
+        toast.success("Code resent.");
+      }
+      resetTimer();
+    } catch {
+      toast.error("Couldn't resend your code. Please try again.");
+    } finally {
+      setResending(false);
+    }
   }
 
   function handleChange() {
@@ -152,9 +176,10 @@ export function VerifyStep() {
             <button
               type="button"
               onClick={handleResend}
-              className="text-sm font-semibold text-slate-800 hover:underline"
+              disabled={resending}
+              className="text-sm font-semibold text-slate-800 hover:underline disabled:opacity-60 disabled:no-underline"
             >
-              Resend
+              {resending ? "Resending…" : "Resend"}
             </button>
           ) : (
             <p className="text-sm text-slate-500">

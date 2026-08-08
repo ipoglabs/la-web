@@ -2,7 +2,12 @@
 
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
+import Post from "@/models/post";
+import ActivityLog from "@/models/ActivityLog";
+import Session from "@/models/session";
+import Alert from "@/models/Alert";
 import { requireAdminId } from "@/lib/requireAdmin";
+import { deleteImageVariants } from "@/lib/media/imageVariants";
 
 /**
  * Permanent delete — real admin session required (moved out of dev-tools,
@@ -16,6 +21,17 @@ import { requireAdminId } from "@/lib/requireAdmin";
  * block re-registering with the same identifier during manual testing.
  * Deliberately kept separate from softDeleteAccount — not merged into one
  * "delete" path.
+ *
+ * Cascades to every collection that's *exclusively* owned by this user —
+ * Post (their own ads), ActivityLog (their own audit trail), Session (their
+ * own devices), Alert (their own saved searches) — so re-registering with
+ * the same identifier doesn't leave dangling rows pointing at a userId that
+ * no longer exists. Deliberately does NOT touch Conversation/Message: those
+ * are shared with another real participant, and both `api/conversations`
+ * routes already null-guard a missing populated participant (falls back to
+ * "Unknown"), so leaving them in place is safe and preserves the
+ * counterparty's chat history. Review is skipped — the model has zero real
+ * read/write paths (profile "reviews" are hardcoded mock data).
  */
 export async function hardDeleteUser(id: string): Promise<{ success: boolean; message?: string }> {
   const adminId = await requireAdminId();
@@ -24,6 +40,21 @@ export async function hardDeleteUser(id: string): Promise<{ success: boolean; me
   if (!id) return { success: false, message: "Missing user id." };
 
   await dbConnect();
+
+  const posts = await Post.find({ ownerId: id }).select("images").lean();
+  const imageUrls = posts.flatMap((p) => (p.images ?? []) as string[]);
+  if (imageUrls.length > 0) {
+    deleteImageVariants(imageUrls).catch((e) =>
+      console.error("R2 cleanup error during hardDeleteUser:", e)
+    );
+  }
+
+  await Promise.all([
+    Post.deleteMany({ ownerId: id }),
+    ActivityLog.deleteMany({ userId: id }),
+    Session.deleteMany({ userId: id }),
+    Alert.deleteMany({ userId: id }),
+  ]);
 
   const result = await User.deleteOne({ _id: id });
   if (result.deletedCount === 0) {

@@ -1,4 +1,4 @@
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 
 export type VerificationStatus = {

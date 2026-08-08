@@ -59,15 +59,20 @@ function IconApple({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
-// Maps NextAuth's `?error=` codes (node_modules/next-auth/core/pages/signin.js)
-// to messages that fit this app's tone — shown via the same sonner toast
-// pattern as every other auth failure on this screen, instead of NextAuth's
-// own unstyled built-in error page (see `pages` in lib/authOptions.ts).
+// Maps `?error=` codes to messages that fit this app's tone — shown via the
+// same sonner toast pattern as every other auth failure on this screen.
+// Most of these are NextAuth's own OAuth codes
+// (node_modules/next-auth/core/pages/signin.js), shown here instead of
+// NextAuth's unstyled built-in error page (see `pages` in lib/authOptions.ts).
+// `suspended` is this app's own code, set by google-callback.ts/
+// apple-callback.ts on OAuth AND by resolveIdentity.ts for the OTP/
+// magic-link path (see resolve-identity/route.ts) — same message either way.
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   OAuthAccountNotLinked:
     "That account is linked to a different sign-in method. Try email or phone instead.",
   AccessDenied: "Access was denied. Please try again.",
   Verification: "That link has expired or was already used.",
+  suspended: "Your account has been suspended. Contact support for help.",
 };
 const OAUTH_ERROR_FALLBACK = "Couldn't sign you in. Please try again.";
 

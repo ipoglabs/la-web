@@ -54,7 +54,7 @@ export function ResponsiveEditor({
   if (isTablet) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[85vh] max-w-md flex-col gap-0 p-0" showCloseButton>
+        <DialogContent className="flex max-h-[85dvh] max-w-md flex-col gap-0 p-0" showCloseButton>
           <DialogHeader className="border-b border-slate-200 px-6 py-4">
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>

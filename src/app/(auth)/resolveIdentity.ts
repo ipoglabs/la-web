@@ -12,6 +12,10 @@
  * `lib/auth-proof.ts`) and then either:
  *   - `matched: true`  → shows a welcome-back toast, redirects to
  *     `redirectTarget` (the `?redirect=` param or `/`)
+ *   - `suspended: true` → redirects to `/login?error=suspended` (same
+ *     message as the OAuth suspension path) instead of funneling the user
+ *     through Details/Role only to 409 at the very last step — see
+ *     resolve-identity/route.ts's header for the fuller story.
  *   - `matched: false` → hands off into the shared `onboardingStore`
  *     (Register's store, renamed 2026-07-16 — see its header) via
  *     `setMethod` + `markAccountCreated`, then redirects to
@@ -76,7 +80,18 @@ export async function resolveIdentity({
     body: JSON.stringify({ method, identifier, fullName, proof }),
   });
   if (!res.ok) throw new Error(`resolve-identity failed (${res.status})`);
-  const { data } = (await res.json()) as { data: { matched: boolean; isAdmin?: boolean } };
+  const { data } = (await res.json()) as {
+    data: { matched: boolean; isAdmin?: boolean; suspended?: boolean };
+  };
+
+  if (data.suspended) {
+    // Same message + same code as the OAuth suspension redirect
+    // (google-callback.ts/apple-callback.ts) — see MethodStep.tsx's
+    // OAUTH_ERROR_MESSAGES. Deliberately does NOT fall through to the
+    // registration hand-off below.
+    router.push("/login?error=suspended");
+    return;
+  }
 
   if (data.matched) {
     const firstName = fullName?.trim().split(/\s+/)[0] || "back";

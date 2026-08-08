@@ -8,7 +8,7 @@ import { usePostFormStore } from "../store/postFormStore";
 
 import { categoryIN } from "@/static/data";
 
-import { Button } from "@/components/ui/button";
+import { LaButton } from "@/components/la/la-button";
 import {
   Popover,
   PopoverContent,
@@ -49,9 +49,9 @@ function Combobox({
       {label && <div className="text-sm text-muted-foreground">{label}</div>}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button
+          <LaButton
             type="button"
-            variant="outline"
+            intent="outline"
             role="combobox"
             className="w-full justify-between"
             disabled={disabled}
@@ -60,7 +60,7 @@ function Combobox({
               {selected || placeholder || "Select an option"}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
-          </Button>
+          </LaButton>
         </PopoverTrigger>
 
         <PopoverContent align="start" className="p-0 w-[var(--radix-popover-trigger-width)]">

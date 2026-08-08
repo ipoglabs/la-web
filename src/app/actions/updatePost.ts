@@ -2,7 +2,7 @@
 "use server";
 
 import { Types } from "mongoose";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
 import { deleteImageVariants } from "@/lib/media/imageVariants";

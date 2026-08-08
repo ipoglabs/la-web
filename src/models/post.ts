@@ -198,14 +198,6 @@ export interface IPost {
   urgency?: string;
 
   /** ===== Moderation ===== */
-  reported?: boolean;
-  reports?: {
-    reason?: string;
-    by?: mongoose.Types.ObjectId;
-    at?: Date;
-  }[];
-  reportedAt?: Date;
-  reportedBy?: mongoose.Types.ObjectId;
   isSuspended?: boolean;
   suspendedAt?: Date;
   suspendedBy?: mongoose.Types.ObjectId;
@@ -403,36 +395,9 @@ const PostSchema = new Schema<IPost>(
     // Service wanted
     urgency: String,
 
-/* 🔴 Moderation */
-
-    reported: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-
-    reports: [
-      {
-        reason: { type: String },
-
-        by: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-
-        at: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
-
-    reportedAt: Date,
-
-    reportedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
+/* 🔴 Moderation — real ad reports live on the separate AdReport collection
+   (src/components/report-ad/model.ts), wired into app/api/reports/*,
+   admin/listReportedAds.ts, admin/reviewReport.ts, lib/moderation.ts. */
 
     isSuspended: {
       type: Boolean,
@@ -455,7 +420,17 @@ const PostSchema = new Schema<IPost>(
 
 /** Helpful compound indexes for dashboards & cleanups */
 PostSchema.index({ ownerId: 1, updatedAt: -1 });
-PostSchema.index({ status: 1, updatedAt: -1 });
+
+// Primary public read path (getFeaturedListings.ts, api/listings/[category])
+// — every public query filters status:"active" + country, often + category,
+// sorted newest-first. Replaces the old { status, updatedAt } index, which
+// didn't match any real query (nothing filters status while sorting by
+// updatedAt — getMyPosts.ts sorts by updatedAt but filters by ownerId, not
+// status, already covered by the index above).
+PostSchema.index({ status: 1, country: 1, category: 1, createdAt: -1 });
+
+// getFeaturedListings.ts's "Top Picks" section sorts by lastBumpedAt instead.
+PostSchema.index({ status: 1, lastBumpedAt: -1, createdAt: -1 });
 
 const Post: Model<IPost> =
   (models.Post as Model<IPost>) || model<IPost>("Post", PostSchema);

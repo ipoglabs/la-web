@@ -337,11 +337,18 @@ function PanelContent({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  // Auto-focus search input when panel mounts
+  // Auto-focus search input when panel mounts — desktop (Dialog) only. On
+  // mobile this panel renders inside a vaul Drawer that's still mid-slide-up
+  // when this fires; forcing the iOS keyboard open while that CSS transform
+  // animation is in flight makes Safari's fixed-position recalculation lose
+  // track of the drawer entirely, leaving only the keyboard visible with
+  // nothing tappable underneath it. Mobile users just tap the search bar
+  // themselves once the sheet has settled.
   React.useEffect(() => {
+    if (isMobile) return;
     const t = setTimeout(() => inputRef.current?.focus(), 80);
     return () => clearTimeout(t);
-  }, []);
+  }, [isMobile]);
 
   // Search
   React.useEffect(() => {
@@ -1087,7 +1094,7 @@ export function LocationPicker({
           </Dialog>
         ) : (
           <Drawer open={open} onOpenChange={setOpen}>
-            <DrawerContent className="flex max-h-[85vh] flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
+            <DrawerContent className="flex max-h-[85dvh] flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
               {/* Grab handle — signals a draggable bottom sheet, not a full page */}
               <div className="mx-auto mt-2.5 h-1.5 w-10 flex-none rounded-full bg-slate-300" aria-hidden="true" />
               {/* Visually hidden title for screen readers */}

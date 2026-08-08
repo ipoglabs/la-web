@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 

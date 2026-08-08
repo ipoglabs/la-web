@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LaTabs, LaTabsList, LaTabsTrigger } from "@/components/la/la-tabs";
 import { toast } from "sonner";
 import { getSocket, disconnectSocket } from "@/lib/wsClient";
 import type { Socket } from "socket.io-client";
 import {
-  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
-  AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+  LaAlertDialog, LaAlertDialogContent, LaAlertDialogHeader, LaAlertDialogFooter,
+  LaAlertDialogTitle, LaAlertDialogDescription, LaAlertDialogCancel, LaAlertDialogAction,
+} from "@/components/la/la-alert-dialog";
 import { filterChatChars, hasContactInfo } from "@/lib/chatValidation";
 import { LaSkeleton } from "@/components/la";
 
@@ -500,22 +500,22 @@ function ChatInput({ onSend, blocked, otherDeleted, onUnblock, onTyping }: {
       </div>
 
       {/* Contact info warning dialog */}
-      <AlertDialog open={showAlert} onOpenChange={setShowAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Share contact information?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <LaAlertDialog open={showAlert} onOpenChange={setShowAlert}>
+        <LaAlertDialogContent>
+          <LaAlertDialogHeader>
+            <LaAlertDialogTitle>Share contact information?</LaAlertDialogTitle>
+            <LaAlertDialogDescription>
               Your message appears to contain a phone number or email address.
               Sharing personal contact details in chat may go against our community
               guidelines and could put you at risk. Are you sure you want to send this?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowAlert(false); setPendingText(""); }}>
+            </LaAlertDialogDescription>
+          </LaAlertDialogHeader>
+          <LaAlertDialogFooter>
+            <LaAlertDialogCancel onClick={() => { setShowAlert(false); setPendingText(""); }}>
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-rose-600 hover:bg-rose-700 text-white"
+            </LaAlertDialogCancel>
+            <LaAlertDialogAction
+              intent="danger"
               onClick={() => {
                 doSend(pendingText);
                 setPendingText("");
@@ -523,10 +523,10 @@ function ChatInput({ onSend, blocked, otherDeleted, onUnblock, onTyping }: {
               }}
             >
               Yes, send anyway
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </LaAlertDialogAction>
+          </LaAlertDialogFooter>
+        </LaAlertDialogContent>
+      </LaAlertDialog>
     </>
   );
 }
@@ -987,14 +987,14 @@ function ChatPageContent() {
               />
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="recent">Recent</TabsTrigger>
-                <TabsTrigger value="1mo">1mo</TabsTrigger>
-                <TabsTrigger value="3mo">3mo</TabsTrigger>
-                <TabsTrigger value="6mo">6mo</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <LaTabs value={activeTab} onValueChange={setActiveTab}>
+              <LaTabsList>
+                <LaTabsTrigger value="recent">Recent</LaTabsTrigger>
+                <LaTabsTrigger value="1mo">1mo</LaTabsTrigger>
+                <LaTabsTrigger value="3mo">3mo</LaTabsTrigger>
+                <LaTabsTrigger value="6mo">6mo</LaTabsTrigger>
+              </LaTabsList>
+            </LaTabs>
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100">

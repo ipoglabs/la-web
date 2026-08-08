@@ -26,8 +26,16 @@ function signJwt(payload: object) {
  * `lib/auth-proof.ts`) proving this exact identifier was just verified,
  * then looks it up against the real `User` collection.
  *
- *   - matched   → mints a real session (same JWT + cookie pattern as
- *     `/api/auth/login`) and returns `{ matched: true }`.
+ *   - matched   → mints a real session (JWT + httpOnly cookie) and returns
+ *     `{ matched: true }`.
+ *   - suspended → returns `{ matched: false, suspended: true }` — the
+ *     client redirects straight to `/login?error=suspended` instead of
+ *     funneling the user through the entire Details/Role registration
+ *     wizard only to 409 at the very last step with a confusing "account
+ *     already exists" message (2026-08-07 fix — see docs/db-schemas.md /
+ *     the audit that found this). Deleted accounts are deliberately NOT
+ *     included here — soft-delete frees the identifier for re-registration
+ *     by design, see docs/account-deletion-flow.md.
  *   - no match  → returns `{ matched: false }`; the client hands off into
  *     `onboardingStore` and continues to `/register/details` to finish
  *     creating the account via `/api/auth/complete-profile`.
@@ -56,14 +64,12 @@ export async function POST(req: Request) {
 
     const user: any = await User.findOne(query).lean();
 
-    if (
-      !user ||
-      user.isDeleted === true ||
-      user.isSuspended === true ||
-      user.accountStatus === "Suspended" ||
-      user.accountStatus === "Deleted"
-    ) {
+    if (!user || user.isDeleted === true || user.accountStatus === "Deleted") {
       return NextResponse.json({ data: { matched: false } });
+    }
+
+    if (user.isSuspended === true || user.accountStatus === "Suspended") {
+      return NextResponse.json({ data: { matched: false, suspended: true } });
     }
 
     const sid = await createUserSession(String(user._id), req);

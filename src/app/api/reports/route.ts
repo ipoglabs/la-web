@@ -14,14 +14,14 @@
  *
  * TODO [INTEGRATION]: Replace IP-based rate limiting with a proper
  *   solution (e.g. Upstash Redis + @upstash/ratelimit) for production.
- * TODO [INTEGRATION]: Extract reporterId + reporterEmail from your auth
- *   session (e.g. next-auth getServerSession) and pass into the document.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import AdReport, { generateTicketId } from "@/components/report-ad/model";
 import { REPORT_ISSUE_OPTIONS, type ReportAdPayload } from "@/components/report-ad/types";
+import { getAuthUser } from "@/lib/session";
+import User from "@/models/user";
 
 // ── Simple in-memory IP rate limiter (dev/staging only) ───────────────────────
 // For production use Upstash Redis or similar persistent store.
@@ -63,6 +63,7 @@ function validate(body: unknown): { ok: true; data: ReportAdPayload } | { ok: fa
   const adId       = sanitizeText(b.adId,       100);
   const adTitle    = sanitizeText(b.adTitle,     300);
   const sellerName = sanitizeText(b.sellerName,  200);
+  const sellerId   = sanitizeText(b.sellerId ?? "", 100);
   const details    = sanitizeText(b.details ?? "", 500);
 
   if (!adId)       errors.push("adId");
@@ -84,6 +85,7 @@ function validate(body: unknown): { ok: true; data: ReportAdPayload } | { ok: fa
       adId:       adId!,
       adTitle:    adTitle!,
       sellerName: sellerName!,
+      sellerId:   sellerId ?? "",
       details:    details ?? "",
     },
   };
@@ -117,10 +119,10 @@ export async function POST(req: NextRequest) {
 
     await dbConnect();
 
-    // TODO [INTEGRATION]: Get reporterId from session, e.g.:
-    //   const session = await getServerSession(authOptions);
-    //   const reporterId = session?.user?.id ?? null;
-    const reporterId: string | null = null;
+    // Never trust a client-supplied reporterId — always derive it from the
+    // real session, same as every other identity field in this app.
+    const session = await getAuthUser();
+    const reporterId: string | null = session?.id ?? null;
 
     // Duplicate check — reporter already has an active report for this ad
     if (reporterId) {
@@ -142,17 +144,35 @@ export async function POST(req: NextRequest) {
       ticketId = generateTicketId();
     }
 
+    // Boolean(...) rather than a plain `??` default — payload.hideIdentity is
+    // unvalidated client JSON (see validate()'s `...b` spread below it), so a
+    // non-boolean value (e.g. a stray "false" string, which is truthy in JS)
+    // must still coerce predictably instead of silently flipping the
+    // anonymity default via loose truthy/falsy rules.
+    const hideIdentity = Boolean(payload.hideIdentity ?? true);
+
+    // Only look up (and store) the reporter's email when they explicitly
+    // consented — ReportAdJourney's identity toggle reuses hideIdentity as
+    // that consent signal (hideIdentity: false = "not anonymous", only
+    // reachable for signed-in reporters). Fetched fresh from the User doc
+    // rather than trusted from the JWT/session claims.
+    let reporterEmail: string | null = null;
+    if (!hideIdentity && reporterId) {
+      const reporterUser = await User.findById(reporterId).select("email").lean();
+      reporterEmail = reporterUser?.email ?? null;
+    }
+
     const report = await AdReport.create({
       ticketId,
       adId:         payload.adId,
       adTitle:      payload.adTitle,
       adThumbnail:  payload.adThumbnail ?? "",
       sellerName:   payload.sellerName,
-      sellerId:     "",              // TODO [INTEGRATION]: pass from listing context
+      sellerId:     payload.sellerId ?? "",
       location:     payload.location ?? "",
       reporterId,
-      reporterEmail: null,           // TODO [INTEGRATION]: from session if user consented
-      hideIdentity:  payload.hideIdentity ?? true,
+      reporterEmail,
+      hideIdentity,
       issues:        payload.issues,
       details:       payload.details ?? "",
     });

@@ -30,7 +30,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import AdReport from "@/components/report-ad/model";
-import { getSession } from "@/lib/session";
+import { getAuthUser } from "@/lib/session";
 import { reviewReport } from "@/lib/moderation";
 
 // "pending" is a report's starting state, not a decision an admin makes —
@@ -58,7 +58,7 @@ export async function GET(
     }
 
     if (report.reporterId) {
-      const session = await getSession();
+      const session = await getAuthUser();
       if (session?.id !== report.reporterId) {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
       }
@@ -83,7 +83,7 @@ export async function PATCH(
   { params }: { params: Promise<{ ticketId: string }> },
 ) {
   try {
-    const session = await getSession();
+    const session = await getAuthUser();
     if (!session) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }

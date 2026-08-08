@@ -1,5 +1,5 @@
 /**
- * lib/models/JobRun.ts
+ * models/JobRun.ts
  *
  * Mongoose model for batch job execution logs.
  * Every cron job writes a start record here and updates it on completion/failure.

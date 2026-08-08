@@ -43,7 +43,7 @@ export default function BatchRunDemoPage() {
             {JOB_PREVIEW_DATA.length} cron jobs
           </span>
           <span className="rounded-md bg-slate-100 px-3 py-1.5 font-mono text-sm font-medium text-slate-700">
-            lib/jobs/ + lib/models/
+            lib/jobs/ + models/
           </span>
           <span className="rounded-md bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700">
             3 email types wired

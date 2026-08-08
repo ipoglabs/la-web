@@ -8,8 +8,6 @@ import { deletePost } from "@/app/actions/deletePost";
 
 type Props = {
   row: any;
-  ownerEmail: string;
-  ownerId: string;
   onDeleted: (id: string) => void;
   onBumped: (id: string, iso: string) => void;
   onStatusChanged: (id: string, status: string) => void;
@@ -17,7 +15,6 @@ type Props = {
 
 export default function MyAdRow({
   row,
-  ownerEmail,
   onDeleted,
   onBumped,
 }: Props) {
@@ -53,7 +50,7 @@ export default function MyAdRow({
     if (!confirm("Delete this post permanently?")) return;
 
     start(async () => {
-      const res = await deletePost(row.id, ownerEmail);
+      const res = await deletePost(row.id);
       if (!res?.ok) {
         setError(res?.error || "Delete failed");
         return;

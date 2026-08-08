@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 
 export async function checkUserIdAvailability(userId: string, currentUserId?: string) {

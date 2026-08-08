@@ -5,17 +5,17 @@
  * Targets alerts with frequency = "instant".
  *
  * For each active instant alert:
- *  1. Query live listings that match the alert's criteria
- *  2. Exclude listings already notified for this alert (duplicate guard)
+ *  1. Query live Posts that match the alert's criteria
+ *  2. Exclude posts already notified for this alert (duplicate guard)
  *  3. If matches found → send ALERT_MATCH email + update alert state
  *  4. If no matches → set noMatchSince (if not already set)
  *
- * Match logic:
- *  - category: required exact match
- *  - subCategory: AND (if set on alert)
- *  - location: AND, case-insensitive contains (if set on alert)
+ * Match logic (see findAlertMatches in _utils.ts):
+ *  - category: required, id-or-label match
+ *  - subCategory: AND, id-or-label match (if set on alert)
+ *  - location: AND, case-insensitive contains on location.address (if set)
  *  - priceMin / priceMax: AND range (if set on alert)
- *  - keywords: OR — any keyword matches in title OR description (if set on alert)
+ *  - keywords: OR — any keyword matches in name OR description (if set)
  *
  * TODO [scalability]: For large alert collections, replace Alert.find().lean()
  * with cursor-based streaming: Alert.find(...).cursor().eachAsync(fn, { parallel: 10 })
@@ -23,12 +23,10 @@
  */
 
 import dbConnect from "@/lib/db";
-import Alert from "@/lib/models/Alert";
-import Listing from "@/lib/db/models/Listing";
+import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
 import type { JobResult } from "@/lib/jobs/_types";
-import { escapeRegex } from "@/lib/jobs/_utils";
-import mongoose from "mongoose";
+import { findAlertMatches, getAlertRecipientEmail } from "@/lib/jobs/_utils";
 
 const MAX_TRACKED_IDS = 500;
 
@@ -42,31 +40,7 @@ export async function runAlertMatchJob(): Promise<JobResult> {
 
   for (const alert of alerts) {
     try {
-      // Build the Mongoose query for matching live listings
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const query: Record<string, any> = {
-        status: "live",
-        category: alert.category,
-        _id: { $nin: alert.lastMatchedListingIds },
-      };
-
-      if (alert.subCategory) query.subCategory = alert.subCategory;
-      if (alert.location) query.location = { $regex: escapeRegex(alert.location), $options: "i" };
-      if (alert.priceMin !== undefined || alert.priceMax !== undefined) {
-        query.price = {};
-        if (alert.priceMin !== undefined) query.price.$gte = alert.priceMin;
-        if (alert.priceMax !== undefined) query.price.$lte = alert.priceMax;
-      }
-      if (alert.keywords && alert.keywords.length > 0) {
-        // OR logic: any keyword present in title OR description triggers a match
-        const orPattern = alert.keywords.map((k) => escapeRegex(k)).join("|");
-        query.$or = [
-          { title: { $regex: orPattern, $options: "i" } },
-          { description: { $regex: orPattern, $options: "i" } },
-        ];
-      }
-
-      const matches = await Listing.find(query).select("_id title").lean();
+      const matches = await findAlertMatches(alert);
 
       if (matches.length === 0) {
         // Track no-match streak start (only set once — preserved until a match clears it)
@@ -77,15 +51,18 @@ export async function runAlertMatchJob(): Promise<JobResult> {
       }
 
       result.matchesFound += matches.length;
-      const matchIds = matches.map((m) => m._id as mongoose.Types.ObjectId);
+      const matchIds = matches.map((m) => m._id);
+
+      const recipientEmail = await getAlertRecipientEmail(alert.userId);
+      if (!recipientEmail) {
+        result.errors++;
+        continue;
+      }
 
       // Send notification email — one email per alert regardless of match count
-      // TODO [auth-integration]: Replace placeholder with real user email lookup:
-      //   const user = await User.findById(alert.userId).select("email").lean();
-      //   if (!user?.email) { result.errors++; continue; }
       const emailResult = await sendEmail({
         type: "ALERT_MATCH",
-        to: `user-${alert.userId}@placeholder.invalid`,
+        to: recipientEmail,
         data: {
           alertName: alert.name,
           count: matches.length,

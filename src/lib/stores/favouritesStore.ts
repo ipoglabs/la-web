@@ -4,12 +4,19 @@
  * Strategy:
  *   - Persisted to localStorage via Zustand `persist` middleware.
  *   - Works for all users (logged in or not).
- *   - On login: call `syncFromServer(serverItems)` to merge server data in.
+ *   - `add`/`remove` also fire the matching server action (models/Favourite.ts)
+ *     fire-and-forget — silently no-ops for guests (no session), persists +
+ *     logs to ActivityLog for signed-in users. Local state updates
+ *     immediately either way, so the UI never waits on the network.
+ *   - On login: call `syncFromServer(serverItems)` to merge server data in
+ *     (see AppHeader.tsx, which does this on mount for a signed-in user).
  *   - On logout: optionally call `clear()` or keep local items for continuity.
  */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ListingStatus } from "@/types/listing";
+import { addFavourite } from "@/app/actions/favourites/addFavourite";
+import { removeFavourite } from "@/app/actions/favourites/removeFavourite";
 
 export interface FavItem {
   id: string;
@@ -38,15 +45,19 @@ export const useFavouritesStore = create<FavouritesState>()(
     (set, get) => ({
       items: [],
 
-      add: (item) =>
+      add: (item) => {
         set((s) => ({
           items: s.items.some((i) => i.id === item.id)
             ? s.items
             : [...s.items, item],
-        })),
+        }));
+        addFavourite(item).catch(() => {});
+      },
 
-      remove: (id) =>
-        set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+      remove: (id) => {
+        set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+        removeFavourite(id).catch(() => {});
+      },
 
       has: (id) => get().items.some((i) => i.id === id),
 

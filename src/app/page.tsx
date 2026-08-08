@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { History } from "lucide-react";
 import WhyLokalads from "@/components/la-blocks/WhyLokalads";
 import CategoryGrid from "@/components/la-blocks/CategoryGrid";
-import { CreateAlertBanner, CreateAlertDialog } from "@/components/create-alert";
+import { CreateAlertBanner, CreateAlertDialog, useSubmitAlert } from "@/components/create-alert";
 import { CATEGORIES } from "@/config/categories";
 import FeaturedListings, { type FeaturedListingItem } from "@/components/la-blocks/FeaturedListings";
 import RecentSearches, { type RecentSearchItem } from "@/components/la-blocks/RecentSearches";
@@ -38,6 +38,7 @@ function FeaturedListingsSkeleton({ title }: { title: string }) {
 
 export default function LandingPage() {
   const router = useRouter();
+  const submitAlert = useSubmitAlert();
   const [alertOpen, setAlertOpen] = React.useState(false);
   const [pickedLocation, setPickedLocation] = React.useState<LocationValue | null>(null);
   const { config: countryConfig, countryCode } = useCountryConfig();
@@ -152,7 +153,7 @@ export default function LandingPage() {
               </svg>
               <span className="hidden sm:inline">Create Alert</span>
             </button>
-            <CreateAlertDialog open={alertOpen} onOpenChange={setAlertOpen} />
+            <CreateAlertDialog open={alertOpen} onOpenChange={setAlertOpen} onSubmit={submitAlert} />
           </div>
 
         </div>
@@ -215,7 +216,7 @@ export default function LandingPage() {
         
         {/* Section: Create Alert */}
         <div className="container-app mb-5">
-          <CreateAlertBanner />
+          <CreateAlertBanner onAlertCreated={submitAlert} />
         </div>
 
         {/* Section: Why to Use LokalAds ? */}

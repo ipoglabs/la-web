@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import { getAuthUser } from "@/lib/session";
 import AdminTabs from "./AdminTabs";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * this route exists.
  */
 export default async function AdminPage() {
-  const session = await getSession();
+  const session = await getAuthUser();
 
   if (!session) {
     redirect("/login?redirect=/admin");

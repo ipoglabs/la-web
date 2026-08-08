@@ -1,6 +1,6 @@
 // src/app/api/posts/[id]/route.ts
 import { NextResponse } from "next/server";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import mongoose from "mongoose";
 

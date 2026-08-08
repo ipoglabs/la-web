@@ -30,8 +30,8 @@ export interface IAdReport extends Document {
 
   // Reporter
   reporterId:    string | null;       // null for guest/anonymous
-  reporterEmail: string | null;       // only stored if user consented (GDPR)
-  hideIdentity:  boolean;             // true = never expose reporter to seller
+  reporterEmail: string | null;       // set only when hideIdentity is false (consented) — see app/api/reports/route.ts
+  hideIdentity:  boolean;             // true = never expose reporter to seller; also gates reporterEmail (GDPR consent) — see ReportAdJourney's Screen 1 identity toggle
 
   // Report content
   issues:        ReportIssue[];

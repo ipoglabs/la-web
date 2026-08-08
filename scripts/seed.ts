@@ -7,7 +7,7 @@
 
 import dbConnect from "../src/lib/db";
 import User from "../src/models/user";
-import Listing from "../src/lib/db/models/Listing";
+import Listing from "../src/models/Listing";
 import { hash } from "bcryptjs";
 
 async function seed() {

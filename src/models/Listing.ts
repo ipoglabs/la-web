@@ -8,7 +8,7 @@ import {
   Category,
   ListingStatus,
   ListingType,
-} from "./constants";
+} from "./listingConstants";
 
 /**
  * Denormalized snapshot of the seller, embedded on the listing so cards can

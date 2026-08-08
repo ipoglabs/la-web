@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { verifyToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";

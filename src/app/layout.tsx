@@ -15,7 +15,7 @@ import { OverlayCountrySelect } from "@/components/overlay-country-select";
 import Toaster from "@/components/ui/sonner";
 import AppHeader from "@/components/la-blocks/AppHeader";
 import AppFooter from "@/components/la-blocks/AppFooter";
-import { getSession } from "@/lib/session";
+import { getAuthUser } from "@/lib/session";
 import { BrowserGuard } from "@/components/browser-guard/BrowserGuard";
 
 /**
@@ -122,7 +122,7 @@ export default async function RootLayout({
   const countryEntry = allowed ? getConfigByIso(raw) : null;
   const countryCode  = countryEntry?.code ?? "in";
   const countryLabel = countryEntry?.config.displayName ?? "";
-  const user = await getSession();
+  const user = await getAuthUser();
 
   // Footer nav content — resolved per the active country, not hardcoded.
   const popularCategories = getPopularCategories(countryCode);

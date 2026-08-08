@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { LaCard, LaInput, LaBadge, LaButton, LaTabs, LaTabsList, LaTabsTrigger, LaTabsContent, LaSkeleton } from "@/components/la";
 import { listUsers } from "@/app/actions/dev-tools/listUsers";
-import type { DevToolsUser } from "@/app/actions/dev-tools/types";
+import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import DeletedUsersPanel from "./DeletedUsersPanel";
 import ActivityPanel from "./ActivityPanel";
 
@@ -19,14 +19,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default function DevToolsClient() {
   const [tab, setTab] = useState<"users" | "deleted" | "activity">("users");
-  const [users, setUsers] = useState<DevToolsUser[] | null>(null);
+  const { data: users, error, refresh } = useAsyncList(listUsers, []);
   const [filter, setFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [auditUserId, setAuditUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    listUsers().then(setUsers);
-  }, []);
 
   const filtered = useMemo(() => {
     if (!users) return [];
@@ -75,7 +71,14 @@ export default function DevToolsClient() {
           />
 
           <LaCard className="divide-y divide-slate-100 overflow-hidden">
-            {users === null ? (
+            {error ? (
+              <div className="flex flex-col items-start gap-2 p-4">
+                <p className="text-sm text-rose-600">{error}</p>
+                <LaButton intent="outline" size="compact" onClick={refresh}>
+                  Retry
+                </LaButton>
+              </div>
+            ) : users === null ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center justify-between gap-4 px-4 py-3">
                   <div className="min-w-0 flex-1 space-y-2">

@@ -56,16 +56,16 @@ import {
   type IntentId,
 } from "@/config/roles";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  LaAlertDialog,
+  LaAlertDialogAction,
+  LaAlertDialogCancel,
+  LaAlertDialogContent,
+  LaAlertDialogDescription,
+  LaAlertDialogFooter,
+  LaAlertDialogHeader,
+  LaAlertDialogMedia,
+  LaAlertDialogTitle,
+} from "@/components/la/la-alert-dialog";
 
 import type {
   BasicInfoValues,
@@ -1038,74 +1038,74 @@ export function ProfilePageScreen({
       )}
 
       {/* Phone removal confirmation */}
-      <AlertDialog open={!!phonePendingDelete} onOpenChange={(open) => !open && setPhonePendingDelete(null)}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+      <LaAlertDialog open={!!phonePendingDelete} onOpenChange={(open) => !open && setPhonePendingDelete(null)}>
+        <LaAlertDialogContent size="sm">
+          <LaAlertDialogHeader>
+            <LaAlertDialogMedia>
               <Trash2 className="size-5 text-rose-500" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Remove this number?</AlertDialogTitle>
-            <AlertDialogDescription>
+            </LaAlertDialogMedia>
+            <LaAlertDialogTitle>Remove this number?</LaAlertDialogTitle>
+            <LaAlertDialogDescription>
               {contact.phones.find((p) => p.id === phonePendingDelete)?.number} will be removed from your account.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
+            </LaAlertDialogDescription>
+          </LaAlertDialogHeader>
+          <LaAlertDialogFooter>
+            <LaAlertDialogCancel>Cancel</LaAlertDialogCancel>
+            <LaAlertDialogAction
+              intent="danger"
               onClick={() => phonePendingDelete && removePhone(phonePendingDelete)}
             >
               Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </LaAlertDialogAction>
+          </LaAlertDialogFooter>
+        </LaAlertDialogContent>
+      </LaAlertDialog>
 
       {/* Device sign-out confirmation */}
-      <AlertDialog open={!!devicePendingRevoke} onOpenChange={(open) => !open && setDevicePendingRevoke(null)}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+      <LaAlertDialog open={!!devicePendingRevoke} onOpenChange={(open) => !open && setDevicePendingRevoke(null)}>
+        <LaAlertDialogContent size="sm">
+          <LaAlertDialogHeader>
+            <LaAlertDialogMedia>
               <LogOut className="size-5 text-rose-500" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>
+            </LaAlertDialogMedia>
+            <LaAlertDialogTitle>
               Sign out {devicePendingRevoke?.isCurrent ? "this device" : devicePendingRevoke?.deviceLabel}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+            </LaAlertDialogTitle>
+            <LaAlertDialogDescription>
               {devicePendingRevoke?.isCurrent
                 ? "You'll be signed out here right away and need to sign in again."
                 : "That device will be signed out immediately and will need to sign in again."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirmRevokeDevice}>
+            </LaAlertDialogDescription>
+          </LaAlertDialogHeader>
+          <LaAlertDialogFooter>
+            <LaAlertDialogCancel>Cancel</LaAlertDialogCancel>
+            <LaAlertDialogAction intent="danger" onClick={confirmRevokeDevice}>
               Sign out
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </LaAlertDialogAction>
+          </LaAlertDialogFooter>
+        </LaAlertDialogContent>
+      </LaAlertDialog>
 
       {/* Sign out of all other devices confirmation */}
-      <AlertDialog open={revokeOthersConfirmOpen} onOpenChange={setRevokeOthersConfirmOpen}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+      <LaAlertDialog open={revokeOthersConfirmOpen} onOpenChange={setRevokeOthersConfirmOpen}>
+        <LaAlertDialogContent size="sm">
+          <LaAlertDialogHeader>
+            <LaAlertDialogMedia>
               <LogOut className="size-5 text-rose-500" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Sign out of all other devices?</AlertDialogTitle>
-            <AlertDialogDescription>
+            </LaAlertDialogMedia>
+            <LaAlertDialogTitle>Sign out of all other devices?</LaAlertDialogTitle>
+            <LaAlertDialogDescription>
               Every other device signed in to this account will be signed out immediately. This device stays signed in.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirmRevokeOthers} disabled={revokeOthersLoading}>
+            </LaAlertDialogDescription>
+          </LaAlertDialogHeader>
+          <LaAlertDialogFooter>
+            <LaAlertDialogCancel>Cancel</LaAlertDialogCancel>
+            <LaAlertDialogAction intent="danger" onClick={confirmRevokeOthers} disabled={revokeOthersLoading}>
               {revokeOthersLoading ? "Signing out…" : "Sign out all"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </LaAlertDialogAction>
+          </LaAlertDialogFooter>
+        </LaAlertDialogContent>
+      </LaAlertDialog>
     </>
   );
 }

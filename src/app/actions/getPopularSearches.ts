@@ -1,6 +1,6 @@
 "use server";
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { SUBCATEGORY_LABELS } from "@/lib/category-map";
 

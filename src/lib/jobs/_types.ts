@@ -5,7 +5,7 @@
  * Re-exports JobName and JobRunStatus from the model to avoid duplication.
  */
 
-export type { JobName, JobRunStatus } from "@/lib/models/JobRun";
+export type { JobName, JobRunStatus } from "@/models/JobRun";
 
 /** Returned by every job function — passed to _runner.ts for logging */
 export interface JobResult {

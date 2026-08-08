@@ -10,7 +10,7 @@
  * not.
  */
 
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import Post from "@/models/post";
 import Review from "@/models/review";

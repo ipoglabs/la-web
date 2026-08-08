@@ -16,7 +16,7 @@ import { LaListingDescription } from "@/components/la-blocks/la-listing-descript
 import type { FavItem } from "@/lib/stores/favouritesStore";
 import { resolveListingContext, getSimilarListings } from "@/lib/mock/country-map";
 import { resolvePostListingContext } from "@/app/actions/getPostByAdsId";
-import { getSession } from "@/lib/session";
+import { getAuthUser } from "@/lib/session";
 import FeaturedListings from "@/components/la-blocks/FeaturedListings";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { COUNTRY_CONFIGS, type CountryCode } from "@/config";
@@ -147,7 +147,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
 
   // Own-listing guard — a seller should never see contact CTAs (Email/Call/
   // ChitChat) on their own ad. See SellerContactGate.tsx for the rationale.
-  const session = await getSession();
+  const session = await getAuthUser();
   const isOwnListing = !!session && session.id === listing.seller.id;
 
   const {
@@ -251,8 +251,10 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                   title,
                   thumbnail:  images[0]?.src,
                   sellerName: seller.name,
+                  sellerId:   seller.id,
                   location,
                 }}
+                isAuthenticated={!!session}
               />
             </section>
 

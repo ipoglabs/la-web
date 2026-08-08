@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { LaButton, LaCard, LaInput, LaBadge, LaSkeleton } from "@/components/la";
-import { listUsers, type AdminUserRow } from "@/app/actions/admin/listUsers";
+import { listUsers } from "@/app/actions/admin/listUsers";
 import { hardDeleteUser } from "@/app/actions/admin/hardDeleteUser";
+import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { toast } from "sonner";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -22,22 +23,11 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
  * gate (requireAdminId, enforced inside listUsers/hardDeleteUser too).
  */
 export default function AdminUsersPanel() {
-  const [users, setUsers] = useState<AdminUserRow[] | null>(null);
+  const { data: users, error, refresh } = useAsyncList(listUsers, []);
   const [filter, setFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  async function refresh() {
-    setUsers(null);
-    setSelectedId(null);
-    setConfirming(false);
-    setUsers(await listUsers());
-  }
-
-  useEffect(() => {
-    refresh();
-  }, []);
 
   const filtered = useMemo(() => {
     if (!users) return [];
@@ -61,7 +51,9 @@ export default function AdminUsersPanel() {
       const result = await hardDeleteUser(selected.id);
       if (result.success) {
         toast.success(`Permanently deleted ${selected.email || selected.primaryNumber}. Free to re-register.`);
-        await refresh();
+        setSelectedId(null);
+        setConfirming(false);
+        refresh();
       } else {
         toast.error(result.message || "Delete failed.");
       }
@@ -84,7 +76,14 @@ export default function AdminUsersPanel() {
       />
 
       <LaCard className="divide-y divide-slate-100 overflow-hidden">
-        {users === null ? (
+        {error ? (
+          <div className="flex flex-col items-start gap-2 p-4">
+            <p className="text-sm text-rose-600">{error}</p>
+            <LaButton intent="outline" size="compact" onClick={refresh}>
+              Retry
+            </LaButton>
+          </div>
+        ) : users === null ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="min-w-0 flex-1 space-y-2">

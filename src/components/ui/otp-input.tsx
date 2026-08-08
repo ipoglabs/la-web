@@ -10,16 +10,30 @@ interface Props {
   length?: number;
   onComplete: (otp: string) => void;
   onErrorCleared: () => void;
+  /**
+   * Focus on mount. Default true — safe for the two current callers
+   * (TwoFactorAuthEditor, AddPhoneEditor) because this only ever mounts
+   * after a user-triggered stage transition inside an already-open,
+   * already-settled Drawer/Dialog. Pass `false` (or `!isMobile`) if a
+   * future caller ever renders this as a Drawer's *initial* open-mount
+   * stage on mobile — forcing the keyboard open while the sheet's own
+   * slide-up transform is still animating is the exact iOS Safari bug
+   * fixed in LocationPicker.tsx (content vanishes, only the keyboard shows).
+   */
+  autoFocus?: boolean;
 }
 
-export function OtpInput({ error = false, disabled = false, length = 6, onComplete, onErrorCleared }: Props) {
+export function OtpInput({ error = false, disabled = false, length = 6, onComplete, onErrorCleared, autoFocus = true }: Props) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onErrorClearedRef = useRef(onErrorCleared);
   useEffect(() => { onErrorClearedRef.current = onErrorCleared; });
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!error) return;

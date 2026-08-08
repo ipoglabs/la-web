@@ -49,7 +49,7 @@ number as a genuinely fresh, fully isolated account.
 
 | Surface | File | Behavior |
 |---|---|---|
-| Login | `src/lib/auth.ts`, `src/app/api/auth/login/route.ts` | Rejects `isDeleted`/`accountStatus: "Deleted"` |
+| Login (OTP/magic-link) | `src/lib/auth.ts`, `src/app/api/auth/resolve-identity/route.ts` | Rejects `isDeleted`/`accountStatus: "Deleted"` |
 | Session read | `src/app/actions/getCurrentUser.ts` | Same rejection |
 | OAuth (Google/Apple) | `src/app/api/auth/resolve-identity/route.ts` | Same rejection |
 | Search / category listings | `src/app/api/listings/route.ts` | Filters `status: "active"` only |

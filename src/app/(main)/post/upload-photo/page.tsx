@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 
-import { Button } from "@/components/ui/button";
+import { LaButton } from "@/components/la/la-button";
 import { X, Info } from "lucide-react";
 
 import { usePostFormStore } from "../store/postFormStore";
@@ -211,14 +211,14 @@ export default function UploadPhotoPage() {
               onChange={handleInputChange}
               className="hidden"
             />
-            <Button
+            <LaButton
               type="button"
               className="mt-2"
               disabled={!canAddMore || processing}
               onClick={() => inputRef.current?.click()}
             >
               {processing ? "Processing…" : canAddMore ? "Browse Files" : `Limit reached (${maxImages})`}
-            </Button>
+            </LaButton>
           </div>
 
           {previewUrls.length > 0 && (

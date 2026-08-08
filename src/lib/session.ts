@@ -16,8 +16,13 @@ function getInitials(name: string): string {
 /**
  * Returns the authenticated user from the real session cookie, or null
  * if not logged in. Safe to call from Server Components and root layouts.
+ *
+ * Named distinctly from lib/auth.ts's `getSession()` (which returns the raw
+ * re-verified JWT payload, `SessionPayload`) — this one always hits the DB
+ * for fresh display fields (name/avatar/role), returning the UI-ready
+ * `AuthUser` shape instead.
  */
-export async function getSession(): Promise<AuthUser | null> {
+export async function getAuthUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
   const token =
     cookieStore.get("session")?.value || cookieStore.get("token")?.value;

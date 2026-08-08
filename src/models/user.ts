@@ -22,37 +22,11 @@ const SavedLocationSchema = new mongoose.Schema({
   primary: { type: Boolean, default: false },
 });
 
-const OtpSchema = new mongoose.Schema(
-  {
-    channel: {
-      type: String,
-      enum: ["email", "phone"],
-      required: true,
-    },
-    target: { type: String, required: true, trim: true },
-    code: { type: String, required: true },
-    expiresAt: { type: Date, required: true },
-    verified: { type: Boolean, default: false },
-    attempts: { type: Number, default: 0 },
-    lockedUntil: { type: Date, default: null },
-  },
-  { _id: false }
-);
-
 const AuditSchema = new mongoose.Schema(
   {
     action: { type: String },
     IPAddress: { type: String, trim: true },
     Device: { type: String, trim: true },
-    by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    at: { type: Date, default: Date.now },
-  },
-  { _id: false }
-);
-
-const ReportSchema = new mongoose.Schema(
-  {
-    reason: { type: String, trim: true },
     by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     at: { type: Date, default: Date.now },
   },
@@ -175,17 +149,10 @@ const UserSchema = new mongoose.Schema(
 
     marketingOptIn: { type: Boolean, default: false },
 
-    // moderation
+    // moderation — real ad reports live on the separate AdReport collection
+    // (src/components/report-ad/model.ts), wired into app/api/reports/*,
+    // admin/listReportedAds.ts, admin/reviewReport.ts, lib/moderation.ts.
     isSuspended: { type: Boolean, default: false, index: true },
-    reported: { type: Boolean, default: false, index: true },
-
-    reports: {
-      type: [ReportSchema],
-      default: [],
-    },
-
-    reportClearedAt: Date,
-    reportClearedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
     // audit history
     audit: {
@@ -209,8 +176,6 @@ deletedIdentitySnapshot: {
   primaryNumber: { type: String, trim: true },
   fullName: { type: String, trim: true },
 },
-
- otp: { type: OtpSchema, default: null },
 
     // Derived, not user-settable — kept in sync by the pre-validate hook
     // below on every save. True only once email, primaryNumber,

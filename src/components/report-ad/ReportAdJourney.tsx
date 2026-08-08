@@ -10,16 +10,23 @@
  * Screen 2 — Review:  full summary + acknowledgement checkbox before submit
  * Screen 3 — Status:  ticket ID + what happens next
  *
- * TODO [INTEGRATION]: Replace simulateSubmit() with POST /api/reports.
- * TODO [INTEGRATION]: Pass reporterId from session into payload.
- * TODO [INTEGRATION]: On 429 → "You've already reported this ad."
+ * Submission itself is delegated to the `onSubmit` prop — when the caller
+ * passes one (see ListingReportButton.tsx, which POSTs to /api/reports),
+ * that's used; otherwise this falls back to a fake local delay + demo ticket
+ * id, which is what still powers the /snippets/report-ad showcase page.
+ * reporterId is never sent by the client — /api/reports derives it from the
+ * real session server-side (see ReportAdPayload's doc comment).
+ * On 409 (duplicate_report) / 429 (rate_limit) — surfaced as specific
+ * messages on Screen 2 rather than a generic failure (see handleSubmit's
+ * catch block; relies on the thrown Error's message matching /api/reports'
+ * `{ error }` code, see ListingReportButton.tsx).
  */
 
 import { useState } from "react";
 import { ArrowRight, ChevronLeft, Flag, AlertTriangle, Circle, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
-import { LaButton, LaField, LaTextarea } from "@/components/la";
+import { LaButton, LaField, LaTextarea, LaSwitch } from "@/components/la";
 import { cn } from "@/lib/utils";
 import WhatsNext from "@/components/la-blocks/WhatsNext";
 import {
@@ -70,12 +77,18 @@ interface Screen1Props {
   onDetailsChange: (v: string) => void;
   onNext:          () => void;
   isPopup:         boolean;
+  /** Only signed-in reporters can be contacted for follow-up — hide the
+   * identity toggle entirely for guests rather than show a no-op control. */
+  isAuthenticated: boolean;
+  stayAnonymous:   boolean;
+  onStayAnonymousChange: (v: boolean) => void;
 }
 
 function Screen1Collect({
   target, issues, details,
   onIssueChange, onDetailsChange,
   onNext, isPopup,
+  isAuthenticated, stayAnonymous, onStayAnonymousChange,
 }: Screen1Props) {
   return (
     <>
@@ -125,6 +138,21 @@ function Screen1Collect({
           />
         </LaField>
 
+        {/* Identity toggle — signed-in reporters only, no-op for guests */}
+        {isAuthenticated && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Report anonymously</p>
+              <p className="text-sm text-slate-500">
+                {stayAnonymous
+                  ? "The seller never sees who filed this report."
+                  : "Our support team may use your account email to follow up on this report."}
+              </p>
+            </div>
+            <LaSwitch checked={stayAnonymous} onCheckedChange={onStayAnonymousChange} />
+          </div>
+        )}
+
       </div>
 
       <div className={cn("shrink-0 border-t border-slate-200 bg-slate-50 px-5 pt-3.5 pb-6", isPopup && "pb-5")}>
@@ -152,7 +180,7 @@ interface Screen2Props {
   onBack:       () => void;
   onSubmit:     () => void;
   isSubmitting: boolean;
-  submitError:  boolean;
+  submitError:  string | null;
   isPopup:      boolean;
 }
 
@@ -228,7 +256,7 @@ function Screen2Review({
 
       <div className={cn("shrink-0 border-t border-slate-200 bg-slate-50 px-5 pt-3.5 pb-6", isPopup && "pb-5")}>
         {submitError && (
-          <p className="text-sm text-rose-600 mb-3">Something went wrong — please try again.</p>
+          <p className="text-sm text-rose-600 mb-3">{submitError}</p>
         )}
         <div className="flex items-center gap-2">
           <LaButton intent="secondary" size="default" className="shrink-0" onClick={onBack}>
@@ -363,6 +391,8 @@ export interface ReportAdJourneyProps {
   onSubmit?:      (payload: ReportAdPayload) => Promise<ReportAdTicket> | ReportAdTicket | void;
   onComplete?:    () => void;
   onStepChange?:  (step: 1 | 2 | 3) => void;
+  /** Shows the Screen 1 identity toggle when true — see Screen1Props' comment. */
+  isAuthenticated?: boolean;
 }
 
 /**
@@ -370,17 +400,6 @@ export interface ReportAdJourneyProps {
  *
  * Self-contained 3-step report flow. Designed to run inside ReportAdPopup
  * (Drawer on mobile / Dialog on tablet+) but also works standalone.
- *
- * TODO [INTEGRATION]: Replace the simulated submit with a real API call:
- *
- *   const response = await fetch('/api/reports', {
- *     method: 'POST',
- *     headers: { 'Content-Type': 'application/json' },
- *     body: JSON.stringify(payload),
- *   });
- *   if (!response.ok) throw new Error('submit_failed');
- *   const { ticketId } = await response.json();
- *   return { ticketId, status: 'pending', createdAt: new Date().toISOString() };
  */
 export default function ReportAdJourney({
   target,
@@ -389,6 +408,7 @@ export default function ReportAdJourney({
   onSubmit,
   onComplete,
   onStepChange,
+  isAuthenticated = false,
 }: ReportAdJourneyProps) {
   const isPopup = layout === "popup";
 
@@ -396,8 +416,9 @@ export default function ReportAdJourney({
   const [issues,       setIssues]       = useState<ReportIssue[]>([]);
   const [details,      setDetails]      = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError,  setSubmitError]  = useState(false);
+  const [submitError,  setSubmitError]  = useState<string | null>(null);
   const [ticket,       setTicket]       = useState<ReportAdTicket | null>(null);
+  const [stayAnonymous, setStayAnonymous] = useState(true);
 
   function goToStep(s: 1 | 2 | 3) {
     setStep(s);
@@ -406,17 +427,22 @@ export default function ReportAdJourney({
 
   async function handleSubmit() {
     setIsSubmitting(true);
-    setSubmitError(false);
+    setSubmitError(null);
 
     const payload: ReportAdPayload = {
       adId:        target.adId,
       adTitle:     target.title,
       adThumbnail: target.thumbnail ?? "",
       sellerName:  target.sellerName,
+      sellerId:    target.sellerId,
       location:    target.location,
       issues,
       details,
-      hideIdentity: true,
+      // Reused as the one identity/consent signal Screen 1 collects: true
+      // keeps the reporter hidden from the seller AND skips storing their
+      // email; false (only reachable when isAuthenticated) means the
+      // account's email may be stored so support can follow up.
+      hideIdentity: isAuthenticated ? stayAnonymous : true,
     };
 
     try {
@@ -440,8 +466,15 @@ export default function ReportAdJourney({
 
       setTicket(result);
       goToStep(3);
-    } catch {
-      setSubmitError(true);
+    } catch (err) {
+      const code = err instanceof Error ? err.message : "";
+      setSubmitError(
+        code === "duplicate_report"
+          ? "You've already reported this ad."
+          : code === "rate_limit"
+            ? "Too many reports submitted recently. Please try again later."
+            : "Something went wrong — please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -477,6 +510,9 @@ export default function ReportAdJourney({
           onDetailsChange={setDetails}
           onNext={() => goToStep(2)}
           isPopup={isPopup}
+          isAuthenticated={isAuthenticated}
+          stayAnonymous={stayAnonymous}
+          onStayAnonymousChange={setStayAnonymous}
         />
       )}
 

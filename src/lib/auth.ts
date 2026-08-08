@@ -2,7 +2,7 @@
 import { cookies } from "next/headers";
 import { cache } from "react";
 import jwt from "jsonwebtoken";
-import connectDB from "@/config/database";
+import connectDB from "@/lib/db";
 import User from "@/models/user";
 import Session from "@/models/session";
 import { isSessionRevoked } from "@/lib/userSession";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { LaButton } from "@/components/la/la-button";
 import { clearCountryCookies } from "@/lib/country-cookie";
 
 export function ResetButton() {
@@ -13,8 +13,8 @@ export function ResetButton() {
   }
 
   return (
-    <Button variant="outline" onClick={handleReset}>
+    <LaButton intent="outline" onClick={handleReset}>
       Reset — clear country cookie
-    </Button>
+    </LaButton>
   );
 }

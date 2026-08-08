@@ -7,7 +7,7 @@ import type { CountryCode } from "@/config";
  * POC scope: only the URLs that actually exist today (country-prefixed
  * /listings index). Individual listing detail pages are NOT enumerated yet
  * because listings still come from mock data with no DB-backed country+slug
- * catalogue (see lib/models/Listing.ts — countryCode+slug index exists,
+ * catalogue (see models/Listing.ts — countryCode+slug index exists,
  * but no `.create()` call sites populate it yet — tracked separately).
  *
  * TODO [INTEGRATION]: once listings are DB-backed, enumerate active

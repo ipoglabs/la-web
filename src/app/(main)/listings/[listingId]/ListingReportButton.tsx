@@ -3,38 +3,23 @@
 import { useState } from "react";
 import { Flag } from "lucide-react";
 import { ReportAdPopup } from "@/components/report-ad";
-import type { ReportAdTarget } from "@/components/report-ad";
+import type { ReportAdTarget, ReportAdPayload, ReportAdTicket } from "@/components/report-ad";
 
 interface ListingReportButtonProps {
   listingId: string;
-  /**
-   * TODO [INTEGRATION]: Populate from the listing API response.
-   * Pass the real title, thumbnail, sellerName and location so the
-   * ReportAdPopup can display the ad context card on Screen 1.
-   */
   target?: Partial<ReportAdTarget>;
+  isAuthenticated?: boolean;
 }
 
 /**
- * ListingReportButton — opens the full ReportAdPopup 3-screen journey.
- *
- * TODO [INTEGRATION]: Pass target from the parent page:
- *   <ListingReportButton
- *     listingId={advId}
- *     target={{ adId: advId, title, thumbnail: images[0]?.src, sellerName: seller.name, location }}
- *   />
- *
- * TODO [INTEGRATION]: Wire the onSubmit prop to POST /api/reports:
- *   onSubmit={async (payload) => {
- *     const res = await fetch('/api/reports', { method: 'POST', body: JSON.stringify(payload) });
- *     const { ticketId } = await res.json();
- *     return { ticketId, status: 'pending', createdAt: new Date().toISOString() };
- *   }}
- *
- * TODO [INTEGRATION]: Guard behind auth — check session before setOpen(true),
- *   redirect to /login if user is not signed in.
+ * ListingReportButton — opens the full ReportAdPopup 3-screen journey and
+ * submits real reports to POST /api/reports (reporterId is derived
+ * server-side from the session there — never sent from here). Anonymous/
+ * guest reporting is intentionally allowed (models/report-ad's `reporterId:
+ * string | null // null for guest/anonymous`), so this doesn't gate opening
+ * the popup behind auth.
  */
-export default function ListingReportButton({ listingId, target }: ListingReportButtonProps) {
+export default function ListingReportButton({ listingId, target, isAuthenticated }: ListingReportButtonProps) {
   const [open, setOpen] = useState(false);
 
   const resolvedTarget: ReportAdTarget = {
@@ -42,8 +27,25 @@ export default function ListingReportButton({ listingId, target }: ListingReport
     title:      target?.title      ?? "This listing",
     thumbnail:  target?.thumbnail,
     sellerName: target?.sellerName ?? "Seller",
+    sellerId:   target?.sellerId,
     location:   target?.location   ?? "",
   };
+
+  async function handleSubmit(payload: ReportAdPayload): Promise<ReportAdTicket> {
+    const res = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.error ?? "submit_failed");
+    }
+
+    const { ticketId } = await res.json();
+    return { ticketId, status: "pending", createdAt: new Date().toISOString() };
+  }
 
   return (
     <>
@@ -60,6 +62,8 @@ export default function ListingReportButton({ listingId, target }: ListingReport
         open={open}
         onOpenChange={setOpen}
         target={resolvedTarget}
+        onSubmit={handleSubmit}
+        isAuthenticated={isAuthenticated}
       />
     </>
   );

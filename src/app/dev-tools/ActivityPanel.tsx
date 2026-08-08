@@ -6,8 +6,9 @@ import { LaButton, LaCard, LaInput, LaAvatar, LaSkeleton } from "@/components/la
 import { listUsers } from "@/app/actions/dev-tools/listUsers";
 import type { DevToolsUser } from "@/app/actions/dev-tools/types";
 import { getUserAuditDetail } from "@/app/actions/dev-tools/getUserAuditDetail";
-import type { AuditRange, DevToolsAuditDetail, DevToolsAuditEntry, DevToolsAuditUser } from "@/app/actions/dev-tools/getUserAuditDetail";
+import type { AuditRange, DevToolsAuditEntry, DevToolsAuditUser } from "@/app/actions/dev-tools/getUserAuditDetail";
 import { ACTIVITY_LABELS, FIELD_NAMES } from "./activityLabels";
+import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { cn } from "@/lib/utils";
 
 const RANGES: { id: AuditRange; label: string }[] = [
@@ -93,29 +94,19 @@ function UserRow({ user, onOpen }: { user: DevToolsUser; onOpen: () => void }) {
 }
 
 export default function ActivityPanel({ initialUserId }: { initialUserId?: string | null }) {
-  const [users, setUsers] = useState<DevToolsUser[] | null>(null);
+  const { data: users, error: usersError, refresh: refreshUsers } = useAsyncList(listUsers, []);
   const [filter, setFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialUserId ?? null);
-  const [detail, setDetail] = useState<DevToolsAuditDetail | null>(null);
   const [range, setRange] = useState<AuditRange>("7d");
-
-  useEffect(() => {
-    listUsers().then(setUsers);
-  }, []);
+  const { data: detail, error: detailError, refresh: refreshDetail } = useAsyncList(async () => {
+    if (!selectedId) return null;
+    return getUserAuditDetail(selectedId, range);
+  }, [selectedId, range]);
 
   // Jump straight to a user's detail when opened via a cross-link (Users tab).
   useEffect(() => {
     if (initialUserId) setSelectedId(initialUserId);
   }, [initialUserId]);
-
-  useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
-      return;
-    }
-    setDetail(null);
-    getUserAuditDetail(selectedId, range).then(setDetail);
-  }, [selectedId, range]);
 
   const filtered = useMemo(() => {
     if (!users) return [];
@@ -141,7 +132,14 @@ export default function ActivityPanel({ initialUserId }: { initialUserId?: strin
           <ArrowLeft className="h-4 w-4" /> Back to search
         </button>
 
-        {detail === null ? (
+        {detailError ? (
+          <LaCard className="p-5 flex flex-col items-start gap-2">
+            <p className="text-sm text-rose-600">{detailError}</p>
+            <LaButton intent="outline" size="compact" onClick={refreshDetail}>
+              Retry
+            </LaButton>
+          </LaCard>
+        ) : detail === null ? (
           <LaCard className="p-5 flex items-center gap-3">
             <LaSkeleton shape="block" className="h-10 w-10 rounded-full shrink-0" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -249,7 +247,14 @@ export default function ActivityPanel({ initialUserId }: { initialUserId?: strin
       </form>
 
       <LaCard className="divide-y divide-slate-100 overflow-hidden">
-        {users === null ? (
+        {usersError ? (
+          <div className="flex flex-col items-start gap-2 p-4">
+            <p className="text-sm text-rose-600">{usersError}</p>
+            <LaButton intent="outline" size="compact" onClick={refreshUsers}>
+              Retry
+            </LaButton>
+          </div>
+        ) : users === null ? (
           Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3">
               <LaSkeleton shape="block" className="h-8 w-8 rounded-full shrink-0" />

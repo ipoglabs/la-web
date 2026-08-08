@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { CreateAlertDialog } from "@/components/create-alert";
+import { CreateAlertDialog, useSubmitAlert } from "@/components/create-alert";
 import { LaButton } from "@/components/la/la-button";
 import { CircleArrowLeft } from "lucide-react";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
@@ -26,6 +26,7 @@ export default function ListingDetailNavBand({
   const router = useRouter();
   const { countryCode } = useCountryConfig();
   const [alertOpen, setAlertOpen] = useState(false);
+  const submitAlert = useSubmitAlert();
 
   const backHref = cat && sub
     ? `/${countryCode}/listings?cat=${cat}&sub=${sub}`
@@ -103,7 +104,7 @@ export default function ListingDetailNavBand({
 
       </div>
 
-      <CreateAlertDialog open={alertOpen} onOpenChange={setAlertOpen} />
+      <CreateAlertDialog open={alertOpen} onOpenChange={setAlertOpen} onSubmit={submitAlert} />
     </div>
   );
 }

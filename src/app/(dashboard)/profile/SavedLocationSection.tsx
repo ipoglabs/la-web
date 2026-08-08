@@ -25,16 +25,16 @@ import { toast } from "sonner";
 import { LaButton, LaCard } from "@/components/la";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  LaAlertDialog,
+  LaAlertDialogAction,
+  LaAlertDialogCancel,
+  LaAlertDialogContent,
+  LaAlertDialogDescription,
+  LaAlertDialogFooter,
+  LaAlertDialogHeader,
+  LaAlertDialogMedia,
+  LaAlertDialogTitle,
+} from "@/components/la/la-alert-dialog";
 import { addSavedLocation } from "@/app/actions/profile/addSavedLocation";
 import { removeSavedLocation } from "@/app/actions/profile/removeSavedLocation";
 import { locationValueToSavedLocationInput } from "@/lib/locationUtils";
@@ -182,26 +182,26 @@ export function SavedLocationSection({
         </LaCard>
       </section>
 
-      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+      <LaAlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <LaAlertDialogContent size="sm">
+          <LaAlertDialogHeader>
+            <LaAlertDialogMedia>
               <MapPin className="size-5 text-rose-500" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Remove location?</AlertDialogTitle>
-            <AlertDialogDescription>
+            </LaAlertDialogMedia>
+            <LaAlertDialogTitle>Remove location?</LaAlertDialogTitle>
+            <LaAlertDialogDescription>
               {pendingDelete?.city}, {pendingDelete?.country} will be removed from your saved
               locations.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={confirmDelete} disabled={saving}>
+            </LaAlertDialogDescription>
+          </LaAlertDialogHeader>
+          <LaAlertDialogFooter>
+            <LaAlertDialogCancel>Cancel</LaAlertDialogCancel>
+            <LaAlertDialogAction intent="danger" onClick={confirmDelete} disabled={saving}>
               {saving ? "Removing…" : "Remove"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </LaAlertDialogAction>
+          </LaAlertDialogFooter>
+        </LaAlertDialogContent>
+      </LaAlertDialog>
     </>
   );
 }
