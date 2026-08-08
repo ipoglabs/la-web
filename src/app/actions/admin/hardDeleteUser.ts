@@ -8,6 +8,7 @@ import Session from "@/models/session";
 import Alert from "@/models/Alert";
 import { requireAdminId } from "@/lib/requireAdmin";
 import { deleteImageVariants } from "@/lib/media/imageVariants";
+import { logActivity } from "@/lib/activityLog";
 
 /**
  * Permanent delete — real admin session required (moved out of dev-tools,
@@ -41,6 +42,17 @@ export async function hardDeleteUser(id: string): Promise<{ success: boolean; me
 
   await dbConnect();
 
+  // Captured before the cascade below — ActivityLog.deleteMany({userId: id})
+  // wipes this user's own audit trail in the same operation, so there'd be
+  // nothing left to log against afterward. Logged against the admin's own
+  // feed instead — the deleted account's identity is gone by the time this
+  // finishes, but who did the deleting shouldn't be.
+  const target = await User.findById(id).select("email userId fullName").lean<{
+    email?: string;
+    userId?: string;
+    fullName?: string;
+  } | null>();
+
   const posts = await Post.find({ ownerId: id }).select("images").lean();
   const imageUrls = posts.flatMap((p) => (p.images ?? []) as string[]);
   if (imageUrls.length > 0) {
@@ -60,5 +72,10 @@ export async function hardDeleteUser(id: string): Promise<{ success: boolean; me
   if (result.deletedCount === 0) {
     return { success: false, message: "User not found." };
   }
+
+  await logActivity(adminId, "USER_HARD_DELETED", {
+    title: target?.email || target?.userId || target?.fullName || id,
+  });
+
   return { success: true };
 }

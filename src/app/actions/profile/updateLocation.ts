@@ -4,6 +4,8 @@ import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { sendLocationUpdateEmail } from "@/lib/profile/updateLocationEmail";
+import { logActivity } from "@/lib/activityLog";
+import type { ActivityAction } from "@/models/ActivityLog";
 
 export async function updateLocation({
   country,
@@ -93,6 +95,22 @@ export async function updateLocation({
   };
 
   await user.save();
+
+  // ADO-style field-level history: log every changed field with its old→new
+  // value — mirrors updateProfile.ts's FIELD_ACTIONS pattern. Postal Code
+  // has no action mapped: the editor never actually sends one (always
+  // defaults to ""), so there's nothing real to log yet.
+  const FIELD_ACTIONS: Record<string, ActivityAction> = {
+    Country: "COUNTRY_CHANGED",
+    State: "STATE_CHANGED",
+    City: "CITY_CHANGED",
+  };
+  for (const change of changes) {
+    const action = FIELD_ACTIONS[change.field];
+    if (action) {
+      await logActivity(user._id, action, { from: change.oldValue, to: change.newValue });
+    }
+  }
 
   /* ================= EMAIL ================= */
 

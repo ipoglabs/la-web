@@ -3,6 +3,7 @@
 import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
+import { logActivity } from "@/lib/activityLog";
 
 export async function removeSavedLocation(locationId: string): Promise<{ success: true }> {
   await connectDB();
@@ -17,6 +18,7 @@ export async function removeSavedLocation(locationId: string): Promise<{ success
   if (!target) throw new Error("Location not found");
 
   const wasPrimary = target.primary;
+  const title = [target.city, target.country].filter(Boolean).join(", ");
   target.deleteOne();
 
   // Keep exactly one "primary" location when one remains — mirrors
@@ -26,5 +28,6 @@ export async function removeSavedLocation(locationId: string): Promise<{ success
   }
 
   await user.save();
+  await logActivity(user._id, "SAVED_LOCATION_REMOVED", { title });
   return { success: true };
 }

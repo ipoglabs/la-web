@@ -11,11 +11,23 @@ import { laButtonVariants } from "@/components/la/la-button";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
 import { cn } from "@/lib/utils";
 import { ResponsiveEditor } from "./ResponsiveEditor";
-import { countryFromToken } from "@/lib/locationUtils";
+import { countryFromToken, fetchPlaceDetails } from "@/lib/locationUtils";
 import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
 import type { ResidenceValues, SavedLocation } from "./types";
 
+/**
+ * Prefers a picked value's own structured city/state/country (set either by
+ * a GPS reverse-geocode, or by the placeId-driven upgrade in `handlePick`
+ * below) over comma-splitting `sublabel` — that naive split treats
+ * everything before the last comma as "state", which mis-parses POI
+ * results (e.g. an airport, where the sublabel is the *locality* the
+ * airport sits in, not a state) into a garbled state field with the
+ * category dropped entirely.
+ */
 function pickerValueToResidence(v: LocationValue): ResidenceValues {
+  if (v.city && v.country) {
+    return { city: v.city, state: v.state ?? "", country: v.country };
+  }
   const parts = (v.sublabel ?? "")
     .split(",")
     .map((p) => p.trim())
@@ -63,6 +75,21 @@ export function ResidenceEditor({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Shows the raw pick immediately (no jank), then upgrades it in place
+  // once the real city/state/country resolves — typically well before the
+  // user reviews the preview and clicks Save. Falls back to the existing
+  // sublabel-parsing if the lookup fails, same as before this existed.
+  const handlePick = (v: LocationValue | null) => {
+    setPickerValue(v);
+    saveLocation(v);
+    if (v?.placeId && !(v.city && v.country)) {
+      fetchPlaceDetails(v.placeId).then((details) => {
+        if (!details) return;
+        setPickerValue((prev) => (prev === v ? { ...v, ...details } : prev));
+      });
+    }
+  };
+
   const usePrimary = () => {
     if (!primaryLocation) return;
     setPickerValue({
@@ -75,10 +102,20 @@ export function ResidenceEditor({
     if (!pickerValue || saving) return;
     setSaving(true);
     try {
+      // handlePick's placeId upgrade runs in the background and usually
+      // beats a user clicking Save — but "usually" isn't good enough for
+      // what gets persisted, so resolve here too if it hasn't landed yet.
+      // Awaited under the same "Saving…" state, so this is never a silent
+      // race that can save the still-unresolved raw pick.
+      let toSave = pickerValue;
+      if (toSave.placeId && !(toSave.city && toSave.country)) {
+        const details = await fetchPlaceDetails(toSave.placeId);
+        if (details) toSave = { ...toSave, ...details };
+      }
       // Real persistence happens in the parent's onSave (updateLocation server
       // action → PATCHes the User doc in Mongo) — we just need to wait for it
       // and only close the editor once it's actually confirmed.
-      await onSave(pickerValueToResidence(pickerValue));
+      await onSave(pickerValueToResidence(toSave));
       onOpenChange(false);
     } catch {
       // Parent's onSave is expected to surface its own error toast; keep the
@@ -119,7 +156,7 @@ export function ResidenceEditor({
               <p className="text-sm font-medium text-slate-700">Want to change this?</p>
               <LocationPicker
                 value={pickerValue}
-                onChange={(v) => { setPickerValue(v); saveLocation(v); }}
+                onChange={handlePick}
                 savedLocations={savedLocations}
                 onSaveLocation={saveSuggestion}
                 onRemoveSavedLocation={removeSavedLocationById}
@@ -141,7 +178,7 @@ export function ResidenceEditor({
             </p>
             <LocationPicker
               value={pickerValue}
-              onChange={(v) => { setPickerValue(v); saveLocation(v); }}
+              onChange={handlePick}
               savedLocations={savedLocations}
               onSaveLocation={saveSuggestion}
               onRemoveSavedLocation={removeSavedLocationById}

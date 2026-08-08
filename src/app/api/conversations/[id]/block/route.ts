@@ -18,6 +18,7 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Conversation from "@/models/Conversation";
+import { logActivity } from "@/lib/activityLog";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -42,6 +43,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     } else {
       await Conversation.findByIdAndUpdate(id, { $addToSet: { blockedBy: myId } });
     }
+
+    await logActivity(session.userId, "CONVERSATION_BLOCK_TOGGLED", {
+      conversationId: id,
+      from: alreadyBlocked ? "blocked" : "unblocked",
+      to: alreadyBlocked ? "unblocked" : "blocked",
+    });
 
     return NextResponse.json({ iBlockedThem: !alreadyBlocked });
   } catch (err) {

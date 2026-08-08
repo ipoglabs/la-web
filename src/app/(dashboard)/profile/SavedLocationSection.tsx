@@ -66,7 +66,7 @@ export function SavedLocationSection({
 
   const handleAddLocation = async (value: LocationValue | null) => {
     if (!value) return;
-    const next = locationValueToSavedLocationInput(value);
+    const next = await locationValueToSavedLocationInput(value);
     const isDuplicate = locations.some(
       (l) =>
         l.city.toLowerCase() === next.city.toLowerCase() &&

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown } from "lucide-react";
 import { LaButton, LaCard, LaInput, LaAvatar, LaSkeleton } from "@/components/la";
 import { listUsers } from "@/app/actions/dev-tools/listUsers";
-import type { DevToolsUser } from "@/app/actions/dev-tools/types";
+import type { DevToolsUser, DevToolsConversationMessage, DevToolsConversationSummary } from "@/app/actions/dev-tools/types";
 import { getUserAuditDetail } from "@/app/actions/dev-tools/getUserAuditDetail";
 import type { AuditRange, DevToolsAuditEntry, DevToolsAuditUser } from "@/app/actions/dev-tools/getUserAuditDetail";
+import { getConversationMessages } from "@/app/actions/dev-tools/getConversationMessages";
 import { ACTIVITY_LABELS, FIELD_NAMES } from "./activityLabels";
 import { useAsyncList } from "@/lib/hooks/useAsyncList";
 import { cn } from "@/lib/utils";
@@ -57,17 +58,145 @@ function rowForEntry(entry: DevToolsAuditEntry): EntryRow {
       newValue: String(meta.to),
     };
   }
+  const title = meta?.title as string | undefined;
+  const criteria = meta?.criteria as string | undefined;
   const summary =
-    (meta?.title as string | undefined) ??
+    // criteria (category - subcategory · location · price · keywords) is a
+    // superset of the alert's own name — an ALERT_CREATED's title is always
+    // just its subCategory label (see createAlert.ts), so once criteria is
+    // available it fully replaces title rather than prefixing it.
+    criteria ??
+    title ??
     (meta?.reason as string | undefined) ??
     (meta?.method as string | undefined) ??
-    (meta?.conversationId ? "Message sent" : undefined) ??
+    (entry.action === "MESSAGE_SENT" && meta?.conversationId ? "Message sent" : undefined) ??
+    (meta?.conversationId ? "View conversation" : undefined) ??
     "—";
   return {
     field: ACTIVITY_LABELS[entry.action] ?? entry.action,
     oldValue: null,
     newValue: summary,
   };
+}
+
+const CONVERSATION_ACTIONS = new Set(["MESSAGE_SENT", "CONVERSATION_DELETED", "CONVERSATION_BLOCK_TOGGLED"]);
+
+/** One audit table row — conversation-related rows expand in-place to show
+ * who the conversation is with, which ad it's about, and (for MESSAGE_SENT)
+ * the real message thread (via getConversationMessages, the same admin
+ * lookup used by DeletedUsersPanel) instead of storing message text in
+ * ActivityLog. */
+function AuditEntryRow({ entry, viewedUserId }: { entry: DevToolsAuditEntry; viewedUserId: string }) {
+  const row = rowForEntry(entry);
+  const conversationId = CONVERSATION_ACTIONS.has(entry.action)
+    ? (entry.metadata?.conversationId as string | undefined)
+    : undefined;
+
+  const [expanded, setExpanded] = useState(false);
+  const [conversation, setConversation] = useState<DevToolsConversationSummary | null>(null);
+  const [messages, setMessages] = useState<DevToolsConversationMessage[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadMessages() {
+    if (!conversationId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await getConversationMessages(conversationId);
+      setConversation(result.conversation);
+      setMessages(result.messages);
+    } catch {
+      setError("Couldn't load this conversation. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const otherParticipant = conversation?.participants.find((p) => p.id !== viewedUserId);
+
+  function toggleExpand() {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+    setExpanded(true);
+    if (messages === null) loadMessages();
+  }
+
+  return (
+    <>
+      <tr>
+        <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{fullTimestamp(entry.at)}</td>
+        <td className="px-4 py-2.5 text-slate-700">{row.field}</td>
+        <td className="px-4 py-2.5 text-slate-500">
+          {row.oldValue !== null ? <span className="line-through opacity-70">{row.oldValue}</span> : "—"}
+        </td>
+        <td className="px-4 py-2.5 text-slate-900 font-medium">
+          {conversationId ? (
+            <button
+              type="button"
+              onClick={toggleExpand}
+              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {row.newValue}
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-180")} />
+            </button>
+          ) : (
+            row.newValue
+          )}
+        </td>
+        <td className="px-4 py-2.5 text-slate-500">{entry.actor?.fullName ?? "—"}</td>
+      </tr>
+      {expanded && conversationId && (
+        <tr>
+          <td colSpan={5} className="bg-slate-50 px-4 py-3 border-t border-slate-100">
+            {loading ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <LaSkeleton key={i} shape="text" className="w-2/3" />
+                ))}
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-sm text-rose-600">{error}</p>
+                <LaButton intent="outline" size="compact" onClick={loadMessages}>
+                  Retry
+                </LaButton>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {conversation && (
+                  <p className="text-sm text-slate-700">
+                    With <span className="font-medium text-slate-900">{otherParticipant?.fullName ?? "Unknown"}</span>
+                    {conversation.adTitle && (
+                      <>
+                        {" "}
+                        about <span className="font-medium text-slate-900">{conversation.adTitle}</span>
+                      </>
+                    )}
+                  </p>
+                )}
+                {!messages || messages.length === 0 ? (
+                  <p className="text-sm text-slate-500">No messages found in this conversation.</p>
+                ) : (
+                  <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+                    {messages.map((m) => (
+                      <p key={m.id} className="text-sm">
+                        <span className="font-medium text-slate-900">{m.senderName}: </span>
+                        <span className="text-slate-700">{m.text}</span>
+                        <span className="text-slate-500"> · {fullTimestamp(m.createdAt)}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
+  );
 }
 
 function UserRow({ user, onOpen }: { user: DevToolsUser; onOpen: () => void }) {
@@ -102,6 +231,7 @@ export default function ActivityPanel({ initialUserId }: { initialUserId?: strin
     if (!selectedId) return null;
     return getUserAuditDetail(selectedId, range);
   }, [selectedId, range]);
+  const viewedUserId = detail?.user?.id;
 
   // Jump straight to a user's detail when opened via a cross-link (Users tab).
   useEffect(() => {
@@ -196,26 +326,9 @@ export default function ActivityPanel({ initialUserId }: { initialUserId?: strin
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {detail.entries.map((entry) => {
-                        const row = rowForEntry(entry);
-                        return (
-                          <tr key={entry.id}>
-                            <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">
-                              {fullTimestamp(entry.at)}
-                            </td>
-                            <td className="px-4 py-2.5 text-slate-700">{row.field}</td>
-                            <td className="px-4 py-2.5 text-slate-500">
-                              {row.oldValue !== null ? (
-                                <span className="line-through opacity-70">{row.oldValue}</span>
-                              ) : (
-                                "—"
-                              )}
-                            </td>
-                            <td className="px-4 py-2.5 text-slate-900 font-medium">{row.newValue}</td>
-                            <td className="px-4 py-2.5 text-slate-500">{entry.actor?.fullName ?? "—"}</td>
-                          </tr>
-                        );
-                      })}
+                      {detail.entries.map((entry) => (
+                        <AuditEntryRow key={entry.id} entry={entry} viewedUserId={viewedUserId ?? ""} />
+                      ))}
                     </tbody>
                   </table>
                 </div>

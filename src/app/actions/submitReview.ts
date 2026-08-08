@@ -3,6 +3,7 @@
 import connectDB from "@/lib/db";
 import Review from "@/models/review";
 import { getCurrentUser } from "@/app/actions/getCurrentUser";
+import { logActivity } from "@/lib/activityLog";
 
 /**
  * One review per (profile, reviewer) pair — upserts so re-submitting edits
@@ -42,6 +43,8 @@ export async function submitReview(
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
+
+  await logActivity(reviewer.id, "REVIEW_SUBMITTED", { title: profileHandle, rating });
 
   return { success: true };
 }

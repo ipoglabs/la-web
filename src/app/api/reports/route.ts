@@ -22,6 +22,7 @@ import AdReport, { generateTicketId } from "@/components/report-ad/model";
 import { REPORT_ISSUE_OPTIONS, type ReportAdPayload } from "@/components/report-ad/types";
 import { getAuthUser } from "@/lib/session";
 import User from "@/models/user";
+import { logActivity } from "@/lib/activityLog";
 
 // ── Simple in-memory IP rate limiter (dev/staging only) ───────────────────────
 // For production use Upstash Redis or similar persistent store.
@@ -176,6 +177,12 @@ export async function POST(req: NextRequest) {
       issues:        payload.issues,
       details:       payload.details ?? "",
     });
+
+    // Guests report anonymously (reporterId: null) by design — nothing to
+    // log against for them, only signed-in reporters get an audit entry.
+    if (reporterId) {
+      await logActivity(reporterId, "AD_REPORTED", { title: payload.adTitle });
+    }
 
     return NextResponse.json(
       { ticketId: report.ticketId },

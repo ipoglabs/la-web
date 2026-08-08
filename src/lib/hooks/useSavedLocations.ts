@@ -67,7 +67,7 @@ export function useSavedLocations() {
         return;
       }
       try {
-        await addSavedLocation(locationValueToSavedLocationInput(value));
+        await addSavedLocation(await locationValueToSavedLocationInput(value));
         await refresh();
       } catch (err) {
         // Every other failure (duplicate, transient account-state change) is
@@ -92,7 +92,7 @@ export function useSavedLocations() {
         return;
       }
       try {
-        await addSavedLocation(locationValueToSavedLocationInput(s));
+        await addSavedLocation(await locationValueToSavedLocationInput(s));
         await refresh();
       } catch (err) {
         if (err instanceof Error && err.message === SAVED_LOCATIONS_LIMIT_MESSAGE) {

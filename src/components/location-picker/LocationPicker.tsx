@@ -24,6 +24,17 @@ export type LocationValue = {
   lng?: number;
   radius?: number;
   unit?: RadiusUnit;
+  /** Google Place ID, present when this value came from an Autocomplete
+   *  pick — lets a caller resolve a real city/state/country breakdown via
+   *  /api/places/details instead of guessing from the display sublabel. */
+  placeId?: string;
+  /** Structured city/state/country, when already known (e.g. a GPS pick
+   *  already resolved via /api/geo/reverse). Preferred over sublabel-
+   *  parsing by any caller that persists a real address, not just a
+   *  free-text search scope. */
+  city?: string;
+  state?: string;
+  country?: string;
 };
 
 export type LocationPickerProps = {
@@ -903,12 +914,22 @@ export function LocationPicker({
         // small town/taluk name), reading far less precise than a real search.
         let label = "Current Location";
         let sublabel: string | undefined;
+        // Structured breakdown — carried straight into the emitted value so
+        // any caller that persists a real address (ResidenceEditor, saved
+        // locations) doesn't have to re-derive city/state/country by
+        // guessing from the display sublabel.
+        let city: string | undefined;
+        let state: string | undefined;
+        let country: string | undefined;
         try {
           const res = await fetch(`/api/geo/reverse?lat=${lat}&lng=${lng}`);
           const data = res.ok ? await res.json() : null;
           if (data?.label) {
             label = data.label;
             sublabel = data.sublabel || undefined;
+            city = data.city || undefined;
+            state = data.state || undefined;
+            country = data.country || undefined;
           } else if (data?.address) {
             label = data.address;
           }
@@ -930,6 +951,9 @@ export function LocationPicker({
           sublabel,
           lat,
           lng,
+          city,
+          state,
+          country,
           radius: current?.radius ?? (showRadius ? RADIUS_OPTIONS[0] : undefined),
           unit: current?.unit ?? radiusUnit,
         };

@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import User from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { MAX_SAVED_LOCATIONS, SAVED_LOCATIONS_LIMIT_MESSAGE } from "@/lib/locationUtils";
+import { logActivity } from "@/lib/activityLog";
 import type { SavedLocation } from "@/app/(dashboard)/profile/types";
 
 export async function addSavedLocation({
@@ -55,6 +56,11 @@ export async function addSavedLocation({
   await user.save();
 
   const created = user.savedLocations[user.savedLocations.length - 1];
+
+  await logActivity(user._id, "SAVED_LOCATION_ADDED", {
+    title: [trimmedCity, trimmedCountry].filter(Boolean).join(", "),
+  });
+
   return {
     id: String(created._id),
     flagCode: created.flagCode,

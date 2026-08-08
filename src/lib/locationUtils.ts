@@ -28,10 +28,51 @@ export function countryFromToken(token: string): { country: string; flagCode: st
   return { country: token.trim(), flagCode: "un" };
 }
 
-/** `LocationValue` (whatever LocationPicker just emitted) → the shape addSavedLocation() expects. */
-export function locationValueToSavedLocationInput(
+/**
+ * Resolves a Places Autocomplete pick's placeId into a real city/state/
+ * country breakdown via /api/places/details — the same address_components
+ * parsing api/geo/reverse already uses for GPS picks. Returns null on any
+ * failure so callers can fall back to their existing sublabel-parsing
+ * instead of blocking the save.
+ */
+export async function fetchPlaceDetails(
+  placeId: string
+): Promise<{ city: string; state: string; country: string } | null> {
+  try {
+    const res = await fetch(`/api/places/details?placeId=${encodeURIComponent(placeId)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.city || !data.country) return null;
+    return { city: data.city, state: data.state ?? "", country: data.country };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `LocationValue` (whatever LocationPicker just emitted) → the shape
+ * addSavedLocation() expects. Prefers a value's own structured city/state/
+ * country when present (a GPS pick, or a search pick already upgraded via
+ * fetchPlaceDetails) — only falls back to comma-splitting `sublabel` when
+ * neither is available, which mis-parses POI results (e.g. an airport,
+ * where the sublabel is the *locality* the airport sits in, not a state).
+ */
+export async function locationValueToSavedLocationInput(
   v: LocationValue
-): { flagCode: string; city: string; region: string; country: string } {
+): Promise<{ flagCode: string; city: string; region: string; country: string }> {
+  if (v.city && v.country) {
+    const flag = countryFromToken(v.country).flagCode;
+    return { flagCode: flag, city: v.city, region: v.state ?? "", country: v.country };
+  }
+
+  if (v.placeId) {
+    const details = await fetchPlaceDetails(v.placeId);
+    if (details) {
+      const flag = countryFromToken(details.country).flagCode;
+      return { flagCode: flag, city: details.city, region: details.state, country: details.country };
+    }
+  }
+
   const parts = (v.sublabel ?? "")
     .split(",")
     .map((p) => p.trim())

@@ -19,6 +19,7 @@ import { NextResponse } from "next/server";
 import { getSession, clearSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Session from "@/models/session";
+import { logActivity } from "@/lib/activityLog";
 
 export async function POST(req: Request) {
   try {
@@ -43,6 +44,10 @@ export async function POST(req: Request) {
       target.revokedAt = new Date();
       await target.save();
     }
+
+    await logActivity(session.userId, "SESSION_REVOKED", {
+      title: isCurrentDevice ? "This device" : "Another device",
+    });
 
     return NextResponse.json({ data: { revoked: true, signedOutCurrentDevice: isCurrentDevice } });
   } catch (err) {

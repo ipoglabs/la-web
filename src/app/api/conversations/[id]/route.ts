@@ -18,6 +18,7 @@ import mongoose from "mongoose";
 import { getSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Conversation from "@/models/Conversation";
+import { logActivity } from "@/lib/activityLog";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -64,6 +65,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     );
 
     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    await logActivity(session.userId, "CONVERSATION_DELETED", { conversationId: id });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

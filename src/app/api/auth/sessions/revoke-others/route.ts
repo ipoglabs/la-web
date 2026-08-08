@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import dbConnect from "@/lib/db";
 import Session from "@/models/session";
+import { logActivity } from "@/lib/activityLog";
 
 export async function POST() {
   try {
@@ -27,7 +28,12 @@ export async function POST() {
       { $set: { revokedAt: new Date() } }
     );
 
-    return NextResponse.json({ data: { revokedCount: result.modifiedCount ?? 0 } });
+    const revokedCount = result.modifiedCount ?? 0;
+    if (revokedCount > 0) {
+      await logActivity(session.userId, "ALL_SESSIONS_REVOKED", { revokedCount });
+    }
+
+    return NextResponse.json({ data: { revokedCount } });
   } catch (err) {
     console.error("session revoke-others error:", err);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });

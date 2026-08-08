@@ -61,3 +61,14 @@ export interface DevToolsConversationMessage {
   text: string;
   createdAt: string;
 }
+
+export interface DevToolsConversationSummary {
+  adId: string;
+  adTitle: string;
+  participants: { id: string; fullName: string }[];
+}
+
+export interface DevToolsConversationDetail {
+  conversation: DevToolsConversationSummary | null;
+  messages: DevToolsConversationMessage[];
+}

@@ -72,7 +72,7 @@ export default function DeletedUsersPanel() {
     setMessages(null);
     setMessagesError(null);
     try {
-      setMessages(await getConversationMessages(convoId));
+      setMessages((await getConversationMessages(convoId)).messages);
     } catch {
       setMessagesError("Couldn't load these messages. Please try again.");
     } finally {
