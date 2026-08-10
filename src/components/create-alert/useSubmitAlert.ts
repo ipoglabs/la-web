@@ -19,6 +19,10 @@ export function useSubmitAlert() {
       if (result.error === "unauthenticated") {
         toast.error("Please sign in to create an alert.");
         router.push("/login");
+      } else if (result.code === "limit_reached") {
+        toast.error(result.error, {
+          action: { label: "Manage alerts", onClick: () => router.push("/my-alerts") },
+        });
       } else {
         toast.error(result.error || "Couldn't create alert. Please try again.");
       }

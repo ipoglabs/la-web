@@ -17,7 +17,7 @@ export interface IAlert extends Document {
   priceMin?: number;
   priceMax?: number;
   frequency: "instant" | "daily" | "weekly";
-  notifyVia: string[];                   // ["email"] v1 — placeholder for SMS/WhatsApp
+  notifyVia: string[];                   // subset of ["email", "whatsapp"] — see lib/jobs/*.job.ts for delivery
   lastNotifiedAt?: Date;
   lastMatchedListingIds: mongoose.Types.ObjectId[];  // pruned to last 500 entries
   noMatchSince?: Date;                   // set when 0 matches found; used by no-match nudge

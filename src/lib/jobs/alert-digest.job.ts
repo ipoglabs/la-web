@@ -17,8 +17,9 @@
 import dbConnect from "@/lib/db";
 import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import type { JobResult } from "@/lib/jobs/_types";
-import { findAlertMatches, getAlertRecipientEmail } from "@/lib/jobs/_utils";
+import { findAlertMatches, getAlertRecipient } from "@/lib/jobs/_utils";
 
 const MAX_TRACKED_IDS = 500;
 
@@ -27,7 +28,7 @@ export async function runAlertDigestJob(
 ): Promise<JobResult> {
   await dbConnect();
 
-  const result: JobResult = { alertsProcessed: 0, matchesFound: 0, emailsSent: 0, errors: 0 };
+  const result: JobResult = { alertsProcessed: 0, matchesFound: 0, emailsSent: 0, whatsappSent: 0, errors: 0 };
 
   const alerts = await Alert.find({ isActive: true, frequency }).lean();
   result.alertsProcessed = alerts.length;
@@ -46,25 +47,37 @@ export async function runAlertDigestJob(
       result.matchesFound += matches.length;
       const matchIds = matches.map((m) => m._id);
 
-      const recipientEmail = await getAlertRecipientEmail(alert.userId);
-      if (!recipientEmail) {
+      const recipient = await getAlertRecipient(alert.userId);
+      if (!recipient.email && !recipient.phone) {
         result.errors++;
         continue;
       }
 
-      const emailResult = await sendEmail({
-        type: "ALERT_DIGEST",
-        to: recipientEmail,
-        data: {
-          alertName: alert.name,
-          count: matches.length,
-          previewUrl: `/listings?alertId=${alert._id}`,
-          frequency,
-        },
-      });
+      if (alert.notifyVia.includes("email") && recipient.email) {
+        const emailResult = await sendEmail({
+          type: "ALERT_DIGEST",
+          to: recipient.email,
+          data: {
+            alertName: alert.name,
+            count: matches.length,
+            previewUrl: `/listings?alertId=${alert._id}`,
+            frequency,
+          },
+        });
 
-      if (emailResult.success) result.emailsSent++;
-      else result.errors++;
+        if (emailResult.success) result.emailsSent++;
+        else result.errors++;
+      }
+
+      if (alert.notifyVia.includes("whatsapp") && recipient.phone && recipient.isPhoneVerified) {
+        const matchWord = matches.length === 1 ? "match" : "matches";
+        const sent = await sendWhatsAppMessage(
+          recipient.phone,
+          `LokalAds: Your ${frequency} digest — ${matches.length} new ${matchWord} for "${alert.name}". View: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
+        );
+        if (sent) result.whatsappSent++;
+        else result.errors++;
+      }
 
       const updatedIds = [...alert.lastMatchedListingIds, ...matchIds].slice(-MAX_TRACKED_IDS);
       await Alert.findByIdAndUpdate(alert._id, {

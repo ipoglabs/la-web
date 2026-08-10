@@ -262,7 +262,7 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
               onChange={(e) => { setMessage(filterChatChars(e.target.value).slice(0, 1000)); setSendError(null); }}
               placeholder="Type a message…"
               disabled={loading || !!setupError}
-              className="flex-1 border border-slate-300 rounded-xl py-2.5 px-4 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
+              className="flex-1 border border-slate-300 rounded-xl py-2.5 px-4 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
             />
             <button
               type="submit"

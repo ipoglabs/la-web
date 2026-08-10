@@ -24,6 +24,7 @@ import { CreateAlertDialog, useSubmitAlert } from "@/components/create-alert";
 import type { MyAlertRow } from "@/app/actions/alerts/getMyAlerts";
 import { deleteAlert } from "@/app/actions/alerts/deleteAlert";
 import { toggleAlertActive } from "@/app/actions/alerts/toggleAlertActive";
+import { MAX_ALERTS_PER_USER } from "@/lib/constants";
 
 const FREQUENCY_LABEL: Record<MyAlertRow["frequency"], string> = {
   instant: "Instant",
@@ -184,10 +185,20 @@ export default function MyAlertsList({ initialAlerts }: { initialAlerts: MyAlert
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   }
 
+  const atLimit = alerts.length >= MAX_ALERTS_PER_USER;
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <LaButton intent="primary-blue" onClick={() => setCreateOpen(true)}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">
+          {alerts.length} / {MAX_ALERTS_PER_USER} alerts
+          {atLimit && " — delete one below to create another"}
+        </p>
+        <LaButton
+          intent="primary-blue"
+          onClick={() => setCreateOpen(true)}
+          disabled={atLimit}
+        >
           Create alert
         </LaButton>
       </div>

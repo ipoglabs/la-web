@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   // UI chrome + step icons
@@ -23,6 +23,8 @@ import { LaButton, LaTagInput, LaSwitch } from "@/components/la";
 import { cn } from "@/lib/utils";
 import { ALERT_CONFIG } from "./alert-config";
 import { CATEGORIES } from "@/config/categories";
+import { getNotifyChannelAvailability } from "@/app/actions/alerts/getNotifyChannelAvailability";
+import type { NotifyChannelAvailability } from "@/app/actions/alerts/getNotifyChannelAvailability";
 import type {
   MainCategory,
   SubCategory,
@@ -427,6 +429,7 @@ interface StepDoneProps {
   filterValues: Record<string, string[]>;
   notifyChannels: NotifyChannel[];
   onNotifyChange: (channels: NotifyChannel[]) => void;
+  notifyAvailability: NotifyChannelAvailability;
   onComplete?: () => void;
   isPopup: boolean;
 }
@@ -439,6 +442,7 @@ function StepDone({
   filterValues,
   notifyChannels,
   onNotifyChange,
+  notifyAvailability,
   onComplete,
   isPopup,
 }: StepDoneProps) {
@@ -451,14 +455,18 @@ function StepDone({
     return () => { if (errorTimerRef.current) clearTimeout(errorTimerRef.current); };
   }, []);
 
+  const isAvailable = (channel: NotifyChannel) =>
+    channel === "email" ? notifyAvailability.emailAvailable : notifyAvailability.whatsappAvailable;
+
   const handleNotifyChange = (checked: boolean, channel: NotifyChannel) => {
     const next = checked
       ? [...new Set([...notifyChannels, channel])]
       : notifyChannels.filter((c) => c !== channel);
     if (next.length === 0) {
-      // Auto-enable the other channel + flash hint red so user knows what happened
-      const other = ALL_NOTIFY_CHANNELS.find((c) => c !== channel)!;
-      onNotifyChange([other]);
+      // Auto-enable the other channel (only if it's actually available) +
+      // flash hint red so user knows what happened.
+      const other = ALL_NOTIFY_CHANNELS.find((c) => c !== channel && isAvailable(c));
+      onNotifyChange(other ? [other] : []);
       setShowNotifyError(true);
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
       errorTimerRef.current = setTimeout(() => setShowNotifyError(false), 2000);
@@ -551,27 +559,37 @@ function StepDone({
               At least one must be on.
             </p>
           </div>
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <Mail className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-slate-800">Email</span>
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-semibold text-slate-800">Email</span>
+              </div>
+              <LaSwitch
+                checked={notifyChannels.includes("email") && notifyAvailability.emailAvailable}
+                disabled={!notifyAvailability.emailAvailable}
+                onCheckedChange={(checked: boolean) => handleNotifyChange(checked, "email")}
+              />
             </div>
-            <LaSwitch
-              checked={notifyChannels.includes("email")}
-              onCheckedChange={(checked: boolean) => handleNotifyChange(checked, "email")}
-              // TODO [INTEGRATION]: Disable email toggle if user has no verified email on account
-            />
+            {!notifyAvailability.emailAvailable && (
+              <p className="text-sm text-amber-600 mt-1">Verify your email in Account Settings to enable this.</p>
+            )}
           </div>
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <MessageCircle className="h-4 w-4 text-lime-600" />
-              <span className="text-sm font-semibold text-slate-800">WhatsApp</span>
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <MessageCircle className="h-4 w-4 text-lime-600" />
+                <span className="text-sm font-semibold text-slate-800">WhatsApp</span>
+              </div>
+              <LaSwitch
+                checked={notifyChannels.includes("whatsapp") && notifyAvailability.whatsappAvailable}
+                disabled={!notifyAvailability.whatsappAvailable}
+                onCheckedChange={(checked: boolean) => handleNotifyChange(checked, "whatsapp")}
+              />
             </div>
-            <LaSwitch
-              checked={notifyChannels.includes("whatsapp")}
-              onCheckedChange={(checked: boolean) => handleNotifyChange(checked, "whatsapp")}
-              // TODO [INTEGRATION]: Disable WhatsApp toggle if user has no verified phone number on account
-            />
+            {!notifyAvailability.whatsappAvailable && (
+              <p className="text-sm text-amber-600 mt-1">Verify your phone number in Account Settings to enable this.</p>
+            )}
           </div>
         </div>
 
@@ -618,9 +636,8 @@ export default function CreateAlertJourney({
   // TODO [INTEGRATION]: Auth guard — if user is not logged in, redirect to login
   // before opening this journey. Check session on mount and abort if unauthenticated.
 
-  // TODO [INTEGRATION]: Max alerts limit — fetch user's current alert count via
-  // GET /api/alerts/count. If at limit (e.g. 10), show an upgrade/upsell prompt
-  // instead of the create flow.
+  // Max-alerts limit (5/user) is enforced server-side in actions/createAlert.ts;
+  // useSubmitAlert.ts surfaces the "limit_reached" error with a link to /my-alerts.
 
   // TODO [INTEGRATION]: Duplicate alert detection — after Step 1 (category +
   // subcategory selected), check GET /api/alerts?cat=X&sub=Y to warn the user if
@@ -633,6 +650,25 @@ export default function CreateAlertJourney({
   const [filterValues, setFilterValues]     = useState<Record<string, string[]>>({});
   const [notifyChannels, setNotifyChannels] = useState<NotifyChannel[]>(DEFAULT_NOTIFY);
   const [isSubmitting, setIsSubmitting]     = useState(false);
+  // Optimistically assume both channels are available until the real
+  // verification status loads, to avoid a disabled-then-enabled flicker for
+  // the common case (verified users) — only ever gets stricter, never looser.
+  const [notifyAvailability, setNotifyAvailability] = useState<NotifyChannelAvailability>({
+    emailAvailable: true,
+    whatsappAvailable: true,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    getNotifyChannelAvailability().then((availability) => {
+      if (cancelled) return;
+      setNotifyAvailability(availability);
+      setNotifyChannels((prev) =>
+        prev.filter((c) => (c === "email" ? availability.emailAvailable : availability.whatsappAvailable))
+      );
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const isPopup = layout === "popup";
 
@@ -753,6 +789,7 @@ export default function CreateAlertJourney({
           filterValues={filterValues}
           notifyChannels={notifyChannels}
           onNotifyChange={setNotifyChannels}
+          notifyAvailability={notifyAvailability}
           onComplete={onComplete}
           isPopup={isPopup}
         />

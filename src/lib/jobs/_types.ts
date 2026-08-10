@@ -12,5 +12,6 @@ export interface JobResult {
   alertsProcessed: number;
   matchesFound: number;
   emailsSent: number;
+  whatsappSent: number;
   errors: number;
 }

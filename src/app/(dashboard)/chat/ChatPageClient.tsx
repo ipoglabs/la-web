@@ -481,7 +481,7 @@ function ChatInput({ onSend, blocked, otherDeleted, onUnblock, onTyping }: {
               onKeyDown={handleKeyDown}
               rows={1}
               placeholder="Message..."
-              className={`w-full resize-none rounded-2xl border px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 leading-relaxed overflow-y-auto bg-slate-50 ${
+              className={`w-full resize-none rounded-2xl border px-4 py-2.5 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 leading-relaxed overflow-y-auto bg-slate-50 ${
                 error ? "border-rose-300 focus:ring-rose-200" : "border-slate-200 focus:ring-slate-200 focus:border-slate-300"
               }`}
             />
@@ -983,7 +983,7 @@ function ChatPageContent() {
               <input
                 type="search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by name or listing…"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300"
               />
             </div>
 

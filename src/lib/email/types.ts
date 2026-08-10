@@ -156,6 +156,19 @@ export type EmailEvent =
       to: string;
       data: { alertName: string; alertId: string };
     }
+  | {
+      type: "ALERT_CREATED";
+      to: string;
+      data: {
+        alertName: string;
+        categoryLabel: string;
+        subCategoryLabel: string;
+        keywords?: string[];
+        locationLabel?: string;
+        notifyVia: string[];
+        manageUrl: string;
+      };
+    }
   // ── Favourites ───────────────────────────────────────────────────────────────
   | {
       type: "FAVOURITE_UPDATE";

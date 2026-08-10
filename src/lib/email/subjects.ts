@@ -86,6 +86,8 @@ export function getSubject(event: EmailEvent): string {
     }
     case "ALERT_NO_MATCHES":
       return `No new matches for your alert "${event.data.alertName}"`;
+    case "ALERT_CREATED":
+      return `Alert created — "${event.data.alertName}"`;
     // ── Favourites ────────────────────────────────────────────────────────────
     case "FAVOURITE_UPDATE": {
       const favLabels = {

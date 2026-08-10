@@ -28,7 +28,7 @@ export async function runJob(
     jobName: name,
     startedAt: new Date(),
     status: "running",
-    stats: { alertsProcessed: 0, matchesFound: 0, emailsSent: 0, errors: 0 },
+    stats: { alertsProcessed: 0, matchesFound: 0, emailsSent: 0, whatsappSent: 0, errors: 0 },
   });
 
   try {

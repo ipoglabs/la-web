@@ -34,6 +34,7 @@ import { FavouriteUpdateEmail, favouriteUpdateText } from "./templates/listings/
 import { AlertMatchEmail, alertMatchText } from "./templates/alerts/alert-match";
 import { AlertDigestEmail, alertDigestText } from "./templates/alerts/alert-digest";
 import { AlertNoMatchesEmail, alertNoMatchesText } from "./templates/alerts/alert-no-matches";
+import { AlertCreatedEmail, alertCreatedText } from "./templates/alerts/alert-created";
 // ── Template imports — reports/ ───────────────────────────────────────────────
 import { ReportTicketCreatedEmail, reportTicketCreatedText } from "./templates/reports/report-ticket-created";
 import { ReportTicketUpdatedEmail, reportTicketUpdatedText } from "./templates/reports/report-ticket-updated";
@@ -143,6 +144,10 @@ export function renderEmail(event: EmailEvent): EmailRenderResult {
     case "ALERT_NO_MATCHES":
       html = AlertNoMatchesEmail(event.data);
       text    = alertNoMatchesText(event.data);
+      break;
+    case "ALERT_CREATED":
+      html = AlertCreatedEmail(event.data);
+      text    = alertCreatedText(event.data);
       break;
     case "FAVOURITE_UPDATE":
       html = FavouriteUpdateEmail(event.data);

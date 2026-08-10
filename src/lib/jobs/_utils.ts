@@ -72,9 +72,25 @@ export async function findAlertMatches(
   return Post.find(query).select("_id name").lean<AlertMatch[]>();
 }
 
-/** Real recipient email for an alert — returns null (caller should skip and
- * count an error) if the owning account has no email on file. */
-export async function getAlertRecipientEmail(userId: mongoose.Types.ObjectId): Promise<string | null> {
-  const user = await User.findById(userId).select("email").lean<{ email?: string } | null>();
-  return user?.email || null;
+export interface AlertRecipient {
+  email: string | null;
+  phone: string | null;
+  isPhoneVerified: boolean;
+}
+
+/**
+ * Real recipient contact info for an alert — email for the ALERT_MATCH /
+ * ALERT_DIGEST / ALERT_NO_MATCHES email sends, plus phone + verification
+ * status so callers can decide whether a WhatsApp send is safe (only ever
+ * send to a verified primaryNumber — never an unverified one).
+ */
+export async function getAlertRecipient(userId: mongoose.Types.ObjectId): Promise<AlertRecipient> {
+  const user = await User.findById(userId)
+    .select("email primaryNumber isPrimaryNumberVerified")
+    .lean<{ email?: string; primaryNumber?: string; isPrimaryNumberVerified?: boolean } | null>();
+  return {
+    email: user?.email || null,
+    phone: user?.primaryNumber || null,
+    isPhoneVerified: Boolean(user?.isPrimaryNumberVerified),
+  };
 }

@@ -124,7 +124,7 @@ export default function DeleteAccountConfirmPage() {
                   onChange={(e) => setDetails(e.target.value)}
                   maxLength={150}
                   placeholder="Share any extra context — it goes directly to our product team."
-                  className="mt-2 min-h-25 w-full rounded-md border-[1.5px] border-slate-400 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition-all duration-150 placeholder:text-slate-400 focus:border-b-[3px] focus:border-b-blue-500"
+                  className="mt-2 min-h-25 w-full rounded-md border-[1.5px] border-slate-400 bg-white px-4 py-3 text-base text-slate-700 outline-none transition-all duration-150 placeholder:text-slate-400 focus:border-b-[3px] focus:border-b-blue-500"
                 />
                 <p className="mt-1 text-right text-xs text-slate-400">{detailsCount}/150</p>
               </div>

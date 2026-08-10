@@ -208,7 +208,7 @@ export function LocationSearch({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none disabled:cursor-not-allowed"
+          className="flex-1 bg-transparent text-base text-slate-800 placeholder:text-slate-400 outline-none disabled:cursor-not-allowed"
         />
         {query && (
           <button

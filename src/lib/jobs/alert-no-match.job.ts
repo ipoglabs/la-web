@@ -18,15 +18,16 @@
 import dbConnect from "@/lib/db";
 import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import type { JobResult } from "@/lib/jobs/_types";
-import { getAlertRecipientEmail } from "@/lib/jobs/_utils";
+import { getAlertRecipient } from "@/lib/jobs/_utils";
 
 const NO_MATCH_THRESHOLD_DAYS = 14;
 
 export async function runAlertNoMatchJob(): Promise<JobResult> {
   await dbConnect();
 
-  const result: JobResult = { alertsProcessed: 0, matchesFound: 0, emailsSent: 0, errors: 0 };
+  const result: JobResult = { alertsProcessed: 0, matchesFound: 0, emailsSent: 0, whatsappSent: 0, errors: 0 };
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - NO_MATCH_THRESHOLD_DAYS);
@@ -40,23 +41,34 @@ export async function runAlertNoMatchJob(): Promise<JobResult> {
 
   for (const alert of alerts) {
     try {
-      const recipientEmail = await getAlertRecipientEmail(alert.userId);
-      if (!recipientEmail) {
+      const recipient = await getAlertRecipient(alert.userId);
+      if (!recipient.email && !recipient.phone) {
         result.errors++;
         continue;
       }
 
-      const emailResult = await sendEmail({
-        type: "ALERT_NO_MATCHES",
-        to: recipientEmail,
-        data: {
-          alertName: alert.name,
-          alertId: String(alert._id),
-        },
-      });
+      if (alert.notifyVia.includes("email") && recipient.email) {
+        const emailResult = await sendEmail({
+          type: "ALERT_NO_MATCHES",
+          to: recipient.email,
+          data: {
+            alertName: alert.name,
+            alertId: String(alert._id),
+          },
+        });
 
-      if (emailResult.success) result.emailsSent++;
-      else result.errors++;
+        if (emailResult.success) result.emailsSent++;
+        else result.errors++;
+      }
+
+      if (alert.notifyVia.includes("whatsapp") && recipient.phone && recipient.isPhoneVerified) {
+        const sent = await sendWhatsAppMessage(
+          recipient.phone,
+          `LokalAds: No new matches yet for your "${alert.name}" alert. We'll keep watching — manage it here: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/my-alerts`,
+        );
+        if (sent) result.whatsappSent++;
+        else result.errors++;
+      }
 
       // $unset clears the field in MongoDB — setting to undefined would be silently ignored
       await Alert.findByIdAndUpdate(alert._id, { $unset: { noMatchSince: 1 } });

@@ -20,6 +20,7 @@ export interface IJobRunStats {
   alertsProcessed: number;
   matchesFound: number;
   emailsSent: number;
+  whatsappSent: number;
   errors: number;
 }
 
@@ -53,6 +54,7 @@ const JobRunSchema = new Schema<IJobRun>(
       alertsProcessed: { type: Number, default: 0 },
       matchesFound: { type: Number, default: 0 },
       emailsSent: { type: Number, default: 0 },
+      whatsappSent: { type: Number, default: 0 },
       errors: { type: Number, default: 0 },
     },
     error: { type: String },

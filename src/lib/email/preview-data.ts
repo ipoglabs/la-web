@@ -1,7 +1,7 @@
 // ── Email Engine — Preview Mock Data ─────────────────────────────────────────
 // Shared by the design-system demo page and the /api/email-preview route.
 // No react-dom/server import — safe to use in Server Components.
-// 56 entries — one per use case (55 in coverage map + 1 admin-triggered reset variant).
+// 57 entries — one per use case (55 in coverage map + 1 admin-triggered reset variant + ALERT_CREATED).
 
 import type { EmailEvent } from "./types";
 
@@ -361,6 +361,22 @@ export const PREVIEW_DATA: PreviewEntry[] = [
       data: {
         alertName: "Rare vintage Leica M3 camera",
         alertId: "ALT-20260601-001",
+      },
+    },
+  },
+  {
+    label: "Alert — Created Confirmation",
+    event: {
+      type: "ALERT_CREATED",
+      to: "preview@example.com",
+      data: {
+        alertName: "iPhone deals in London",
+        categoryLabel: "Electronics",
+        subCategoryLabel: "Mobile Phones",
+        keywords: ["iphone", "pro max"],
+        locationLabel: "London",
+        notifyVia: ["email", "whatsapp"],
+        manageUrl: "http://localhost:3000/my-alerts",
       },
     },
   },
