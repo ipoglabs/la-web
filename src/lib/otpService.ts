@@ -116,6 +116,26 @@ export async function verifyOtpService({ channel, value, otp }: VerifyOtpArgs) {
     const target = normalizeTarget("phone", value);
     const approved = await checkVerificationCode(target, otp.trim());
     if (!approved) throw new Error("Incorrect code.");
+
+    // Twilio is the source of truth for the code itself, but callers like
+    // updateContact() re-check Mongo for a verified record before persisting
+    // the change — write one here so that check succeeds for this channel too.
+    await dbConnect();
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+    await Otp.findOneAndUpdate(
+      { target, channel: "phone" },
+      {
+        target,
+        channel: "phone",
+        code: otp.trim(),
+        expiresAt,
+        verified: true,
+        attempts: 0,
+        lockedUntil: null,
+      },
+      { upsert: true, new: true }
+    );
+
     return { success: true };
   }
 
