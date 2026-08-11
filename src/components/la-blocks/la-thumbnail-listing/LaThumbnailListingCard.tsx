@@ -281,9 +281,11 @@ export function LaThumbnailListingCard({
           </>
         )}
 
-        <div className="absolute left-3 bottom-3 rounded-full bg-slate-900/75 px-2.5 py-1 text-xs font-semibold leading-none text-white">
-          {totalImages === 0 ? "0/0" : `${activeIndex + 1}/${totalImages}`}
-        </div>
+        {totalImages > 0 && (
+          <div className="absolute left-3 bottom-3 rounded-full bg-slate-900/75 px-2.5 py-1 text-xs font-semibold leading-none text-white">
+            {activeIndex + 1}/{totalImages}
+          </div>
+        )}
 
         {/* Status badge — top-left */}
         {status !== "active" && (

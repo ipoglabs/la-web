@@ -10,12 +10,23 @@ import { CATEGORIES } from "@/config/categories";
 import FeaturedListings, { type FeaturedListingItem } from "@/components/la-blocks/FeaturedListings";
 import RecentSearches, { type RecentSearchItem } from "@/components/la-blocks/RecentSearches";
 import { getFeaturedListings } from "@/app/actions/getFeaturedListings";
-import { getPopularSearches } from "@/app/actions/getPopularSearches";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { LaSearchBar, type SearchQuery } from "@/components/la-search-bar";
 import { LocationPicker, type LocationValue } from "@/components/location-picker";
 import { useSavedLocations } from "@/lib/hooks/useSavedLocations";
+import { useRecentSearches, type RecentSearch } from "@/lib/hooks/use-recent-searches";
 import { LaSkeleton } from "@/components/la";
+
+/** Recent search entry → listings URL, mirroring handleSearch's own param
+ *  building (keyword/category/subcategory only — location isn't part of a
+ *  saved search entry, see searchUtils.ts's mapRecentSearch). */
+function recentSearchHref(countryCode: string, item: RecentSearch): string {
+  const params = new URLSearchParams();
+  if (item.keyword.trim()) params.set("q", item.keyword.trim());
+  if (item.scope?.cat) params.set("cat", item.scope.cat);
+  if (item.scope?.sub) params.set("sub", item.scope.sub);
+  return `/${countryCode}/listings${params.size > 0 ? `?${params}` : ""}`;
+}
 
 function FeaturedListingsSkeleton({ title }: { title: string }) {
   return (
@@ -43,6 +54,7 @@ export default function LandingPage() {
   const [pickedLocation, setPickedLocation] = React.useState<LocationValue | null>(null);
   const { config: countryConfig, countryCode } = useCountryConfig();
   const { savedLocations, saveLocation, saveSuggestion, removeSavedLocationById } = useSavedLocations();
+  const { recents } = useRecentSearches();
 
   const visibleCategories = countryConfig.enabledCategories
     .map((id) => CATEGORIES.find((c) => c.id === id))
@@ -60,7 +72,6 @@ export default function LandingPage() {
   // falling back to fake mock inventory; see the section guards below.
   const [recentPosts, setRecentPosts] = React.useState<FeaturedListingItem[]>([]);
   const [topPicks, setTopPicks] = React.useState<FeaturedListingItem[]>([]);
-  const [popularSearches, setPopularSearches] = React.useState<RecentSearchItem[]>([]);
   const [featuredLoading, setFeaturedLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -74,18 +85,19 @@ export default function LandingPage() {
         .then((items) => { if (!cancelled) setTopPicks(items); })
         .catch(() => { if (!cancelled) setTopPicks([]); }),
     ]).finally(() => { if (!cancelled) setFeaturedLoading(false); });
-    // "Popular Searches" — derived from real post volume (no search-query
-    // logging exists yet), see getPopularSearches.ts. Icon is attached here
-    // rather than returned from the server action since RecentSearchItem's
-    // icon is a React node, not a value a server action can serialize.
-    getPopularSearches(countryCode, 9)
-      .then((items) => {
-        if (cancelled) return;
-        setPopularSearches(items.map((item) => ({ ...item, icon: <History className="h-3.5 w-3.5" /> })));
-      })
-      .catch(() => { if (!cancelled) setPopularSearches([]); });
     return () => { cancelled = true; };
   }, [countryCode]);
+
+  // "Recent Searches" — the signed-in user's own real search history (DB,
+  // models/user.ts's recentSearches) or a signed-out guest's localStorage
+  // history (lib/stores/recentSearchesStore.ts), see use-recent-searches.ts.
+  // Every search submitted via LaSearchBar anywhere in the app saves here.
+  const recentSearchItems: RecentSearchItem[] = recents.map((item) => ({
+    id: item.id,
+    label: item.keyword.trim() || item.scope?.subLabel || item.scope?.label || "Search",
+    href: recentSearchHref(countryCode, item),
+    icon: <History className="h-3.5 w-3.5" />,
+  }));
 
   function handleSearch(q: SearchQuery) {
     const params = new URLSearchParams();
@@ -172,11 +184,11 @@ export default function LandingPage() {
         </div>
         
 
-        {/* Section: Popular Searches — real post volume, see getPopularSearches.ts */}
+        {/* Section: Recent Searches — the signed-in user's own search
+            history (or a guest's localStorage history), see
+            use-recent-searches.ts. */}
         <RecentSearches
-          title="Popular Searches"
-          items={popularSearches}
-          seeAllHref={`/${countryCode}/listings?view=popular-searches`}
+          items={recentSearchItems}
           className="bg-amber-100"
         />
 
@@ -192,7 +204,7 @@ export default function LandingPage() {
             {recentPosts.length > 0 && (
               <FeaturedListings
                 title="Recent Posts"
-                seeAllHref={`/${countryCode}/listings`}
+                seeAllHref={`/${countryCode}/listings?sort=newest`}
                 items={recentPosts}
                 showLocation={false}
                 showTime={false}
@@ -203,7 +215,7 @@ export default function LandingPage() {
             {topPicks.length > 0 && (
               <FeaturedListings
                 title="Top Picks for You"
-                seeAllHref={`/${countryCode}/listings?filter=top-picks`}
+                seeAllHref={`/${countryCode}/listings?sort=top-picks`}
                 items={topPicks}
                 showLocation={false}
                 showTime={false}

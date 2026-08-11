@@ -155,6 +155,7 @@ function ContextBar({ currentLocation, onLocationChange, activeFilterCount, onOp
 
   const SORT_OPTIONS = [
     { value: "relevance",  label: "Relevance" },
+    { value: "top-picks",  label: "Top Picks" },
     { value: "newest",     label: "Newest" },
     { value: "oldest",     label: "Oldest" },
     { value: "price_desc", label: "High Price" },

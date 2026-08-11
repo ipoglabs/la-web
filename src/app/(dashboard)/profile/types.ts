@@ -4,6 +4,8 @@
  * editor file can import these without depending on page.tsx itself.
  */
 
+import type { RecentSearch } from "@/lib/searchUtils";
+
 export type BasicInfoValues = {
   fullName: string;
   dateOfBirthIso: string;
@@ -101,4 +103,5 @@ export type ProfileUser = {
     postalCode: string;
   };
   savedLocations: SavedLocation[];
+  recentSearches: RecentSearch[];
 };

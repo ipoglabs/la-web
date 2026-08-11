@@ -1,79 +1,94 @@
+"use client";
+
 /**
  * use-recent-searches.ts
  *
- * localStorage-backed hook for saving and retrieving recent searches.
- * Each entry captures keyword + location + category scope.
- * Max 8 entries — oldest are dropped automatically.
+ * Recent search history for LaSearchBar (dropdown recents + landing page
+ * "Recent Searches" section). Each entry captures keyword + category scope.
+ * Max MAX_RECENT_SEARCHES entries — oldest are dropped automatically.
+ *
+ * Signed-in accounts: backed by the real DB (models/user.ts's
+ * recentSearches, via saveSearch/removeSearch/clearSearches server actions)
+ * so search history follows the user across devices.
+ *
+ * Signed-out visitors have no account to persist to, but the feature still
+ * needs to work for them — falls back to recentSearchesStore
+ * (lib/stores/recentSearchesStore.ts), a localStorage-backed Zustand store,
+ * so saving/removing/clearing behaves the same either way. Mirrors the
+ * pattern useSavedLocations.ts already uses for saved locations.
  */
-"use client";
-import { useState, useCallback } from "react";
-import type { LocationValue } from "@/components/location-picker";
+import { useCallback, useEffect, useState } from "react";
+import { getCurrentUser } from "@/app/actions/getCurrentUser";
+import { saveSearch } from "@/app/actions/profile/saveSearch";
+import { removeSearch } from "@/app/actions/profile/removeSearch";
+import { clearSearches } from "@/app/actions/profile/clearSearches";
+import { useRecentSearchesStore } from "@/lib/stores/recentSearchesStore";
+import type { RecentSearch } from "@/lib/searchUtils";
 
-const KEY   = "la:recent-searches";
-const LIMIT = 8;
-
-export interface RecentSearch {
-  id: string;          // timestamp-based unique id
-  keyword:  string;
-  location: LocationValue | null;
-  scope:    { cat: string; label: string } | null;
-  savedAt:  number;    // Date.now()
-}
-
-function readStorage(): RecentSearch[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
-function writeStorage(items: RecentSearch[]) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(items));
-  } catch {
-    // storage quota — silently skip
-  }
-}
+export type { RecentSearch };
 
 export function useRecentSearches() {
-  const [recents, setRecents] = useState<RecentSearch[]>(readStorage);
+  const [dbRecents, setDbRecents] = useState<RecentSearch[]>([]);
+  const [loggedIn, setLoggedIn] = useState(false);
 
-  const save = useCallback((entry: Omit<RecentSearch, "id" | "savedAt">) => {
-    // Skip saving empty keyword with no scope
-    if (!entry.keyword.trim() && !entry.scope) return;
+  const guestItems = useRecentSearchesStore((s) => s.items);
+  const guestAdd = useRecentSearchesStore((s) => s.add);
+  const guestRemove = useRecentSearchesStore((s) => s.remove);
+  const guestClear = useRecentSearchesStore((s) => s.clear);
 
-    setRecents((prev) => {
-      // Remove any duplicate with same keyword + cat scope
-      const deduped = prev.filter(
-        (r) =>
-          !(
-            r.keyword.trim().toLowerCase() === entry.keyword.trim().toLowerCase() &&
-            r.scope?.cat === entry.scope?.cat
-          )
-      );
-      const next: RecentSearch[] = [
-        { ...entry, id: String(Date.now()), savedAt: Date.now() },
-        ...deduped,
-      ].slice(0, LIMIT);
-      writeStorage(next);
-      return next;
-    });
+  useEffect(() => {
+    // skipHydration: true on the store (avoids SSR/client mismatch) means
+    // it starts empty on the client too until explicitly rehydrated here.
+    useRecentSearchesStore.persist.rehydrate();
   }, []);
 
-  const remove = useCallback((id: string) => {
-    setRecents((prev) => {
-      const next = prev.filter((r) => r.id !== id);
-      writeStorage(next);
-      return next;
-    });
+  const refresh = useCallback(async () => {
+    const user = await getCurrentUser().catch(() => null);
+    setLoggedIn(Boolean(user));
+    setDbRecents(user?.recentSearches ?? []);
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const save = useCallback(
+    (entry: Omit<RecentSearch, "id" | "savedAt">) => {
+      // Skip saving empty keyword with no scope
+      if (!entry.keyword.trim() && !entry.scope) return;
+
+      if (!loggedIn) {
+        guestAdd(entry);
+        return;
+      }
+      // Best-effort background save triggered by every search submit — a
+      // failure here (transient account-state change) isn't worth
+      // surfacing to the user mid-search.
+      saveSearch({ keyword: entry.keyword, scope: entry.scope }).then(setDbRecents).catch(() => {});
+    },
+    [loggedIn, guestAdd]
+  );
+
+  const remove = useCallback(
+    (id: string) => {
+      if (!loggedIn) {
+        guestRemove(id);
+        return;
+      }
+      removeSearch(id).then(setDbRecents).catch(() => {});
+    },
+    [loggedIn, guestRemove]
+  );
 
   const clear = useCallback(() => {
-    writeStorage([]);
-    setRecents([]);
-  }, []);
+    if (!loggedIn) {
+      guestClear();
+      return;
+    }
+    clearSearches()
+      .then(() => setDbRecents([]))
+      .catch(() => {});
+  }, [loggedIn, guestClear]);
 
-  return { recents, save, remove, clear };
+  return { recents: loggedIn ? dbRecents : guestItems, save, remove, clear };
 }

@@ -22,6 +22,20 @@ const SavedLocationSchema = new mongoose.Schema({
   primary: { type: Boolean, default: false },
 });
 
+// Recent search history — kept per-user like SavedLocationSchema above so a
+// signed-in visitor's searches (landing page bar, listings search) follow
+// them across devices. Guests get equivalent behavior from localStorage
+// (see lib/stores/recentSearchesStore.ts) since there's no account to
+// persist to; MAX_RECENT_SEARCHES (lib/searchUtils.ts) caps both paths.
+const RecentSearchSchema = new mongoose.Schema({
+  keyword: { type: String, trim: true, default: "" },
+  scopeCat: { type: String, trim: true },
+  scopeLabel: { type: String, trim: true },
+  scopeSub: { type: String, trim: true },
+  scopeSubLabel: { type: String, trim: true },
+  searchedAt: { type: Date, default: Date.now },
+});
+
 const AuditSchema = new mongoose.Schema(
   {
     action: { type: String },
@@ -59,6 +73,7 @@ const UserSchema = new mongoose.Schema(
     locality: { type: String, trim: true },
     address: AddressSchema,
     savedLocations: { type: [SavedLocationSchema], default: [] },
+    recentSearches: { type: [RecentSearchSchema], default: [] },
 
     email: {
       type: String,

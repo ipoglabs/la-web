@@ -16,6 +16,9 @@ import {
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
 import { publicPostFilter } from "@/lib/postVisibility";
+import { resolvePostSort } from "@/lib/postSort";
+import { parseFilterValues } from "@/lib/listing-filters";
+import { buildFilterQuery } from "@/lib/postFilterQuery";
 import type { ListingsApiResponse } from "@/types/listings-api";
 
 const COUNTRY_CODES = Object.keys(COUNTRY_CONFIGS) as CountryCode[];
@@ -72,7 +75,7 @@ export async function GET(
     // aren't silently invisible regardless of which convention a given
     // category's form step actually used.
     const categoryLabel = CATEGORY_LABELS[category];
-    const query: Record<string, unknown> = {
+    const baseQuery: Record<string, unknown> = {
       category: categoryLabel ? { $in: [category, categoryLabel] } : category,
       ...publicPostFilter(),
       // Country-scoped via the real `country` field (models/post.ts). Posts
@@ -82,11 +85,20 @@ export async function GET(
     };
     if (sub) {
       const subLabel = SUBCATEGORY_LABELS[category]?.[sub];
-      query.subcategory = subLabel ? { $in: [sub, subLabel] } : sub;
+      baseQuery.subcategory = subLabel ? { $in: [sub, subLabel] } : sub;
     }
 
+    // Filter sidebar values (see lib/listing-filters.ts's URL contract) →
+    // Mongo clauses, mapped per category/sub in lib/postFilterQuery.ts.
+    // Combined via $and rather than spread so a filter clause's own $or
+    // (e.g. floor_level) never collides with the country $or above.
+    const filterQuery = buildFilterQuery(category, sub ?? "", parseFilterValues(searchParams));
+    const query = Object.keys(filterQuery).length > 0
+      ? { $and: [baseQuery, filterQuery] }
+      : baseQuery;
+
     const dbItems = await Post.find(query)
-      .sort({ createdAt: -1 })
+      .sort(resolvePostSort(searchParams.get("sort")))
       .limit(50)
       .populate<{ ownerId: LeanOwner | null }>(
         "ownerId",

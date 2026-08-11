@@ -6,6 +6,7 @@ import User from "@/models/user";
 import { verifyToken } from "@/lib/auth";
 import { isSessionRevoked } from "@/lib/userSession";
 import { isAdminEmail } from "@/lib/admin";
+import { mapRecentSearch } from "@/lib/searchUtils";
 import type { ProfileUser } from "@/app/(dashboard)/profile/types";
 
 type RawSavedLocation = {
@@ -40,7 +41,7 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
   // ONE query — fetch full doc and check status in the same round-trip
   const user: any = await User.findById(userId)
     .select(
-      "userId username fullName dateOfBirth gender nationality residency email isEmailVerified primaryNumber isPrimaryNumberVerified secondaryNumber1 secondaryNumber2 publicRole roleTitle roleDescription roles roleSpecialties customRole intent image marketingOptIn locality address savedLocations isDeleted isSuspended accountStatus createdAt"
+      "userId username fullName dateOfBirth gender nationality residency email isEmailVerified primaryNumber isPrimaryNumberVerified secondaryNumber1 secondaryNumber2 publicRole roleTitle roleDescription roles roleSpecialties customRole intent image marketingOptIn locality address savedLocations recentSearches isDeleted isSuspended accountStatus createdAt"
     )
     .lean();
 
@@ -97,5 +98,6 @@ export async function getCurrentUser(): Promise<ProfileUser | null> {
       country: loc.country || "",
       primary: Boolean(loc.primary),
     })),
+    recentSearches: (user.recentSearches || []).map(mapRecentSearch),
   };
 }

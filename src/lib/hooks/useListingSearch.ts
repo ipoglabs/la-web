@@ -118,12 +118,35 @@ export interface UseListingSearchResult {
 async function fetchCountryListings(
   cat: string,
   countryCode: CountryCode,
-  sub?: string,
+  sub: string | undefined,
+  filterValues: Record<string, string[]>,
 ): Promise<MockListing[]> {
   const params = new URLSearchParams({ country: countryCode });
   if (sub) params.set("sub", sub);
+  // Same comma-joined format the URL already uses (see listing-filters.ts's
+  // URL FORMAT contract) — the API route parses these with the exact same
+  // parseFilterValues() the client uses, so both sides agree on the shape.
+  Object.entries(filterValues).forEach(([key, values]) => {
+    if (values.length > 0) params.set(key, values.join(","));
+  });
 
   const res = await fetch(`/api/listings/${cat}?${params.toString()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`listings_api_${res.status}`);
+
+  const data = (await res.json()) as ListingsApiResponse;
+  return data.items;
+}
+
+/** Category-less "browse everything" — backs Recent Posts / Top Picks "See
+ *  all" links, and any bare /listings visit with no cat and no loc. */
+async function fetchAllListings(
+  countryCode: CountryCode,
+  sort: string,
+): Promise<MockListing[]> {
+  const params = new URLSearchParams({ country: countryCode });
+  if (sort) params.set("sort", sort);
+
+  const res = await fetch(`/api/listings?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`listings_api_${res.status}`);
 
   const data = (await res.json()) as ListingsApiResponse;
@@ -237,7 +260,7 @@ export function useListingSearch(params: ListingSearchParams): UseListingSearchR
         // No category — if a location label is set (e.g. footer "Top Locations"
         // link, or a LocationPicker pick with no category chosen), fall back to
         // the cross-category city browse resolver. No API route exists for
-        // category-less browsing, so this resolves straight from mock data.
+        // that path, so it resolves straight from mock data.
         if (loc) {
           const cityItems = getListingsForCity(countryCode, loc);
           allResultsRef.current = cityItems;
@@ -252,14 +275,33 @@ export function useListingSearch(params: ListingSearchParams): UseListingSearchR
           return;
         }
 
-        allResultsRef.current = [];
-        setTotalCount(0);
-        setItems([]);
-        setIsLoading(false);
+        // No category, no location — cross-category browse across the whole
+        // market (backs Recent Posts / Top Picks "See all", and a bare
+        // /listings visit), honoring sort=newest|oldest|top-picks.
+        fetchAllListings(countryCode, sort)
+          .then((apiItems) => {
+            if (cancelled) return;
+            allResultsRef.current = apiItems;
+            const total = apiItems.length;
+            const totalPg = Math.max(1, Math.ceil(total / PAGE_SIZE));
+            const clamped = Math.min(page, totalPg);
+
+            setTotalCount(total);
+            prefetchWindow(clamped, apiItems);
+            setItems(pageCache.current.get(clamped) ?? []);
+            setIsLoading(false);
+          })
+          .catch(() => {
+            if (cancelled) return;
+            allResultsRef.current = [];
+            setTotalCount(0);
+            setItems([]);
+            setIsLoading(false);
+          });
         return;
       }
 
-      fetchCountryListings(cat, countryCode, sub || undefined)
+      fetchCountryListings(cat, countryCode, sub || undefined, filterValues)
         .then((apiItems) => {
           if (cancelled) return;
           allResultsRef.current = apiItems;

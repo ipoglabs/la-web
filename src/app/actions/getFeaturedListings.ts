@@ -4,6 +4,7 @@ import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { mapPostToFeaturedItem, type FeaturedListingItem } from "@/lib/mapPostToFeaturedItem";
 import { publicPostFilter } from "@/lib/postVisibility";
+import { resolvePostSort } from "@/lib/postSort";
 
 export async function getFeaturedListings(
   countryCode: string,
@@ -21,16 +22,8 @@ export async function getFeaturedListings(
     $or: [{ country: countryCode.toLowerCase() }, { country: { $exists: false } }],
   };
 
-  const sort: Record<string, 1 | -1> =
-    section === "recent"
-      ? { createdAt: -1 }
-      // "Top Picks" placeholder ranking: most recently bumped/boosted listings.
-      // TODO: replace with a real quality signal (seller rating, view count,
-      // manual editorial flag) once the backend team defines one.
-      : { lastBumpedAt: -1, createdAt: -1 };
-
   const items = await Post.find(filter)
-    .sort(sort)
+    .sort(resolvePostSort(section === "recent" ? "newest" : "top-picks"))
     .limit(limit)
     .lean()
     .exec();
