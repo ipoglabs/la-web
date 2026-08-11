@@ -6,9 +6,21 @@ import { cn } from "@/lib/utils";
 
 const Drawer = ({
   shouldScaleBackground = false,
+  // vaul's default (true) manually overwrites the drawer's height/bottom via
+  // JS on every visualViewport resize to "follow" the keyboard — for short
+  // drawers (a title + one input + buttons) its own math can shrink the
+  // scrollable body to near-zero height, pushing the focused input off
+  // screen while the header/footer stay pinned (blank gap between them).
+  // Disabling it lets the browser's native keyboard-focus scrolling handle
+  // it instead, which doesn't have this collapse bug.
+  repositionInputs = false,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
-  <DrawerPrimitive.Root shouldScaleBackground={shouldScaleBackground} {...props} />
+  <DrawerPrimitive.Root
+    shouldScaleBackground={shouldScaleBackground}
+    repositionInputs={repositionInputs}
+    {...props}
+  />
 );
 Drawer.displayName = "Drawer";
 
