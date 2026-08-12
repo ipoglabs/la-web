@@ -8,7 +8,17 @@
 // set by the Vercel Marketplace Resend integration (`vercel env pull`).
 
 import { Resend } from "resend";
-import type { EmailRenderResult, EmailSendResult } from "./types";
+import type { EmailEvent, EmailRenderResult, EmailSendResult } from "./types";
+
+// ── Sender overrides ──────────────────────────────────────────────────────────
+// Everything defaults to EMAIL_FROM / no-reply@lokalads.com — these event types
+// send from a monitored inbox instead, per product decision.
+const TEAM_SENDER_EVENTS: ReadonlySet<EmailEvent["type"]> = new Set([
+  "ACCOUNT_CREATED",
+  "ACCOUNT_DELETED",
+  "ACCOUNT_DELETION_PENDING",
+]);
+const TEAM_SENDER = "team@lokalads.com";
 
 // ── Email format guard (task 2b) ─────────────────────────────────────────────
 // Basic runtime check before we touch the provider.
@@ -42,14 +52,17 @@ function getClient(): Resend {
 
 export async function sendViaProvider(
   to: string,
-  render: EmailRenderResult
+  render: EmailRenderResult,
+  eventType: EmailEvent["type"]
 ): Promise<EmailSendResult> {
   // Runtime email format guard
   if (!isValidEmail(to)) {
     return { success: false, error: `Invalid recipient address: "${to}"` };
   }
 
-  const from = process.env.EMAIL_FROM ?? "no-reply@lokalads.com";
+  const from = TEAM_SENDER_EVENTS.has(eventType)
+    ? TEAM_SENDER
+    : (process.env.EMAIL_FROM ?? "no-reply@lokalads.com");
 
   try {
     const { error } = await getClient().emails.send({

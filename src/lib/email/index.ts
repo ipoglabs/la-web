@@ -48,7 +48,7 @@ import type { EmailEvent, EmailSendResult } from "./types";
 export async function sendEmail(event: EmailEvent): Promise<EmailSendResult> {
   try {
     const rendered = renderEmail(event);
-    return await sendViaProvider(event.to, rendered);
+    return await sendViaProvider(event.to, rendered, event.type);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error in email engine";
     // Log server-side — never expose internals to client

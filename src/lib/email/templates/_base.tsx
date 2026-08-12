@@ -124,11 +124,7 @@ export function baseEmail(content: string, preview?: string): string {
     WebkitTextSizeAdjust: "100%", MozTextSizeAdjust: "100%",
   });
   const cardStyle = s({ backgroundColor: "#ffffff", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", maxWidth: 600, width: "100%" });
-  const headerStyle = s({ backgroundColor: "#ffffff", padding: "24px 32px 20px" });
-  // Matches ProfilePageScreen.tsx's identity-card accent stripe exactly:
-  // h-1.5 (6px) bg-linear-to-r from-rose-500 (#f43f5e) to-rose-400 (#fb7185).
-  // backgroundColor is a solid fallback for Outlook, which can't render backgroundImage gradients.
-  const accentBarStyle = s({ height: 6, fontSize: 0, lineHeight: "6px", backgroundColor: "#fb7185", backgroundImage: "linear-gradient(to right, #f43f5e, #fb7185)" });
+  const headerStyle = s({ backgroundColor: "#ffffff", padding: "24px 32px 20px", borderBottom: "1px solid #e2e8f0" });
   const logoStyle = s({ display: "inline-block", verticalAlign: "middle", marginRight: 8 });
   const wordmarkStyle = s({ display: "inline-block", verticalAlign: "middle" });
   const bodyContentStyle = s({ padding: "32px 32px 24px", color: "#334155", fontSize: 15, lineHeight: 1.6 });
@@ -159,7 +155,6 @@ ${previewHtml}
 <img src="${logoUrl}" alt="LokalAds" width="40" height="40" style="${logoStyle}">
 <img src="${wordmarkUrl}" alt="lokalads" width="96" height="24" style="${wordmarkStyle}">
 </td></tr>
-<tr><td height="6" style="${accentBarStyle}">&nbsp;</td></tr>
 <tr><td style="${bodyContentStyle}">
 ${content}
 </td></tr>
