@@ -11,12 +11,9 @@
  *
  * Calls the real verify routes — see `md/api-contracts/auth-register.md`:
  *   phone_otp  → POST /api/auth/phone/verify-otp { phone, otp } — Twilio
- *                Verify when TWILIO_ACCOUNT_SID/AUTH_TOKEN/VERIFY_SID are
- *                set (see lib/twilioVerify.ts), except +91 (India) numbers,
- *                which always use a Mongo-generated mock code regardless of
- *                Twilio config or environment — see otpService.ts's
- *                isIndianPhone branch (India needs DLT template registration
- *                Twilio-side that isn't set up).
+ *                Verify (incl. India) when TWILIO_ACCOUNT_SID/AUTH_TOKEN/
+ *                VERIFY_SID are set (see lib/twilioVerify.ts), else a
+ *                Mongo-generated mock code (dev only).
  *   magic_link → POST /api/auth/verify-magic { email, otp } — always a
  *                real Mongo-generated + emailed code.
  * A network failure (distinct from a wrong code) shows its own message
@@ -134,8 +131,8 @@ export function VerifyStep() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("resend failed");
-      // devCode only comes back for India phone numbers (mocked — no real
-      // SMS provider wired up for +91 yet, see otpService.ts).
+      // devCode only comes back when Twilio isn't configured at all (dev
+      // only, see otpService.ts).
       const data = await res.json().catch(() => ({}));
       if (data?.devCode) {
         toast.info(`Demo code (no SMS sent): ${data.devCode}`);

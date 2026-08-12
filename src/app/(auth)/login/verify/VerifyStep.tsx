@@ -113,8 +113,8 @@ export function VerifyStep() {
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error("resend failed");
-      // devCode only comes back for India phone numbers (mocked — no real
-      // SMS provider wired up for +91 yet, see otpService.ts).
+      // devCode only comes back when Twilio isn't configured at all (dev
+      // only, see otpService.ts).
       const data = await res.json().catch(() => ({}));
       if (data?.devCode) {
         toast.info(`Demo code (no SMS sent): ${data.devCode}`);

@@ -127,9 +127,9 @@ export function MethodStep() {
           body: JSON.stringify({ phone: fullPhone }),
         });
         if (!res.ok) throw new Error("send failed");
-        // devCode only comes back for India (mocked — no real SMS provider
-        // wired up for +91 yet, see otpService.ts), so this is the only place
-        // the user can see the code.
+        // devCode only comes back when Twilio isn't configured at all (dev
+        // only, see otpService.ts), so this is the only place the user can
+        // see the code.
         const data = await res.json().catch(() => ({}));
         if (data?.devCode) {
           toast.info(`Demo code (no SMS sent): ${data.devCode}`);
