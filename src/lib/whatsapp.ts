@@ -3,20 +3,25 @@
  *
  * Thin wrapper around Twilio's Messages API for sending WhatsApp alert
  * notifications. Separate from twilioVerify.ts (which only ever talks to
- * Twilio Verify for OTP codes) — this sends free-form, business-initiated
- * messages instead, so it needs the plain Messages resource.
+ * Twilio Verify for OTP codes) — this sends business-initiated messages
+ * instead, so it needs the plain Messages resource.
  *
- * Only activates when TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and
- * TWILIO_WHATSAPP_NUMBER are all set — callers should check
- * isWhatsAppConfigured() (or just call sendWhatsAppMessage and check the
- * boolean result) rather than assuming delivery succeeded.
+ * Only activates when TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
+ * TWILIO_WHATSAPP_NUMBER and TWILIO_WHATSAPP_ALERT_CONTENT_SID are all set —
+ * callers should check isWhatsAppConfigured() (or just call
+ * sendWhatsAppMessage and check the boolean result) rather than assuming
+ * delivery succeeded.
  *
- * NOTE: WhatsApp Business messaging that isn't a reply within the 24h
- * customer-service window requires a Meta-approved message template
- * (Twilio Content API `contentSid`/`contentVariables`) in production —
- * a plain `body` string only works in the Twilio sandbox or inside that
- * 24h window. Once a template is approved in the Twilio console, swap the
- * `body` param below for `contentSid`/`contentVariables`.
+ * WhatsApp Business messaging that isn't a reply within the 24h
+ * customer-service window requires a Meta-approved message template — a
+ * plain `body` string is rejected by Meta for business-initiated sends
+ * like alert notifications. TWILIO_WHATSAPP_ALERT_CONTENT_SID must point to
+ * an APPROVED Content template (Twilio console → Content Editor →
+ * "alert_match_notification"); its body is:
+ *   "LokalAds Alert: {{1}}. View the full listing here: {{2}}. Thanks for using LokalAds!"
+ * {{1}} = `summary`, {{2}} = `url`. As of 2026-08-12 the only submitted
+ * candidate (alert_match_notification_v3) is still pending Meta review —
+ * sends will fail (return false) until it's approved and its SID is set.
  */
 import Twilio from "twilio";
 
@@ -24,7 +29,10 @@ let cachedClient: ReturnType<typeof Twilio> | null = null;
 
 export function isWhatsAppConfigured(): boolean {
   return Boolean(
-    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_WHATSAPP_NUMBER
+    process.env.TWILIO_ACCOUNT_SID &&
+      process.env.TWILIO_AUTH_TOKEN &&
+      process.env.TWILIO_WHATSAPP_NUMBER &&
+      process.env.TWILIO_WHATSAPP_ALERT_CONTENT_SID
   );
 }
 
@@ -39,20 +47,23 @@ function getClient() {
 }
 
 /**
- * Sends a WhatsApp text message to `to` (must already be E.164, e.g.
- * "+6591234567"). Returns false (instead of throwing) on any failure —
- * callers treat WhatsApp delivery as best-effort alongside email, not a
- * hard dependency.
+ * Sends a WhatsApp alert notification to `to` (must already be E.164, e.g.
+ * "+6591234567") via the approved `alert_match_notification` Content
+ * template — `summary` fills {{1}}, `url` fills {{2}}. Returns false
+ * (instead of throwing) on any failure — callers treat WhatsApp delivery as
+ * best-effort alongside email, not a hard dependency.
  */
-export async function sendWhatsAppMessage(to: string, body: string): Promise<boolean> {
+export async function sendWhatsAppMessage(to: string, summary: string, url: string): Promise<boolean> {
   const from = process.env.TWILIO_WHATSAPP_NUMBER;
-  if (!isWhatsAppConfigured() || !from) return false;
+  const contentSid = process.env.TWILIO_WHATSAPP_ALERT_CONTENT_SID;
+  if (!isWhatsAppConfigured() || !from || !contentSid) return false;
 
   try {
     await getClient().messages.create({
       from: `whatsapp:${from}`,
       to: `whatsapp:${to}`,
-      body,
+      contentSid,
+      contentVariables: JSON.stringify({ "1": summary, "2": url }),
     });
     return true;
   } catch (err) {

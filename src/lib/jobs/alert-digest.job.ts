@@ -73,7 +73,8 @@ export async function runAlertDigestJob(
         const matchWord = matches.length === 1 ? "match" : "matches";
         const sent = await sendWhatsAppMessage(
           recipient.phone,
-          `LokalAds: Your ${frequency} digest — ${matches.length} new ${matchWord} for "${alert.name}". View: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
+          `Your ${frequency} digest — ${matches.length} new ${matchWord} for "${alert.name}"`,
+          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
         );
         if (sent) result.whatsappSent++;
         else result.errors++;

@@ -81,7 +81,8 @@ export async function runAlertMatchJob(): Promise<JobResult> {
         const matchWord = matches.length === 1 ? "match" : "matches";
         const sent = await sendWhatsAppMessage(
           recipient.phone,
-          `LokalAds: ${matches.length} new ${matchWord} for your "${alert.name}" alert. View: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
+          `${matches.length} new ${matchWord} for your "${alert.name}" alert`,
+          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
         );
         if (sent) result.whatsappSent++;
         else result.errors++;

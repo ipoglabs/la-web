@@ -64,7 +64,8 @@ export async function runAlertNoMatchJob(): Promise<JobResult> {
       if (alert.notifyVia.includes("whatsapp") && recipient.phone && recipient.isPhoneVerified) {
         const sent = await sendWhatsAppMessage(
           recipient.phone,
-          `LokalAds: No new matches yet for your "${alert.name}" alert. We'll keep watching — manage it here: ${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/my-alerts`,
+          `No new matches yet for your "${alert.name}" alert. We'll keep watching`,
+          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/my-alerts`,
         );
         if (sent) result.whatsappSent++;
         else result.errors++;
