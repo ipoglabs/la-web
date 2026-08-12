@@ -17,8 +17,20 @@ import { SITE_URL } from "@/lib/constants";
  *
  * The X-Robots-Tag HTTP header in next.config.ts adds a second enforcement
  * layer for headless scrapers that skip robots.txt.
+ *
+ * SITE_INDEXABLE gate: until production is ready to go live, everything is
+ * disallowed regardless of the rules above — flip SITE_INDEXABLE=true (Vercel
+ * env + .env.local) to switch back to the real per-path rules. See also the
+ * `robots` field on metadata in app/layout.tsx, which mirrors this gate.
  */
 export default function robots(): MetadataRoute.Robots {
+  if (process.env.SITE_INDEXABLE !== "true") {
+    return {
+      rules: { userAgent: "*", disallow: "/" },
+      host: SITE_URL,
+    };
+  }
+
   return {
     rules: [
       {

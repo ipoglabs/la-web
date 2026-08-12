@@ -88,6 +88,12 @@ export const metadata: Metadata = {
     email: false,
     address: false,
   },
+  // Site-wide search-engine gate — flip SITE_INDEXABLE=true (Vercel env +
+  // .env.local) once production is actually ready to go live. Defaults to
+  // hidden (fail-safe) when unset. See also src/app/robots.ts.
+  robots: process.env.SITE_INDEXABLE === "true"
+    ? { index: true, follow: true }
+    : { index: false, follow: false, nocache: true },
 };
 
 export default async function RootLayout({

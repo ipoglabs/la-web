@@ -8,6 +8,10 @@ import type { NextConfig } from "next";
  *   - Works for AI training scrapers (GPTBot, CCBot, Amazonbot, etc.)
  *   - Works even if the HTML is never parsed
  *
+ * When SITE_INDEXABLE isn't "true" (pre-launch default), this header is also
+ * added to every route site-wide — mirrors app/robots.ts and the `robots`
+ * field on metadata in app/layout.tsx. Flip SITE_INDEXABLE=true to go live.
+ *
  * noindex     — don't add to search index
  * nofollow    — don't follow links on these pages
  * noarchive   — don't cache / show a cached version
@@ -32,7 +36,13 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const siteWide =
+      process.env.SITE_INDEXABLE === "true"
+        ? []
+        : [{ source: "/:path*", headers: [NOINDEX_HEADER] }];
+
     return [
+      ...siteWide,
       {
         source: "/design-system/:path*",
         headers: [NOINDEX_HEADER],
