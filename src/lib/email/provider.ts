@@ -18,7 +18,7 @@ const TEAM_SENDER_EVENTS: ReadonlySet<EmailEvent["type"]> = new Set([
   "ACCOUNT_DELETED",
   "ACCOUNT_DELETION_PENDING",
 ]);
-const TEAM_SENDER = "team@lokalads.com";
+const TEAM_SENDER = "LokalAds <team@lokalads.com>";
 
 // ── Email format guard (task 2b) ─────────────────────────────────────────────
 // Basic runtime check before we touch the provider.
@@ -62,7 +62,7 @@ export async function sendViaProvider(
 
   const from = TEAM_SENDER_EVENTS.has(eventType)
     ? TEAM_SENDER
-    : (process.env.EMAIL_FROM ?? "no-reply@lokalads.com");
+    : (process.env.EMAIL_FROM ?? "LokalAds <no-reply@lokalads.com>");
 
   try {
     const { error } = await getClient().emails.send({

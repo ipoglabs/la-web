@@ -19,9 +19,8 @@
  * an APPROVED Content template (Twilio console → Content Editor →
  * "alert_match_notification"); its body is:
  *   "LokalAds Alert: {{1}}. View the full listing here: {{2}}. Thanks for using LokalAds!"
- * {{1}} = `summary`, {{2}} = `url`. As of 2026-08-12 the only submitted
- * candidate (alert_match_notification_v3) is still pending Meta review —
- * sends will fail (return false) until it's approved and its SID is set.
+ * {{1}} = `summary`, {{2}} = `url`. alert_match_notification_v3 was approved
+ * by Meta on 2026-08-12 — TWILIO_WHATSAPP_ALERT_CONTENT_SID is set to its SID.
  */
 import Twilio from "twilio";
 

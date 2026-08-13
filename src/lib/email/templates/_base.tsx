@@ -5,7 +5,7 @@
 //
 // Design decisions:
 // - White card on light grey background — standard transactional email pattern
-// - Logo: /public/la-logo-symbol-color.svg served via NEXT_PUBLIC_APP_URL (absolute URL required for email clients)
+// - Logo: /public/la-logo-symbol-color.png served via NEXT_PUBLIC_APP_URL (absolute URL required for email clients; PNG not SVG — Outlook/many clients don't render SVG <img>)
 // - Max width 600px — universal email safe width
 // - Font stack: system fonts only — web fonts not reliable across email clients
 // - All styles inline — required for email client compatibility
@@ -134,7 +134,7 @@ export function baseEmail(content: string, preview?: string): string {
   const footerTextStyle = s({ ...emailText.footer, margin: "0 0 4px" });
   const footerLinkStyle = s(emailText.link);
   // Same logo assets as /login's MethodStep.tsx (symbol + wordmark image) — brand consistency
-  const logoUrl = `${APP_URL}/assets/la-logo-symbol-color.svg`;
+  const logoUrl = `${APP_URL}/assets/la-logo-symbol-color.png`;
   const wordmarkUrl = `${APP_URL}/assets/la-text-black.svg`;
 
   return `<!DOCTYPE html>
