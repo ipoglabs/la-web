@@ -31,9 +31,22 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useRecentSearches, type RecentSearch } from "@/lib/hooks/use-recent-searches";
+import { usePopularSearches, type PopularSearchItem } from "@/lib/hooks/use-popular-searches";
 import { suggestCategory, type CategorySuggestion } from "@/lib/search-keywords";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import type { LocationValue } from "@/components/location-picker";
+
+/** Popular-search item → the same shape RecentRow/selectRecent already
+ *  handle, so the dropdown fallback (Section 4.6, Q4) can reuse both. */
+function popularToRecentSearch(item: PopularSearchItem): RecentSearch {
+  return {
+    id: `pop-${item.keyword}-${item.category ?? ""}`,
+    keyword: item.keyword,
+    location: null,
+    scope: item.category ? { cat: item.category, label: CATEGORY_LABELS[item.category] ?? item.category } : null,
+    savedAt: 0,
+  };
+}
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -64,6 +77,12 @@ export interface LaSearchBarProps {
   size?: "default" | "lg";
   placeholder?: string;
   className?: string;
+  /** ISO country code, e.g. "IN" — enables the dropdown's popular-searches
+   *  fallback (shown when the visitor has zero recents of their own). Omit
+   *  to skip that fetch entirely (e.g. the design-system demo page). */
+  country?: string;
+  /** City, if the visitor has one set — narrows the popular-searches fallback. */
+  city?: string;
 }
 
 // ── small internal icons ──────────────────────────────────────────────────────
@@ -104,6 +123,14 @@ function IconChevron({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
       <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function IconTrending({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className}>
+      <path d="m3 17 6-6 4 4 8-8M15 7h6v6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -317,6 +344,35 @@ function RecentRow({
   );
 }
 
+// ── popular search row ────────────────────────────────────────────────────────
+// Same layout as RecentRow, minus the remove button — these aren't a
+// personal list the visitor owns, so there's nothing to dismiss.
+
+function PopularRow({
+  item,
+  onSelect,
+}: {
+  item: RecentSearch;
+  onSelect: (item: RecentSearch) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 group cursor-pointer rounded-md"
+      onMouseDown={(e) => { e.preventDefault(); onSelect(item); }}>
+      <IconTrending className="size-4 shrink-0 text-slate-400" />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium text-slate-700 truncate block">
+          {item.keyword}
+        </span>
+      </div>
+      {item.scope && (
+        <span className="shrink-0 text-sm font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+          {item.scope.label}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── suggestion row ────────────────────────────────────────────────────────────
 
 interface SuggestionRowProps {
@@ -374,6 +430,8 @@ export function LaSearchBar({
   size = "default",
   placeholder = "What are you looking for?",
   className,
+  country,
+  city,
 }: LaSearchBarProps) {
   const [keyword,  setKeyword]  = useState(initialKeyword);
   const [scope,    setScope]    = useState<SearchScope | null>(initialScope);
@@ -396,6 +454,7 @@ export function LaSearchBar({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { recents, save, remove, clear } = useRecentSearches();
+  const popularSearches = usePopularSearches(country, city);
 
   // ── category suggestion on type ──────────────────────────────────────────
   useEffect(() => {
@@ -439,12 +498,16 @@ export function LaSearchBar({
   }, [onSearch]);
 
   // ── what to show in dropdown ──────────────────────────────────────────────
-  const showRecents    = focused && keyword.trim() === "" && recents.length > 0;
+  const showRecents = focused && keyword.trim() === "" && recents.length > 0;
+  // A brand-new visitor's dropdown is blank until they search once — fall
+  // back to popular searches so it isn't empty (Section 4.6, Q4). Only when
+  // the visitor has zero recents of their own; never replaces them.
+  const showPopular = focused && keyword.trim() === "" && recents.length === 0 && popularSearches.length > 0;
   // Show suggestions whenever user has typed ≥2 chars
   const showSuggestion = focused && keyword.trim().length >= 2;
   // Best category to offer — detected from keyword, or fall back to page scope
   const scopeForSuggestion = suggestion ?? scope;
-  const showDropdown   = showRecents || showSuggestion;
+  const showDropdown   = showRecents || showPopular || showSuggestion;
   const isLg           = size === "lg";
 
   return (
@@ -580,6 +643,22 @@ export function LaSearchBar({
                   item={item}
                   onSelect={selectRecent}
                   onRemove={remove}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Popular searches — fallback when the visitor has no recents */}
+          {showPopular && (
+            <div className="px-2">
+              <div className="px-2 pt-2 pb-1">
+                <span className="text-sm font-semibold uppercase tracking-wide text-slate-500">Popular searches</span>
+              </div>
+              {popularSearches.map((item) => (
+                <PopularRow
+                  key={`${item.keyword}-${item.category ?? ""}`}
+                  item={popularToRecentSearch(item)}
+                  onSelect={selectRecent}
                 />
               ))}
             </div>

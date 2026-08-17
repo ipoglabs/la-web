@@ -131,6 +131,17 @@ export function getListingsDataSource(code: CountryCode, stage: AppStage): Listi
 }
 
 /**
+ * Hours a seller must wait between "Bump to Top" actions on the same ad
+ * (country override > global default). Used both client-side (MyAdCard's
+ * countdown label) and server-side (bumpPost.ts's cooldown enforcement) —
+ * see md/api-contracts/myads.md's "never trust the client" note.
+ */
+export function getBumpCooldownHours(code: CountryCode): number {
+  return COUNTRY_CONFIGS[code].bumpCooldownHours
+    ?? GLOBAL_CONFIG.bumpCooldownHours;
+}
+
+/**
  * Whether a stage-gated feature flag is enabled for the current (or given) stage.
  *
  *   isStageFeatureEnabled("twoFactorAuth")          → true only in dev

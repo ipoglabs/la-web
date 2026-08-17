@@ -42,6 +42,9 @@ export const GB_CONFIG: CountryConfig = {
     prod: "db",
   },
 
+  // ── Seller dashboard ────────────────────────────────────────────────────────
+  bumpCooldownHours: 4,
+
   // ── Enabled categories (ordered) ────────────────────────────────────────────
   // Note: "special_offers" not yet active in UK — omitted intentionally
   enabledCategories: [

@@ -99,7 +99,11 @@ export async function getPublicProfileByHandle(
     Review.find({ userId: user.userId }).sort({ createdAt: -1 }).limit(50).lean(),
   ]);
 
-  const listings = posts.map((post) => mapPostToListing(post as LeanPost, ownerUser));
+  // Every post here already belongs to this one seller (query above is
+  // ownerId-scoped), so posts.length IS their real active-listing count —
+  // no extra aggregation needed, unlike the batched lookup other callers of
+  // mapPostToListing need (see lib/postActiveListingsCount.ts).
+  const listings = posts.map((post) => mapPostToListing(post as LeanPost, ownerUser, posts.length));
 
   const location =
     [user.address?.city, user.address?.country].filter(Boolean).join(", ") ||

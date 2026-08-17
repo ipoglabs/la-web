@@ -41,6 +41,9 @@ export const IN_CONFIG: CountryConfig = {
     prod: "db",
   },
 
+  // ── Seller dashboard ────────────────────────────────────────────────────────
+  bumpCooldownHours: 12,
+
   // ── Enabled categories (ordered) ────────────────────────────────────────────
   enabledCategories: [
     "property",

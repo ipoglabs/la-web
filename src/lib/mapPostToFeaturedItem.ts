@@ -16,6 +16,8 @@ export function mapStatus(status?: IPost["status"], isSuspended?: boolean): List
       return "rejected";
     case "expired":
       return "expired";
+    case "closed":
+      return "closed";
     case "deleted":
       return "deleted";
     case "active":

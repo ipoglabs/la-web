@@ -6,7 +6,7 @@
  *
  * POST /api/jobs/trigger
  * Header: x-cron-secret: <CRON_SECRET>
- * Body:   { "job": "alert-match" | "alert-digest-daily" | "alert-digest-weekly" | "alert-no-match" }
+ * Body:   { "job": "alert-match" | "alert-digest-daily" | "alert-digest-weekly" | "alert-no-match" | "popular-search" }
  *
  * Returns immediately — job runs in the background.
  * Check job status via the JobRun collection.
@@ -19,6 +19,7 @@ import { runJob } from "@/lib/jobs/_runner";
 import { runAlertMatchJob } from "@/lib/jobs/alert-match.job";
 import { runAlertDigestJob } from "@/lib/jobs/alert-digest.job";
 import { runAlertNoMatchJob } from "@/lib/jobs/alert-no-match.job";
+import { runPopularSearchJob } from "@/lib/jobs/popular-search.job";
 import type { JobName } from "@/lib/jobs/_types";
 
 const JOB_MAP: Record<JobName, () => Promise<import("@/lib/jobs/_types").JobResult>> = {
@@ -26,6 +27,7 @@ const JOB_MAP: Record<JobName, () => Promise<import("@/lib/jobs/_types").JobResu
   "alert-digest-daily": () => runAlertDigestJob("daily"),
   "alert-digest-weekly": () => runAlertDigestJob("weekly"),
   "alert-no-match": runAlertNoMatchJob,
+  "popular-search": runPopularSearchJob,
 };
 
 const VALID_JOB_NAMES = Object.keys(JOB_MAP) as JobName[];

@@ -9,6 +9,7 @@
  *   0 8 daily     alert-digest-daily
  *   0 8 monday    alert-digest-weekly
  *   0 9 daily     alert-no-match        (14-day check)
+ *   0 0 daily     popular-search        (popular-searches aggregation)
  */
 
 import cron from "node-cron";
@@ -16,6 +17,7 @@ import { runJob } from "@/lib/jobs/_runner";
 import { runAlertMatchJob } from "@/lib/jobs/alert-match.job";
 import { runAlertDigestJob } from "@/lib/jobs/alert-digest.job";
 import { runAlertNoMatchJob } from "@/lib/jobs/alert-no-match.job";
+import { runPopularSearchJob } from "@/lib/jobs/popular-search.job";
 
 export function initJobRunner(): void {
   // Instant alert match — every 5 minutes
@@ -46,5 +48,12 @@ export function initJobRunner(): void {
     );
   });
 
-  console.log("[jobs] scheduler started — 4 jobs registered");
+  // Popular search aggregation — every day at 00:00
+  cron.schedule("0 0 * * *", () => {
+    runJob("popular-search", runPopularSearchJob).catch((err) =>
+      console.error("[jobs] unhandled error in popular-search:", err),
+    );
+  });
+
+  console.log("[jobs] scheduler started — 5 jobs registered");
 }

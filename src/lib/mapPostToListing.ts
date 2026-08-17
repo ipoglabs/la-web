@@ -73,7 +73,17 @@ function buildGoodToKnow(post: LeanPost, sellerName: string): KeyValueRow[] {
   return rows.slice(0, 6);
 }
 
-export function mapPostToListing(post: LeanPost, ownerUser?: LeanOwner | null): Listing {
+export function mapPostToListing(
+  post: LeanPost,
+  ownerUser?: LeanOwner | null,
+  /**
+   * Seller's real count of other publicly-visible posts — see
+   * lib/postActiveListingsCount.ts's batched lookup. Defaults to 1 (this
+   * post alone) only as a safety net for a caller that forgets to pass it;
+   * every real call site should compute and pass the true count.
+   */
+  activeListingsCount: number = 1,
+): Listing {
   const id = resolvePostId(post);
   const { priceLabel, priceSuffix } = resolvePrice(post);
 
@@ -115,7 +125,7 @@ export function mapPostToListing(post: LeanPost, ownerUser?: LeanOwner | null): 
       location: post.location?.address ?? "",
       tagline: "LokalAds member",
       memberSince: String(new Date(ownerUser?.createdAt ?? post.createdAt ?? Date.now()).getFullYear()),
-      activeListings: 1,
+      activeListings: activeListingsCount,
       lastActive: "Recently",
       likes: "0",
       followers: "0",

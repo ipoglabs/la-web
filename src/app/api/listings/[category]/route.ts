@@ -10,6 +10,8 @@ import {
 import {
   getListingsForMarket,
   getCountsForMarket,
+  filterListingsByKeyword,
+  sortMockListings,
   isKnownCategory,
   isKnownSubcategory,
 } from "@/lib/mock/country-map";
@@ -19,6 +21,9 @@ import { publicPostFilter } from "@/lib/postVisibility";
 import { resolvePostSort } from "@/lib/postSort";
 import { parseFilterValues } from "@/lib/listing-filters";
 import { buildFilterQuery } from "@/lib/postFilterQuery";
+import { buildKeywordQuery } from "@/lib/postSearchQuery";
+import { getActiveListingCountsByOwner } from "@/lib/postActiveListingsCount";
+import { parseGeoParams, filterByRadius, sortByDistance, shouldSortByDistance } from "@/lib/geo";
 import type { ListingsApiResponse } from "@/types/listings-api";
 
 const COUNTRY_CODES = Object.keys(COUNTRY_CONFIGS) as CountryCode[];
@@ -90,12 +95,16 @@ export async function GET(
 
     // Filter sidebar values (see lib/listing-filters.ts's URL contract) →
     // Mongo clauses, mapped per category/sub in lib/postFilterQuery.ts.
-    // Combined via $and rather than spread so a filter clause's own $or
-    // (e.g. floor_level) never collides with the country $or above.
+    // Search bar keyword → lib/postSearchQuery.ts. Combined via $and rather
+    // than spread so a filter/keyword clause's own $or (e.g. floor_level,
+    // the keyword's name/description $or) never collides with the country
+    // $or above.
     const filterQuery = buildFilterQuery(category, sub ?? "", parseFilterValues(searchParams));
-    const query = Object.keys(filterQuery).length > 0
-      ? { $and: [baseQuery, filterQuery] }
-      : baseQuery;
+    const keywordQuery = buildKeywordQuery(searchParams.get("q"));
+    const andClauses = [baseQuery, filterQuery, keywordQuery].filter(
+      (clause): clause is Record<string, unknown> => clause !== null && Object.keys(clause).length > 0,
+    );
+    const query = andClauses.length > 1 ? { $and: andClauses } : andClauses[0];
 
     const dbItems = await Post.find(query)
       .sort(resolvePostSort(searchParams.get("sort")))
@@ -106,7 +115,25 @@ export async function GET(
       )
       .lean();
 
-    const items = dbItems.map(({ ownerId, ...post }) => mapPostToListing(post, ownerId ?? null));
+    const activeCounts = await getActiveListingCountsByOwner(dbItems.map((d) => d.ownerId?._id));
+    let items = dbItems.map(({ ownerId, ...post }) =>
+      mapPostToListing(post, ownerId ?? null, ownerId?._id ? activeCounts.get(String(ownerId._id)) ?? 1 : 1),
+    );
+
+    // "Near me" search — see lib/geo.ts. Applied post-fetch/post-map since
+    // Post.location isn't stored in Mongo's geospatial shape (no 2dsphere
+    // index); fine at this data volume (same POC-scale limit(50) above).
+    const sortParam = searchParams.get("sort");
+    const { lat, lng, radiusKm } = parseGeoParams({
+      lat: searchParams.get("lat"),
+      lng: searchParams.get("lng"),
+      radius: searchParams.get("radius"),
+      unit: searchParams.get("unit"),
+    });
+    items = filterByRadius(items, lat, lng, radiusKm);
+    if (lat != null && lng != null && shouldSortByDistance(sortParam, lat, lng)) {
+      items = sortByDistance(items, lat, lng);
+    }
 
     const response: ListingsApiResponse = {
       ok: true,
@@ -127,7 +154,22 @@ export async function GET(
     return NextResponse.json(response);
   }
 
-  const items = getListingsForMarket(category, country, sub ?? undefined);
+  let items = filterListingsByKeyword(
+    getListingsForMarket(category, country, sub ?? undefined),
+    searchParams.get("q") ?? "",
+  );
+  const mockSortParam = searchParams.get("sort") ?? "newest";
+  items = sortMockListings(items, mockSortParam);
+  const { lat: mockLat, lng: mockLng, radiusKm: mockRadiusKm } = parseGeoParams({
+    lat: searchParams.get("lat"),
+    lng: searchParams.get("lng"),
+    radius: searchParams.get("radius"),
+    unit: searchParams.get("unit"),
+  });
+  items = filterByRadius(items, mockLat, mockLng, mockRadiusKm);
+  if (mockLat != null && mockLng != null && shouldSortByDistance(mockSortParam, mockLat, mockLng)) {
+    items = sortByDistance(items, mockLat, mockLng);
+  }
   const response: ListingsApiResponse = {
     ok: true,
     source,

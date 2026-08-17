@@ -39,6 +39,9 @@ export const SG_CONFIG: CountryConfig = {
     prod: "db",
   },
 
+  // ── Seller dashboard ────────────────────────────────────────────────────────
+  // No override — inherits GLOBAL_CONFIG.bumpCooldownHours (8 hours)
+
   // ── Enabled categories (ordered) ────────────────────────────────────────────
   enabledCategories: [
     "property",

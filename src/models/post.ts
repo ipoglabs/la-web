@@ -28,9 +28,9 @@ export interface IPost {
   adsId?: string;
 
   /** NEW: lifecycle fields */
-  status?: "pending" | "active" | "rejected" | "off" | "expired" | "deleted";
+  status?: "pending" | "active" | "rejected" | "off" | "expired" | "closed" | "deleted";
   rejectionReason?: string;
-  expiresAt?: Date;
+  expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
 
@@ -202,6 +202,11 @@ export interface IPost {
   suspendedAt?: Date;
   suspendedBy?: mongoose.Types.ObjectId;
 
+  /** Real page-view counter — incremented on each listing-detail page load
+   *  (see app/(main)/listings/[listingId]/page.tsx). Backs MyAdCard's view
+   *  stat on /my-ads. */
+  viewCount?: number;
+
   /** timestamps (added by Mongoose) */
   createdAt?: Date;
   updatedAt?: Date;
@@ -223,7 +228,7 @@ const PostSchema = new Schema<IPost>(
     adsId: { type: String, unique: true, index: true }, 
     status: {
       type: String,
-      enum: ["pending", "active", "rejected", "off", "expired", "deleted"],
+      enum: ["pending", "active", "rejected", "off", "expired", "closed", "deleted"],
       default: "pending",
       index: true,
     },
@@ -231,6 +236,7 @@ const PostSchema = new Schema<IPost>(
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
+    viewCount: { type: Number, default: 0 },
 
     // location is optional to match forms that omit it
     location: {

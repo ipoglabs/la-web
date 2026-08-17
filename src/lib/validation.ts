@@ -1,6 +1,6 @@
 export function isValidEmail(value: string) {
   if (!value) return false;
-  return /^[\w-.]+@[\w-]+\.[A-Za-z]{2,}$/.test(value.trim());
+  return /^[\w.-]+@(?:[\w-]+\.)+[A-Za-z]{2,}$/.test(value.trim());
 }
 
 export function normalizePhoneDigits(value: string) {

@@ -118,8 +118,10 @@ interface SearchBarProps {
   scope?: SearchScope | null;
   initialKeyword?: string;
   onSearch?: (query: SearchQuery) => void;
+  country?: string;
+  city?: string;
 }
-function SearchBar({ scope, initialKeyword = "", onSearch }: SearchBarProps) {
+function SearchBar({ scope, initialKeyword = "", onSearch, country, city }: SearchBarProps) {
   return (
     <div className="bg-slate-800 py-2 px-4">
       <div className="mx-auto w-full max-w-3xl">
@@ -128,6 +130,8 @@ function SearchBar({ scope, initialKeyword = "", onSearch }: SearchBarProps) {
           initialKeyword={initialKeyword}
           placeholder="ex: 3-bed apartment in Canary Wharf"
           onSearch={onSearch}
+          country={country}
+          city={city}
         />
       </div>
     </div>
@@ -376,6 +380,22 @@ export default function ListingsPage() {
     // Preserve sort; reset page (new search always starts at page 1)
     const currentSort = searchParams.get("sort");
     if (currentSort) params.set("sort", currentSort);
+
+    // Fire-and-forget popularity log — never blocks navigation, failure is
+    // swallowed (see app/api/search/log/route.ts).
+    if (query.keyword?.trim() || query.scope?.cat) {
+      fetch("/api/search/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keyword: query.keyword?.trim() ?? "",
+          category: query.scope?.cat,
+          country: config.isoCode,
+          city: searchParams.get("loc") ?? undefined,
+        }),
+      }).catch(() => {});
+    }
+
     router.push(`/listings?${params.toString()}`, { scroll: false });
   }
 
@@ -430,7 +450,13 @@ export default function ListingsPage() {
 
   return (
     <>
-      <SearchBar scope={currentScope} initialKeyword={searchParams.get("q") ?? ""} onSearch={handleSearch} />
+      <SearchBar
+        scope={currentScope}
+        initialKeyword={searchParams.get("q") ?? ""}
+        onSearch={handleSearch}
+        country={config.isoCode}
+        city={searchParams.get("loc") ?? undefined}
+      />
       <ContextBar
         currentLocation={currentLocation}
         onLocationChange={handleLocationChange}

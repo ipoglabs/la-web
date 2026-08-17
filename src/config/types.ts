@@ -169,6 +169,14 @@ export interface CountryConfig {
    */
   enabledCategories: string[];
 
+  // ── Seller dashboard ────────────────────────────────────────────────────────
+
+  /**
+   * Hours a seller must wait between "Bump to Top" actions on the same ad.
+   * Falls back to GLOBAL_CONFIG.bumpCooldownHours if omitted.
+   */
+  bumpCooldownHours?: number;
+
   // ── Add future config namespaces below ──────────────────────────────────────
   // footer?: FooterConfig;
   // header?: HeaderConfig;

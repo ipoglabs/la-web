@@ -1,10 +1,14 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
+import { Types } from "mongoose";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { verifyToken } from "@/lib/auth";
 import { logActivity } from "@/lib/activityLog";
+import { getBumpCooldownHours, type CountryCode } from "@/config";
+
+const COUNTRY_CODES: CountryCode[] = ["in", "gb", "sg"];
 
 function extractEmailFromDecoded(decoded: any): string | undefined {
   if (!decoded || typeof decoded !== "object") return undefined;
@@ -29,6 +33,23 @@ function extractUserIdFromDecoded(decoded: any): string | undefined {
       ? decoded.sub
       : undefined)
   );
+}
+
+/** postId may be a real Post's adsId (MyAdCard's `ad.id`) or a raw Mongo
+ *  _id — same dual lookup as getPostByAdsId.ts / setListingLifecycle.ts. */
+function findByPublicId(postId: string) {
+  const query = Types.ObjectId.isValid(postId)
+    ? { $or: [{ adsId: postId }, { _id: postId }] }
+    : { adsId: postId };
+  return Post.findOne(query);
+}
+
+/** Minutes remaining until the next bump is allowed, or 0 if bump is available now. */
+function cooldownRemainingMs(lastBumpedAt: Date | undefined, countryCode: string | undefined): number {
+  const code = COUNTRY_CODES.includes(countryCode as CountryCode) ? (countryCode as CountryCode) : "in";
+  const cooldownMs = getBumpCooldownHours(code) * 60 * 60 * 1000;
+  if (!lastBumpedAt) return 0;
+  return Math.max(0, lastBumpedAt.getTime() + cooldownMs - Date.now());
 }
 
 export async function bumpPost(postId: string) {
@@ -57,7 +78,7 @@ export async function bumpPost(postId: string) {
       return { ok: false as const, error: "Not logged in" };
     }
 
-    const post = await Post.findById(postId).exec();
+    const post = await findByPublicId(postId).exec();
     if (!post) return { ok: false as const, error: "Post not found" };
 
     const owned =
@@ -71,6 +92,16 @@ export async function bumpPost(postId: string) {
       return {
         ok: false as const,
         error: "Only approved (active) ads can be bumped.",
+      };
+    }
+
+    // Never trust a client-side cooldown check alone — MyAdCard's button
+    // already disables itself, but the server must enforce this too.
+    const remainingMs = cooldownRemainingMs(post.lastBumpedAt, post.country);
+    if (remainingMs > 0) {
+      return {
+        ok: false as const,
+        error: `You can bump this ad again in ${Math.ceil(remainingMs / 60_000)} minute(s).`,
       };
     }
 

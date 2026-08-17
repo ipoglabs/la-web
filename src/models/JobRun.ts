@@ -12,7 +12,8 @@ export type JobName =
   | "alert-match"
   | "alert-digest-daily"
   | "alert-digest-weekly"
-  | "alert-no-match";
+  | "alert-no-match"
+  | "popular-search";
 
 export type JobRunStatus = "running" | "completed" | "failed";
 
@@ -22,6 +23,10 @@ export interface IJobRunStats {
   emailsSent: number;
   whatsappSent: number;
   errors: number;
+  /** popular-search job only — raw SearchEvent docs aggregated this run */
+  eventsProcessed?: number;
+  /** popular-search job only — PopularSearch locationKey docs upserted this run */
+  locationsUpdated?: number;
 }
 
 export interface IJobRun extends Document {
@@ -38,7 +43,7 @@ const JobRunSchema = new Schema<IJobRun>(
     jobName: {
       type: String,
       required: true,
-      enum: ["alert-match", "alert-digest-daily", "alert-digest-weekly", "alert-no-match"],
+      enum: ["alert-match", "alert-digest-daily", "alert-digest-weekly", "alert-no-match", "popular-search"],
       index: true,
     },
     startedAt: { type: Date, required: true },
@@ -56,6 +61,8 @@ const JobRunSchema = new Schema<IJobRun>(
       emailsSent: { type: Number, default: 0 },
       whatsappSent: { type: Number, default: 0 },
       errors: { type: Number, default: 0 },
+      eventsProcessed: { type: Number },
+      locationsUpdated: { type: Number },
     },
     error: { type: String },
   },

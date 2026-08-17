@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import type { Metadata } from "next";
 import { cn } from "@/lib/utils";
 import { LaRelativeDate } from "@/components/la-blocks/la-relative-date";
@@ -16,6 +17,7 @@ import { LaListingDescription } from "@/components/la-blocks/la-listing-descript
 import type { FavItem } from "@/lib/stores/favouritesStore";
 import { resolveListingContext, getSimilarListings } from "@/lib/mock/country-map";
 import { resolvePostListingContext } from "@/app/actions/getPostByAdsId";
+import { getSimilarPosts } from "@/app/actions/getSimilarListings";
 import { getAuthUser } from "@/lib/session";
 import FeaturedListings from "@/components/la-blocks/FeaturedListings";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
@@ -40,11 +42,14 @@ interface ListingDetailPageProps {
  * for why the two can't be told apart in advance without just trying DB
  * first — a mock-slug lookup in Post is just a fast, cheap, indexed miss.
  */
-async function resolveContext(listingId: string) {
+// cache() dedupes within one request — generateMetadata and the page body
+// below both call this with the same listingId; without this, the real-DB
+// path's viewCount increment (getPostByAdsId.ts) would fire twice per visit.
+const resolveContext = cache(async (listingId: string) => {
   const fromDb = await resolvePostListingContext(listingId);
   if (fromDb) return fromDb;
   return resolveListingContext(listingId);
-}
+});
 
 export async function generateMetadata({ params }: ListingDetailPageProps): Promise<Metadata> {
   const { listingId } = await params;
@@ -306,15 +311,18 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
 
 // ─── Similar Listings row ────────────────────────────────────────────────────
 // Uses the same FeaturedListings component as the landing page — single scroll row.
-//
-// TODO [INTEGRATION]: Replace getSimilarListings() with a real API call:
-//   fetch(`/api/listings/similar?cat=${cat}&sub=${sub}&exclude=${excludeId}&country=${market}&limit=12`)
-// `market` is resolved by resolveListingContext() above from the listing itself —
+// Real DB posts first (getSimilarPosts — same category, market-scoped),
+// mock catalog as fallback for categories/markets with too little real
+// inventory yet, same "DB first, mock fallback" shape as resolveContext()
+// above. `market` is resolved by resolveContext() from the listing itself —
 // no cookie read needed here, it just flows through as a prop.
-function SimilarListingsRow({
+async function SimilarListingsRow({
   cat, sub, excludeId, subLabel, market,
 }: { cat: string; sub: string; excludeId: string; subLabel?: string; market: CountryCode | null }) {
-  const items = getSimilarListings(cat, sub, excludeId, market, 12);
+  let items: Listing[] = await getSimilarPosts(cat, sub, excludeId, market, 12);
+  if (items.length === 0) {
+    items = getSimilarListings(cat, sub, excludeId, market, 12);
+  }
   if (items.length === 0) return null;
 
   const seeAllHref = `/listings?cat=${cat}&sub=${sub}`;

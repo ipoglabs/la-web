@@ -1,55 +1,31 @@
-import Link from "next/link";
-import { LaButton } from "@/components/la/la-button";
-import ClientList from "./ClientList";
-import { getMyPosts } from "@/app/actions/getMyPosts";
+/**
+ * /my-ads — Manage Ads (seller dashboard)
+ *
+ * UI ported from ipoglabs/la-design-aug14's /myads (see the plan for the
+ * full mock → real mapping). This server component owns auth + the real
+ * data fetch; MyAdsClient.tsx owns filter-tab state and renders the ported
+ * card list + reference cards.
+ */
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { getMyAds } from "@/app/actions/getMyAds";
+import MyAdsClient from "./MyAdsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function MyAdsPage() {
   const session = await getSession();
+  if (!session) redirect("/login?redirect=/my-ads");
 
-  if (!session) {
-    return (
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
-        <h1 className="text-2xl font-semibold">My Ads</h1>
-        <div className="border rounded-md p-4 bg-slate-50">
-          You are not logged in.{" "}
-          <Link href="/login" className="underline">
-            Login
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  const ownerId = session.userId || session.id;
-  const email = session.email;
-
-  let rows: any[] = [];
-
-  try {
-    const data = await getMyPosts({ ownerId, email });
-    rows = Array.isArray(data) ? data : [];
-  } catch (e) {
-    console.error("❌ getMyPosts failed:", e);
-    rows = [];
-  }
+  const ads = await getMyAds();
 
   return (
-    <main className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between">
-        <h1 className="text-2xl font-semibold">My Ads</h1>
-        <Link href="/post/select-category">
-          <LaButton>New Post</LaButton>
-        </Link>
-      </div>
-
-      {rows.length === 0 ? (
-        <p>No ads found.</p>
-      ) : (
-        <ClientList initialRows={rows} />
-      )}
-    </main>
+    <div className="container-app py-6 sm:py-8">
+      <h1 className="text-2xl font-semibold text-slate-900 mb-1">Manage Ads</h1>
+      <p className="text-base text-slate-600 mb-6">
+        See how your ads are doing, and make changes whenever you need to.
+      </p>
+      <MyAdsClient initialAds={ads} />
+    </div>
   );
 }

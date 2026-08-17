@@ -14,4 +14,8 @@ export interface JobResult {
   emailsSent: number;
   whatsappSent: number;
   errors: number;
+  /** popular-search job only — raw SearchEvent docs aggregated this run */
+  eventsProcessed?: number;
+  /** popular-search job only — PopularSearch locationKey docs upserted this run */
+  locationsUpdated?: number;
 }

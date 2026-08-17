@@ -38,12 +38,13 @@ import type { CountryCode } from "@/config";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type LegalDocType = "privacy-policy" | "terms" | "cookie-policy";
+export type LegalDocType = "privacy-policy" | "terms" | "cookie-policy" | "listing-policy";
 
 const TITLES: Record<LegalDocType, string> = {
   "privacy-policy": "Privacy Policy",
   "terms": "Terms & Conditions",
   "cookie-policy": "Cookie Policy",
+  "listing-policy": "Listing Policy",
 };
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────

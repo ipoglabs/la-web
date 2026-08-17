@@ -72,6 +72,13 @@ export const GLOBAL_CONFIG = {
     prod: "db",
   } satisfies Record<AppStage, ListingsDataSource>,
 
+  // ── Seller dashboard ──────────────────────────────────────────────────────
+  /**
+   * Default "Bump to Top" cooldown (hours) for a country that doesn't
+   * declare its own bumpCooldownHours override.
+   */
+  bumpCooldownHours: 8,
+
   // ── Stage-gated feature flags ─────────────────────────────────────────────
   /**
    * Feature flags gated by deployment stage (not country).

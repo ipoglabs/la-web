@@ -377,6 +377,38 @@ export function getFeaturedForMarket(
  * city/geo field, e.g. GET /api/v1/listings?country={isoCode}&city={slug} —
  * do not port free-text substring matching to production.
  */
+/**
+ * Keyword filter for mock listings — same case-insensitive substring
+ * convention as getListingsForCity's locationLabel matching, applied to
+ * `title` and `description` instead. Backs the search bar's `q` param on
+ * every mock-data path (useListingSearch.ts's fallback/city-browse
+ * branches, and /api/listings/[category]'s non-db branch).
+ */
+export function filterListingsByKeyword(items: MockListing[], keyword: string): MockListing[] {
+  const needle = keyword.trim().toLowerCase();
+  if (!needle) return items;
+  return items.filter(
+    (listing) =>
+      listing.title.toLowerCase().includes(needle) ||
+      listing.description.toLowerCase().includes(needle),
+  );
+}
+
+/**
+ * Sorts mock listings the same way lib/postSort.ts ranks real Posts —
+ * postedAt descending for everything except "oldest". Mock listings have no
+ * numeric price field (priceLabel is a formatted display string, e.g.
+ * "₹18,000") and no bump/quality signal, so price_asc/price_desc/top-picks
+ * fall back to newest here too — same documented gap postSort.ts already
+ * has server-side, not a new limitation introduced by this function.
+ */
+export function sortMockListings(items: MockListing[], sort: string): MockListing[] {
+  const sorted = [...items].sort(
+    (a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime(),
+  );
+  return sort === "oldest" ? sorted.reverse() : sorted;
+}
+
 export function getListingsForCity(
   country: CountryCode,
   cityLabel: string,

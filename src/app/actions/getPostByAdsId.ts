@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 import Post from "@/models/post";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
 import { publicPostFilter } from "@/lib/postVisibility";
+import { getActiveListingCountsByOwner } from "@/lib/postActiveListingsCount";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import type { Listing } from "@/types/listing";
 import type { CountryCode } from "@/config";
@@ -72,8 +73,16 @@ export async function resolvePostListingContext(publicId: string): Promise<{
 
   if (!post) return null;
 
+  // Real page-view counter for /my-ads's MyAdCard — fire-and-forget, never
+  // blocks the detail page render on a write.
+  Post.updateOne({ _id: post._id }, { $inc: { viewCount: 1 } }).exec().catch((err) =>
+    console.error("[resolvePostListingContext] viewCount increment failed:", err),
+  );
+
   const { ownerId, ...rest } = post;
-  const listing = mapPostToListing(rest, ownerId ?? null);
+  const activeCounts = await getActiveListingCountsByOwner([ownerId?._id]);
+  const activeListingsCount = ownerId?._id ? activeCounts.get(String(ownerId._id)) ?? 1 : 1;
+  const listing = mapPostToListing(rest, ownerId ?? null, activeListingsCount);
 
   const cat = resolveCategoryId(rest.category);
   const sub = resolveSubcategoryId(cat, rest.subcategory);

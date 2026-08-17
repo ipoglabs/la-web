@@ -60,8 +60,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { MockListing } from "@/lib/mock/mock-listing-schema";
 import { resolveListings } from "@/lib/mock/listing-map";
-import { getListingsForCity } from "@/lib/mock/country-map";
+import { getListingsForCity, filterListingsByKeyword, sortMockListings } from "@/lib/mock/country-map";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
+import { parseGeoParams, filterByRadius, sortByDistance, shouldSortByDistance } from "@/lib/geo";
 import type { CountryCode } from "@/config";
 import type { ListingsApiResponse } from "@/types/listings-api";
 
@@ -115,14 +116,35 @@ export interface UseListingSearchResult {
   cachedPages: Set<number>;
 }
 
+/** Shared by both fetch*Listings functions — appends sort + the "near me"
+ *  lat/lng/radius/unit params (see lib/geo.ts) when they're actually set. */
+function appendSearchParams(
+  params: URLSearchParams,
+  opts: { sort?: string; lat?: string; lng?: string; radius?: string; unit?: string },
+): void {
+  if (opts.sort) params.set("sort", opts.sort);
+  if (opts.lat && opts.lng) {
+    params.set("lat", opts.lat);
+    params.set("lng", opts.lng);
+    if (opts.radius) {
+      params.set("radius", opts.radius);
+      params.set("unit", opts.unit || "km");
+    }
+  }
+}
+
 async function fetchCountryListings(
   cat: string,
   countryCode: CountryCode,
   sub: string | undefined,
   filterValues: Record<string, string[]>,
+  q: string,
+  geo: { sort: string; lat: string; lng: string; radius: string; unit: string },
 ): Promise<MockListing[]> {
   const params = new URLSearchParams({ country: countryCode });
   if (sub) params.set("sub", sub);
+  if (q.trim()) params.set("q", q.trim());
+  appendSearchParams(params, geo);
   // Same comma-joined format the URL already uses (see listing-filters.ts's
   // URL FORMAT contract) — the API route parses these with the exact same
   // parseFilterValues() the client uses, so both sides agree on the shape.
@@ -138,13 +160,19 @@ async function fetchCountryListings(
 }
 
 /** Category-less "browse everything" — backs Recent Posts / Top Picks "See
- *  all" links, and any bare /listings visit with no cat and no loc. */
+ *  all" links, a bare /listings visit with no cat and no loc, AND the
+ *  `loc`-scoped city browse (footer's Top Locations, a LocationPicker pick
+ *  with no category) — route.ts matches `loc` against Post.location.address. */
 async function fetchAllListings(
   countryCode: CountryCode,
-  sort: string,
+  q: string,
+  geo: { sort: string; lat: string; lng: string; radius: string; unit: string },
+  loc: string,
 ): Promise<MockListing[]> {
   const params = new URLSearchParams({ country: countryCode });
-  if (sort) params.set("sort", sort);
+  if (q.trim()) params.set("q", q.trim());
+  if (loc.trim()) params.set("loc", loc.trim());
+  appendSearchParams(params, geo);
 
   const res = await fetch(`/api/listings?${params.toString()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`listings_api_${res.status}`);
@@ -155,9 +183,45 @@ async function fetchAllListings(
 
 // ── Mock resolver — TODO [INTEGRATION]: replace with real API call ─────────────
 // Real API uses ALL params (keyword, location, filters, sort, page).
-// Mock only uses cat + sub — all other params are ignored.
+// Mock now honors cat + sub + q + sort + lat/lng/radius — filterValues is
+// still ignored (no generic mock-side filter-sidebar matcher exists).
 function resolveListingsMock(params: ListingSearchParams): MockListing[] {
-  return resolveListings(params.cat, params.sub || undefined);
+  let items = resolveListings(params.cat, params.sub || undefined);
+  items = filterListingsByKeyword(items, params.q);
+  items = sortMockListings(items, params.sort);
+
+  const { lat, lng, radiusKm } = parseGeoParams(params);
+  items = filterByRadius(items, lat, lng, radiusKm);
+  if (lat != null && lng != null && shouldSortByDistance(params.sort, lat, lng)) {
+    items = sortByDistance(items, lat, lng);
+  }
+  return items;
+}
+
+/**
+ * Mock fallback for the `loc`-scoped city browse (footer's Top Locations,
+ * a LocationPicker pick with no category) — only reached when the real
+ * /api/listings?loc= call (DB-backed, see route.ts's buildLocationQuery)
+ * comes back empty or errors, i.e. that city has no real DB coverage yet.
+ */
+function resolveCityBrowseMock(
+  countryCode: CountryCode,
+  loc: string,
+  q: string,
+  sort: string,
+  lat: string,
+  lng: string,
+  radius: string,
+  unit: string,
+): MockListing[] {
+  let items = filterListingsByKeyword(getListingsForCity(countryCode, loc), q);
+  items = sortMockListings(items, sort);
+  const { lat: cityLat, lng: cityLng, radiusKm: cityRadiusKm } = parseGeoParams({ lat, lng, radius, unit });
+  items = filterByRadius(items, cityLat, cityLng, cityRadiusKm);
+  if (cityLat != null && cityLng != null && shouldSortByDistance(sort, cityLat, cityLng)) {
+    items = sortByDistance(items, cityLat, cityLng);
+  }
+  return items;
 }
 
 /** POC only — simulates network latency so skeleton UX is demonstrable */
@@ -257,51 +321,48 @@ export function useListingSearch(params: ListingSearchParams): UseListingSearchR
       if (cancelled) return;
 
       if (!cat) {
-        // No category — if a location label is set (e.g. footer "Top Locations"
-        // link, or a LocationPicker pick with no category chosen), fall back to
-        // the cross-category city browse resolver. No API route exists for
-        // that path, so it resolves straight from mock data.
-        if (loc) {
-          const cityItems = getListingsForCity(countryCode, loc);
-          allResultsRef.current = cityItems;
-          const total = cityItems.length;
+        // No category — cross-category browse across the whole market:
+        // either a bare "everything" browse (backs Recent Posts / Top Picks
+        // "See all", and a bare /listings visit) or the `loc`-scoped city
+        // browse (footer "Top Locations", a LocationPicker pick with no
+        // category). DB first either way; loc additionally falls back to
+        // the mock city-browse resolver (getListingsForCity) when the DB
+        // has no real coverage for that city yet — same "DB first, mock
+        // fallback" shape used elsewhere in this hook.
+        const applyResults = (apiItems: MockListing[]) => {
+          if (cancelled) return;
+          allResultsRef.current = apiItems;
+          const total = apiItems.length;
           const totalPg = Math.max(1, Math.ceil(total / PAGE_SIZE));
           const clamped = Math.min(page, totalPg);
 
           setTotalCount(total);
-          prefetchWindow(clamped, cityItems);
+          prefetchWindow(clamped, apiItems);
           setItems(pageCache.current.get(clamped) ?? []);
           setIsLoading(false);
-          return;
-        }
+        };
 
-        // No category, no location — cross-category browse across the whole
-        // market (backs Recent Posts / Top Picks "See all", and a bare
-        // /listings visit), honoring sort=newest|oldest|top-picks.
-        fetchAllListings(countryCode, sort)
+        fetchAllListings(countryCode, q, { sort, lat, lng, radius, unit }, loc)
           .then((apiItems) => {
             if (cancelled) return;
-            allResultsRef.current = apiItems;
-            const total = apiItems.length;
-            const totalPg = Math.max(1, Math.ceil(total / PAGE_SIZE));
-            const clamped = Math.min(page, totalPg);
-
-            setTotalCount(total);
-            prefetchWindow(clamped, apiItems);
-            setItems(pageCache.current.get(clamped) ?? []);
-            setIsLoading(false);
+            if (loc && apiItems.length === 0) {
+              applyResults(resolveCityBrowseMock(countryCode, loc, q, sort, lat, lng, radius, unit));
+            } else {
+              applyResults(apiItems);
+            }
           })
           .catch(() => {
             if (cancelled) return;
-            allResultsRef.current = [];
-            setTotalCount(0);
-            setItems([]);
-            setIsLoading(false);
+            if (loc) {
+              applyResults(resolveCityBrowseMock(countryCode, loc, q, sort, lat, lng, radius, unit));
+            } else {
+              applyResults([]);
+            }
           });
         return;
       }
 
-      fetchCountryListings(cat, countryCode, sub || undefined, filterValues)
+      fetchCountryListings(cat, countryCode, sub || undefined, filterValues, q, { sort, lat, lng, radius, unit })
         .then((apiItems) => {
           if (cancelled) return;
           allResultsRef.current = apiItems;
