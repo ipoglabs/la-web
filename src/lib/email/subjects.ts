@@ -50,7 +50,7 @@ export function getSubject(event: EmailEvent): string {
         ? "Your email address has been changed"
         : "Your phone number has been changed";
     case "PROFILE_UPDATED":
-      return "Your LokalAds profile has been updated";
+      return "Profile updated";
     case "ACCOUNT_STATUS": {
       const statusLabels = {
         suspended: "Your LokalAds account has been suspended",
