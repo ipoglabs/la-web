@@ -1,0 +1,196 @@
+- generic [active] [ref=f5e10]:
+  - button "Open Next.js Dev Tools" [ref=f5e490] [cursor=pointer]:
+    - generic [ref=f5e493]:
+      - text: Rendering
+      - generic [ref=f5e494]:
+        - generic [ref=f5e495]: .
+        - generic [ref=f5e496]: .
+        - generic [ref=f5e497]: .
+  - alert [ref=f5e11]
+  - generic [ref=f5e12]:
+    - banner [ref=f5e13]:
+      - generic [ref=f5e14]:
+        - link "lokalads logo lokalads India" [ref=f5e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f5e16]
+          - generic [ref=f5e17]:
+            - img "lokalads" [ref=f5e18]
+            - generic [ref=f5e19]: India
+        - generic [ref=f5e20]:
+          - link "POST" [ref=f5e21] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=f5e22] [cursor=pointer]:
+            - generic [ref=f5e23]: "6"
+          - button "Account menu" [ref=f5e26]:
+            - generic [ref=f5e27]:
+              - generic [ref=f5e28]: JA
+              - generic "online" [ref=f5e30]
+    - main [ref=f5e31]:
+      - generic [ref=f5e363]:
+        - link "Go to home" [ref=f5e364] [cursor=pointer]:
+          - /url: /
+          - img "LA logo" [ref=f5e365]
+          - img "LA text" [ref=f5e366]
+        - button "Open profile menu" [ref=f5e368]
+      - generic [ref=f5e499]:
+        - heading "Submitting your ad…" [level=3] [ref=f5e500]
+        - list [ref=f5e501]:
+          - listitem [ref=f5e502]:
+            - generic [ref=f5e506]: Validating details
+          - listitem [ref=f5e507]:
+            - generic [ref=f5e511]: Uploading photos
+          - listitem [ref=f5e512]:
+            - generic [ref=f5e516]: Preparing your ad
+          - listitem [ref=f5e517]:
+            - generic [ref=f5e520]: Saving to server
+          - listitem [ref=f5e521]:
+            - generic [ref=f5e524]: Finishing up
+      - main [ref=f5e373]:
+        - generic [ref=f5e374]:
+          - generic [ref=f5e375]:
+            - heading "Review Details" [level=1] [ref=f5e376]
+            - paragraph [ref=f5e377]: Review everything before submitting.
+          - button "Debug" [ref=f5e379]
+          - generic [ref=f5e380]:
+            - generic [ref=f5e381]:
+              - generic [ref=f5e382]: Category
+              - button "Change" [ref=f5e383]
+            - generic [ref=f5e386]:
+              - generic [ref=f5e387]: Category
+              - generic [ref=f5e388]: Vehicles ➝ Car
+            - separator [ref=f5e389]
+          - generic [ref=f5e390]:
+            - generic [ref=f5e391]:
+              - generic [ref=f5e392]: Basic Details
+              - button "Change" [ref=f5e393]
+            - generic [ref=f5e394]:
+              - generic [ref=f5e396]:
+                - generic [ref=f5e397]: Title
+                - generic [ref=f5e398]: 2019 Toyota Fortuner — Well Maintained SUV
+              - generic [ref=f5e400]:
+                - generic [ref=f5e401]: Description
+                - generic [ref=f5e402]: Second test listing for My Ads tab verification.
+            - separator [ref=f5e403]
+          - generic [ref=f5e404]:
+            - generic [ref=f5e405]:
+              - generic [ref=f5e406]: Additional Details
+              - button "Change" [ref=f5e407]
+            - generic [ref=f5e408]:
+              - generic [ref=f5e410]:
+                - generic [ref=f5e411]: Ad Title
+                - generic [ref=f5e412]: 2019 Toyota Fortuner — Well Maintained SUV
+              - generic [ref=f5e414]:
+                - generic [ref=f5e415]: Description
+                - generic [ref=f5e416]: Second test listing for My Ads tab verification.
+              - generic [ref=f5e418]:
+                - generic [ref=f5e419]: Make
+                - generic [ref=f5e420]: Toyota
+              - generic [ref=f5e422]:
+                - generic [ref=f5e423]: Model
+                - generic [ref=f5e424]: Fortuner
+              - generic [ref=f5e426]:
+                - generic [ref=f5e427]: Year
+                - generic [ref=f5e428]: "2019"
+              - generic [ref=f5e430]:
+                - generic [ref=f5e431]: KMs Driven
+                - generic [ref=f5e432]: 45000 km
+              - generic [ref=f5e434]:
+                - generic [ref=f5e435]: Transmission
+                - generic [ref=f5e436]: Manual
+              - generic [ref=f5e438]:
+                - generic [ref=f5e439]: Price (₹)
+                - generic [ref=f5e440]: ₹2,200,000
+            - separator [ref=f5e441]
+          - generic [ref=f5e442]:
+            - generic [ref=f5e443]:
+              - generic [ref=f5e444]: Location
+              - button "Change" [ref=f5e445]
+            - generic [ref=f5e448]:
+              - generic [ref=f5e449]: Address
+              - generic [ref=f5e450]: Tiruchirappalli, Tamil Nadu, India
+            - iframe [ref=f5e452]:
+              - generic [ref=f7e3]:
+                - generic:
+                  - button "Keyboard shortcuts"
+                - region "Map" [ref=f7e4]
+                - generic [ref=f7e5]:
+                  - iframe [ref=f7e27]:
+                    
+                  - button "Map camera controls" [ref=f7e29] [cursor=pointer]
+                  - button "Show satellite imagery" [ref=f7e32] [cursor=pointer]:
+                    - generic [ref=f7e36]:
+                      - region [ref=f7e37]
+                      - iframe [ref=f7e43]:
+                        
+                  - img "Google" [ref=f7e45]
+                  - generic [ref=f7e46]:
+                    - button "Keyboard shortcuts" [ref=f7e52] [cursor=pointer]
+                    - generic [ref=f7e53]: Map data ©2026
+                    - link "Terms (opens in new tab)" [ref=f7e62] [cursor=pointer]:
+                      - /url: https://www.google.com/intl/en-GB_US/help/terms_maps.html
+                      - text: Terms
+                    - link "Report a map error (opens in new tab)" [ref=f7e67] [cursor=pointer]:
+                      - /url: https://www.google.com/maps/@10.7904833,78.7046725,15z/data=!10m1!1e1!12b1?source=apiv3&rapsrc=apiv3
+                      - text: Report a map error
+            - separator [ref=f5e453]
+          - generic [ref=f5e454]:
+            - generic [ref=f5e455]:
+              - generic [ref=f5e456]: Photos
+              - button "Change" [ref=f5e457]
+            - img "Photo 1" [ref=f5e459]
+            - separator [ref=f5e460]
+          - generic [ref=f5e461]:
+            - generic [ref=f5e462]: Contact
+            - generic [ref=f5e464]:
+              - generic [ref=f5e466]:
+                - generic [ref=f5e467]: Name
+                - generic [ref=f5e468]: Jayapriya
+              - generic [ref=f5e470]:
+                - generic [ref=f5e471]: Email
+                - generic [ref=f5e472]: jp.naga85@gmail.com
+              - generic [ref=f5e474]:
+                - generic [ref=f5e475]: Phone
+                - generic [ref=f5e476]: "+919840912665"
+            - generic [ref=f5e477]: Auto-filled from your profile
+          - generic [ref=f5e478]:
+            - generic [ref=f5e480]:
+              - generic [ref=f5e481]: Step 5 / 5
+              - generic [ref=f5e482]: preview
+            - generic [ref=f5e485]:
+              - button "Back" [ref=f5e487] [cursor=pointer]
+              - button "Submitting…" [disabled] [ref=f5e525] [cursor=pointer]
+    - contentinfo [ref=f5e58]:
+      - generic [ref=f5e60]:
+        - generic [ref=f5e61]:
+          - link "lokalads logo lokalads India" [ref=f5e62] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f5e63]
+            - generic [ref=f5e64]:
+              - img "lokalads" [ref=f5e65]
+              - generic [ref=f5e66]: India
+          - generic [ref=f5e67]:
+            - link "Instagram" [ref=f5e68] [cursor=pointer]:
+              - /url: "#"
+            - link "Facebook" [ref=f5e71] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f5e74] [cursor=pointer]:
+              - /url: "#"
+            - link "YouTube" [ref=f5e77] [cursor=pointer]:
+              - /url: "#"
+          - button "Expand footer navigation" [ref=f5e80]
+        - paragraph [ref=f5e83]: find anything, anywhere with care...
+      - generic [ref=f5e84]:
+        - separator [ref=f5e85]
+        - generic [ref=f5e86]:
+          - paragraph [ref=f5e87]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f5e88]:
+            - button "Privacy Policy" [ref=f5e90]
+            - button "Terms & Conditions" [ref=f5e94]
+            - button "Cookie Policy" [ref=f5e98]
+            - generic [ref=f5e101]: Timeline
+            - button "Feedback" [ref=f5e105]
+      - generic [ref=f5e107]:
+        - paragraph [ref=f5e108]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f5e109] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

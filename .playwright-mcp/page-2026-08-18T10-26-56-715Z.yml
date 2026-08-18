@@ -1,0 +1,150 @@
+- generic [active] [ref=f10e11]:
+  - button "Open Next.js Dev Tools" [ref=f10e6] [cursor=pointer]
+  - alert [ref=f10e10]
+  - generic [ref=f10e12]:
+    - banner [ref=f10e13]:
+      - generic [ref=f10e14]:
+        - link "lokalads logo lokalads India" [ref=f10e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f10e16]
+          - generic [ref=f10e17]:
+            - img "lokalads" [ref=f10e18]
+            - generic [ref=f10e19]: India
+        - generic [ref=f10e20]:
+          - link "POST" [ref=f10e21] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=f10e22] [cursor=pointer]:
+            - generic [ref=f10e23]: "6"
+          - button "Account menu" [ref=f10e26]:
+            - generic [ref=f10e27]:
+              - generic [ref=f10e28]: JA
+              - generic "online" [ref=f10e30]
+    - main [ref=f10e31]:
+      - generic [ref=f10e32]:
+        - heading "Manage Ads" [level=1] [ref=f10e33]
+        - paragraph [ref=f10e34]: See how your ads are doing, and make changes whenever you need to.
+        - group "toggle group" [ref=f10e36]:
+          - button "Active (0)" [ref=f10e37] [cursor=pointer]
+          - button "Paused (0)" [ref=f10e39] [cursor=pointer]
+          - button "Expired (0)" [ref=f10e41] [cursor=pointer]
+          - button "Closed (0)" [ref=f10e43] [cursor=pointer]
+          - button "Pending (2)" [ref=f10e45] [cursor=pointer]
+          - button "Rejected (0)" [ref=f10e47] [cursor=pointer]
+          - button "Reported (0)" [ref=f10e49] [cursor=pointer]
+          - button "Suspended (0)" [ref=f10e51] [cursor=pointer]
+          - button "All (2)" [ref=f10e53] [cursor=pointer]
+        - generic [ref=f10e55]:
+          - generic [ref=f10e56]:
+            - generic [ref=f10e58]:
+              - generic [ref=f10e59]:
+                - link [ref=f10e60] [cursor=pointer]:
+                  - /url: /listings/70386883
+                  - img "2019 Toyota Fortuner — Well Maintained SUV" [ref=f10e61]
+                - generic [ref=f10e64]:
+                  - generic [ref=f10e65]:
+                    - generic [ref=f10e66]: Pending
+                    - generic [ref=f10e67]: Awaiting approval
+                  - link "2019 Toyota Fortuner — Well Maintained SUV" [ref=f10e68] [cursor=pointer]:
+                    - /url: /listings/70386883
+                  - generic [ref=f10e69]:
+                    - paragraph [ref=f10e70]: ₹2,200,000
+                    - generic [ref=f10e71]: "|"
+                    - paragraph [ref=f10e72]:
+                      - text: Posted
+                      - button "Toggle between relative and exact date" [ref=f10e73] [cursor=pointer]: just now
+                  - generic [ref=f10e74]:
+                    - generic [ref=f10e75]: "0"
+                    - generic [ref=f10e79]: "0"
+                    - link "0" [ref=f10e82] [cursor=pointer]:
+                      - /url: /chat
+              - separator [ref=f10e85]
+              - generic [ref=f10e86]:
+                - generic [ref=f10e88]:
+                  - generic [ref=f10e89]: Actions unavailable while awaiting approval
+                  - button "Share" [ref=f10e90] [cursor=pointer]
+                - button "More actions" [ref=f10e91]
+            - generic [ref=f10e97]:
+              - generic [ref=f10e98]:
+                - link [ref=f10e99] [cursor=pointer]:
+                  - /url: /listings/50758155
+                  - img "2020 Honda City VX CVT — Single Owner" [ref=f10e100]
+                - generic [ref=f10e103]:
+                  - generic [ref=f10e104]:
+                    - generic [ref=f10e105]: Pending
+                    - generic [ref=f10e106]: Awaiting approval
+                  - link "2020 Honda City VX CVT — Single Owner" [ref=f10e107] [cursor=pointer]:
+                    - /url: /listings/50758155
+                  - generic [ref=f10e108]:
+                    - paragraph [ref=f10e109]: ₹850,000
+                    - generic [ref=f10e110]: "|"
+                    - paragraph [ref=f10e111]:
+                      - text: Posted
+                      - button "Toggle between relative and exact date" [ref=f10e112] [cursor=pointer]: 3h
+                  - generic [ref=f10e113]:
+                    - generic [ref=f10e114]: "0"
+                    - generic [ref=f10e118]: "0"
+                    - link "0" [ref=f10e121] [cursor=pointer]:
+                      - /url: /chat
+              - separator [ref=f10e124]
+              - generic [ref=f10e125]:
+                - generic [ref=f10e127]:
+                  - generic [ref=f10e128]: Actions unavailable while awaiting approval
+                  - button "Share" [ref=f10e129] [cursor=pointer]
+                - button "More actions" [ref=f10e130]
+          - separator [ref=f10e135]
+          - button "Ad Status Guide (9 items) What each badge means, plus what happens when an ad is deleted." [ref=f10e137] [cursor=pointer]:
+            - generic [ref=f10e138]:
+              - paragraph [ref=f10e139]:
+                - generic [ref=f10e140]:
+                  - text: Ad Status Guide
+                  - generic [ref=f10e141]: (9 items)
+              - paragraph [ref=f10e147]: What each badge means, plus what happens when an ad is deleted.
+          - button "Good To Know (4 items) Everything you need to sell well and stay in good standing." [ref=f10e153] [cursor=pointer]:
+            - generic [ref=f10e154]:
+              - paragraph [ref=f10e155]:
+                - generic [ref=f10e156]:
+                  - text: Good To Know
+                  - generic [ref=f10e157]: (4 items)
+              - paragraph [ref=f10e158]: Everything you need to sell well and stay in good standing.
+          - button "Listing Policy (4 items) The essentials for keeping your ads live and your account in good standing." [ref=f10e164] [cursor=pointer]:
+            - generic [ref=f10e165]:
+              - paragraph [ref=f10e166]:
+                - generic [ref=f10e167]:
+                  - text: Listing Policy
+                  - generic [ref=f10e168]: (4 items)
+              - paragraph [ref=f10e169]: The essentials for keeping your ads live and your account in good standing.
+    - contentinfo [ref=f10e173]:
+      - generic [ref=f10e175]:
+        - generic [ref=f10e176]:
+          - link "lokalads logo lokalads India" [ref=f10e177] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f10e178]
+            - generic [ref=f10e179]:
+              - img "lokalads" [ref=f10e180]
+              - generic [ref=f10e181]: India
+          - generic [ref=f10e182]:
+            - link "Instagram" [ref=f10e183] [cursor=pointer]:
+              - /url: "#"
+            - link "Facebook" [ref=f10e186] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f10e189] [cursor=pointer]:
+              - /url: "#"
+            - link "YouTube" [ref=f10e192] [cursor=pointer]:
+              - /url: "#"
+          - button "Expand footer navigation" [ref=f10e195]
+        - paragraph [ref=f10e198]: find anything, anywhere with care...
+      - generic [ref=f10e199]:
+        - separator [ref=f10e200]
+        - generic [ref=f10e201]:
+          - paragraph [ref=f10e202]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f10e203]:
+            - button "Privacy Policy" [ref=f10e205]
+            - button "Terms & Conditions" [ref=f10e209]
+            - button "Cookie Policy" [ref=f10e213]
+            - generic [ref=f10e216]: Timeline
+            - button "Feedback" [ref=f10e220]
+      - generic [ref=f10e222]:
+        - paragraph [ref=f10e223]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f10e224] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

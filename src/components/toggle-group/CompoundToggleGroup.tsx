@@ -26,6 +26,12 @@ interface ToggleButtonGroupProps {
   value?: string[];
   /** Extra classes on the outer wrapper div */
   className?: string;
+  /**
+   * Keep buttons on one horizontally-scrollable row instead of wrapping onto
+   * multiple lines — for long option lists (e.g. My Ads' status filters)
+   * where wrapping pushes content down awkwardly on narrow/mobile widths.
+   */
+  scrollable?: boolean;
 }
 
 /**
@@ -51,6 +57,7 @@ export function ToggleButtonGroup({
   defaultValue = [],
   value,
   className,
+  scrollable = false,
 }: ToggleButtonGroupProps) {
   const isControlled = value !== undefined;
   const titleId = useId();
@@ -100,7 +107,12 @@ export function ToggleButtonGroup({
           role="group"
           aria-labelledby={title ? titleId : undefined}
           aria-label={title ? undefined : "toggle group"}
-          className="flex flex-wrap gap-2"
+          className={cn(
+            "flex gap-2",
+            scrollable
+              ? "flex-nowrap overflow-x-auto scrollbar-none w-full min-w-0 -mx-4 px-4 md:mx-0 md:px-0"
+              : "flex-wrap"
+          )}
         >
           {children}
         </div>

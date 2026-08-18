@@ -47,6 +47,10 @@ const SheetContent = React.forwardRef<
         side === "left" ? "left" : undefined,
         "bg-white shadow-2xl flex flex-col",
         "outline-none",
+        // Same iPhone home-indicator safe-area reservation as Drawer — this
+        // panel is full-height (top-0 + h-full), so its bottom-anchored
+        // footer (Apply/Clear buttons) needs the same protection.
+        "pb-[env(safe-area-inset-bottom)]",
         className
       )}
       {...props}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
@@ -97,6 +98,28 @@ export default function PreviewPage() {
     setStepStatus((s) => ({ ...s, [key]: status }));
   const resetSteps = () =>
     setStepStatus(Object.fromEntries(SUBMIT_STEPS.map((s) => [s.key, "pending"])));
+
+  /* ---------------- FRESH USER SYNC ---------------- */
+
+  // useAuthStore is only ever populated by the Google/Apple OAuth success
+  // pages and can go stale after e.g. adding a phone number in Account
+  // Settings — refetch the authoritative, DB-backed profile (same source
+  // /account-settings itself uses) so the seller-info auto-fill below (and
+  // the "Phone" required-field check) see the real saved numbers instead of
+  // a null/stale client-persisted snapshot.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelled || !json?.user) return;
+        useAuthStore.getState().setAuth(null, json.user);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* ---------------- SELLER AUTO-FILL ---------------- */
 
@@ -225,7 +248,10 @@ export default function PreviewPage() {
     setClientError(null);
 
     if (missing.length) {
-      setClientError(`Please fill: ${missing.join(", ")}`);
+      const message = `Please fill: ${missing.join(", ")}`;
+      setClientError(message);
+      toast.error(message);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 

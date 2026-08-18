@@ -1,0 +1,122 @@
+- generic [ref=f12e11]:
+  - button "Open Next.js Dev Tools" [ref=f12e6] [cursor=pointer]
+  - alert [ref=f12e10]
+  - generic [ref=f12e12]:
+    - banner [ref=f12e13]:
+      - generic [ref=f12e14]:
+        - link "lokalads logo lokalads India" [ref=f12e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f12e16]
+          - generic [ref=f12e17]:
+            - img "lokalads" [ref=f12e18]
+            - generic [ref=f12e19]: India
+        - generic [ref=f12e20]:
+          - link "POST" [ref=f12e21] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=f12e22] [cursor=pointer]:
+            - generic [ref=f12e23]: "6"
+          - button "Account menu" [ref=f12e26]:
+            - generic [ref=f12e27]:
+              - generic [ref=f12e28]: JA
+              - generic "online" [ref=f12e30]
+    - main [ref=f12e31]:
+      - generic [ref=f12e32]:
+        - heading "Manage Ads" [level=1] [ref=f12e33]
+        - paragraph [ref=f12e34]: See how your ads are doing, and make changes whenever you need to.
+        - group "toggle group" [ref=f12e36]:
+          - button "Active (1)" [active] [ref=f12e37] [cursor=pointer]
+          - button "Paused (1)" [ref=f12e39] [cursor=pointer]
+          - button "Expired (1)" [ref=f12e41] [cursor=pointer]
+          - button "Closed (1)" [ref=f12e43] [cursor=pointer]
+          - button "Pending (0)" [ref=f12e45] [cursor=pointer]
+          - button "Rejected (1)" [ref=f12e47] [cursor=pointer]
+          - button "Reported (1)" [ref=f12e49] [cursor=pointer]
+          - button "Suspended (1)" [ref=f12e51] [cursor=pointer]
+          - button "All (7)" [ref=f12e53] [cursor=pointer]
+        - generic [ref=f12e55]:
+          - generic [ref=f12e58]:
+            - generic [ref=f12e59]:
+              - link [ref=f12e60] [cursor=pointer]:
+                - /url: /listings/50758155
+                - img "2020 Honda City VX CVT — Single Owner" [ref=f12e61]
+              - generic [ref=f12e64]:
+                - generic [ref=f12e65]: Active
+                - link "2020 Honda City VX CVT — Single Owner" [ref=f12e67] [cursor=pointer]:
+                  - /url: /listings/50758155
+                - generic [ref=f12e68]:
+                  - paragraph [ref=f12e69]: ₹850,000
+                  - generic [ref=f12e70]: "|"
+                  - paragraph [ref=f12e71]:
+                    - text: Posted
+                    - button "Toggle between relative and exact date" [ref=f12e72] [cursor=pointer]: 3h
+                - generic [ref=f12e73]:
+                  - generic [ref=f12e74]: "0"
+                  - generic [ref=f12e78]: "0"
+                  - link "0" [ref=f12e81] [cursor=pointer]:
+                    - /url: /chat
+            - separator [ref=f12e84]
+            - generic [ref=f12e85]:
+              - generic [ref=f12e87]:
+                - button "Bump Up" [ref=f12e88] [cursor=pointer]
+                - link "Edit" [ref=f12e89] [cursor=pointer]:
+                  - /url: /post
+                - button "Pause" [ref=f12e90] [cursor=pointer]
+                - button "Share" [ref=f12e91] [cursor=pointer]
+              - button "More actions" [ref=f12e92]
+          - separator [ref=f12e97]
+          - button "Ad Status Guide (9 items) What each badge means, plus what happens when an ad is deleted." [ref=f12e99] [cursor=pointer]:
+            - generic [ref=f12e100]:
+              - paragraph [ref=f12e101]:
+                - generic [ref=f12e102]:
+                  - text: Ad Status Guide
+                  - generic [ref=f12e103]: (9 items)
+              - paragraph [ref=f12e109]: What each badge means, plus what happens when an ad is deleted.
+          - button "Good To Know (4 items) Everything you need to sell well and stay in good standing." [ref=f12e115] [cursor=pointer]:
+            - generic [ref=f12e116]:
+              - paragraph [ref=f12e117]:
+                - generic [ref=f12e118]:
+                  - text: Good To Know
+                  - generic [ref=f12e119]: (4 items)
+              - paragraph [ref=f12e120]: Everything you need to sell well and stay in good standing.
+          - button "Listing Policy (4 items) The essentials for keeping your ads live and your account in good standing." [ref=f12e126] [cursor=pointer]:
+            - generic [ref=f12e127]:
+              - paragraph [ref=f12e128]:
+                - generic [ref=f12e129]:
+                  - text: Listing Policy
+                  - generic [ref=f12e130]: (4 items)
+              - paragraph [ref=f12e131]: The essentials for keeping your ads live and your account in good standing.
+    - contentinfo [ref=f12e135]:
+      - generic [ref=f12e137]:
+        - generic [ref=f12e138]:
+          - link "lokalads logo lokalads India" [ref=f12e139] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f12e140]
+            - generic [ref=f12e141]:
+              - img "lokalads" [ref=f12e142]
+              - generic [ref=f12e143]: India
+          - generic [ref=f12e144]:
+            - link "Instagram" [ref=f12e145] [cursor=pointer]:
+              - /url: "#"
+            - link "Facebook" [ref=f12e148] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f12e151] [cursor=pointer]:
+              - /url: "#"
+            - link "YouTube" [ref=f12e154] [cursor=pointer]:
+              - /url: "#"
+          - button "Expand footer navigation" [ref=f12e157]
+        - paragraph [ref=f12e160]: find anything, anywhere with care...
+      - generic [ref=f12e161]:
+        - separator [ref=f12e162]
+        - generic [ref=f12e163]:
+          - paragraph [ref=f12e164]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f12e165]:
+            - button "Privacy Policy" [ref=f12e167]
+            - button "Terms & Conditions" [ref=f12e171]
+            - button "Cookie Policy" [ref=f12e175]
+            - generic [ref=f12e178]: Timeline
+            - button "Feedback" [ref=f12e182]
+      - generic [ref=f12e184]:
+        - paragraph [ref=f12e185]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f12e186] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

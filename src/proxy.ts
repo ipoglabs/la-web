@@ -167,15 +167,6 @@ export function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers: sanitisedHeaders } });
   }
 
-  // ── Landing page — POC demo: always show guest header so the logged-out ──
-  // ── experience is visible on the homepage regardless of mock session.   ──
-  // TODO [AUTH — BEFORE PRODUCTION]: Remove this block. Once real auth is  ──
-  // ── wired, getSession() returns null for unauthenticated users naturally.──
-  if (pathname === "/") {
-    sanitisedHeaders.set("x-guest-demo", "1");
-    return NextResponse.next({ request: { headers: sanitisedHeaders } });
-  }
-
   // ── Country-prefixed URL (/in/, /gb/, /sg/) — URL wins over cookie ──
   // Bypasses the detection/blocked-overlay gate entirely: the URL already
   // declares an explicit, supported country, so there is nothing to detect.

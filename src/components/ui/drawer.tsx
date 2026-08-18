@@ -53,6 +53,11 @@ const DrawerContent = React.forwardRef<
         "rounded-t-2xl border border-slate-200",
         "bg-white",
         "outline-none",
+        // Reserve the iPhone home-indicator safe area below the drawer's
+        // own content so the last item (e.g. Sign out) never sits flush
+        // against — or under — the gesture bar. Resolves to 0 on devices
+        // without a safe-area inset (env() falls back to 0 automatically).
+        "pb-[env(safe-area-inset-bottom)]",
         className
       )}
       {...props}

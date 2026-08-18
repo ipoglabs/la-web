@@ -60,7 +60,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { MockListing } from "@/lib/mock/mock-listing-schema";
 import { resolveListings } from "@/lib/mock/listing-map";
-import { getListingsForCity, filterListingsByKeyword, sortMockListings } from "@/lib/mock/country-map";
+import { getListingsForCity, getListingsForKeyword, filterListingsByKeyword, sortMockListings } from "@/lib/mock/country-map";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { parseGeoParams, filterByRadius, sortByDistance, shouldSortByDistance } from "@/lib/geo";
 import type { CountryCode } from "@/config";
@@ -224,6 +224,33 @@ function resolveCityBrowseMock(
   return items;
 }
 
+/**
+ * Mock fallback for a category-less, location-less keyword search (a bare
+ * `?q=` search with no `cat` and no `loc`) — only reached when the real
+ * /api/listings?q= call (DB-only) comes back empty or errors, i.e. the
+ * matching listing only exists in mock data and was never seeded into the
+ * DB. Mirrors resolveCityBrowseMock's shape, searching every category for
+ * this market instead of a single city.
+ */
+function resolveKeywordBrowseMock(
+  countryCode: CountryCode,
+  q: string,
+  sort: string,
+  lat: string,
+  lng: string,
+  radius: string,
+  unit: string,
+): MockListing[] {
+  let items = getListingsForKeyword(countryCode, q);
+  items = sortMockListings(items, sort);
+  const { lat: qLat, lng: qLng, radiusKm: qRadiusKm } = parseGeoParams({ lat, lng, radius, unit });
+  items = filterByRadius(items, qLat, qLng, qRadiusKm);
+  if (qLat != null && qLng != null && shouldSortByDistance(sort, qLat, qLng)) {
+    items = sortByDistance(items, qLat, qLng);
+  }
+  return items;
+}
+
 /** POC only — simulates network latency so skeleton UX is demonstrable */
 const MOCK_DELAY_MS = 700;
 
@@ -347,6 +374,8 @@ export function useListingSearch(params: ListingSearchParams): UseListingSearchR
             if (cancelled) return;
             if (loc && apiItems.length === 0) {
               applyResults(resolveCityBrowseMock(countryCode, loc, q, sort, lat, lng, radius, unit));
+            } else if (q.trim() && !loc && apiItems.length === 0) {
+              applyResults(resolveKeywordBrowseMock(countryCode, q, sort, lat, lng, radius, unit));
             } else {
               applyResults(apiItems);
             }
@@ -355,6 +384,8 @@ export function useListingSearch(params: ListingSearchParams): UseListingSearchR
             if (cancelled) return;
             if (loc) {
               applyResults(resolveCityBrowseMock(countryCode, loc, q, sort, lat, lng, radius, unit));
+            } else if (q.trim()) {
+              applyResults(resolveKeywordBrowseMock(countryCode, q, sort, lat, lng, radius, unit));
             } else {
               applyResults([]);
             }

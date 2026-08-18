@@ -134,6 +134,7 @@ export default function MyAdsClient({ initialAds }: MyAdsClientProps) {
         onChange={(next) => setFilter((next[0] ?? "all") as MyAdStatus | "all")}
         singleSelect
         requireSelection
+        scrollable
         className="mb-4 items-center"
       >
         {FILTERS.map((f) => (

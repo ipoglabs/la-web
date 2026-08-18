@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { cookies, headers } from "next/headers";
 import "./globals.css";
@@ -94,6 +94,17 @@ export const metadata: Metadata = {
   robots: process.env.SITE_INDEXABLE === "true"
     ? { index: true, follow: true }
     : { index: false, follow: false, nocache: true },
+};
+
+// viewport-fit: "cover" lets the page draw under the iPhone notch/home
+// indicator instead of leaving a hard letterbox — required for
+// env(safe-area-inset-*) to resolve to a real value anywhere in the app
+// instead of always 0. Without this, bottom-anchored sheets/drawers can sit
+// flush against the home-indicator gesture area on notched iPhones.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({

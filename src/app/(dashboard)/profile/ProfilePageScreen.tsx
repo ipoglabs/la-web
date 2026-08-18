@@ -44,6 +44,7 @@ import { ChangeEmailEditor } from "./ChangeEmailEditor";
 import { updateProfile } from "@/app/actions/updateProfile";
 import { updateContact } from "@/app/actions/profile/updateContact";
 import { updateLocation } from "@/app/actions/profile/updateLocation";
+import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { isStageFeatureEnabled } from "@/config";
 import {
@@ -343,6 +344,10 @@ export function ProfilePageScreen({
           { id: newId, number: fullNumber, primary: prev.phones.length === 0, visibleToBuyers: false },
         ],
       }));
+      // Keep the client-persisted auth store in sync — other parts of the app
+      // (e.g. the post wizard's seller-info auto-fill) read the phone number
+      // from useAuthStore, not this component's local `contact` state.
+      useAuthStore.getState().updateUser({ [phoneIdToField(newId)]: fullNumber });
       setAddPhoneEditorOpen(false);
       toast.success("Phone number added");
     } catch (err) {
@@ -358,6 +363,7 @@ export function ProfilePageScreen({
         ...prev,
         phones: prev.phones.map((p) => p.id === phoneEditorId ? { ...p, number: fullNumber } : p),
       }));
+      useAuthStore.getState().updateUser({ [phoneIdToField(phoneEditorId)]: fullNumber });
       setPhoneEditorOpen(false);
       toast.success("Phone number updated");
     } catch (err) {
@@ -380,6 +386,7 @@ export function ProfilePageScreen({
           phones: hasPrimary ? filtered : filtered.map((p, i) => ({ ...p, primary: i === 0 })),
         };
       });
+      useAuthStore.getState().updateUser({ [phoneIdToField(id)]: "" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't remove phone number");
     } finally {

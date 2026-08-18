@@ -1,0 +1,88 @@
+- generic [active] [ref=f5e10]:
+  - button "Open Next.js Dev Tools" [ref=f5e6] [cursor=pointer]
+  - alert [ref=f5e11]
+  - generic [ref=f5e12]:
+    - banner [ref=f5e13]:
+      - generic [ref=f5e14]:
+        - link "lokalads logo lokalads India" [ref=f5e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f5e16]
+          - generic [ref=f5e17]:
+            - img "lokalads" [ref=f5e18]
+            - generic [ref=f5e19]: India
+        - generic [ref=f5e20]:
+          - link "POST" [ref=f5e21] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=f5e22] [cursor=pointer]:
+            - generic [ref=f5e23]: "6"
+          - button "Account menu" [ref=f5e26]:
+            - generic [ref=f5e27]:
+              - generic [ref=f5e28]: JA
+              - generic "online" [ref=f5e30]
+    - main [ref=f5e31]:
+      - main [ref=f5e255]:
+        - generic [ref=f5e258]:
+          - link "Go to home" [ref=f5e259] [cursor=pointer]:
+            - /url: /
+            - img "LA logo" [ref=f5e260]
+            - img "LA text" [ref=f5e261]
+          - button "Open profile menu" [ref=f5e263]
+        - generic [ref=f5e269]:
+          - heading "Select Location" [level=1] [ref=f5e270]
+          - paragraph [ref=f5e271]: Select the location most relevant to your post.
+        - generic [ref=f5e272]:
+          - textbox "Search location" [ref=f5e275]: Tiruchirappalli, Tamil Nadu, India
+          - button "📍 Use Current Location" [ref=f5e277]
+          - generic [ref=f5e281]:
+            - region "Map" [ref=f5e282]
+            - iframe [ref=f5e337]:
+              
+        - generic [ref=f5e339]:
+          - generic [ref=f5e340]:
+            - strong [ref=f5e341]: Selected Location
+            - generic [ref=f5e342]: Approximate
+          - generic [ref=f5e344]: Tiruchirappalli, Tamil Nadu, India
+          - generic [ref=f5e345]: "Lat: 10.790483 | Lng: 78.704673"
+          - paragraph [ref=f5e346]: Based on your IP address. Search or tap the map for a precise location.
+        - generic [ref=f5e349]:
+          - generic [ref=f5e351]:
+            - generic [ref=f5e352]: Step 4 / 5
+            - generic [ref=f5e353]: pick location
+          - generic [ref=f5e356]:
+            - button "Back" [ref=f5e358] [cursor=pointer]
+            - button "Next" [ref=f5e360] [cursor=pointer]
+    - contentinfo [ref=f5e58]:
+      - generic [ref=f5e60]:
+        - generic [ref=f5e61]:
+          - link "lokalads logo lokalads India" [ref=f5e62] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f5e63]
+            - generic [ref=f5e64]:
+              - img "lokalads" [ref=f5e65]
+              - generic [ref=f5e66]: India
+          - generic [ref=f5e67]:
+            - link "Instagram" [ref=f5e68] [cursor=pointer]:
+              - /url: "#"
+            - link "Facebook" [ref=f5e71] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f5e74] [cursor=pointer]:
+              - /url: "#"
+            - link "YouTube" [ref=f5e77] [cursor=pointer]:
+              - /url: "#"
+          - button "Expand footer navigation" [ref=f5e80]
+        - paragraph [ref=f5e83]: find anything, anywhere with care...
+      - generic [ref=f5e84]:
+        - separator [ref=f5e85]
+        - generic [ref=f5e86]:
+          - paragraph [ref=f5e87]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f5e88]:
+            - button "Privacy Policy" [ref=f5e90]
+            - button "Terms & Conditions" [ref=f5e94]
+            - button "Cookie Policy" [ref=f5e98]
+            - generic [ref=f5e101]: Timeline
+            - button "Feedback" [ref=f5e105]
+      - generic [ref=f5e107]:
+        - paragraph [ref=f5e108]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f5e109] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

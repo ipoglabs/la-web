@@ -431,6 +431,31 @@ export function getListingsForCity(
 }
 
 /**
+ * Mock fallback for a category-less keyword search (no `cat`, no `loc`) —
+ * only reached when the real /api/listings?q= call (DB-backed) comes back
+ * empty or errors, i.e. the DB has no coverage for this keyword yet. Mirrors
+ * getListingsForCity's "search every category for this market" shape, but
+ * matches on title/description via filterListingsByKeyword instead of
+ * locationLabel.
+ */
+export function getListingsForKeyword(
+  country: CountryCode,
+  keyword: string,
+  limit = 48,
+): MockListing[] {
+  const items: MockListing[] = [];
+  for (const categoryId of FEATURED_CATEGORY_ORDER) {
+    if (items.length >= limit) break;
+    const matches = filterListingsByKeyword(getListingsForMarket(categoryId, country), keyword);
+    for (const listing of matches) {
+      items.push(listing);
+      if (items.length >= limit) break;
+    }
+  }
+  return items;
+}
+
+/**
  * Find a listing AND its category/subcategory/market context by id — searches
  * across ALL markets (every country's COUNTRY_OVERRIDES first, then the
  * generic CATEGORY_MAP fallback data).
