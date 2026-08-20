@@ -34,6 +34,7 @@ import {
   ShieldCheck,
   Monitor,
   LogOut,
+  Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDeleteAccountStore } from "@/lib/stores/deleteAccountStore";
@@ -44,6 +45,7 @@ import { ChangeEmailEditor } from "./ChangeEmailEditor";
 import { updateProfile } from "@/app/actions/updateProfile";
 import { updateContact } from "@/app/actions/profile/updateContact";
 import { updateLocation } from "@/app/actions/profile/updateLocation";
+import { uploadAvatarToR2 } from "@/lib/media/uploadAvatarToR2";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import { isStageFeatureEnabled } from "@/config";
@@ -186,6 +188,9 @@ export function ProfilePageScreen({
 
   // Profile data — seeded from the real, DB-backed user record (getCurrentUser()).
   const [handle, setHandle] = useState(user.profileId || user.username || "");
+  const [avatarImage, setAvatarImage] = useState(user.image || "");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [basicInfo, setBasicInfo] = useState<BasicInfoValues>({
     fullName: user.fullName,
     dateOfBirthIso: user.dateOfBirth,
@@ -413,6 +418,36 @@ export function ProfilePageScreen({
     }));
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file next time
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const url = await uploadAvatarToR2(file);
+      await updateProfile({ image: url });
+      setAvatarImage(url);
+      useAuthStore.getState().updateUser({ image: url });
+      // AppHeader keeps its own currentUser state fetched from /api/auth/me —
+      // this is the established pattern (see deleteAccountStore.ts) to tell it
+      // to re-fetch and pick up the new avatar.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth-changed"));
+      }
+      toast.success("Profile picture updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update profile picture");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const handleDeleteClick = async () => {
     resetDelete();
     const eligible = await checkEligibility();
@@ -442,7 +477,36 @@ export function ProfilePageScreen({
                   useful identity info, not clutter to hide. */}
               <div className="flex flex-col gap-3 px-4 py-4">
                 <div className="flex items-center gap-3">
-                  <Avatar initials={getInitials(basicInfo.fullName)} size="lg" />
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    aria-label="Change profile picture"
+                    className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed"
+                  >
+                    <Avatar src={avatarImage} initials={getInitials(basicInfo.fullName)} size="lg" />
+                    <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-colors group-hover:bg-black/40">
+                      {avatarUploading ? (
+                        <Loader2 className="size-5 animate-spin text-white" aria-hidden="true" />
+                      ) : (
+                        <Camera
+                          className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          strokeWidth={1.75}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </span>
+                    <span className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border-2 border-white bg-slate-700">
+                      <Camera className="size-2.5 text-white" strokeWidth={2} aria-hidden="true" />
+                    </span>
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
                   <div className="min-w-0">
                     <h2 className="text-base font-bold leading-tight text-slate-900">
                       {basicInfo.fullName}

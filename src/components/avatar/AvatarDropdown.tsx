@@ -44,6 +44,7 @@ import {
   ChevronDown,
   LogIn,
   UserPlus,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "./Avatar";
@@ -56,6 +57,7 @@ import { useAuthStore } from "@/store/authStore";
 /* ─── menu config ────────────────────────────────────────────── */
 const NAV_ITEMS = [
   { label: "My Ads",           icon: LayoutGrid,    href: "/my-ads" },
+  { label: "My Alerts",        icon: Bell,          href: "/my-alerts" },
   { label: "Chat",             icon: MessageCircle, href: "/chat" },
   { label: "Profile",          icon: User,          href: "/profile" },
   { label: "Account Settings", icon: Settings,      href: "/account-settings" },

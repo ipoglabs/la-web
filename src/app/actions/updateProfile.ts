@@ -223,6 +223,17 @@ export async function updateProfile(payload: any) {
     }
   }
 
+  /* ================= PROFILE PICTURE =================
+   * Only ever set by the upload flow (ProfilePageScreen → /api/media/upload-avatar),
+   * which returns a trusted R2 public URL — never accepts arbitrary user input here. */
+  if (payload.image !== undefined) {
+    const v = String(payload.image).trim();
+    if (v && !v.startsWith(process.env.R2_PUBLIC_URL || "")) {
+      throw new Error("Invalid image URL");
+    }
+    user.image = v;
+  }
+
   await user.save();
 
   // Keep each ad's contact snapshot (seller_info.name) in sync with the
