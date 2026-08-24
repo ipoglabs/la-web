@@ -1,0 +1,56 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to roll back
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      sha:
+        description: Commit SHA to roll back to
+        required: true
+
+jobs:
+  rollback:
+    name: Roll back deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - name: Roll back over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd ${{ inputs.environment == 'production' && vars.PROD_PATH || vars.STAGING_PATH }}
+            git fetch origin
+            git checkout ${{ inputs.sha }}
+            docker compose build
+            docker compose up -d --remove-orphans
+
+            echo "Waiting for app to become healthy..."
+            for i in $(seq 1 15); do
+              if curl -fsS -o /dev/null "http://127.0.0.1:3000"; then
+                echo "App is up."
+                break
+              fi
+              if [ "$i" -eq 15 ]; then
+                echo "App did not become healthy after rollback." >&2
+                docker compose logs --tail=100 app
+                exit 1
+              fi
+              sleep 2
+            done
+
+            docker image prune -f

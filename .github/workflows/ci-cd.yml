@@ -1,0 +1,115 @@
+name: CI/CD
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+jobs:
+  build:
+    name: Lint, typecheck & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: build-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+        env:
+          # Placeholders so `next build` doesn't fail at import time
+          # (src/lib/db.ts throws if MONGODB_URI is unset). No real
+          # connection is made during build. Mirrors the Dockerfile.
+          MONGODB_URI: mongodb://placeholder:27017/build
+          EMAIL_USER: placeholder@example.com
+          EMAIL_PASS: placeholder
+
+  build-ws-server:
+    name: Typecheck & build ws-server
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: build-ws-server-${{ github.ref }}
+      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: ws-server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ws-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck & build
+        run: npm run build
+
+  deploy:
+    name: Deploy
+    needs: [build, build-ws-server]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    # Deploys to the same target must run one at a time, but a later
+    # push should still get its turn rather than be cancelled mid-deploy.
+    concurrency:
+      group: deploy-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      cancel-in-progress: false
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd ${{ github.ref_name == 'main' && vars.PROD_PATH || vars.STAGING_PATH }}
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
+            docker compose build
+            docker compose up -d --remove-orphans
+
+            echo "Waiting for app to become healthy..."
+            for i in $(seq 1 15); do
+              if curl -fsS -o /dev/null "http://127.0.0.1:3000"; then
+                echo "App is up."
+                break
+              fi
+              if [ "$i" -eq 15 ]; then
+                echo "App did not become healthy in time." >&2
+                docker compose logs --tail=100 app
+                exit 1
+              fi
+              sleep 2
+            done
+
+            docker image prune -f
