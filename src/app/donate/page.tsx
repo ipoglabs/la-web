@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useDonationStore } from '@/app/store/donationStore'
+import { useCountryConfig } from '@/lib/hooks/useCountryConfig'
 
 // ─── Step Progress ────────────────────────────────────────────────────────
 
@@ -69,11 +70,13 @@ const AMOUNTS = [
 
 function AmountCard({
   amount,
+  currencySymbol,
   tagline,
   selected,
   onSelect,
 }: {
   amount: number
+  currencySymbol: string
   tagline: string
   selected: boolean
   onSelect: () => void
@@ -93,7 +96,7 @@ function AmountCard({
         'block text-2xl sm:text-3xl font-bold',
         selected ? 'text-blue-700' : 'text-slate-800'
       )}>
-        £{amount}
+        {currencySymbol}{amount}
       </span>
       <span className="block text-sm text-slate-500 mt-0.5 leading-snug">{tagline}</span>
       {selected && (
@@ -132,7 +135,7 @@ function OtherAmountCard({
         Other Amount
       </span>
       <span className="block text-sm text-slate-500 mt-0.5 leading-snug">
-        Every pound counts — customise your support and make a difference!
+        Every contribution counts — customise your support and make a difference!
       </span>
       {selected && (
         <span className="absolute top-3 right-3 size-5 rounded-full bg-blue-500 flex items-center justify-center">
@@ -150,6 +153,9 @@ function OtherAmountCard({
 export default function DonatePage() {
   const router = useRouter()
   const { setAmount, setMethod, setDonor } = useDonationStore()
+  const { config } = useCountryConfig()
+  const currencySymbol = config.currencySymbol
+  const currencyCode = config.currency
 
   // true = a preset value; false/null = "Other Amount" selected
   const [selAmt, setSelAmt]       = useState<number | 'other'>(1)
@@ -165,14 +171,14 @@ export default function DonatePage() {
     const e: typeof errors = {}
     if (!name.trim())                          e.name   = 'Please enter your name.'
     if (!email.trim() || !email.includes('@')) e.email  = 'Please enter a valid email.'
-    if (!rawAmt || rawAmt < 1)                 e.amount = 'Please select or enter an amount (minimum £1).'
+    if (!rawAmt || rawAmt < 1)                 e.amount = `Please select or enter an amount (minimum ${currencySymbol}1).`
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
   const handleContinue = () => {
     if (!validate()) return
-    setAmount(`£${rawAmt}`, rawAmt, 'GBP')
+    setAmount(`${currencySymbol}${rawAmt}`, rawAmt, currencyCode)
     setMethod('qr')
     setDonor({ name: name.trim(), email: email.trim(), message: message.trim() })
     router.push('/donate/review')
@@ -209,6 +215,7 @@ export default function DonatePage() {
               <AmountCard
                 key={value}
                 amount={value}
+                currencySymbol={currencySymbol}
                 tagline={tagline}
                 selected={selAmt === value}
                 onSelect={() => {
@@ -230,7 +237,7 @@ export default function DonatePage() {
           {selAmt === 'other' && (
             <div className="border-l-4 border-blue-400 bg-blue-50 rounded-r-lg px-4 py-3 mt-1">
               <label htmlFor="customAmt" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Enter your amount (£)
+                Enter your amount ({currencySymbol})
               </label>
               <input
                 id="customAmt"
