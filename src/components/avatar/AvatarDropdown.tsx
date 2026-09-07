@@ -45,8 +45,10 @@ import {
   LogIn,
   UserPlus,
   Bell,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SESSION_DURATIONS } from "@/lib/sessionDurations";
 import { Avatar } from "./Avatar";
 import {
   Drawer,
@@ -115,6 +117,82 @@ export interface AvatarDropdownProps {
   isLoggedIn?:  boolean;
 }
 
+/* ─── session length switcher ────────────────────────────────── */
+/**
+ * Re-issues the current session for a different lifetime (24h / 7d / 14d /
+ * 30d) via `/api/auth/session-duration` — no logout, same device. The
+ * active length is read on mount and updated optimistically on click.
+ */
+function SessionLengthSection() {
+  const [seconds, setSeconds] = React.useState<number | null>(null);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/session-duration")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!cancelled && typeof j?.data?.seconds === "number") {
+          setSeconds(j.data.seconds);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function choose(next: number) {
+    if (next === seconds || saving) return;
+    const prev = seconds;
+    setSeconds(next);
+    setSaving(true);
+    try {
+      const res = await fetch("/api/auth/session-duration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seconds: next }),
+      });
+      if (!res.ok) setSeconds(prev ?? null);
+    } catch {
+      setSeconds(prev ?? null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="border-t border-slate-100 px-4 py-3">
+      <div className="mb-2 flex items-center gap-3">
+        <Clock aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+        <span className="text-sm font-medium text-slate-700">Session length</span>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {SESSION_DURATIONS.map((opt) => {
+          const active = opt.seconds === seconds;
+          return (
+            <button
+              key={opt.seconds}
+              type="button"
+              onClick={() => choose(opt.seconds)}
+              disabled={saving || seconds === null}
+              aria-pressed={active}
+              className={cn(
+                "rounded-lg border px-2 py-1.5 text-sm transition-colors disabled:opacity-60",
+                active
+                  ? "border-blue-600 bg-blue-50 font-semibold text-blue-700"
+                  : "border-slate-300 text-slate-700 hover:bg-slate-50",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ─── auth menu body ─────────────────────────────────────────── */
 function MenuBody({
   name,
@@ -160,6 +238,9 @@ function MenuBody({
           Switch Country
         </button>
       </div>
+
+      {/* Session length switcher */}
+      <SessionLengthSection />
 
       {/* Separator + Sign out */}
       <div className="border-t border-slate-100 py-1">
