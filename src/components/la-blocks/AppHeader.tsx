@@ -40,6 +40,7 @@ import {
 } from "@/components/icons/la-icons";
 import { cn } from "@/lib/utils";
 import type { AuthUser } from "@/types/auth";
+import { getPrimaryRoleLabel } from "@/config/roles";
 import { useFavouritesStore } from "@/lib/stores/favouritesStore";
 import { getMyFavourites } from "@/app/actions/favourites/getMyFavourites";
 import { addFavourite } from "@/app/actions/favourites/addFavourite";
@@ -109,6 +110,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
         initials: getInitials(displayName) || "?",
         avatarUrl: apiUser.image || undefined,
         role: apiUser.isAdmin ? "admin" : "member",
+        roleLabel: getPrimaryRoleLabel(apiUser.publicRole, apiUser.roles),
         status: "online",
       });
     } catch {
@@ -259,7 +261,11 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
             <AvatarDropdown
               isLoggedIn={isLoggedIn}
               name={currentUser?.name}
-              subtitle={currentUser?.role === "admin" ? "Admin" : "Member"}
+              subtitle={
+                currentUser?.role === "admin"
+                  ? "Admin"
+                  : currentUser?.roleLabel || "Member"
+              }
               initials={currentUser?.initials}
               src={currentUser?.avatarUrl}
               status={currentUser?.status}

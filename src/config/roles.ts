@@ -199,6 +199,34 @@ export function getShortRoleLabel(id: RoleId): string {
 }
 
 /**
+ * Legacy `publicRole` string values persisted before the config/roles.ts
+ * multi-select existed. Mapped here so old accounts still render a clean
+ * label instead of a raw slug.
+ */
+const LEGACY_ROLE_LABELS: Record<string, string> = {
+  individual: BASE_ROLE.label,
+  user: BASE_ROLE.label,
+  business: "Business Owner",
+  agency: "Agent / Broker",
+};
+
+/**
+ * Display label for a user's primary (first) role — used wherever a single
+ * role line is shown, e.g. the avatar menu subtitle. Prefers the first of
+ * the multi-select `roles[]`, falls back to the legacy `publicRole` string,
+ * then to the implicit "Individual" base identity. A free-text custom role
+ * passes straight through (`getRoleLabel` returns the id unchanged when it
+ * isn't a canonical one).
+ */
+export function getPrimaryRoleLabel(
+  publicRole?: string | null,
+  roles?: readonly string[] | null,
+): string {
+  const first = roles?.[0] || publicRole || BASE_ROLE.id;
+  return LEGACY_ROLE_LABELS[first] ?? getRoleLabel(first);
+}
+
+/**
  * Why someone is actually here today — buying, selling, both, or just
  * browsing. Deliberately NOT part of `ROLES`: it's a private preference
  * used to personalize the experience, never rendered as a public badge.

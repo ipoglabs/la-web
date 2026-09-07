@@ -71,14 +71,14 @@ function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpen
   return (
     <div>
       <div className="px-4 py-3 border-b border-slate-100">
-        <p className="text-sm font-semibold text-slate-900">Welcome</p>
-        <p className="text-sm text-slate-500 mt-0.5">Sign in to access your account</p>
+        <p className="text-base font-semibold text-slate-900">Welcome</p>
+        <p className="text-base text-slate-500 mt-0.5">Sign in to access your account</p>
       </div>
       <div className="py-1">
         <Link
           href="/login"
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           <LogIn aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
           Login
@@ -86,7 +86,7 @@ function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpen
         <Link
           href="/register"
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
           <UserPlus aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
           Register
@@ -95,7 +95,7 @@ function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpen
           <button
             type="button"
             onClick={onOpenCountry}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Globe2 aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
             Switch Country
@@ -164,8 +164,8 @@ function SessionLengthSection() {
   return (
     <div className="border-t border-slate-100 px-4 py-3">
       <div className="mb-2 flex items-center gap-3">
-        <Clock aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
-        <span className="text-sm font-medium text-slate-700">Session length</span>
+        <Clock aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
+        <span className="text-base font-medium text-slate-700">Session length</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {SESSION_DURATIONS.map((opt) => {
@@ -178,7 +178,7 @@ function SessionLengthSection() {
               disabled={saving || seconds === null}
               aria-pressed={active}
               className={cn(
-                "rounded-lg border px-2 py-1.5 text-sm transition-colors disabled:opacity-60",
+                "rounded-lg border px-2 py-1.5 text-base transition-colors disabled:opacity-60",
                 active
                   ? "border-blue-600 bg-blue-50 font-semibold text-blue-700"
                   : "border-slate-300 text-slate-700 hover:bg-slate-50",
@@ -210,8 +210,8 @@ function MenuBody({
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
         <Avatar src={src} initials={initials} size="md" status={status} />
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-slate-900 truncate">{name}</p>
-          <p className="text-sm text-slate-500 truncate">{subtitle}</p>
+          <p className="text-base font-semibold text-slate-900 truncate">{name}</p>
+          <p className="text-base text-slate-500 truncate">{subtitle}</p>
         </div>
       </div>
 
@@ -222,9 +222,9 @@ function MenuBody({
             key={label}
             href={href}
             onClick={onClose}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50 transition-colors"
           >
-            <Icon aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+            <Icon aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
             {label}
           </Link>
         ))}
@@ -232,9 +232,9 @@ function MenuBody({
         <button
           type="button"
           onClick={onOpenCountry}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50 transition-colors"
         >
-          <Globe2 aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+          <Globe2 aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
           Switch Country
         </button>
       </div>
@@ -253,9 +253,9 @@ function MenuBody({
   router.push("/");
   router.refresh();
 }}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-base font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
         >
-          <LogOut aria-hidden="true" className="size-4 shrink-0" />
+          <LogOut aria-hidden="true" className="size-5 shrink-0" />
           Sign out
         </button>
       </div>
@@ -346,9 +346,11 @@ export function AvatarDropdown({
         )}
       </button>
 
-      {/* Desktop — floating popover */}
+      {/* Desktop — floating popover. z-[60] clears page content that also
+           sits at z-50 (the header itself is unpositioned). max-h + scroll
+           keeps a tall menu from running down over the page. */}
       {!isMobile && open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-56 rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black/5 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 z-[60] w-56 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black/5">
           {isLoggedIn
             ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
             : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
