@@ -27,10 +27,10 @@ import jwt from "jsonwebtoken";
 import { getSession } from "@/lib/auth";
 import {
   SESSION_DURATIONS,
-  SESSION_DURATION_SECONDS,
   DEFAULT_SESSION_DURATION,
   SESSION_OFF,
   SESSION_OFF_JWT_SECONDS,
+  isValidSessionSeconds,
   nearestSessionDuration,
 } from "@/lib/sessionDurations";
 
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       .catch(() => ({}) as Record<string, unknown>);
     const seconds = Number((body as { seconds?: unknown }).seconds);
 
-    if (!SESSION_DURATION_SECONDS.includes(seconds)) {
+    if (!isValidSessionSeconds(seconds)) {
       return NextResponse.json(
         { error: "Unsupported session length" },
         { status: 400 }

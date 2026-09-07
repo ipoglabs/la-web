@@ -182,7 +182,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
         {/* Logo — not clickable on landing (already there, no point refreshing) */}
         {isLanding ? (
           <span className="flex gap-2 items-center">
-            <Image src="/assets/la-logo-symbol-color.svg" alt="lokalads logo" width={40} height={40} />
+            <Image src="/assets/la-logo-symbol-color.svg" alt="lokalads logo" width={44} height={44} />
             <div className="relative max-sm:hidden">
               <Image src="/assets/la-text-black.svg" alt="lokalads" width={96} height={24} />
               {config.displayName && (
@@ -216,8 +216,17 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
               href={isLoggedIn ? "/post" : "/login?redirect=/post"}
               className={cn(laButtonVariants({ intent: "primary-rose", size: "compact" }), "max-sm:hidden")}
             >
-              <svg width="16" height="16" fill="currentColor" aria-hidden="true">
-                <path d="M8 3a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H9v3a1 1 0 1 1-2 0V9H4a1 1 0 1 1 0-2h3V4a1 1 0 0 1 1-1Z" />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M10 4.5v11M4.5 10h11" />
               </svg>
               POST
             </Link>
@@ -227,8 +236,17 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
               href={isLoggedIn ? "/post" : "/login?redirect=/post"}
               className={cn(laButtonVariants({ intent: "primary-rose", size: "compact" }), "w-7 px-0 sm:hidden")}
             >
-              <svg width="16" height="16" fill="currentColor" aria-hidden="true">
-                <path d="M8 3a1 1 0 0 1 1 1v3h3a1 1 0 1 1 0 2H9v3a1 1 0 1 1-2 0V9H4a1 1 0 1 1 0-2h3V4a1 1 0 0 1 1-1Z" />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M10 4.5v11M4.5 10h11" />
               </svg>
             </Link>
           )}
@@ -243,14 +261,14 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
               aria-expanded={sheetOpen}
               onClick={() => setSheetOpen((v) => !v)}
               className={cn(
-                "w-11 max-sm:w-9 h-full rounded-none overflow-visible px-0 [&_svg]:size-7",
+                "w-11 max-sm:w-9 h-full rounded-none overflow-visible px-0 [&_svg]:size-9",
                 count > 0 || sheetOpen ? "text-rose-500" : "text-slate-600"
               )}
             >
               <span className="relative inline-flex">
                 {count > 0 || sheetOpen
-                  ? <Solid_Heart_24by24 className="size-7" />
-                  : <Outline_Heart_24by24 className="size-7" strokeWidth={1.5} />
+                  ? <Solid_Heart_24by24 className="size-9" />
+                  : <Outline_Heart_24by24 className="size-9" strokeWidth={1.5} />
                 }
                 {count > 0 && (
                   <span className="pointer-events-none absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold tabular-nums text-white">

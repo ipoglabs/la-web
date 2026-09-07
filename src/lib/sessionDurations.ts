@@ -11,17 +11,19 @@
  */
 
 /**
- * `seconds: 0` is the "Off" sentinel — "don't keep me signed in". The server
- * issues a session-only cookie (no `maxAge`, cleared when the browser closes)
- * and caps the JWT at `SESSION_OFF_JWT_SECONDS`.
+ * `seconds: 0` is the "Off" sentinel — "don't keep me logged in". Not one of
+ * the selectable presets below: it's driven by the on/off switch in the
+ * avatar menu, not the duration pills. The server issues a session-only
+ * cookie (no `maxAge`, cleared when the browser closes) and caps the JWT at
+ * `SESSION_OFF_JWT_SECONDS`.
  */
 export const SESSION_OFF = 0;
 
 /** Hard cap on an "Off" (session-only) JWT — a safety ceiling, not a maxAge. */
 export const SESSION_OFF_JWT_SECONDS = 60 * 60 * 12;
 
+/** The selectable "stay logged in up to" presets (shown only when the switch is on). */
 export const SESSION_DURATIONS = [
-  { seconds: SESSION_OFF,        label: "Off" },
   { seconds: 60 * 60 * 24,       label: "24h" },
   { seconds: 60 * 60 * 24 * 7,   label: "7d" },
   { seconds: 60 * 60 * 24 * 14,  label: "14d" },
@@ -31,6 +33,11 @@ export const SESSION_DURATIONS = [
 export const SESSION_DURATION_SECONDS: number[] = SESSION_DURATIONS.map(
   (d) => d.seconds
 );
+
+/** Every value the API accepts: the presets plus the "Off" sentinel. */
+export function isValidSessionSeconds(seconds: number): boolean {
+  return seconds === SESSION_OFF || SESSION_DURATION_SECONDS.includes(seconds);
+}
 
 /** Default when a token carries no readable lifetime (fresh login = 7 days). */
 export const DEFAULT_SESSION_DURATION = 60 * 60 * 24 * 7;

@@ -48,7 +48,12 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SESSION_DURATIONS } from "@/lib/sessionDurations";
+import {
+  SESSION_DURATIONS,
+  SESSION_OFF,
+  DEFAULT_SESSION_DURATION,
+} from "@/lib/sessionDurations";
+import { LaSwitch } from "@/components/la";
 import {
   ToggleButtonGroup,
   ToggleGroupButton,
@@ -125,20 +130,23 @@ export interface AvatarDropdownProps {
   isLoggedIn?:  boolean;
 }
 
-/* ─── "stay signed in" switcher ──────────────────────────────── */
+/* ─── "stay logged in" switcher ──────────────────────────────── */
 /**
- * Re-issues the current session for a different lifetime (Off / 24h / 7d /
- * 14d / 1mo) via `/api/auth/session-duration` — no logout, same device.
- * "Off" issues a session-only cookie (cleared when the browser closes).
+ * Re-issues the current session via `/api/auth/session-duration` — no
+ * logout, same device.
  *
- * Optimistic: the toggle moves immediately on click, the POST runs in the
- * background, and a failure rolls the selection back. Deliberately has NO
- * disabled/"saving" lockout — a hung or slow request must never leave the
- * control un-clickable. Re-clicking aborts the previous in-flight request
- * (last write wins), and the initial GET never overwrites a choice the
- * user has already made.
+ * An on/off switch controls whether the session persists at all:
+ * - Off  → session-only cookie, cleared when the browser closes (SESSION_OFF)
+ * - On   → the session persists for one of the presets (24h / 7d / 14d / 1mo),
+ *          picked from the icon toggle group that appears below the switch.
  *
- * Rendered as the single-select icon toggle group from
+ * Optimistic: the UI moves immediately, the POST runs in the background, and
+ * a failure rolls it back. Deliberately has NO disabled/"saving" lockout — a
+ * hung request must never leave the control un-clickable. Re-clicking aborts
+ * the previous in-flight write (last write wins), and the initial GET never
+ * overwrites a choice the user has already made.
+ *
+ * The toggle group is the single-select icon variant from
  * `/design-system/core/toggle-group` (use case 7).
  */
 function SessionLengthSection() {
@@ -160,9 +168,8 @@ function SessionLengthSection() {
     return () => ac.abort();
   }, []);
 
-  async function choose(values: string[]) {
-    const next = Number(values[0]);
-    if (Number.isNaN(next) || next === seconds) return;
+  async function apply(next: number) {
+    if (next === seconds) return;
 
     touchedRef.current = true;
     const prev = seconds;
@@ -179,35 +186,50 @@ function SessionLengthSection() {
         body: JSON.stringify({ seconds: next }),
         signal: ac.signal,
       });
-      if (!res.ok) setSeconds(prev ?? null);
+      if (!res.ok) setSeconds(prev);
     } catch (err) {
-      if ((err as Error)?.name !== "AbortError") setSeconds(prev ?? null);
+      if ((err as Error)?.name !== "AbortError") setSeconds(prev);
     }
   }
 
+  const enabled = seconds !== null && seconds !== SESSION_OFF;
+
   return (
     <div className="border-t border-slate-100 px-4 py-3">
-      <div className="mb-2 flex items-center gap-3">
+      <div className="flex items-center gap-3">
         <Clock aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
-        <span className="text-base font-medium text-slate-700">Stay signed in up to</span>
+        <span className="flex-1 text-base font-medium text-slate-700">Stay logged in up to</span>
+        <LaSwitch
+          checked={enabled}
+          onCheckedChange={(on) => apply(on ? DEFAULT_SESSION_DURATION : SESSION_OFF)}
+          aria-label="Stay logged in"
+        />
       </div>
-      <ToggleButtonGroup
-        singleSelect
-        requireSelection
-        value={seconds === null ? [] : [String(seconds)]}
-        onChange={choose}
-      >
-        {SESSION_DURATIONS.map((opt) => (
-          <ToggleGroupButton
-            key={opt.seconds}
-            value={String(opt.seconds)}
-            icon={Outline_UnCheckCircle_24by24}
-            iconSelected={Outline_CheckCircle_24by24}
+
+      {enabled && (
+        <div className="mt-3">
+          <ToggleButtonGroup
+            singleSelect
+            requireSelection
+            value={seconds === null ? [] : [String(seconds)]}
+            onChange={(values) => {
+              const next = Number(values[0]);
+              if (!Number.isNaN(next)) apply(next);
+            }}
           >
-            {opt.label}
-          </ToggleGroupButton>
-        ))}
-      </ToggleButtonGroup>
+            {SESSION_DURATIONS.map((opt) => (
+              <ToggleGroupButton
+                key={opt.seconds}
+                value={String(opt.seconds)}
+                icon={Outline_UnCheckCircle_24by24}
+                iconSelected={Outline_CheckCircle_24by24}
+              >
+                {opt.label}
+              </ToggleGroupButton>
+            ))}
+          </ToggleButtonGroup>
+        </div>
+      )}
     </div>
   );
 }
@@ -245,9 +267,9 @@ function MenuBody({
             key={label}
             href={href}
             onClick={onClose}
-            className="flex items-center gap-3 px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-3 px-4 py-1.5 text-base text-slate-800 hover:bg-slate-50 transition-colors"
           >
-            <Icon aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
+            <Icon aria-hidden="true" className="size-5 shrink-0 text-slate-600" />
             {label}
           </Link>
         ))}
@@ -262,7 +284,7 @@ function MenuBody({
         </button>
       </div>
 
-      {/* "Stay signed in" switcher */}
+      {/* "Stay logged in" switcher */}
       <SessionLengthSection />
 
       {/* Separator + Sign out */}
