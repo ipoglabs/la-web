@@ -49,6 +49,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SESSION_DURATIONS } from "@/lib/sessionDurations";
+import {
+  ToggleButtonGroup,
+  ToggleGroupButton,
+} from "@/components/toggle-group/CompoundToggleGroup";
+import {
+  Outline_UnCheckCircle_24by24,
+  Outline_CheckCircle_24by24,
+} from "@/components/icons/la-icons";
 import { Avatar } from "./Avatar";
 import {
   Drawer,
@@ -117,47 +125,63 @@ export interface AvatarDropdownProps {
   isLoggedIn?:  boolean;
 }
 
-/* ─── session length switcher ────────────────────────────────── */
+/* ─── "stay signed in" switcher ──────────────────────────────── */
 /**
- * Re-issues the current session for a different lifetime (24h / 7d / 14d /
- * 30d) via `/api/auth/session-duration` — no logout, same device. The
- * active length is read on mount and updated optimistically on click.
+ * Re-issues the current session for a different lifetime (Off / 24h / 7d /
+ * 14d / 1mo) via `/api/auth/session-duration` — no logout, same device.
+ * "Off" issues a session-only cookie (cleared when the browser closes).
+ *
+ * Optimistic: the toggle moves immediately on click, the POST runs in the
+ * background, and a failure rolls the selection back. Deliberately has NO
+ * disabled/"saving" lockout — a hung or slow request must never leave the
+ * control un-clickable. Re-clicking aborts the previous in-flight request
+ * (last write wins), and the initial GET never overwrites a choice the
+ * user has already made.
+ *
+ * Rendered as the single-select icon toggle group from
+ * `/design-system/core/toggle-group` (use case 7).
  */
 function SessionLengthSection() {
   const [seconds, setSeconds] = React.useState<number | null>(null);
-  const [saving, setSaving] = React.useState(false);
+  const touchedRef = React.useRef(false);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/auth/session-duration")
+    const ac = new AbortController();
+    fetch("/api/auth/session-duration", { signal: ac.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        if (!cancelled && typeof j?.data?.seconds === "number") {
+        // Don't clobber a selection the user made while the GET was in flight.
+        if (!touchedRef.current && typeof j?.data?.seconds === "number") {
           setSeconds(j.data.seconds);
         }
       })
       .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
+    return () => ac.abort();
   }, []);
 
-  async function choose(next: number) {
-    if (next === seconds || saving) return;
+  async function choose(values: string[]) {
+    const next = Number(values[0]);
+    if (Number.isNaN(next) || next === seconds) return;
+
+    touchedRef.current = true;
     const prev = seconds;
-    setSeconds(next);
-    setSaving(true);
+    setSeconds(next); // optimistic
+
+    abortRef.current?.abort(); // cancel any earlier in-flight write
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     try {
       const res = await fetch("/api/auth/session-duration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seconds: next }),
+        signal: ac.signal,
       });
       if (!res.ok) setSeconds(prev ?? null);
-    } catch {
-      setSeconds(prev ?? null);
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      if ((err as Error)?.name !== "AbortError") setSeconds(prev ?? null);
     }
   }
 
@@ -165,30 +189,25 @@ function SessionLengthSection() {
     <div className="border-t border-slate-100 px-4 py-3">
       <div className="mb-2 flex items-center gap-3">
         <Clock aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
-        <span className="text-base font-medium text-slate-700">Session length</span>
+        <span className="text-base font-medium text-slate-700">Stay signed in up to</span>
       </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        {SESSION_DURATIONS.map((opt) => {
-          const active = opt.seconds === seconds;
-          return (
-            <button
-              key={opt.seconds}
-              type="button"
-              onClick={() => choose(opt.seconds)}
-              disabled={saving || seconds === null}
-              aria-pressed={active}
-              className={cn(
-                "rounded-lg border px-2 py-1.5 text-base transition-colors disabled:opacity-60",
-                active
-                  ? "border-blue-600 bg-blue-50 font-semibold text-blue-700"
-                  : "border-slate-300 text-slate-700 hover:bg-slate-50",
-              )}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
+      <ToggleButtonGroup
+        singleSelect
+        requireSelection
+        value={seconds === null ? [] : [String(seconds)]}
+        onChange={choose}
+      >
+        {SESSION_DURATIONS.map((opt) => (
+          <ToggleGroupButton
+            key={opt.seconds}
+            value={String(opt.seconds)}
+            icon={Outline_UnCheckCircle_24by24}
+            iconSelected={Outline_CheckCircle_24by24}
+          >
+            {opt.label}
+          </ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
     </div>
   );
 }
@@ -206,12 +225,16 @@ function MenuBody({
   const router = useRouter();
   return (
     <div>
-      {/* User identity */}
+      {/* User identity — text column shrinks (min-w-0 + flex-1) so a long
+           name or a full multi-role line truncates with an ellipsis instead
+           of forcing the menu wider. Full role line stays on the title attr. */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
-        <Avatar src={src} initials={initials} size="md" status={status} />
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-slate-900 truncate">{name}</p>
-          <p className="text-base text-slate-500 truncate">{subtitle}</p>
+        <div className="shrink-0">
+          <Avatar src={src} initials={initials} size="md" status={status} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-lg font-semibold text-slate-900 truncate">{name}</p>
+          <p className="text-base text-slate-500 truncate" title={subtitle}>{subtitle}</p>
         </div>
       </div>
 
@@ -239,7 +262,7 @@ function MenuBody({
         </button>
       </div>
 
-      {/* Session length switcher */}
+      {/* "Stay signed in" switcher */}
       <SessionLengthSection />
 
       {/* Separator + Sign out */}

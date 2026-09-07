@@ -40,7 +40,7 @@ import {
 } from "@/components/icons/la-icons";
 import { cn } from "@/lib/utils";
 import type { AuthUser } from "@/types/auth";
-import { getPrimaryRoleLabel } from "@/config/roles";
+import { getAllRolesLabel } from "@/config/roles";
 import { useFavouritesStore } from "@/lib/stores/favouritesStore";
 import { getMyFavourites } from "@/app/actions/favourites/getMyFavourites";
 import { addFavourite } from "@/app/actions/favourites/addFavourite";
@@ -110,7 +110,12 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
         initials: getInitials(displayName) || "?",
         avatarUrl: apiUser.image || undefined,
         role: apiUser.isAdmin ? "admin" : "member",
-        roleLabel: getPrimaryRoleLabel(apiUser.publicRole, apiUser.roles),
+        roleLabel: getAllRolesLabel(
+          apiUser.publicRole,
+          apiUser.roles,
+          apiUser.roleSpecialties,
+          apiUser.customRole
+        ),
         status: "online",
       });
     } catch {

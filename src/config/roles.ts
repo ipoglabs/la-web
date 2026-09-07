@@ -227,6 +227,51 @@ export function getPrimaryRoleLabel(
 }
 
 /**
+ * Every role label a user displays, as an array — the multi-select
+ * `roles[]` (each with its "· specialty" suffix when set) plus the one
+ * free-text `customRole`. Falls back to the legacy `publicRole` string,
+ * then to the implicit "Individual" base identity. Mirrors the
+ * `explicitRoleLabels` logic in `app/actions/getPublicProfile.ts`.
+ */
+export function getAllRoleLabels(
+  publicRole?: string | null,
+  roles?: readonly string[] | null,
+  roleSpecialties?: Record<string, unknown> | null,
+  customRole?: string | null,
+): string[] {
+  const roleIds = Array.isArray(roles) ? roles : [];
+  const specialties =
+    roleSpecialties && typeof roleSpecialties === "object" ? roleSpecialties : {};
+
+  const explicit = [
+    ...roleIds.map((id) => {
+      const specialty =
+        typeof specialties[id] === "string" ? (specialties[id] as string).trim() : "";
+      return specialty ? `${getRoleLabel(id)} · ${specialty}` : getRoleLabel(id);
+    }),
+    ...(customRole ? [customRole] : []),
+  ];
+
+  if (explicit.length > 0) return explicit;
+  if (publicRole) return [LEGACY_ROLE_LABELS[publicRole] ?? getRoleLabel(publicRole)];
+  return [BASE_ROLE.label];
+}
+
+/**
+ * All of a user's role labels joined into one line (" / " separated) —
+ * used wherever every role is shown on a single row, e.g. the avatar menu
+ * subtitle. The consumer is responsible for truncating an overflowing line.
+ */
+export function getAllRolesLabel(
+  publicRole?: string | null,
+  roles?: readonly string[] | null,
+  roleSpecialties?: Record<string, unknown> | null,
+  customRole?: string | null,
+): string {
+  return getAllRoleLabels(publicRole, roles, roleSpecialties, customRole).join(" / ");
+}
+
+/**
  * Why someone is actually here today — buying, selling, both, or just
  * browsing. Deliberately NOT part of `ROLES`: it's a private preference
  * used to personalize the experience, never rendered as a public badge.

@@ -3,7 +3,7 @@ import type { AuthUser } from "@/types/auth";
 import { verifyToken } from "@/lib/auth";
 import { isSessionRevoked } from "@/lib/userSession";
 import { isAdminEmail } from "@/lib/admin";
-import { getPrimaryRoleLabel } from "@/config/roles";
+import { getAllRolesLabel } from "@/config/roles";
 import dbConnect from "@/lib/db";
 import User from "@/models/user";
 
@@ -41,7 +41,9 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   if (await isSessionRevoked(payload.sid, userId)) return null;
 
   const user: any = await User.findById(userId)
-    .select("fullName image email publicRole roles isDeleted isSuspended accountStatus")
+    .select(
+      "fullName image email publicRole roles roleSpecialties customRole isDeleted isSuspended accountStatus"
+    )
     .lean();
 
   if (
@@ -62,7 +64,12 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     initials: getInitials(name),
     avatarUrl: user.image || undefined,
     role: isAdminEmail(user.email) ? "admin" : "member",
-    roleLabel: getPrimaryRoleLabel(user.publicRole, user.roles),
+    roleLabel: getAllRolesLabel(
+      user.publicRole,
+      user.roles,
+      user.roleSpecialties,
+      user.customRole
+    ),
     status: "online",
   } satisfies AuthUser;
 }

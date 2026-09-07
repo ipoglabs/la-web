@@ -1,18 +1,22 @@
 /**
  * app/api/auth/session-duration/route.ts
  *
- * Backs the "Session length" switcher in the avatar menu. Lets a signed-in
- * user re-issue their OWN session for a different lifetime (24h / 7d / 14d /
- * 30d) without logging out — same device, same `sid`, only the JWT `exp`
- * and the `session` cookie `maxAge` change.
+ * Backs the "Stay signed in up to" switcher in the avatar menu. Lets a
+ * signed-in user re-issue their OWN session for a different lifetime
+ * (Off / 24h / 7d / 14d / 1mo) without logging out — same device, same
+ * `sid`, only the JWT `exp` and the `session` cookie `maxAge` change.
+ *
+ * "Off" (`seconds: 0`) means "don't keep me signed in": the cookies are
+ * rewritten with no `maxAge` (session-only, cleared when the browser
+ * closes) and the JWT is capped at `SESSION_OFF_JWT_SECONDS`.
  *
  *   GET  → { data: { seconds, options: [{ seconds, label }] } }
  *          `seconds` is the current token's lifetime snapped to the closest
- *          preset (a fresh login reads as 7 days).
+ *          preset (a fresh login reads as 7 days; anything under a day
+ *          reads as "Off").
  *
- *   POST { seconds } → re-signs the session JWT with `expiresIn: seconds`
- *          and rewrites the `session` (+ `uinfo`) cookies with the matching
- *          `maxAge`.
+ *   POST { seconds } → re-signs the session JWT and rewrites the `session`
+ *          (+ `uinfo`) cookies with the matching `maxAge` (omitted for Off).
  *          200 { data: { seconds } }
  *          400 { error }  — value not one of the presets
  *          401 { error }  — not signed in
@@ -25,8 +29,12 @@ import {
   SESSION_DURATIONS,
   SESSION_DURATION_SECONDS,
   DEFAULT_SESSION_DURATION,
+  SESSION_OFF,
+  SESSION_OFF_JWT_SECONDS,
   nearestSessionDuration,
 } from "@/lib/sessionDurations";
+
+const ONE_DAY = 60 * 60 * 24;
 
 const COOKIE_NAME = "session";
 const UINFO_COOKIE_NAME = "uinfo";
@@ -52,7 +60,9 @@ export async function GET() {
         | { exp?: number; iat?: number }
         | null;
       if (decoded?.exp && decoded?.iat) {
-        seconds = nearestSessionDuration(decoded.exp - decoded.iat);
+        const lifetime = decoded.exp - decoded.iat;
+        // A sub-day lifetime is only ever issued by the "Off" branch below.
+        seconds = lifetime < ONE_DAY ? SESSION_OFF : nearestSessionDuration(lifetime);
       }
     }
 
@@ -82,6 +92,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // "Off" → don't keep the user signed in: cap the JWT at a short ceiling
+    // and issue session-only cookies (no maxAge → cleared on browser close).
+    const isOff = seconds === SESSION_OFF;
+    const jwtSeconds = isOff ? SESSION_OFF_JWT_SECONDS : seconds;
+
     // Re-sign with the same identity claims and a fresh iat/exp. We rebuild
     // the payload explicitly rather than re-signing `session` as-is because
     // it still carries the verified token's own `iat`/`exp`, which
@@ -96,7 +111,7 @@ export async function POST(req: Request) {
         sid: session.sid,
       },
       requireSecret(),
-      { expiresIn: seconds }
+      { expiresIn: jwtSeconds }
     );
 
     const cookieOpts = {
@@ -104,7 +119,7 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax" as const,
       path: "/",
-      maxAge: seconds,
+      ...(isOff ? {} : { maxAge: seconds }),
     };
 
     const res = NextResponse.json({ data: { seconds } });

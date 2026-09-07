@@ -115,6 +115,16 @@ export default function AvatarDemoPage() {
             <AvatarDropdown name="Aleksandar Novakovic" subtitle="Business Account" initials="AN" />
             <span className="text-xs text-slate-400">Long name</span>
           </div>
+
+          {/* Long role line — every role shown, truncated with … */}
+          <div className="flex flex-col items-center gap-2">
+            <AvatarDropdown
+              name="Priya Menon"
+              subtitle="Business Owner / Property Owner / Landlord / Agent · Real Estate"
+              initials="PM"
+            />
+            <span className="text-xs text-slate-400">Long role (truncates)</span>
+          </div>
         </div>
       </LaSection>
     </>

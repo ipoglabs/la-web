@@ -10,11 +10,22 @@
  * `lib/auth.ts` still owns the default length applied at login (MAX_AGE = 7d).
  */
 
+/**
+ * `seconds: 0` is the "Off" sentinel — "don't keep me signed in". The server
+ * issues a session-only cookie (no `maxAge`, cleared when the browser closes)
+ * and caps the JWT at `SESSION_OFF_JWT_SECONDS`.
+ */
+export const SESSION_OFF = 0;
+
+/** Hard cap on an "Off" (session-only) JWT — a safety ceiling, not a maxAge. */
+export const SESSION_OFF_JWT_SECONDS = 60 * 60 * 12;
+
 export const SESSION_DURATIONS = [
-  { seconds: 60 * 60 * 24,       label: "24 hours" },
-  { seconds: 60 * 60 * 24 * 7,   label: "7 days" },
-  { seconds: 60 * 60 * 24 * 14,  label: "14 days" },
-  { seconds: 60 * 60 * 24 * 30,  label: "30 days" },
+  { seconds: SESSION_OFF,        label: "Off" },
+  { seconds: 60 * 60 * 24,       label: "24h" },
+  { seconds: 60 * 60 * 24 * 7,   label: "7d" },
+  { seconds: 60 * 60 * 24 * 14,  label: "14d" },
+  { seconds: 60 * 60 * 24 * 30,  label: "1mo" },
 ] as const;
 
 export const SESSION_DURATION_SECONDS: number[] = SESSION_DURATIONS.map(
