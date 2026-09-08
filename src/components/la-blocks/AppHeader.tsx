@@ -182,7 +182,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
         {/* Logo — not clickable on landing (already there, no point refreshing) */}
         {isLanding ? (
           <span className="flex gap-2 items-center">
-            <Image src="/assets/la-logo-symbol-color.svg" alt="lokalads logo" width={44} height={44} />
+            <Image src="/assets/la-logo-symbol-color.svg" alt="lokalads logo" width={46} height={46} />
             <div className="relative max-sm:hidden">
               <Image src="/assets/la-text-black.svg" alt="lokalads" width={96} height={24} />
               {config.displayName && (
