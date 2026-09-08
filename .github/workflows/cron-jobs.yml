@@ -14,8 +14,16 @@ name: Batch jobs (cron)
 #   works from any branch that has the file.
 #
 # Required repo config — Settings → Secrets and variables → Actions:
-#   secret  CRON_SECRET   must equal the Vercel env var of the same name
-#   var     APP_URL       optional; defaults to https://www.lokalads.com
+#   secret  CRON_SECRET                     must equal the Vercel env var of the same name
+#   secret  VERCEL_AUTOMATION_BYPASS_SECRET  from Vercel → Settings → Deployment
+#                                           Protection → Protection Bypass for Automation
+#   var     APP_URL                         optional; defaults to https://lokalads.vercel.app
+#
+# Requests go to lokalads.vercel.app (a production alias served directly by
+# Vercel), NOT www.lokalads.com — that custom domain sits behind Cloudflare,
+# whose Free-plan Bot Fight Mode challenges the GitHub runner and can't be
+# skipped by a WAF rule. The Vercel alias is behind Vercel's SSO deployment
+# protection instead, which the x-vercel-protection-bypass header clears.
 #
 # All cron times are UTC. Keep the six expressions below in sync with
 # SCHEDULE_TO_JOB in src/app/api/jobs/trigger/route.ts and the node-cron
@@ -74,11 +82,23 @@ jobs:
 
       - name: Trigger ${{ steps.r.outputs.job }}
         env:
-          APP_URL: ${{ vars.APP_URL || 'https://www.lokalads.com' }}
+          # Hit Vercel directly, not the www.lokalads.com custom domain: the
+          # latter is behind Cloudflare, whose (Free-plan) Bot Fight Mode
+          # challenges the GitHub runner and can't be skipped by a WAF rule.
+          # lokalads.vercel.app is a production alias served straight by Vercel.
+          APP_URL: ${{ vars.APP_URL || 'https://lokalads.vercel.app' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Vercel Deployment Protection is on (SSO for all non-custom domains).
+          # This is the "Protection Bypass for Automation" secret — Settings →
+          # Deployment Protection → Protection Bypass for Automation.
+          VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
             echo "::error::CRON_SECRET repo secret is not set (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          if [ -z "$VERCEL_BYPASS" ]; then
+            echo "::error::VERCEL_AUTOMATION_BYPASS_SECRET repo secret is not set — generate it in Vercel → Settings → Deployment Protection → Protection Bypass for Automation"
             exit 1
           fi
           curl --fail-with-body -sS \
@@ -86,5 +106,6 @@ jobs:
             --max-time 330 \
             -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
+            -H "x-vercel-protection-bypass: $VERCEL_BYPASS" \
             "$APP_URL/api/jobs/trigger?job=${{ steps.r.outputs.job }}" \
             -w '\nHTTP %{http_code} in %{time_total}s\n'

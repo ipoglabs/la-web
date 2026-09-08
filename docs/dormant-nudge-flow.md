@@ -216,7 +216,7 @@ written to the `JobRun` collection (`jobName: "dormant-nudge"`,
 | Environment | Scheduler | Mechanism |
 |---|---|---|
 | Local dev / self-hosted | `node-cron` | `src/instrumentation.ts` → `initJobRunner()` registers all 6 schedules. Guarded by `!process.env.VERCEL` so it **doesn't** run on Vercel |
-| Production (Vercel Hobby) | **GitHub Actions** | `.github/workflows/cron-jobs.yml` — one `on.schedule` entry per job, POSTs `/api/jobs/trigger?job=<name>` with `Authorization: Bearer $CRON_SECRET` |
+| Production (Vercel Hobby) | **GitHub Actions** | `.github/workflows/cron-jobs.yml` — one `on.schedule` entry per job, POSTs `https://lokalads.vercel.app/api/jobs/trigger?job=<name>` with `Authorization: Bearer $CRON_SECRET` **and** `x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET` |
 
 Vercel's own `vercel.json` `crons` was the original plan but the project is on
 the **Hobby** plan (max 2 cron jobs, daily-only), which rejects the whole
@@ -237,13 +237,16 @@ unsafe on Vercel, where the function freezes the moment the response is sent.
 - **`CRON_SECRET`** in three places, all the same value: local `.env.local`,
   Vercel env (so the route works), and the **GitHub Actions repo secret**
   (Settings → Secrets and variables → Actions).
-- Optional repo **variable** `APP_URL` (defaults to `https://www.lokalads.com`).
-- The workflow's `schedule:` triggers only run from the file **on the repo's
-  default branch**. The default branch is currently `develop`; this file lives
-  on `main`. Either change the default branch to `main` (matches the
-  production deploy flow) or merge the workflow to `develop`.
-  `workflow_dispatch` (manual "Run workflow" button, with a job picker) works
-  from any branch that has the file.
+- **`VERCEL_AUTOMATION_BYPASS_SECRET`** GitHub Actions repo secret — generated
+  in Vercel → Settings → Deployment Protection → **Protection Bypass for
+  Automation**. Needed because the workflow calls `lokalads.vercel.app`, which
+  is behind Vercel SSO. (Calling `www.lokalads.com` instead fails: it's behind
+  Cloudflare, whose Free-plan Bot Fight Mode challenges the GitHub runner and
+  is not skippable by a WAF custom rule.)
+- Optional repo **variable** `APP_URL` (defaults to `https://lokalads.vercel.app`).
+- Repo **default branch = `main`** — done. `schedule:` triggers only run from
+  the workflow file on the default branch; `workflow_dispatch` works from any
+  branch that has it.
 
 ### Known gaps
 
