@@ -1,15 +1,21 @@
 /**
  * lib/jobs/index.ts
  *
- * Job runner entry point — registers all cron schedules.
- * Called ONCE at startup from instrumentation.ts (Node.js runtime only).
+ * Job runner entry point — registers all cron schedules with node-cron.
+ * Called ONCE at startup from instrumentation.ts, and ONLY off-Vercel
+ * (`!process.env.VERCEL`): on Vercel these same jobs are driven by
+ * vercel.json `crons` hitting /api/jobs/trigger, because the serverless
+ * runtime has no persistent process for node-cron's timers. Keep the
+ * schedules below identical to vercel.json `crons` and to SCHEDULE_TO_JOB
+ * in app/api/jobs/trigger/route.ts.
  *
  * Schedules (cron syntax):
  *   every 5 min   alert-match           (instant alerts)
- *   0 8 daily     alert-digest-daily
- *   0 8 monday    alert-digest-weekly
- *   0 9 daily     alert-no-match        (14-day check)
- *   0 0 daily     popular-search        (popular-searches aggregation)
+ *   0 8 * * *     alert-digest-daily
+ *   0 8 * * 1     alert-digest-weekly
+ *   0 9 * * *     alert-no-match        (14-day check)
+ *   0 0 * * *     popular-search        (popular-searches aggregation)
+ *   30 9 * * *    dormant-nudge         (180-day no-login check)
  */
 
 import cron from "node-cron";
@@ -18,6 +24,7 @@ import { runAlertMatchJob } from "@/lib/jobs/alert-match.job";
 import { runAlertDigestJob } from "@/lib/jobs/alert-digest.job";
 import { runAlertNoMatchJob } from "@/lib/jobs/alert-no-match.job";
 import { runPopularSearchJob } from "@/lib/jobs/popular-search.job";
+import { runDormantNudgeJob } from "@/lib/jobs/dormant-nudge.job";
 
 export function initJobRunner(): void {
   // Instant alert match — every 5 minutes
@@ -55,5 +62,12 @@ export function initJobRunner(): void {
     );
   });
 
-  console.log("[jobs] scheduler started — 5 jobs registered");
+  // Dormant-user nudge — every day at 09:30 (180-day no-login check)
+  cron.schedule("30 9 * * *", () => {
+    runJob("dormant-nudge", runDormantNudgeJob).catch((err) =>
+      console.error("[jobs] unhandled error in dormant-nudge:", err),
+    );
+  });
+
+  console.log("[jobs] scheduler started — 6 jobs registered");
 }

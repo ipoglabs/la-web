@@ -44,6 +44,7 @@ import { ChatNotificationEmail, chatNotificationText } from "./templates/reports
 import { OnboardingNudgeEmail, onboardingNudgeText } from "./templates/engagement/onboarding-nudge";
 import { SellerDigestEmail, sellerDigestText } from "./templates/engagement/seller-digest";
 import { WinBackEmail, winBackText } from "./templates/engagement/win-back";
+import { DormantNudgeEmail, dormantNudgeText } from "./templates/engagement/dormant-nudge";
 import { MilestoneEmail, milestoneText } from "./templates/engagement/milestone";
 import { DonationReceiptEmail, donationReceiptText } from "./templates/engagement/donation-receipt";
 import { DonationFailedEmail, donationFailedText } from "./templates/engagement/donation-failed";
@@ -200,6 +201,10 @@ export function renderEmail(event: EmailEvent): EmailRenderResult {
     case "WIN_BACK":
       html = WinBackEmail(event.data);
       text    = winBackText(event.data);
+      break;
+    case "DORMANT_NUDGE":
+      html = DormantNudgeEmail(event.data);
+      text    = dormantNudgeText(event.data);
       break;
     case "MILESTONE":
       html = MilestoneEmail(event.data);

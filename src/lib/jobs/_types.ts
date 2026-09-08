@@ -18,4 +18,6 @@ export interface JobResult {
   eventsProcessed?: number;
   /** popular-search job only — PopularSearch locationKey docs upserted this run */
   locationsUpdated?: number;
+  /** dormant-nudge job only — users evaluated as dormancy candidates this run */
+  usersProcessed?: number;
 }

@@ -754,6 +754,14 @@ export const PREVIEW_DATA: PreviewEntry[] = [
       data: { firstName: "Gopi", daysSince: 60 },
     },
   },
+  {
+    label: "Dormant Nudge — ~6 Months Since Last Login",
+    event: {
+      type: "DORMANT_NUDGE",
+      to: "preview@example.com",
+      data: { firstName: "Gopi", monthsAway: 6 },
+    },
+  },
   // ── 🏆 Milestones ─────────────────────────────────────────────────────────
   {
     label: "Milestone — First Sale Congratulations",

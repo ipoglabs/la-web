@@ -305,6 +305,16 @@ export type EmailEvent =
         daysSince: 30 | 60;
       };
     }
+  // ── Dormant-User Nudge (~6 months since last login) ──────────────────────────
+  | {
+      type: "DORMANT_NUDGE";
+      to: string;
+      data: {
+        firstName: string;
+        /** Whole months since last login — always ≥ 6. */
+        monthsAway: number;
+      };
+    }
   // ── Milestones ───────────────────────────────────────────────────────────────
   | {
       type: "MILESTONE";

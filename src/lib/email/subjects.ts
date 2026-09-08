@@ -161,6 +161,9 @@ export function getSubject(event: EmailEvent): string {
       return event.data.daysSince === 30
         ? "We miss you — come back to LokalAds!"
         : "Your LokalAds account is still here — log back in";
+    // ── Dormant-User Nudge ────────────────────────────────────────────────────
+    case "DORMANT_NUDGE":
+      return `It's been a while, ${event.data.firstName} — your LokalAds account is still here`;
     // ── Milestones ────────────────────────────────────────────────────────────
     case "MILESTONE":
       return event.data.event === "first_sale"

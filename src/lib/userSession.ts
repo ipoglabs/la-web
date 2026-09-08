@@ -15,6 +15,7 @@
 import crypto from "crypto";
 import dbConnect from "@/lib/db";
 import Session from "@/models/session";
+import User from "@/models/user";
 import { parseDeviceLabel } from "@/lib/deviceLabel";
 
 // Legacy tokens minted before this feature existed carry no `sid` claim.
@@ -43,6 +44,20 @@ export async function createUserSession(userId: string, req: Request): Promise<s
     ip: getRequestIp(req),
     lastActiveAt: new Date(),
   });
+
+  // Every auth path (resolve-identity, complete-profile, google-callback,
+  // apple-callback) reaches here on a successful login — the single chokepoint
+  // for recording "last logged in". Stamp it on the user and clear any stale
+  // dormant-nudge marker so a returning user starts a fresh 180-day clock.
+  // Best-effort: a failure here must never block the sign-in itself.
+  try {
+    await User.updateOne(
+      { _id: userId },
+      { $set: { lastLoginAt: new Date() }, $unset: { dormantNudgedAt: 1 } },
+    );
+  } catch (err) {
+    console.error("[userSession] failed to stamp lastLoginAt for", userId, err);
+  }
 
   return sessionId;
 }

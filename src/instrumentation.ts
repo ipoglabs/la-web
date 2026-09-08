@@ -14,7 +14,12 @@
  */
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
+  // On Vercel, jobs are driven by vercel.json `crons` hitting
+  // /api/jobs/trigger — the serverless runtime has no long-lived process for
+  // node-cron's in-memory timers to survive in. Everywhere else (local dev,
+  // self-hosted) node-cron is the scheduler. The `!VERCEL` guard stops the
+  // two schedulers from double-firing every job in production.
+  if (process.env.NEXT_RUNTIME === "nodejs" && !process.env.VERCEL) {
     try {
       const { initJobRunner } = await import("@/lib/jobs/index");
       initJobRunner();

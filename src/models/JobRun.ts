@@ -13,7 +13,8 @@ export type JobName =
   | "alert-digest-daily"
   | "alert-digest-weekly"
   | "alert-no-match"
-  | "popular-search";
+  | "popular-search"
+  | "dormant-nudge";
 
 export type JobRunStatus = "running" | "completed" | "failed";
 
@@ -27,6 +28,8 @@ export interface IJobRunStats {
   eventsProcessed?: number;
   /** popular-search job only — PopularSearch locationKey docs upserted this run */
   locationsUpdated?: number;
+  /** dormant-nudge job only — users evaluated as dormancy candidates this run */
+  usersProcessed?: number;
 }
 
 export interface IJobRun extends Document {
@@ -43,7 +46,7 @@ const JobRunSchema = new Schema<IJobRun>(
     jobName: {
       type: String,
       required: true,
-      enum: ["alert-match", "alert-digest-daily", "alert-digest-weekly", "alert-no-match", "popular-search"],
+      enum: ["alert-match", "alert-digest-daily", "alert-digest-weekly", "alert-no-match", "popular-search", "dormant-nudge"],
       index: true,
     },
     startedAt: { type: Date, required: true },
@@ -63,6 +66,7 @@ const JobRunSchema = new Schema<IJobRun>(
       errors: { type: Number, default: 0 },
       eventsProcessed: { type: Number },
       locationsUpdated: { type: Number },
+      usersProcessed: { type: Number },
     },
     error: { type: String },
   },

@@ -192,6 +192,18 @@ deletedIdentitySnapshot: {
   fullName: { type: String, trim: true },
 },
 
+    // Set on every successful login — every auth path funnels through
+    // createUserSession() in lib/userSession.ts, which stamps this. Powers
+    // the 180-day dormant-user audit (lib/jobs/dormant-nudge.job.ts).
+    // Indexed: the audit job filters on `lastLoginAt <= cutoff`.
+    lastLoginAt: { type: Date, index: true },
+
+    // When the "you've been away ~6 months" nudge was last sent by the
+    // dormant-nudge job. Its presence means "already nudged for the current
+    // dormancy spell" — createUserSession() $unsets it on the next login, so
+    // a user who returns and then goes quiet again becomes eligible afresh.
+    dormantNudgedAt: { type: Date },
+
     // Derived, not user-settable — kept in sync by the pre-validate hook
     // below on every save. True only once email, primaryNumber,
     // dateOfBirth, and locality are all present.

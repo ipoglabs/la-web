@@ -12,6 +12,9 @@
  * Usage:
  *   import { runJob } from "@/lib/jobs/_runner";
  *   await runJob("alert-match", runAlertMatchJob);
+ *
+ * Returns the JobResult on success, or null if the job threw (already logged
+ * to the JobRun record as "failed"). Callers that don't care can ignore it.
  */
 
 import dbConnect from "@/lib/db";
@@ -21,7 +24,7 @@ import type { JobName, JobResult } from "@/lib/jobs/_types";
 export async function runJob(
   name: JobName,
   jobFn: () => Promise<JobResult>,
-): Promise<void> {
+): Promise<JobResult | null> {
   await dbConnect();
 
   const run = await JobRun.create({
@@ -41,6 +44,7 @@ export async function runJob(
     });
 
     console.log(`[jobs/${name}] completed`, result);
+    return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
 
@@ -51,5 +55,6 @@ export async function runJob(
     });
 
     console.error(`[jobs/${name}] failed:`, message);
+    return null;
   }
 }
