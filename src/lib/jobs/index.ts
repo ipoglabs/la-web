@@ -3,11 +3,11 @@
  *
  * Job runner entry point — registers all cron schedules with node-cron.
  * Called ONCE at startup from instrumentation.ts, and ONLY off-Vercel
- * (`!process.env.VERCEL`): on Vercel these same jobs are driven by
- * vercel.json `crons` hitting /api/jobs/trigger, because the serverless
- * runtime has no persistent process for node-cron's timers. Keep the
- * schedules below identical to vercel.json `crons` and to SCHEDULE_TO_JOB
- * in app/api/jobs/trigger/route.ts.
+ * (`!process.env.VERCEL`): on Vercel the serverless runtime has no
+ * persistent process for node-cron's timers, so there these jobs are
+ * driven externally by the .github/workflows/cron-jobs.yml GitHub Actions
+ * workflow POSTing /api/jobs/trigger. Keep the schedules below identical to
+ * that workflow and to SCHEDULE_TO_JOB in app/api/jobs/trigger/route.ts.
  *
  * Schedules (cron syntax):
  *   every 5 min   alert-match           (instant alerts)

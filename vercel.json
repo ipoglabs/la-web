@@ -1,12 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install",
-  "crons": [
-    { "path": "/api/jobs/trigger?job=alert-match", "schedule": "*/5 * * * *" },
-    { "path": "/api/jobs/trigger?job=alert-digest-daily", "schedule": "0 8 * * *" },
-    { "path": "/api/jobs/trigger?job=alert-digest-weekly", "schedule": "0 8 * * 1" },
-    { "path": "/api/jobs/trigger?job=alert-no-match", "schedule": "0 9 * * *" },
-    { "path": "/api/jobs/trigger?job=popular-search", "schedule": "0 0 * * *" },
-    { "path": "/api/jobs/trigger?job=dormant-nudge", "schedule": "30 9 * * *" }
-  ]
+  "installCommand": "npm install"
 }

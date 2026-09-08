@@ -1,0 +1,90 @@
+name: Batch jobs (cron)
+
+# Drives the batch jobs in src/lib/jobs/ by calling their HTTP trigger
+# (src/app/api/jobs/trigger/route.ts) on a schedule.
+#
+# Why this instead of vercel.json `crons`: the Vercel project is on the Hobby
+# plan, which caps cron jobs at 2 and daily-only. GitHub Actions has no such
+# limit (and free unlimited minutes on public repos).
+#
+# IMPORTANT — schedule triggers only run from the DEFAULT branch:
+#   GitHub evaluates `on.schedule` from this file *as it exists on the repo's
+#   default branch*. If the default branch is not the branch this file is
+#   merged to, the schedules never fire. `workflow_dispatch` (manual run)
+#   works from any branch that has the file.
+#
+# Required repo config — Settings → Secrets and variables → Actions:
+#   secret  CRON_SECRET   must equal the Vercel env var of the same name
+#   var     APP_URL       optional; defaults to https://www.lokalads.com
+#
+# All cron times are UTC. Keep the six expressions below in sync with
+# SCHEDULE_TO_JOB in src/app/api/jobs/trigger/route.ts and the node-cron
+# schedules in src/lib/jobs/index.ts (the local-dev scheduler).
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # alert-match          instant alert matches
+    - cron: "0 8 * * *"     # alert-digest-daily
+    - cron: "0 8 * * 1"     # alert-digest-weekly  Mondays 08:00
+    - cron: "0 9 * * *"     # alert-no-match       14-day zero-match nudge
+    - cron: "0 0 * * *"     # popular-search       search aggregation
+    - cron: "30 9 * * *"    # dormant-nudge        180-day no-login nudge
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Job to run now
+        required: true
+        type: choice
+        options:
+          - alert-match
+          - alert-digest-daily
+          - alert-digest-weekly
+          - alert-no-match
+          - popular-search
+          - dormant-nudge
+
+# Queue a second run of the same job rather than overlapping DB writes.
+concurrency:
+  group: cron-${{ github.event.schedule || github.event.inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve job name
+        id: r
+        run: |
+          case "${{ github.event.schedule }}" in
+            "*/5 * * * *") job=alert-match ;;
+            "0 8 * * *")   job=alert-digest-daily ;;
+            "0 8 * * 1")   job=alert-digest-weekly ;;
+            "0 9 * * *")   job=alert-no-match ;;
+            "0 0 * * *")   job=popular-search ;;
+            "30 9 * * *")  job=dormant-nudge ;;
+            *)             job="${{ github.event.inputs.job }}" ;;
+          esac
+          if [ -z "$job" ]; then
+            echo "::error::could not resolve a job name from schedule '${{ github.event.schedule }}' or dispatch input"
+            exit 1
+          fi
+          echo "job=$job" >> "$GITHUB_OUTPUT"
+          echo "Resolved job: $job"
+
+      - name: Trigger ${{ steps.r.outputs.job }}
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://www.lokalads.com' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repo secret is not set (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          curl --fail-with-body -sS \
+            --retry 2 --retry-delay 15 --retry-all-errors \
+            --max-time 330 \
+            -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/jobs/trigger?job=${{ steps.r.outputs.job }}" \
+            -w '\nHTTP %{http_code} in %{time_total}s\n'

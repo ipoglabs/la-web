@@ -1,12 +1,14 @@
 /**
  * app/api/jobs/trigger/route.ts
  *
- * Fires a batch job on demand. Two callers:
+ * Fires a batch job on demand. Callers:
  *
- *  1. Vercel Cron (production) — GET, with `Authorization: Bearer $CRON_SECRET`
- *     injected automatically by Vercel. Job selected by `?job=<name>` in the
- *     cron `path` (see vercel.json `crons`); falls back to mapping the
- *     `x-vercel-cron-schedule` header (each job has a unique schedule).
+ *  1. Production scheduler — the `.github/workflows/cron-jobs.yml` GitHub
+ *     Actions workflow POSTs here on each job's schedule with
+ *     `Authorization: Bearer $CRON_SECRET` and `?job=<name>`. (Vercel Cron
+ *     would work identically — it sends the same bearer header plus an
+ *     `x-vercel-cron-schedule` header, which SCHEDULE_TO_JOB below maps —
+ *     but the project is on the Hobby plan, which caps crons at 2/daily.)
  *  2. Manual / local (dev, staging) — GET or POST, authorised with either
  *     `Authorization: Bearer <secret>` or the legacy `x-cron-secret: <secret>`
  *     header. Job from `?job=` or a JSON body `{ "job": "<name>" }`.
@@ -19,7 +21,8 @@
  * (instrumentation.ts -> lib/jobs/index.ts) runs these same jobs. That path
  * is disabled when `process.env.VERCEL` is set, so the two never double-fire.
  *
- * CRON_SECRET must be set in every environment. Rotate it periodically.
+ * CRON_SECRET must be set in every environment (Vercel env + the GitHub
+ * Actions repo secret). Rotate it periodically.
  */
 
 import { timingSafeEqual } from "crypto";
@@ -46,9 +49,10 @@ const JOB_MAP: Record<JobName, () => Promise<JobResult>> = {
 
 const VALID_JOB_NAMES = Object.keys(JOB_MAP) as JobName[];
 
-// Fallback job resolution for Vercel Cron: every job has a unique schedule,
-// so the `x-vercel-cron-schedule` header alone identifies it if the `?job=`
-// query param is ever dropped. Keep in sync with vercel.json `crons` and
+// Fallback job resolution when the caller is Vercel Cron (not the current
+// GitHub Actions path): every job has a unique schedule, so the
+// `x-vercel-cron-schedule` header alone identifies it if `?job=` is ever
+// dropped. Keep in sync with .github/workflows/cron-jobs.yml and
 // lib/jobs/index.ts.
 const SCHEDULE_TO_JOB: Record<string, JobName> = {
   "*/5 * * * *": "alert-match",

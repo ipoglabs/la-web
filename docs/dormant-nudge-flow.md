@@ -216,24 +216,39 @@ written to the `JobRun` collection (`jobName: "dormant-nudge"`,
 | Environment | Scheduler | Mechanism |
 |---|---|---|
 | Local dev / self-hosted | `node-cron` | `src/instrumentation.ts` → `initJobRunner()` registers all 6 schedules. Guarded by `!process.env.VERCEL` so it **doesn't** run on Vercel |
-| Vercel (production only) | Vercel Cron | `vercel.json` `crons[]` — Vercel `GET`s `/api/jobs/trigger?job=<name>` on each schedule with `Authorization: Bearer $CRON_SECRET` |
+| Production (Vercel Hobby) | **GitHub Actions** | `.github/workflows/cron-jobs.yml` — one `on.schedule` entry per job, POSTs `/api/jobs/trigger?job=<name>` with `Authorization: Bearer $CRON_SECRET` |
 
-`src/app/api/jobs/trigger/route.ts` serves both: `GET` + `POST`, auth via
-`Authorization: Bearer` (Vercel Cron) **or** the legacy `x-cron-secret` header
-(manual/curl), job name from `?job=`, a POST body `{ job }`, or the
-`x-vercel-cron-schedule` header (each job's schedule is unique →
-`SCHEDULE_TO_JOB`). The handler **awaits** the job and returns its
-`JobResult` — a fire-and-forget 202 is unsafe on Vercel, where the function
-freezes the moment the response is sent.
+Vercel's own `vercel.json` `crons` was the original plan but the project is on
+the **Hobby** plan (max 2 cron jobs, daily-only), which rejects the whole
+deployment over `alert-match`'s `*/5 * * * *`. GitHub Actions has no such cap
+and free unlimited minutes on public repos. If the project ever moves to
+Vercel **Pro**, re-add the `crons[]` block to `vercel.json` and delete the
+workflow — the route supports both callers unchanged.
 
-`CRON_SECRET` must be set in every environment (local `.env.local` + Vercel
-Production). Vercel Cron runs **only against production deployments** — preview
-deploys get no jobs, which is intended.
+`src/app/api/jobs/trigger/route.ts`: `GET` + `POST`, auth via
+`Authorization: Bearer` **or** the legacy `x-cron-secret` header (manual/curl),
+job name from `?job=`, a POST body `{ job }`, or the `x-vercel-cron-schedule`
+header (`SCHEDULE_TO_JOB`, only relevant if driven by Vercel Cron). The handler
+**awaits** the job and returns its `JobResult` — a fire-and-forget 202 is
+unsafe on Vercel, where the function freezes the moment the response is sent.
+
+### Setup
+
+- **`CRON_SECRET`** in three places, all the same value: local `.env.local`,
+  Vercel env (so the route works), and the **GitHub Actions repo secret**
+  (Settings → Secrets and variables → Actions).
+- Optional repo **variable** `APP_URL` (defaults to `https://www.lokalads.com`).
+- The workflow's `schedule:` triggers only run from the file **on the repo's
+  default branch**. The default branch is currently `develop`; this file lives
+  on `main`. Either change the default branch to `main` (matches the
+  production deploy flow) or merge the workflow to `develop`.
+  `workflow_dispatch` (manual "Run workflow" button, with a job picker) works
+  from any branch that has the file.
 
 ### Known gaps
 
-- **Vercel plan limits.** `alert-match`'s `*/5 * * * *` needs Vercel **Pro**
-  (Hobby caps crons at 2, daily-only). All 6 fit within Pro's 40-cron limit.
-- **`?job=` query in `vercel.json` `crons`.** Works, and `SCHEDULE_TO_JOB`
-  (keyed on the `x-vercel-cron-schedule` header) is the fallback if a future
-  Vercel change ever drops the query string.
+- **GitHub Actions schedule drift.** Scheduled runs can be delayed several
+  minutes under GitHub load, and the whole schedule auto-disables after 60
+  days with zero repo commits. Fine for this repo's activity level.
+- **`alert-match` frequency.** `*/5` = 288 runs/day. Free on public repos;
+  on a private repo it would burn the Actions minutes quota.
