@@ -198,7 +198,7 @@ function SessionLengthSection() {
     <div className="border-t border-slate-100 px-4 py-3">
       <div className="flex items-center gap-3">
         <Clock aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
-        <span className="flex-1 text-base font-medium text-slate-700">Stay logged in up to</span>
+        <span className="flex-1 text-base font-medium text-slate-700">Stay logged in upto</span>
         <LaSwitch
           checked={enabled}
           onCheckedChange={(on) => apply(on ? DEFAULT_SESSION_DURATION : SESSION_OFF)}
@@ -247,10 +247,12 @@ function MenuBody({
   const router = useRouter();
   return (
     <div>
-      {/* User identity — text column shrinks (min-w-0 + flex-1) so a long
-           name or a full multi-role line truncates with an ellipsis instead
-           of forcing the menu wider. Full role line stays on the title attr. */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+      {/* User identity — pinned to the top of the scroll container (sticky)
+           so the name + role stay visible while the menu body scrolls. Text
+           column shrinks (min-w-0 + flex-1) so a long name or a full
+           multi-role line truncates with an ellipsis instead of forcing the
+           menu wider. Full role line stays on the title attr. */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-slate-100 bg-white">
         <div className="shrink-0">
           <Avatar src={src} initials={initials} size="md" status={status} />
         </div>
@@ -261,15 +263,15 @@ function MenuBody({
       </div>
 
       {/* Nav items */}
-      <div className="py-1">
+      <div className="py-1.5">
         {NAV_ITEMS.map(({ label, icon: Icon, href }) => (
           <Link
             key={label}
             href={href}
             onClick={onClose}
-            className="flex items-center gap-3 px-4 py-1.5 text-base text-slate-800 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-3 px-4 py-1.5 text-base text-slate-900 hover:bg-slate-50 transition-colors"
           >
-            <Icon aria-hidden="true" className="size-5 shrink-0 text-slate-600" />
+            <Icon aria-hidden="true" className="size-5 shrink-0 text-slate-700" />
             {label}
           </Link>
         ))}
@@ -393,9 +395,12 @@ export function AvatarDropdown({
 
       {/* Desktop — floating popover. z-[60] clears page content that also
            sits at z-50 (the header itself is unpositioned). max-h + scroll
-           keeps a tall menu from running down over the page. */}
+           keeps a tall menu from running down over the page. Width is sized
+           to hold the "Stay logged in upto" duration row (24h / 7d / 14d /
+           1mo) on a single line without wrapping — the fourth pill needs the
+           full w-96 once the vertical scrollbar eats into the content box. */}
       {!isMobile && open && (
-        <div className="absolute right-0 top-full mt-2 z-[60] w-56 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black/5">
+        <div className="absolute right-0 top-full mt-2 z-[60] w-96 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black/5">
           {isLoggedIn
             ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
             : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
