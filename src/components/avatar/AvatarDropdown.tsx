@@ -53,7 +53,7 @@ import {
   SESSION_OFF,
   DEFAULT_SESSION_DURATION,
 } from "@/lib/sessionDurations";
-import { LaSwitch } from "@/components/la";
+import { LaSwitch, LaButton, LaSkeleton } from "@/components/la";
 import {
   ToggleButtonGroup,
   ToggleGroupButton,
@@ -128,6 +128,8 @@ export interface AvatarDropdownProps {
   status?:      "online" | "busy" | "offline" | "none";
   showChevron?: boolean;
   isLoggedIn?:  boolean;
+  /** Auth/profile data still resolving — render the menu body as a skeleton. */
+  loading?:     boolean;
 }
 
 /* ─── "stay logged in" switcher ──────────────────────────────── */
@@ -197,7 +199,7 @@ function SessionLengthSection() {
   return (
     <div className="border-t border-slate-100 px-4 py-3">
       <div className="flex items-center gap-3">
-        <Clock aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
+        <Clock aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
         <span className="flex-1 text-base font-medium text-slate-700">Stay logged in upto</span>
         <LaSwitch
           checked={enabled}
@@ -269,7 +271,7 @@ function MenuBody({
             key={label}
             href={href}
             onClick={onClose}
-            className="flex items-center gap-3 px-4 py-1.5 text-base text-slate-900 hover:bg-slate-50 transition-colors"
+            className="flex items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
           >
             <Icon aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
             {label}
@@ -290,21 +292,74 @@ function MenuBody({
       <SessionLengthSection />
 
       {/* Separator + Sign out */}
-      <div className="border-t border-slate-100 py-1">
-        <button
+      <div className="border-t border-slate-100 px-4 py-3">
+        <LaButton
           type="button"
+          intent="primary-rose"
+          size="default"
+          className="w-full text-sm-plus"
           onClick={async () => {
-  onClose();
-  await fetch("/api/auth/logout", { method: "POST" });
-  useAuthStore.getState().logout();
-  router.push("/");
-  router.refresh();
-}}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-base font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+            onClose();
+            await fetch("/api/auth/logout", { method: "POST" });
+            useAuthStore.getState().logout();
+            router.push("/");
+            router.refresh();
+          }}
         >
-          <LogOut aria-hidden="true" className="size-5 shrink-0" />
+          <LogOut aria-hidden="true" />
           Sign out
-        </button>
+        </LaButton>
+      </div>
+    </div>
+  );
+}
+
+/* ─── skeleton ───────────────────────────────────────────────── */
+/**
+ * Placeholder that mirrors MenuBody's layout — identity row, the six nav
+ * rows, Switch Country, the "stay logged in" row and the Sign out button —
+ * shown while auth/profile data is still being fetched.
+ */
+const SKELETON_ROW_WIDTHS = ["w-20", "w-24", "w-16", "w-24", "w-32", "w-28"] as const;
+
+function MenuBodySkeleton() {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      {/* Identity */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+        <LaSkeleton shape="circle" className="size-12 shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <LaSkeleton shape="text" className="h-4 w-32" />
+          <LaSkeleton shape="text" className="h-4 w-44" />
+        </div>
+      </div>
+
+      {/* Nav rows + Switch Country */}
+      <div className="py-1.5">
+        {SKELETON_ROW_WIDTHS.map((w, i) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+            <LaSkeleton shape="block" className="size-6 shrink-0 rounded-md" />
+            <LaSkeleton shape="text" className={cn("h-4", w)} />
+          </div>
+        ))}
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          <LaSkeleton shape="block" className="size-6 shrink-0 rounded-md" />
+          <LaSkeleton shape="text" className="h-4 w-28" />
+        </div>
+      </div>
+
+      {/* Stay logged in */}
+      <div className="border-t border-slate-100 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <LaSkeleton shape="block" className="size-6 shrink-0 rounded-md" />
+          <LaSkeleton shape="text" className="h-4 w-40" />
+          <LaSkeleton shape="block" className="ml-auto h-6 w-11 rounded-full" />
+        </div>
+      </div>
+
+      {/* Sign out */}
+      <div className="border-t border-slate-100 px-4 py-3">
+        <LaSkeleton shape="block" className="h-9 w-full rounded-full" />
       </div>
     </div>
   );
@@ -319,6 +374,7 @@ export function AvatarDropdown({
   status = "none",
   showChevron = false,
   isLoggedIn = false,
+  loading = false,
 }: AvatarDropdownProps) {
   const [open, setOpen] = React.useState(false);
   // Lazy init: read matchMedia on first client render so the drawer renders
@@ -401,25 +457,29 @@ export function AvatarDropdown({
            full w-96 once the vertical scrollbar eats into the content box. */}
       {!isMobile && open && (
         <div className="absolute right-0 top-full mt-2 z-[60] w-96 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black/5">
-          {isLoggedIn
-            ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
-            : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
+          {loading
+            ? <MenuBodySkeleton />
+            : isLoggedIn
+              ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
+              : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
         </div>
       )}
 
       {/* Mobile — Drawer */}
       {isMobile && (
         <Drawer open={open} onOpenChange={setOpen}>
-          <DrawerContent className="pt-0 [&>div:first-child]:hidden border-slate-200 max-h-[80svh]">
+          <DrawerContent className="pt-0 [&>div:first-child]:hidden border-slate-200 max-h-[80svh] overflow-hidden rounded-t-2xl">
             {/* Header */}
             <div className="rounded-t-2xl bg-linear-to-b from-slate-100 to-slate-50 px-4 pt-1.5 pb-1.5 border-b border-slate-200">
               <div className="mx-auto mb-1.5 h-0.5 w-6 rounded-full bg-slate-400" />
               <p className="text-base font-semibold text-slate-800 tracking-wide">Account</p>
             </div>
             <div className="flex-1 overflow-y-auto min-h-0">
-              {isLoggedIn
-                ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
-                : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
+              {loading
+                ? <MenuBodySkeleton />
+                : isLoggedIn
+                  ? <MenuBody name={name} subtitle={subtitle} initials={initials} src={src} status={status} onClose={close} onOpenCountry={openCountry} />
+                  : <GuestMenuBody onClose={close} onOpenCountry={openCountry} />}
             </div>
           </DrawerContent>
         </Drawer>

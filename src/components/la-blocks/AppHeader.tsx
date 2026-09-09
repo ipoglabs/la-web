@@ -90,6 +90,9 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
   // used on the develop branch. This is what the POST button below reads.
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(user);
   const isLoggedIn = currentUser !== null;
+  // Skip the skeleton when the server already handed us a user — only the
+  // cold client-side check (no server session prop) has a visible wait.
+  const [authChecked, setAuthChecked] = useState(user != null);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -120,6 +123,8 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
       });
     } catch {
       setCurrentUser(null);
+    } finally {
+      setAuthChecked(true);
     }
   }, []);
 
@@ -141,20 +146,26 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
   const count = items.length;
 
   // Rehydrate from localStorage after client mount (skipHydration: true
-  // prevents SSR mismatch), then — for a signed-in user — push up any
-  // favourites added while logged out (device-local only, never persisted
-  // since addFavourite silently no-ops without a session) before merging in
-  // whatever the DB already has (e.g. favourites added on another device).
-  // Awaiting rehydrate first matters: reading getState().items before it
-  // resolves would see an empty store and wrongly treat every local
-  // favourite as already synced, permanently dropping it from localStorage
-  // the next time anything writes to the persisted store.
+  // prevents SSR mismatch), then — for a signed-in user — flush any pending
+  // deletes, push up favourites added while logged out (device-local only,
+  // since addFavourite no-ops without a session), and merge in whatever the
+  // DB already has (e.g. favourites added on another device).
+  // Order matters:
+  //   1. reconcile() BEFORE the getMyFavourites() read, so its snapshot is
+  //      taken after unconfirmed deletes have actually landed server-side —
+  //      otherwise syncFromServer would resurrect a just-removed favourite.
+  //   2. await rehydrate() first — reading getState().items before it
+  //      resolves would see an empty store and treat every local favourite
+  //      as already synced, dropping it on the next persisted write.
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       await useFavouritesStore.persist.rehydrate();
       if (cancelled || !currentUser) return;
+
+      await useFavouritesStore.getState().reconcile();
+      if (cancelled) return;
 
       const localItems = useFavouritesStore.getState().items;
       const serverItems = await getMyFavourites();
@@ -214,7 +225,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
           {effectiveVariant === "default" && (
             <Link
               href={isLoggedIn ? "/post" : "/login?redirect=/post"}
-              className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }), "[&_svg]:size-7 max-sm:hidden")}
+              className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }), "[&_svg]:size-5 max-sm:hidden")}
             >
               <svg
                 width="20"
@@ -234,7 +245,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
           {effectiveVariant === "default" && (
             <Link
               href={isLoggedIn ? "/post" : "/login?redirect=/post"}
-              className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }), "[&_svg]:size-7 w-9 px-0 sm:hidden")}
+              className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }), "[&_svg]:size-5 w-9 px-0 sm:hidden")}
             >
               <svg
                 width="20"
@@ -283,6 +294,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
           <div className="flex items-center px-1">
             <AvatarDropdown
               isLoggedIn={isLoggedIn}
+              loading={!authChecked}
               name={currentUser?.name}
               subtitle={
                 currentUser?.role === "admin"
