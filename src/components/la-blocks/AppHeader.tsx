@@ -184,7 +184,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
           <span className="flex gap-2 items-center">
             <Image src="/assets/la-logo-symbol-color.svg" alt="lokalads logo" width={46} height={46} />
             <div className="relative max-sm:hidden">
-              <Image src="/assets/la-text-black.svg" alt="lokalads" width={96} height={24} />
+              <Image src="/assets/la-text-black.svg" alt="lokalads" width={120} height={32}/>
               {config.displayName && (
                 <span className="absolute right-0 -bottom-3.5 text-[10px] font-normal text-slate-900 whitespace-nowrap subpixel-antialiased">
                   {config.displayName}
@@ -208,13 +208,13 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
 
         <div className="flex-1" />
 
-        <div className="h-full flex items-center gap-1">
+        <div className="h-full flex items-center gap-1.5">
 
           {/* Post CTA */}
           {effectiveVariant === "default" && (
             <Link
               href={isLoggedIn ? "/post" : "/login?redirect=/post"}
-              className={cn(laButtonVariants({ intent: "primary-rose", size: "compact" }), "max-sm:hidden")}
+              className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }), "[&_svg]:size-7 max-sm:hidden")}
             >
               <svg
                 width="20"
@@ -234,7 +234,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
           {effectiveVariant === "default" && (
             <Link
               href={isLoggedIn ? "/post" : "/login?redirect=/post"}
-              className={cn(laButtonVariants({ intent: "primary-rose", size: "compact" }), "w-7 px-0 sm:hidden")}
+              className={cn(laButtonVariants({ intent: "primary-rose", size: "default" }), "[&_svg]:size-7 w-9 px-0 sm:hidden")}
             >
               <svg
                 width="20"
@@ -261,7 +261,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
               aria-expanded={sheetOpen}
               onClick={() => setSheetOpen((v) => !v)}
               className={cn(
-                "w-11 max-sm:w-9 h-full rounded-none overflow-visible px-0 [&_svg]:size-9",
+                "w-11 max-sm:w-9 h-full rounded-none overflow-visible px-0 [&_svg]:size-10",
                 count > 0 || sheetOpen ? "text-rose-500" : "text-slate-600"
               )}
             >
@@ -271,7 +271,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
                   : <Outline_Heart_24by24 className="size-9" strokeWidth={1.5} />
                 }
                 {count > 0 && (
-                  <span className="pointer-events-none absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold tabular-nums text-white">
+                  <span className="pointer-events-none absolute -top-0 -right-0 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold tabular-nums text-white">
                     {count > 9 ? "9+" : count}
                   </span>
                 )}

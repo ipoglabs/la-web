@@ -84,8 +84,8 @@ function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpen
   return (
     <div>
       <div className="px-4 py-3 border-b border-slate-100">
-        <p className="text-base font-semibold text-slate-900">Welcome</p>
-        <p className="text-base text-slate-500 mt-0.5">Sign in to access your account</p>
+        <p className="text-lg font-semibold text-slate-900">Welcome</p>
+        <p className="text-base text-slate-700 mt-0.5">Sign in to access your account</p>
       </div>
       <div className="py-1">
         <Link
@@ -93,7 +93,7 @@ function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpen
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
-          <LogIn aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+          <LogIn aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
           Login
         </Link>
         <Link
@@ -101,16 +101,16 @@ function GuestMenuBody({ onClose, onOpenCountry }: { onClose: () => void; onOpen
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
-          <UserPlus aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+          <UserPlus aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
           Register
         </Link>
         <div className="border-t border-slate-100 mt-1 pt-1">
           <button
             type="button"
             onClick={onOpenCountry}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50 transition-colors"
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
           >
-            <Globe2 aria-hidden="true" className="size-4 shrink-0 text-slate-400" />
+            <Globe2 aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
             Switch Country
           </button>
         </div>
@@ -254,7 +254,7 @@ function MenuBody({
            menu wider. Full role line stays on the title attr. */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-slate-100 bg-white">
         <div className="shrink-0">
-          <Avatar src={src} initials={initials} size="md" status={status} />
+          <Avatar src={src} initials={initials} size="lg" status={status} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-lg font-semibold text-slate-900 truncate">{name}</p>
@@ -271,7 +271,7 @@ function MenuBody({
             onClick={onClose}
             className="flex items-center gap-3 px-4 py-1.5 text-base text-slate-900 hover:bg-slate-50 transition-colors"
           >
-            <Icon aria-hidden="true" className="size-5 shrink-0 text-slate-700" />
+            <Icon aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
             {label}
           </Link>
         ))}
@@ -279,9 +279,9 @@ function MenuBody({
         <button
           type="button"
           onClick={onOpenCountry}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50 transition-colors"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-base font-medium text-slate-700 hover:bg-slate-50 transition-colors"
         >
-          <Globe2 aria-hidden="true" className="size-5 shrink-0 text-slate-400" />
+          <Globe2 aria-hidden="true" className="size-6 shrink-0 text-slate-500" />
           Switch Country
         </button>
       </div>
@@ -381,7 +381,7 @@ export function AvatarDropdown({
           "transition-opacity hover:opacity-80",
         )}
       >
-        <Avatar src={src} initials={initials} size="md" status={status} />
+        <Avatar src={src} initials={initials} size="lg" status={status} />
         {showChevron && (
           <ChevronDown
             aria-hidden="true"
