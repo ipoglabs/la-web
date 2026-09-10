@@ -50,7 +50,7 @@ function handleCall() {
 export default function SellerContactGate({ seller, variant = "right", isOwnListing, listingId }: SellerContactGateProps) {
   if (isOwnListing) {
     return (
-      <section className="bg-white px-4 py-5 border-y border-slate-900/25 sm:rounded-md sm:border sm:shadow-sm flex items-center justify-between gap-3">
+      <section className="bg-white px-4 py-5 border border-slate-900/25 rounded-md shadow-sm flex items-center justify-between gap-3">
         <p className="text-sm text-slate-600">This is your listing — buyers see your contact details here.</p>
         <Link
           href={`/myads?edit=${listingId}`}

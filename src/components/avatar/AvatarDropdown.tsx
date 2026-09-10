@@ -297,7 +297,7 @@ function MenuBody({
           type="button"
           intent="primary-rose"
           size="default"
-          className="w-full text-sm-plus"
+          className="w-full justify-start text-sm-plus text-white"
           onClick={async () => {
             onClose();
             await fetch("/api/auth/logout", { method: "POST" });

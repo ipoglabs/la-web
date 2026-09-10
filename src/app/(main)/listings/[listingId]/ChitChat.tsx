@@ -168,7 +168,7 @@ export default function ChitChat({ className, listingId, sellerId, sellerName, a
     <section
       className={cn(
         "bg-white px-4 py-5",
-        "border-y border-slate-200 sm:rounded-xl sm:border sm:shadow-sm",
+        "border border-slate-200 rounded-xl shadow-sm",
         "flex flex-col gap-4",
         className,
       )}

@@ -26,8 +26,8 @@ import { SITE_URL } from "@/lib/constants";
 import type { Listing } from "@/types/listing";
 
 // ─── Shared card surface ──────────────────────────────────────────────────────
-const card = "bg-white px-4 py-5 border-y border-slate-200 sm:rounded-xl sm:border sm:shadow-sm";
-const imgGalleryCard = "bg-white px-1.5 py-1.5 border border-slate-200 sm:rounded-xl sm:border sm:shadow-sm";
+const card = "bg-white px-4 py-5 border border-slate-200 rounded-xl shadow-sm";
+const imgGalleryCard = "bg-white px-1.5 py-1.5 border border-slate-200 rounded-xl shadow-sm";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 interface ListingDetailPageProps {
@@ -235,7 +235,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
             <ListingMap location={location} lat={coordinates.lat} lng={coordinates.lng} className="md:hidden" />
 
             {/* Disclaimer */}
-            <section className="bg-amber-200 px-4 py-4 border-y border-amber-200 sm:rounded-xl sm:border sm:shadow-sm">
+            <section className="bg-amber-200 px-4 py-4 border border-amber-200 rounded-xl shadow-sm">
               <h2 className="text-sm font-semibold text-amber-900 mb-1">Disclaimer</h2>
               <p className="text-sm text-amber-800 leading-relaxed">
                 LokalAds does not verify the accuracy, quality, or legitimacy of listings. Always inspect items or

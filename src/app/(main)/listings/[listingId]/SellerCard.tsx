@@ -86,7 +86,7 @@ function SellerCardMobile({ seller, onEmail, onCall }: SellerCardInternalProps) 
   return (
     <>
       {/* Info section */}
-      <section className="md:hidden bg-white px-4 py-5 border-y border-slate-900/25 sm:rounded-md sm:border sm:shadow-sm">
+      <section className="md:hidden bg-white px-4 py-5 border border-slate-900/25 rounded-md shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900 mb-3">Seller Details</h2>
 
         <div className="flex flex-row flex-nowrap gap-3">

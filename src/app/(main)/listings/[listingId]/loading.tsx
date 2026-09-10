@@ -1,7 +1,7 @@
 import { LaSkeleton } from "@/components/la";
 
-const card = "bg-white px-4 py-5 border-y border-slate-200 sm:rounded-xl sm:border sm:shadow-sm";
-const imgGalleryCard = "bg-white px-1.5 py-1.5 border border-slate-200 sm:rounded-xl sm:border sm:shadow-sm";
+const card = "bg-white px-4 py-5 border border-slate-200 rounded-xl shadow-sm";
+const imgGalleryCard = "bg-white px-1.5 py-1.5 border border-slate-200 rounded-xl shadow-sm";
 
 export default function ListingDetailLoading() {
   return (

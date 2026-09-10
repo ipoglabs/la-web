@@ -23,6 +23,11 @@
   line-height: 1.625rem; /* 26px */
 }
 
+@utility text-lg-plus {
+  font-size: 1.1875rem; /* 19px — sits between text-lg (18px) and text-xl (20px) */
+  line-height: 1.75rem; /* 28px — matches text-lg / text-xl line-height */
+}
+
 /* ── App container — shared max-width + responsive horizontal padding ────────
    Use on any full-width section wrapper that needs to stay centred.
    mobile: px-4 | tablet: px-12 | desktop+: px-0

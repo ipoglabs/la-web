@@ -35,7 +35,7 @@ export default function ListingMap({ location, lat, lng, className }: ListingMap
     <>
       {/* ── Card ─────────────────────────────────────────────────── */}
       <section className={cn(
-        "bg-white border-y border-slate-900/25 sm:rounded-xl sm:border sm:shadow-sm overflow-hidden",
+        "bg-white border border-slate-900/25 rounded-xl shadow-sm overflow-hidden",
         className
       )}>
         {/* Header */}

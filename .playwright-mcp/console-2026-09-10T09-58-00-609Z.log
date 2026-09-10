@@ -1,0 +1,22 @@
+[    5509ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[    5545ms] [LOG] [HMR] connected @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[    5702ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[    5982ms] [LOG] [Fast Refresh] done in 380ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   13163ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   13300ms] [LOG] [Fast Refresh] done in 239ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   23391ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   23471ms] [LOG] [Fast Refresh] done in 146ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   30534ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   30637ms] [LOG] [Fast Refresh] done in 203ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   30780ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[   30997ms] [LOG] [Fast Refresh] done in 318ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[  471965ms] [LOG] [HMR] connected @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 3288197ms] [LOG] [HMR] connected @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5325977ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5326336ms] [LOG] [Fast Refresh] done in 459ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5336833ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5336841ms] [LOG] [Fast Refresh] done in 108ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5541353ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5541854ms] [LOG] [Fast Refresh] done in 451ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5551978ms] [LOG] [Fast Refresh] rebuilding @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477
+[ 5554097ms] [LOG] [Fast Refresh] done in 2066ms @ http://dev:dev123@localhost:3000/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2477

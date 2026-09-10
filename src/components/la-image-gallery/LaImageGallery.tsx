@@ -254,7 +254,13 @@ function CarouselViewport({
       aria-label="Image gallery"
       tabIndex={0}
       className={cn(
-        "group relative select-none overflow-hidden outline-none",
+        // isolate: without it, the slides' internal z-10 cross-fade layer has
+        // no local stacking context to contain it — it bubbles past every
+        // ancestor up to <body> (they're all position:static) and can end up
+        // painting over unrelated absolutely-positioned content elsewhere on
+        // the page (e.g. the header's account dropdown), even though that
+        // content has a far higher z-index. Isolating here scopes it locally.
+        "group relative isolate select-none overflow-hidden outline-none",
         fullscreen ? "h-full w-full" : [ASPECT_CLASS[aspectRatio], "rounded-2xl"],
       )}
       onTouchStart={onTouchStart}

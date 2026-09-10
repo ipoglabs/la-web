@@ -1,0 +1,57 @@
+- generic [active] [ref=f5e1]:
+  - button "Open Next.js Dev Tools" [ref=f5e7] [cursor=pointer]
+  - alert [ref=f5e11]
+  - generic [ref=f5e12]:
+    - banner [ref=f5e13]:
+      - generic [ref=f5e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f5e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f5e16]
+          - generic [ref=f5e17]:
+            - img "lokalads" [ref=f5e18]
+            - generic [ref=f5e19]: India
+          - generic [ref=f5e20]: Beta
+        - generic [ref=f5e21]:
+          - link "POST" [ref=f5e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f5e23] [cursor=pointer]:
+            - generic [ref=f5e24]: "6"
+          - button "Account menu" [ref=f5e27]
+    - main [ref=f5e32]
+    - contentinfo [ref=f5e61]:
+      - generic [ref=f5e63]:
+        - generic [ref=f5e64]:
+          - link "lokalads logo lokalads India" [ref=f5e65] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f5e66]
+            - generic [ref=f5e67]:
+              - img "lokalads" [ref=f5e68]
+              - generic [ref=f5e69]: India
+          - generic [ref=f5e70]:
+            - link "Instagram" [ref=f5e71] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f5e74] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f5e77] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f5e80] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f5e83] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f5e86]
+        - paragraph [ref=f5e89]: find anything, anywhere with care...
+      - generic [ref=f5e90]:
+        - separator [ref=f5e91]
+        - generic [ref=f5e92]:
+          - paragraph [ref=f5e93]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f5e94]:
+            - button "Privacy Policy" [ref=f5e96]
+            - button "Terms & Conditions" [ref=f5e100]
+            - button "Cookie Policy" [ref=f5e104]
+            - generic [ref=f5e107]: Timeline
+            - button "Feedback" [ref=f5e111]
+      - generic [ref=f5e113]:
+        - paragraph [ref=f5e114]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f5e115] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

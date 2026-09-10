@@ -26,6 +26,7 @@ import { usePathname } from "next/navigation";
 import { AvatarDropdown } from "@/components/avatar/AvatarDropdown";
 import { LaFavouriteThumbnail } from "@/components/la-blocks/la-thumbnail-favourites/LaFavouriteThumbnail";
 import { LaButton, laButtonVariants } from "@/components/la/la-button";
+import { LaBadge } from "@/components/la/la-badge";
 import {
   Sheet,
   SheetContent,
@@ -92,7 +93,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
   const isLoggedIn = currentUser !== null;
   // Skip the skeleton when the server already handed us a user — only the
   // cold client-side check (no server session prop) has a visible wait.
-  const [authChecked, setAuthChecked] = useState(user != null);
+  const [authChecked, setAuthChecked] = useState(false); // TEMP-DEBUG: forces skeleton visible for demo
 
   const checkAuth = useCallback(async () => {
     try {
@@ -124,6 +125,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
     } catch {
       setCurrentUser(null);
     } finally {
+      await new Promise((r) => setTimeout(r, 3000)); // TEMP-DEBUG: forces skeleton visible for demo
       setAuthChecked(true);
     }
   }, []);
@@ -157,12 +159,14 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
   //   2. await rehydrate() first — reading getState().items before it
   //      resolves would see an empty store and treat every local favourite
   //      as already synced, dropping it on the next persisted write.
+  const currentUserId = currentUser?.id ?? null;
+
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       await useFavouritesStore.persist.rehydrate();
-      if (cancelled || !currentUser) return;
+      if (cancelled || !currentUserId) return;
 
       await useFavouritesStore.getState().reconcile();
       if (cancelled) return;
@@ -181,7 +185,15 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
     return () => {
       cancelled = true;
     };
-  }, [currentUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally
+    // keyed on the stable id, not the currentUser object reference: every
+    // run below calls Server Actions (getMyFavourites/addFavourite), and
+    // invoking a Server Action always triggers Next.js to refetch the RSC
+    // tree for the current route — which hands this component a brand-new
+    // `user` prop object even when the underlying user is unchanged. Keying
+    // on the object itself turned this into an infinite loop (effect →
+    // action call → route refresh → new object → effect fires again).
+  }, [currentUserId]);
 
   if (effectiveVariant === "hidden") return null;
 
@@ -202,6 +214,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
                 </span>
               )}
             </div>
+            <LaBadge intent="info" variant="outline" size="sm">Beta</LaBadge>
           </span>
         ) : (
           <Link className="flex gap-2 items-center" href="/">
@@ -214,6 +227,7 @@ export default function AppHeader({ variant, user = null }: AppHeaderProps) {
                 </span>
               )}
             </div>
+            <LaBadge intent="info" variant="outline" size="sm">Beta</LaBadge>
           </Link>
         )}
 
