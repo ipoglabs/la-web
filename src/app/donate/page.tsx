@@ -60,12 +60,21 @@ const StepProgress = ({ step }: { step: number }) => (
 
 // ─── Amount Card ──────────────────────────────────────────────────────────
 
+// Payment keys in .env.local are LIVE (Razorpay/Stripe) — every donation here
+// is a real charge. NEXT_PUBLIC_DONATE_TEST_MODE swaps the smallest preset
+// down to 1 (from the real default of 10) so QA can run the full live payment
+// flow end-to-end for the smallest possible real charge, without touching the
+// actual default shown to real donors.
+const DONATE_TEST_MODE = process.env.NEXT_PUBLIC_DONATE_TEST_MODE === 'true'
+
 const AMOUNTS = [
-  { value: 1,   tagline: 'Help keep Lokalads running smoothly every day.' },
-  { value: 30,  tagline: 'Drive essential improvements and innovation.' },
-  { value: 50,  tagline: 'Empower us to deliver better features and services.' },
-  { value: 100, tagline: 'Be the reason Lokalads transforms for the better.' },
-  { value: 500, tagline: 'Fuel a bigger change and help us reach more communities.' },
+  DONATE_TEST_MODE
+    ? { value: 1, tagline: 'Test mode — smallest real charge, for payment flow QA only.', isTest: true }
+    : { value: 10, tagline: 'Help keep Lokalads running smoothly every day.', isTest: false },
+  { value: 30,  tagline: 'Drive essential improvements and innovation.', isTest: false },
+  { value: 50,  tagline: 'Empower us to deliver better features and services.', isTest: false },
+  { value: 100, tagline: 'Be the reason Lokalads transforms for the better.', isTest: false },
+  { value: 500, tagline: 'Fuel a bigger change and help us reach more communities.', isTest: false },
 ]
 
 function AmountCard({
@@ -74,12 +83,14 @@ function AmountCard({
   tagline,
   selected,
   onSelect,
+  isTest = false,
 }: {
   amount: number
   currencySymbol: string
   tagline: string
   selected: boolean
   onSelect: () => void
+  isTest?: boolean
 }) {
   return (
     <button
@@ -92,11 +103,18 @@ function AmountCard({
           : 'border-slate-300 bg-white hover:bg-slate-50'
       )}
     >
-      <span className={cn(
-        'block text-2xl sm:text-3xl font-bold',
-        selected ? 'text-blue-700' : 'text-slate-800'
-      )}>
-        {currencySymbol}{amount}
+      <span className="flex items-center gap-2">
+        <span className={cn(
+          'block text-2xl sm:text-3xl font-bold',
+          selected ? 'text-blue-700' : 'text-slate-800'
+        )}>
+          {currencySymbol}{amount}
+        </span>
+        {isTest && (
+          <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-sm font-medium text-amber-800">
+            Test
+          </span>
+        )}
       </span>
       <span className="block text-sm text-slate-500 mt-0.5 leading-snug">{tagline}</span>
       {selected && (
@@ -158,7 +176,7 @@ export default function DonatePage() {
   const currencyCode = config.currency
 
   // true = a preset value; false/null = "Other Amount" selected
-  const [selAmt, setSelAmt]       = useState<number | 'other'>(1)
+  const [selAmt, setSelAmt]       = useState<number | 'other'>(AMOUNTS[0].value)
   const [customAmt, setCustomAmt] = useState('')
   const [name, setName]           = useState('')
   const [email, setEmail]         = useState('')
@@ -211,12 +229,13 @@ export default function DonatePage() {
           )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-            {AMOUNTS.map(({ value, tagline }) => (
+            {AMOUNTS.map(({ value, tagline, isTest }) => (
               <AmountCard
                 key={value}
                 amount={value}
                 currencySymbol={currencySymbol}
                 tagline={tagline}
+                isTest={isTest}
                 selected={selAmt === value}
                 onSelect={() => {
                   setSelAmt(value)
