@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { CreateAlertDialog, useSubmitAlert } from "@/components/create-alert";
 import { LaButton } from "@/components/la/la-button";
 import { CircleArrowLeft } from "lucide-react";
@@ -53,7 +52,7 @@ export default function ListingDetailNavBand({
         <span className="hidden sm:block text-slate-600 select-none" aria-hidden="true">|</span>
 
         {/* ── Breadcrumb ───────────────────────────────────────────────── */}
-        <nav aria-label="Listing breadcrumb" className="hidden sm:flex flex-1 min-w-0 items-center gap-1 text-sm">
+        <nav aria-label="Listing breadcrumb" className="flex flex-1 min-w-0 items-center gap-1 text-sm">
           <Link href="/" className="text-white/60 hover:text-white transition-colors shrink-0">
             Home
           </Link>
@@ -82,9 +81,6 @@ export default function ListingDetailNavBand({
             </>
           )}
         </nav>
-
-        {/* Spacer — fills gap on mobile where breadcrumb is hidden */}
-        <div className={cn("flex-1", "sm:hidden")} />
 
         {/* ── 🔔 Create Alert ──────────────────────────────────────────── */}
         <LaButton
