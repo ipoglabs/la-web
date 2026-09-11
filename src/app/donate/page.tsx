@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useDonationStore } from '@/app/store/donationStore'
@@ -61,21 +61,43 @@ const StepProgress = ({ step }: { step: number }) => (
 // ─── Amount Card ──────────────────────────────────────────────────────────
 
 // Payment keys in .env.local are LIVE (Razorpay/Stripe) — every donation here
-// is a real charge. NEXT_PUBLIC_DONATE_TEST_MODE swaps the smallest preset
-// down to 1 (from the real default of 10) so QA can run the full live payment
-// flow end-to-end for the smallest possible real charge, without touching the
-// actual default shown to real donors.
+// is a real charge. NEXT_PUBLIC_DONATE_TEST_MODE adds an extra 1-unit preset
+// (on top of the real presets) so QA can run the full live payment flow
+// end-to-end for the smallest possible real charge, without touching the
+// actual defaults shown to real donors.
 const DONATE_TEST_MODE = process.env.NEXT_PUBLIC_DONATE_TEST_MODE === 'true'
 
-const AMOUNTS = [
-  DONATE_TEST_MODE
-    ? { value: 1, tagline: 'Test mode — smallest real charge, for payment flow QA only.', isTest: true }
-    : { value: 10, tagline: 'Help keep Lokalads running smoothly every day.', isTest: false },
-  { value: 30,  tagline: 'Drive essential improvements and innovation.', isTest: false },
-  { value: 50,  tagline: 'Empower us to deliver better features and services.', isTest: false },
-  { value: 100, tagline: 'Be the reason Lokalads transforms for the better.', isTest: false },
-  { value: 500, tagline: 'Fuel a bigger change and help us reach more communities.', isTest: false },
+// India's presets are expressed in INR directly (₹500/1,000/2,000/5,000/10,000)
+// rather than the raw 10/30/50/100/500 used elsewhere — those raw numbers are
+// too small in INR to be a meaningful ask.
+type AmountPreset = { value: number; tagline: string; isTest: boolean }
+
+const TAGLINES = [
+  'Help keep Lokalads running smoothly every day.',
+  'Drive essential improvements and innovation.',
+  'Empower us to deliver better features and services.',
+  'Be the reason Lokalads transforms for the better.',
+  'Fuel a bigger change and help us reach more communities.',
 ]
+
+function getAmounts(countryCode: string): AmountPreset[] {
+  const values = countryCode === 'in'
+    ? [500, 1000, 2000, 5000, 10000]
+    : [10, 30, 50, 100, 500]
+
+  const presets: AmountPreset[] = values.map((value, i) => ({
+    value,
+    tagline: TAGLINES[i],
+    isTest: false,
+  }))
+
+  if (!DONATE_TEST_MODE) return presets
+
+  return [
+    { value: 1, tagline: 'Test mode — smallest real charge, for payment flow QA only.', isTest: true },
+    ...presets,
+  ]
+}
 
 function AmountCard({
   amount,
@@ -171,9 +193,11 @@ function OtherAmountCard({
 export default function DonatePage() {
   const router = useRouter()
   const { setAmount, setMethod, setDonor } = useDonationStore()
-  const { config } = useCountryConfig()
+  const { config, countryCode } = useCountryConfig()
   const currencySymbol = config.currencySymbol
   const currencyCode = config.currency
+
+  const AMOUNTS = useMemo(() => getAmounts(countryCode), [countryCode])
 
   // true = a preset value; false/null = "Other Amount" selected
   const [selAmt, setSelAmt]       = useState<number | 'other'>(AMOUNTS[0].value)
