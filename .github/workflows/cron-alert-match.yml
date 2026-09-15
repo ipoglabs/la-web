@@ -1,0 +1,62 @@
+name: Alert match (cron)
+
+# Drives the alert-match job on its own, separate from cron-jobs.yml.
+#
+# Why split out: GitHub Actions treats high-frequency schedules like
+# */5 * * * * as best-effort and throttles them under load. Bundling this
+# with cron-jobs.yml's five once-daily/weekly schedules was starving
+# alert-match — it degraded from firing every 5 minutes to every few hours —
+# and dragging the daily jobs later and later each day as the queue backed
+# up. Splitting it into its own workflow file isolates that contention.
+#
+# IMPORTANT — schedule triggers only run from the DEFAULT branch: see the
+# note in cron-jobs.yml, same rule applies here.
+#
+# Required repo config — Settings → Secrets and variables → Actions:
+#   secret  CRON_SECRET                     must equal the Vercel env var of the same name
+#   secret  VERCEL_AUTOMATION_BYPASS_SECRET  from Vercel → Settings → Deployment
+#                                           Protection → Protection Bypass for Automation
+#   var     APP_URL                         optional; defaults to https://lokalads.vercel.app
+#
+# Keep the schedule below in sync with SCHEDULE_TO_JOB in
+# src/app/api/jobs/trigger/route.ts and the node-cron schedule in
+# src/lib/jobs/index.ts (the local-dev scheduler).
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # instant alert matches
+  workflow_dispatch:
+
+concurrency:
+  group: cron-alert-match
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger alert-match
+        env:
+          # Hit Vercel directly, not the www.lokalads.com custom domain — see
+          # cron-jobs.yml for the full explanation (Cloudflare Bot Fight Mode).
+          APP_URL: ${{ vars.APP_URL || 'https://lokalads.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repo secret is not set (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+          if [ -z "$VERCEL_BYPASS" ]; then
+            echo "::error::VERCEL_AUTOMATION_BYPASS_SECRET repo secret is not set — generate it in Vercel → Settings → Deployment Protection → Protection Bypass for Automation"
+            exit 1
+          fi
+          curl --fail-with-body -sS \
+            --retry 2 --retry-delay 15 --retry-all-errors \
+            --max-time 60 \
+            -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "x-vercel-protection-bypass: $VERCEL_BYPASS" \
+            "$APP_URL/api/jobs/trigger?job=alert-match" \
+            -w '\nHTTP %{http_code} in %{time_total}s\n'

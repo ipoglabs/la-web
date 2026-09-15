@@ -25,13 +25,17 @@ name: Batch jobs (cron)
 # skipped by a WAF rule. The Vercel alias is behind Vercel's SSO deployment
 # protection instead, which the x-vercel-protection-bypass header clears.
 #
-# All cron times are UTC. Keep the six expressions below in sync with
+# All cron times are UTC. Keep the five expressions below in sync with
 # SCHEDULE_TO_JOB in src/app/api/jobs/trigger/route.ts and the node-cron
 # schedules in src/lib/jobs/index.ts (the local-dev scheduler).
+#
+# alert-match lives in its own workflow (cron-alert-match.yml), not here —
+# see that file for why (GitHub throttles high-frequency schedules, and
+# bundling it with these five was starving it and dragging these daily
+# jobs later and later each day).
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # alert-match          instant alert matches
     - cron: "0 8 * * *"     # alert-digest-daily
     - cron: "0 8 * * 1"     # alert-digest-weekly  Mondays 08:00
     - cron: "0 9 * * *"     # alert-no-match       14-day zero-match nudge
@@ -44,7 +48,6 @@ on:
         required: true
         type: choice
         options:
-          - alert-match
           - alert-digest-daily
           - alert-digest-weekly
           - alert-no-match
@@ -65,7 +68,6 @@ jobs:
         id: r
         run: |
           case "${{ github.event.schedule }}" in
-            "*/5 * * * *") job=alert-match ;;
             "0 8 * * *")   job=alert-digest-daily ;;
             "0 8 * * 1")   job=alert-digest-weekly ;;
             "0 9 * * *")   job=alert-no-match ;;
