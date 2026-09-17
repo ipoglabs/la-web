@@ -31,6 +31,8 @@ export const IN_CONFIG: CountryConfig = {
   // ── Features ────────────────────────────────────────────────────────────────
   features: {
     donationFooter: true, // Active donation campaign in India
+    donateScanPayEnabled: false, // Scan & Pay currently settles to a different (non-Lokalads) account — hidden until corrected
+    donateRazorpayEnabled: false, // Server-side RAZORPAY_KEY_ID is unset ("Missing Razorpay env vars") — Wallet Pay & Razorpay card flow are broken; India falls back to Stripe card payment until fixed
   },
 
   // ── Listings source switch by deployment stage ───────────────────────────

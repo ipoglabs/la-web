@@ -45,6 +45,19 @@ export interface CountryFeatures {
   /** Show / hide the donation banner in the app footer. */
   donationFooter: boolean;
 
+  /** Show / hide the PayPal option on the donation payment page. */
+  donatePaypalEnabled: boolean;
+
+  /** Show / hide the Scan & Pay (UPI/QR) option on the donation payment page. */
+  donateScanPayEnabled: boolean;
+
+  /**
+   * Show / hide Razorpay-backed payment options (Wallet Pay, and the
+   * Razorpay card flow) on the donation payment page. When false, the
+   * country falls back to the Stripe card flow instead.
+   */
+  donateRazorpayEnabled: boolean;
+
   // ── Add future flags below ──────────────────────────────────────────────────
   // payments: boolean;
   // premiumListings: boolean;

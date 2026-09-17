@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import WalletPayButton from '@/components/WalletPayButton'
 import RazorpayCheckoutButton from '@/components/Razorpaycheckoutbutton'
 import { useCountry } from '@/components/country/CountryProvider'
+import { useCountryConfig } from '@/lib/hooks/useCountryConfig'
+import { getFeatures } from '@/config'
 
 // ─── Step Progress Bar ────────────────────────────────────────────────────────
 const StepProgress = ({ step }: { step: number }) => {
@@ -166,10 +168,23 @@ export default function DonateReviewPage() {
   const siteCountry = useCountry()
   const scanCountry: ScanCountry = siteCountry in SCAN_PAY_COUNTRIES ? (siteCountry as ScanCountry) : 'SG'
 
+  // Country-level payment-method toggles (config/types.ts CountryFeatures).
+  // PayPal is a dummy stub everywhere; Scan Pay is disabled per-country when
+  // its settlement account isn't correctly configured (currently India).
+  // Razorpay is disabled for India while RAZORPAY_KEY_ID is unset server-side
+  // ("Missing Razorpay env vars") — India falls back to the Stripe card flow.
+  const { countryCode } = useCountryConfig()
+  const features = getFeatures(countryCode)
+  const scanPayAvailable = scanCountry === 'IN' && features.donateScanPayEnabled
+  const useRazorpayForIndia = scanCountry === 'IN' && features.donateRazorpayEnabled
+  const walletPayAvailable = scanCountry !== 'IN' || features.donateRazorpayEnabled
+
   // Tab default follows country: India leads with Scan Pay (most-used there),
-  // SG/GB lead with Wallet Pay. `scanCountry` must be declared above this so
-  // the initializer can read it on first render.
-  const [activeTab, setActiveTab]         = useState<Tab>(() => (scanCountry === 'IN' ? 'sp' : 'wp'))
+  // SG/GB lead with Wallet Pay. Falls through to Card Pay if neither Scan Pay
+  // nor Wallet Pay is available (e.g. India with Razorpay disabled).
+  // `scanCountry` must be declared above this so the initializer can read it
+  // on first render.
+  const [activeTab, setActiveTab]         = useState<Tab>(() => (scanPayAvailable ? 'sp' : walletPayAvailable ? 'wp' : 'cc'))
   const [walletMethod, setWalletMethod]   = useState<WalletMethod>(null)
   const [indiaWalletMethod, setIndiaWalletMethod] = useState<IndiaWalletMethod>(null)
   const [qrDataUrl, setQrDataUrl]         = useState('')
@@ -212,8 +227,8 @@ export default function DonateReviewPage() {
   // Wallet Pay. Runs on mount too, but that's a no-op since the initial
   // state above already matches. Also covers manually switching country.
   useEffect(() => {
-    setActiveTab(scanCountry === 'IN' ? 'sp' : 'wp')
-  }, [scanCountry])
+    setActiveTab(scanPayAvailable ? 'sp' : walletPayAvailable ? 'wp' : 'cc')
+  }, [scanCountry, scanPayAvailable, walletPayAvailable])
 
   // Clear any stale Razorpay error banner / wallet selection when switching tab/country
   useEffect(() => { setRzpError(''); setIndiaWalletMethod(null) }, [activeTab, scanCountry])
@@ -292,11 +307,11 @@ export default function DonateReviewPage() {
     }, 3000)
   }
 
-  // ── Create Stripe PaymentIntent (card + wallet tabs, non-India only) ──────
+  // ── Create Stripe PaymentIntent (card + wallet tabs, whenever Razorpay isn't the active India provider) ──
   useEffect(() => {
     if (!mounted || !amountRaw || !donorName || !donorEmail) return
     if (activeTab !== 'cc' && activeTab !== 'wp') return
-    if (scanCountry === 'IN') return // India uses Razorpay instead of Stripe
+    if (useRazorpayForIndia) return // India uses Razorpay instead of Stripe, when enabled
     const create = async () => {
       setLoading(true)
       setApiError('')
@@ -317,7 +332,7 @@ export default function DonateReviewPage() {
       }
     }
     create()
-  }, [mounted, amountRaw, currency, donorName, donorEmail, retryKey, activeTab, scanCountry])
+  }, [mounted, amountRaw, currency, donorName, donorEmail, retryKey, activeTab, scanCountry, useRazorpayForIndia])
 
   // ── Create a pending donation record in the database ──────────────────────
   useEffect(() => {
@@ -436,8 +451,8 @@ export default function DonateReviewPage() {
 
           <div className="bg-slate-200 border border-slate-300 rounded-2xl sm:rounded-full p-1 flex flex-row flex-nowrap gap-0.5 w-full max-w-lg mb-1 sm:mb-4 -mt-2">
 
-            {/* Scan Pay tab — India only */}
-            {scanCountry === 'IN' && (
+            {/* Scan Pay tab — India only, and only while donateScanPayEnabled */}
+            {scanPayAvailable && (
               <label
                 htmlFor="optScanPay"
                 onClick={() => setActiveTab('sp')}
@@ -454,21 +469,23 @@ export default function DonateReviewPage() {
               </label>
             )}
 
-            {/* Wallet Pay tab */}
-            <label
-              htmlFor="optWalletPay"
-              onClick={() => setActiveTab('wp')}
-              className={`relative flex-1 px-2 py-2 sm:px-3 rounded-xl sm:rounded-full select-none cursor-pointer transition-colors
-                flex flex-col sm:flex-row justify-center items-center gap-0.5 sm:gap-1.5
-                text-xs sm:text-base font-semibold
-                ${activeTab === 'wp' ? 'bg-slate-700 text-white' : 'bg-transparent text-slate-800'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5 shrink-0">
-                <path d="M2.273 5.625A4.483 4.483 0 0 1 5.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0 0 18.75 3H5.25a3 3 0 0 0-2.977 2.625ZM2.273 8.625A4.483 4.483 0 0 1 5.25 7.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0 0 18.75 6H5.25a3 3 0 0 0-2.977 2.625ZM5.25 9a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h13.5a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3H5.25Zm7.5 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
-              </svg>
-              <span className="leading-tight text-center">Wallet Pay</span>
-              <input type="radio" id="optWalletPay" name="paymentTab" checked={activeTab === 'wp'} onChange={() => setActiveTab('wp')} className="absolute hidden size-0" />
-            </label>
+            {/* Wallet Pay tab — hidden for India while Razorpay is disabled (donateRazorpayEnabled) */}
+            {walletPayAvailable && (
+              <label
+                htmlFor="optWalletPay"
+                onClick={() => setActiveTab('wp')}
+                className={`relative flex-1 px-2 py-2 sm:px-3 rounded-xl sm:rounded-full select-none cursor-pointer transition-colors
+                  flex flex-col sm:flex-row justify-center items-center gap-0.5 sm:gap-1.5
+                  text-xs sm:text-base font-semibold
+                  ${activeTab === 'wp' ? 'bg-slate-700 text-white' : 'bg-transparent text-slate-800'}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-5 shrink-0">
+                  <path d="M2.273 5.625A4.483 4.483 0 0 1 5.25 4.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0 0 18.75 3H5.25a3 3 0 0 0-2.977 2.625ZM2.273 8.625A4.483 4.483 0 0 1 5.25 7.5h13.5c1.141 0 2.183.425 2.977 1.125A3 3 0 0 0 18.75 6H5.25a3 3 0 0 0-2.977 2.625ZM5.25 9a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h13.5a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3H5.25Zm7.5 4.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />
+                </svg>
+                <span className="leading-tight text-center">Wallet Pay</span>
+                <input type="radio" id="optWalletPay" name="paymentTab" checked={activeTab === 'wp'} onChange={() => setActiveTab('wp')} className="absolute hidden size-0" />
+              </label>
+            )}
 
             {/* Card Payment tab */}
             <label
@@ -545,7 +562,9 @@ export default function DonateReviewPage() {
                 <p className="w-10/12 text-slate-700 mb-4">
                   {scanCountry === 'IN'
                     ? 'Pay instantly via UPI, wallets, or netbanking — powered by Razorpay. No card details needed.'
-                    : 'Pay instantly with Apple Pay, Google Pay, or PayPal. Your wallet handles authentication securely — no card details needed.'}
+                    : features.donatePaypalEnabled
+                      ? 'Pay instantly with Apple Pay, Google Pay, or PayPal. Your wallet handles authentication securely — no card details needed.'
+                      : 'Pay instantly with Apple Pay or Google Pay. Your wallet handles authentication securely — no card details needed.'}
                 </p>
               </div>
             )}
@@ -820,25 +839,27 @@ export default function DonateReviewPage() {
                       </div>
                     </label>
 
-                    {/* PayPal */}
-                    <label className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer mb-4 transition-all',
-                      walletMethod === 'paypal' ? 'border-slate-700 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300')}>
-                      <input type="radio" name="wallet" checked={walletMethod === 'paypal'}
-                        onChange={() => setWalletMethod('paypal')} className="sr-only" />
-                      <div className="size-9 rounded-lg flex items-center justify-center flex-none bg-[#003087]">
-                        <svg viewBox="0 0 24 24" fill="white" className="size-5">
-                          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.58 2.975-2.477 4.6-5.716 4.6h-2.19c-1.515 0-2.8 1.106-3.034 2.6l-1.12 7.107h2.606c.524 0 .968-.382 1.05-.9l.44-2.782c.082-.518.527-.9 1.05-.9h.668c3.845 0 6.538-1.563 7.374-6.082a5.026 5.026 0 0 0-.48-3.356z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">PayPal</p>
-                        <p className="text-xs text-slate-500">Safe buyer protection included</p>
-                      </div>
-                      <div className={cn('size-4 rounded-full border-2 flex items-center justify-center',
-                        walletMethod === 'paypal' ? 'border-slate-700' : 'border-slate-300')}>
-                        {walletMethod === 'paypal' && <span className="size-2 rounded-full bg-slate-700 block" />}
-                      </div>
-                    </label>
+                    {/* PayPal — dummy integration, hidden via features.donatePaypalEnabled until real one is wired up */}
+                    {features.donatePaypalEnabled && (
+                      <label className={cn('flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer mb-4 transition-all',
+                        walletMethod === 'paypal' ? 'border-slate-700 bg-white shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300')}>
+                        <input type="radio" name="wallet" checked={walletMethod === 'paypal'}
+                          onChange={() => setWalletMethod('paypal')} className="sr-only" />
+                        <div className="size-9 rounded-lg flex items-center justify-center flex-none bg-[#003087]">
+                          <svg viewBox="0 0 24 24" fill="white" className="size-5">
+                            <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.58 2.975-2.477 4.6-5.716 4.6h-2.19c-1.515 0-2.8 1.106-3.034 2.6l-1.12 7.107h2.606c.524 0 .968-.382 1.05-.9l.44-2.782c.082-.518.527-.9 1.05-.9h.668c3.845 0 6.538-1.563 7.374-6.082a5.026 5.026 0 0 0-.48-3.356z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">PayPal</p>
+                          <p className="text-xs text-slate-500">Safe buyer protection included</p>
+                        </div>
+                        <div className={cn('size-4 rounded-full border-2 flex items-center justify-center',
+                          walletMethod === 'paypal' ? 'border-slate-700' : 'border-slate-300')}>
+                          {walletMethod === 'paypal' && <span className="size-2 rounded-full bg-slate-700 block" />}
+                        </div>
+                      </label>
+                    )}
 
                     {/* Pay button (shown once a wallet is selected) */}
                     {walletMethod === 'apple-pay' || walletMethod === 'google-pay' ? (
@@ -870,10 +891,10 @@ export default function DonateReviewPage() {
               </div>
             )}
 
-            {/* ── CARD PAYMENT panel — Razorpay for India, Stripe otherwise ───────── */}
+            {/* ── CARD PAYMENT panel — Razorpay for India (when donateRazorpayEnabled), Stripe otherwise ───────── */}
             {activeTab === 'cc' && (
               <div className="flex flex-col items-center w-full max-md:px-4">
-                {scanCountry === 'IN' ? (
+                {useRazorpayForIndia ? (
                   <>
                     {/* Error banner — was missing before, so Razorpay failures
                         (e.g. payment.failed, modal dismissed) updated state

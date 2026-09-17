@@ -53,6 +53,9 @@ export const GLOBAL_CONFIG = {
    */
   features: {
     donationFooter: true,
+    donatePaypalEnabled: false, // PayPal button is a dummy stub (no real integration) — hidden until wired up
+    donateScanPayEnabled: true,
+    donateRazorpayEnabled: true,
 
     // ── Add future global feature defaults below ────────────────────────────
     // payments: false,
