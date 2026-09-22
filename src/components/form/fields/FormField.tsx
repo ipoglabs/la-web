@@ -5,7 +5,9 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 // ✅ Add "time" to supported types
 type FieldType = "text" | "number" | "email" | "tel" | "date" | "time" | "textarea"| "password"| "url"| "search"| "color";
@@ -87,6 +89,8 @@ export default function FormField(props: Props) {
     }
     // ✅ keep date/time as strings
     if (type === "date" || type === "time") return raw || undefined;
+    // Ad title: letters, digits, spaces, and . , - only
+    if (field === "name") return sanitizeAdTitle(raw);
     return raw;
   };
 
@@ -101,6 +105,9 @@ export default function FormField(props: Props) {
 
   const id = React.useId();
   const isTextarea = type === "textarea";
+  // The "description" field always uses the design-system rich text editor
+  // (heading level limited to H2, no live preview) instead of a plain textarea.
+  const isDescription = isTextarea && field === "description";
   const FieldCmp = isTextarea ? Textarea : Input;
   const inputType = isTextarea ? undefined : type;
 
@@ -111,25 +118,38 @@ export default function FormField(props: Props) {
       ? String(v)
       : (v as string | number);
 
+  const handleDescriptionChange = (html: string) => {
+    if (isControlled) onChange?.(html);
+    else setField(field, html);
+  };
+
   return (
     <div className={className ?? "space-y-2"}>
       <Label htmlFor={id}>
         {label} {required ? <span className="text-red-500">*</span> : null}
       </Label>
 
-      <FieldCmp
-        id={id}
-        name={name ?? field}
-        // shadcn Input accepts string; "time" is a valid HTML input type
-        type={inputType as any}
-        value={uiValue as any}
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled}
-        onChange={handleChange}
-        {...(isTextarea ? { rows } : {})}
-        {...numberExtras}
-      />
+      {isDescription ? (
+        <RichTextEditor
+          value={uiValue as string}
+          onChange={handleDescriptionChange}
+          placeholder={placeholder}
+        />
+      ) : (
+        <FieldCmp
+          id={id}
+          name={name ?? field}
+          // shadcn Input accepts string; "time" is a valid HTML input type
+          type={inputType as any}
+          value={uiValue as any}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          onChange={handleChange}
+          {...(isTextarea ? { rows } : {})}
+          {...numberExtras}
+        />
+      )}
 
       {hint ? (
         <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>

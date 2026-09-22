@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/components/form/fields/FormFieldWrapper";
@@ -10,10 +10,13 @@ import { FormField as FormFieldContainer } from "@/components/form/fields/FormFi
 import { toast } from "sonner";
 import { usePropertyConfig } from "@/lib/hooks/usePropertyConfig";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
+
+const FACILITY_OPTIONS = ["Lift", "Security", "Power Backup", "Water Supply", "Fire Safety"];
 
 export default function RentPropertyForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -41,6 +44,8 @@ export default function RentPropertyForm() {
 
   const amenities =
     (usePostFormStore((s) => (s as any).amenities) as string[]) ?? [];
+  const facilities =
+    (usePostFormStore((s) => (s as any).facilities) as string[]) ?? [];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -131,23 +136,21 @@ export default function RentPropertyForm() {
       className="w-full max-w-xl space-y-6"
     >
       {/* Title */}
-      <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name}>
+      <FormFieldContainer label="Adv Title" htmlFor="name" error={errors.name} required>
         <Input
           id="name"
           name="name"
           value={name}
-          onChange={(e) => setField("name", e.target.value)}
+          onChange={(e) => setField("name", sanitizeAdTitle(e.target.value))}
           className={cx(errors.name && "border-red-500")}
         />
       </FormFieldContainer>
 
       {/* Description */}
-      <FormFieldContainer label="Description" htmlFor="description" error={errors.description}>
-        <Textarea
-          id="description"
-          name="description"
+      <FormFieldContainer label="Adv Details" htmlFor="description" error={errors.description} required>
+        <RichTextEditor
           value={description}
-          onChange={(e) => setField("description", e.target.value)}
+          onChange={(html) => setField("description", html)}
         />
       </FormFieldContainer>
 
@@ -221,6 +224,53 @@ export default function RentPropertyForm() {
           />
         </FormFieldContainer>
       </FormFieldWrapper>
+
+      {/* Furnishing */}
+      <ToggleButtonGroup
+        title="Furnishing"
+        singleSelect
+        value={furnishing ? [furnishing] : []}
+        onChange={(v) => setField("furnishing", v[0] ?? "")}
+      >
+        {config.rent.furnishingOptions.map((o) => (
+          <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
+
+      {/* Available From / Lease Term */}
+      <FormFieldWrapper className="grid grid-cols-2 gap-4">
+        <FormFieldContainer label="Available From" htmlFor="available_from" error={errors.available_from}>
+          <Input
+            id="available_from"
+            name="available_from"
+            type="date"
+            value={available_from as any}
+            onChange={(e) => setField("available_from", e.target.value)}
+          />
+        </FormFieldContainer>
+
+        <FormFieldContainer label="Lease Term (months)" htmlFor="leaseTerm" error={errors.leaseTerm}>
+          <Input
+            id="leaseTerm"
+            name="leaseTerm"
+            type="number"
+            value={leaseTerm as any}
+            onChange={(e) => setField("leaseTerm", e.target.value)}
+            className={cx(errors.leaseTerm && "border-red-500")}
+          />
+        </FormFieldContainer>
+      </FormFieldWrapper>
+
+      {/* Facilities */}
+      <ToggleButtonGroup
+        title="Facilities"
+        value={facilities}
+        onChange={(v) => setField("facilities", v)}
+      >
+        {FACILITY_OPTIONS.map((f) => (
+          <ToggleGroupButton key={f} value={f}>{f}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Amenities */}
       <ToggleButtonGroup

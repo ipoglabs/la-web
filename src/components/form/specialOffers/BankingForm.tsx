@@ -116,7 +116,7 @@ export default function BankingFinancialForm() {
 
       {/* Offer Title */}
       <FormField
-        label="Deal / Offer Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -142,7 +142,7 @@ export default function BankingFinancialForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

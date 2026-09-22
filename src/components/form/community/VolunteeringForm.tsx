@@ -55,7 +55,7 @@ export default function VolunteeringCharityForm() {
 
         {/* Title */}
         <FormField
-          label="Opportunity Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Beach Cleanup Drive"
           required
@@ -63,7 +63,7 @@ export default function VolunteeringCharityForm() {
 
         {/* Description (matches config key) */}
         <FormField
-          label="Volunteer Details"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide full details about the opportunity"

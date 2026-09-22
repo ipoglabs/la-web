@@ -117,7 +117,7 @@ export default function ElectronicsGadgetsForm() {
 
       {/* Product Name */}
       <FormField
-        label="Product Name"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -160,12 +160,12 @@ export default function ElectronicsGadgetsForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Location */}
       {/* <FormField

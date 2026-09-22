@@ -55,7 +55,7 @@ export default function ChildFamilyActivitiesForm() {
 
         {/* Title */}
         <FormField
-          label="Activity Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Weekend Art Workshop for Kids"
           required
@@ -63,7 +63,7 @@ export default function ChildFamilyActivitiesForm() {
 
         {/* Description (matches config) */}
         <FormField
-          label="Activity Details"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe the activity, schedule, and instructions"

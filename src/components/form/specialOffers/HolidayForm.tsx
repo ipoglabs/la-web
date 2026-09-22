@@ -118,7 +118,7 @@ export default function HolidayOffersForm() {
       <h2 className="text-2xl font-bold">Holiday & Seasonal Offers</h2>
 
       <FormField
-        label="Offer Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -217,12 +217,12 @@ export default function HolidayOffersForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       <FormField
         label="Terms & Conditions"

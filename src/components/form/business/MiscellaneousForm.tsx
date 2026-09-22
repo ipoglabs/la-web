@@ -58,7 +58,7 @@ export default function BusinessMiscellaneousForm() {
 
         {/* Title */}
         <FormField
-          label="Listing Title"
+          label="Adv Title"
           field="name"
           placeholder="Enter listing title"
           required
@@ -101,7 +101,7 @@ export default function BusinessMiscellaneousForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Enter details about your listing"

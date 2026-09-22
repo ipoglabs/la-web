@@ -98,7 +98,7 @@ export default function JobWantedForm() {
       />
 
       <FormField
-        label="Desired Job Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -161,13 +161,13 @@ export default function JobWantedForm() {
       />
 
       <FormField
-        label="Additional Info / Career Objective"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
         placeholder="Share your goals, strengths, or career objectives"
-      />
+       required />
 
       {/* Contact Details */}
       <div className="space-y-3 border-t pt-5">

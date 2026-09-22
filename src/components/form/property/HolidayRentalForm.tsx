@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/components/form/fields/FormFieldContainer";
@@ -10,6 +10,7 @@ import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { toast } from "sonner";
 import { usePropertyConfig } from "@/lib/hooks/usePropertyConfig";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -99,23 +100,21 @@ export default function HolidayRentalForm() {
       <h2 className="text-2xl font-semibold text-center">Add Holiday Rental</h2>
 
       {/* Title */}
-      <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name}>
+      <FormFieldContainer label="Adv Title" htmlFor="name" error={errors.name} required>
         <Input
           id="name"
           name="name"
           value={name}
-          onChange={(e) => setField("name", e.target.value)}
+          onChange={(e) => setField("name", sanitizeAdTitle(e.target.value))}
           className={cx(errors.name && "border-red-500")}
         />
       </FormFieldContainer>
 
       {/* Description */}
-      <FormFieldContainer label="Description" htmlFor="description" error={errors.description}>
-        <Textarea
-          id="description"
-          name="description"
+      <FormFieldContainer label="Adv Details" htmlFor="description" error={errors.description} required>
+        <RichTextEditor
           value={description}
-          onChange={(e) => setField("description", e.target.value)}
+          onChange={(html) => setField("description", html)}
           className={cx(errors.description && "border-red-500")}
         />
       </FormFieldContainer>

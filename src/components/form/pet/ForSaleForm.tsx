@@ -118,7 +118,7 @@ export default function PetsForSaleForm() {
       </ToggleButtonGroup>
 
       <FormField
-        label="Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -127,13 +127,13 @@ export default function PetsForSaleForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
         placeholder="Temperament, health, diet, special needs, etc."
-      />
+       required />
 
       <ToggleButtonGroup title="Pet Type" singleSelect value={petType ? [petType] : []} onChange={(v) => setField("petType", v[0] ?? "")}>
         <ToggleGroupButton value="dog">Dog</ToggleGroupButton>

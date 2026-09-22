@@ -121,7 +121,7 @@ export default function B2BServiceForm() {
       </h2>
 
       <FormField
-        label="Service Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -146,7 +146,7 @@ export default function B2BServiceForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

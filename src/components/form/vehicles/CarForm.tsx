@@ -97,9 +97,9 @@ export default function CarSaleForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Post a Car for Sale</h2>
 
-      <FormField label="Ad Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <FormField
         label={`Price (${currency})`}

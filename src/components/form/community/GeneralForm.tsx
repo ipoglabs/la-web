@@ -55,7 +55,7 @@ export default function GeneralOthersForm() {
 
         {/* Title */}
         <FormField
-          label="Post Title"
+          label="Adv Title"
           field="name"
           placeholder="Enter post title"
           required
@@ -63,7 +63,7 @@ export default function GeneralOthersForm() {
 
         {/* Description (matches config) */}
         <FormField
-          label="Details"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide full details"

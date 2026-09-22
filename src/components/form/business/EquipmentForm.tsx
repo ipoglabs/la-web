@@ -123,7 +123,7 @@ export default function EquipmentSuppliesForm() {
       </h2>
 
       <FormField
-        label="Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -177,7 +177,7 @@ export default function EquipmentSuppliesForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

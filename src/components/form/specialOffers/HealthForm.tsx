@@ -119,7 +119,7 @@ export default function HealthWellnessForm() {
 
       {/* Service Name */}
       <FormField
-        label="Service Name"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -209,12 +209,12 @@ export default function HealthWellnessForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Location */}
       <FormField

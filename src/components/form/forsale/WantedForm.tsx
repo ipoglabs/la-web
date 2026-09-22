@@ -3,11 +3,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import FormField from "@/components/form/fields/FormField";
-import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { toast } from "sonner";
 
-export default function BooksMusicMediaForm() {
+export default function ForSaleWantedForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const { countryConfig } = useCountryConfig();
   const currency = countryConfig.currency;
@@ -19,13 +18,9 @@ export default function BooksMusicMediaForm() {
   const subcategory = store.subcategory;
 
   const name = store.name ?? "";
-  const mediaType = (store as any).mediaType ?? "";
-  const condition = (store as any).condition ?? "";
-  const authorArtist = (store as any).authorArtist ?? "";
-  const genre = (store as any).genre ?? "";
-  const price = (store as any).price ?? (store as any).salePrice ?? "";
-  const negotiable = (store as any).negotiable ?? "";
   const description = store.description ?? "";
+  const minBudget = (store as any).minBudget ?? "";
+  const maxBudget = (store as any).maxBudget ?? "";
   const location = store.location ?? {};
   const sellerInfo = store.sellerInfo ?? {};
 
@@ -33,7 +28,7 @@ export default function BooksMusicMediaForm() {
 
   useEffect(() => {
     if (!category) setField("category", "For Sale");
-    if (!subcategory) setField("subcategory", "Books & Media");
+    if (!subcategory) setField("subcategory", "Wanted");
   }, [category, subcategory, setField]);
 
   const isPositive = (v: unknown) => {
@@ -44,7 +39,7 @@ export default function BooksMusicMediaForm() {
 
   const dispatchValidated = (ok: boolean) => {
     window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok } }));
-    window.dispatchEvent(new CustomEvent("mediaform:validated", { detail: { ok } }));
+    window.dispatchEvent(new CustomEvent("forsalewantedform:validated", { detail: { ok } }));
   };
 
   const scrollToFirstError = (mapped: Record<string, string>) => {
@@ -55,11 +50,6 @@ export default function BooksMusicMediaForm() {
     el?.focus?.();
   };
 
-  const handlePrice = (v: string) => {
-    setField("price", v);
-    setField("salePrice", v);
-  };
-
   const setSeller = (k: "name" | "email" | "phone", v: string) => {
     setField("sellerInfo", { ...(sellerInfo || {}), [k]: v });
   };
@@ -68,10 +58,9 @@ export default function BooksMusicMediaForm() {
     e.preventDefault();
     const mapped: Record<string, string> = {};
 
-    if (!name.trim()) mapped.name = "Title required";
-    if (!mediaType) mapped.mediaType = "Media type required";
-    if (!condition) mapped.condition = "Condition required";
-    if (!isPositive(price)) mapped.price = "Invalid price";
+    if (!name.trim()) mapped.name = "Ad title required";
+    if (!isPositive(maxBudget)) mapped.maxBudget = "Invalid max budget";
+    if (!description.trim()) mapped.description = "Description required";
     if (!sellerInfo?.name?.trim()) mapped.sellerName = "Contact name required";
     if (!sellerInfo?.phone?.trim()) mapped.sellerPhone = "Phone required";
 
@@ -91,51 +80,43 @@ export default function BooksMusicMediaForm() {
 
   return (
     <form
-      id="mediaForm"
+      id="forSaleWantedForm"
       data-post-form="true"
       ref={formRef}
       onSubmit={onSubmit}
-      className="space-y-6 max-w-3xl mx-auto p-6"
+      className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Books · Music · Media</h2>
+      <h2 className="text-2xl font-bold">What Are You Looking For?</h2>
 
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <ToggleButtonGroup title="Item Type" singleSelect value={mediaType ? [mediaType] : []} onChange={(v) => setField("mediaType", v[0] ?? "")}>
-        <ToggleGroupButton value="book">Book</ToggleGroupButton>
-        <ToggleGroupButton value="music">Music</ToggleGroupButton>
-        <ToggleGroupButton value="movie">Movie / DVD / Blu-ray</ToggleGroupButton>
-        <ToggleGroupButton value="game">Game</ToggleGroupButton>
-        <ToggleGroupButton value="other">Other Media</ToggleGroupButton>
-      </ToggleButtonGroup>
-
-      <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
-        <ToggleGroupButton value="new">New</ToggleGroupButton>
-        <ToggleGroupButton value="like-new">Like New</ToggleGroupButton>
-        <ToggleGroupButton value="used">Used</ToggleGroupButton>
-        <ToggleGroupButton value="collectible">Collectible</ToggleGroupButton>
-      </ToggleButtonGroup>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label="Author / Artist" field="authorArtist" value={authorArtist} onChange={(v) => setField("authorArtist", v)} />
-        <FormField label="Genre" field="genre" value={genre} onChange={(v) => setField("genre", v)} />
+        <FormField
+          label={`Min Budget (${currency})`}
+          field="minBudget"
+          type="number"
+          value={minBudget}
+          onChange={(v) => setField("minBudget", v)}
+        />
+        <FormField
+          label={`Max Budget (${currency})`}
+          field="maxBudget"
+          type="number"
+          value={maxBudget}
+          onChange={(v) => setField("maxBudget", v)}
+          required
+        />
       </div>
 
-      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
-
       <FormField
-        label={`Price (${currency})`}
-        field="price"
-        type="number"
-        value={price}
-        onChange={(v) => handlePrice(String(v))}
+        label="Adv Details"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+        placeholder="Describe what you're looking for, condition, brand preferences, etc."
         required
       />
-
-      <ToggleButtonGroup title="Negotiable" singleSelect value={negotiable ? [negotiable] : []} onChange={(v) => setField("negotiable", v[0] ?? "")}>
-        <ToggleGroupButton value="yes">Yes</ToggleGroupButton>
-        <ToggleGroupButton value="no">No</ToggleGroupButton>
-      </ToggleButtonGroup>
 
       <div className="space-y-1">
         <label className="text-sm font-medium">Location</label>

@@ -118,7 +118,7 @@ export default function EducationLearningForm() {
 
       {/* Course Title */}
       <FormField
-        label="Course / Program Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -166,12 +166,12 @@ export default function EducationLearningForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Location */}
       {/* <FormField

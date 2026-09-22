@@ -56,7 +56,7 @@ export default function ClassesCoursesForm() {
 
         {/* Title */}
         <FormField
-          label="Course Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Python Programming Bootcamp"
           required
@@ -89,7 +89,7 @@ export default function ClassesCoursesForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide full course details"

@@ -59,7 +59,7 @@ export default function ClassesForm() {
 
         {/* Title */}
         <FormField
-          label="Class Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Guitar Lessons, Coding Bootcamp"
           required
@@ -97,7 +97,7 @@ export default function ClassesForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide details about the class"

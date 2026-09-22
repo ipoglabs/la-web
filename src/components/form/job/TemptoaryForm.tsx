@@ -90,7 +90,7 @@ export default function JobTemporaryForm() {
       <h2 className="text-2xl font-semibold text-center">Post Temporary Job</h2>
 
       <FormField
-        label="Job Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -156,12 +156,12 @@ export default function JobTemporaryForm() {
       </div>
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       <button type="submit" className="sr-only" />
     </form>

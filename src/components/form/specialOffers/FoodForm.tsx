@@ -104,7 +104,7 @@ export default function FoodDiningForm() {
 
       {/* Service Name */}
       <FormField
-        label="Service / Restaurant Name"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -122,12 +122,12 @@ export default function FoodDiningForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Location */}
       <FormField

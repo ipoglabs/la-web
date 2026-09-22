@@ -103,9 +103,9 @@ export default function MotorcycleSaleForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Motorcycle for Sale</h2>
 
-      <FormField label="Ad Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Make" field="make" value={make} onChange={(v) => setField("make", v)} required />

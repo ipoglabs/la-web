@@ -119,9 +119,9 @@ export default function PetServiceForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Post a Pet Service</h2>
 
-      <FormField label="Service Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <FormField label="Service Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
         <ToggleGroupButton value="grooming">Grooming</ToggleGroupButton>

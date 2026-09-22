@@ -119,7 +119,7 @@ export default function WantedPropertyForm() {
 
       {/* Title */}
       <FormField
-        label="Requirement Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -128,12 +128,12 @@ export default function WantedPropertyForm() {
 
       {/* Description */}
       <FormField
-        label="Additional Requirements"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Preferred Locations */}
       <div className="space-y-2">

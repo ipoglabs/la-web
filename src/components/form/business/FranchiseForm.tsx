@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import FormField from "@/components/form/fields/FormField";
 import { toast } from "sonner";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 export default function FranchiseOpportunitiesForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -14,6 +15,7 @@ export default function FranchiseOpportunitiesForm() {
   const category = store.category;
   const subcategory = store.subcategory;
 
+  const name = store.name ?? "";
   const businessName = (store as any).businessName ?? "";
   const industry = (store as any).industry ?? "";
   const investmentRequired = (store as any).investmentRequired ?? "";
@@ -63,6 +65,8 @@ export default function FranchiseOpportunitiesForm() {
 
     const mapped: Record<string, string> = {};
 
+    if (!name.trim())
+      mapped.name = "Title is required";
     if (!businessName.trim())
       mapped.businessName = "Business name required";
     if (!industry.trim())
@@ -87,6 +91,7 @@ export default function FranchiseOpportunitiesForm() {
       return;
     }
 
+    setField("name", sanitizeAdTitle(name.trim()));
     setField("description", description.trim());
 
     setErrors({});
@@ -103,6 +108,14 @@ export default function FranchiseOpportunitiesForm() {
       <h2 className="text-2xl font-bold">
         Franchise Opportunities Details
       </h2>
+
+      <FormField
+        label="Adv Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", sanitizeAdTitle(String(v)))}
+        required
+      />
 
       <FormField
         label="Business Name"
@@ -165,7 +178,7 @@ export default function FranchiseOpportunitiesForm() {
       /> */}
 
       <FormField
-        label="Business Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

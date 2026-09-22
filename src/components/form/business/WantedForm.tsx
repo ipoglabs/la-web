@@ -58,7 +58,7 @@ export default function WantedForm() {
 
         {/* Title */}
         <FormField
-          label="Wanted Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Looking for Manufacturing Partner"
           required
@@ -93,7 +93,7 @@ export default function WantedForm() {
 
         {/* Description */}
         <FormField
-          label="Wanted Details"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe what you are looking for..."

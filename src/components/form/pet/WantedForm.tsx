@@ -101,9 +101,9 @@ export default function PetWantedForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Pet Wanted</h2>
 
-      <FormField label="Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <FormField label="Additional Information" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <ToggleButtonGroup title="Type of Pet Wanted" singleSelect value={wantedPetType ? [wantedPetType] : []} onChange={(v) => setField("wantedPetType", v[0] ?? "")}>
         <ToggleGroupButton value="dog">Dog</ToggleGroupButton>

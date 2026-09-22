@@ -55,7 +55,7 @@ export default function AnnouncementForm() {
 
         {/* Title */}
         <FormField
-          label="Announcement Title"
+          label="Adv Title"
           field="name"
           placeholder="Enter announcement title"
           required
@@ -63,7 +63,7 @@ export default function AnnouncementForm() {
 
         {/* Description (matches config key) */}
         <FormField
-          label="Announcement"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide details about the announcement"

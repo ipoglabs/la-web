@@ -81,7 +81,7 @@ export default function JobPartTimeForm() {
       <h2 className="text-2xl font-semibold text-center">Post Part-Time Job</h2>
 
       <FormField
-        label="Job Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -89,12 +89,12 @@ export default function JobPartTimeForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       <FormField
         label="Company"

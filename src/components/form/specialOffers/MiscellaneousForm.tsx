@@ -115,7 +115,7 @@ export default function MiscellaneousForm() {
       <h2 className="text-2xl font-bold">Miscellaneous</h2>
 
       <FormField
-        label="Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -156,7 +156,7 @@ export default function MiscellaneousForm() {
       <FormField label="Media URL" field="mediaUrl" value={mediaUrl} onChange={(v) => setField("mediaUrl", v)} />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

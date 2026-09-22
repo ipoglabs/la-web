@@ -34,7 +34,7 @@ export default function BusinessServiceForm() {
 
         {/* Basic */}
         <FormField
-          label="Service Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Accounting, Marketing, IT Support"
           required
@@ -45,7 +45,7 @@ export default function BusinessServiceForm() {
           placeholder="e.g., Consultancy, Repair, Freelance"
         />
         <FormField
-          label="Service Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe your business service in detail..."

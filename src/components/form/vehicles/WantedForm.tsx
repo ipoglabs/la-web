@@ -82,12 +82,12 @@ export default function VehicleWantedForm() {
       <h2 className="text-2xl font-semibold text-center">Post Vehicle Wanted</h2>
 
       <FormField
-        label="Ad Title (optional)"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
         placeholder="e.g. Looking for a 2018+ Toyota Corolla"
-      />
+       required />
 
       <ToggleButtonGroup title="Vehicle Category" singleSelect value={vehicleType ? [vehicleType] : []} onChange={(v) => setField("vehicleType", v[0] ?? "")}>
         <ToggleGroupButton value="car">Car</ToggleGroupButton>
@@ -137,13 +137,13 @@ export default function VehicleWantedForm() {
       </div>
 
       <FormField
-        label="Additional Information"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
         placeholder="Any specific requirements or constraints…"
-      />
+       required />
 
       <div className="space-y-2 border-t pt-4">
         <h3 className="text-lg font-semibold">Contact Details</h3>

@@ -101,7 +101,7 @@ export default function FinancialServicesForm() {
       </h2>
 
       <FormField
-        label="Service Name"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -153,7 +153,7 @@ export default function FinancialServicesForm() {
       />
 
       <FormField
-        label="Service Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

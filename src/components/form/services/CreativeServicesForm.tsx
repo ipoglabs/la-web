@@ -7,21 +7,27 @@ import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { toast } from "sonner";
 
-export default function OtherServiceForm() {
+export default function CreativeServicesForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const { countryConfig } = useCountryConfig();
   const currency = countryConfig.currency;
-  const setField = usePostFormStore((s) => s.setField);
   const store = usePostFormStore();
+  const setField = usePostFormStore((s) => s.setField);
 
   const name = store.name ?? "";
   const serviceType = (store as any).serviceType ?? "";
-  const availability = (store as any).availability ?? "";
+  const rateType = (store as any).rateType ?? "";
   const price = (store as any).price ?? "";
+  const availability = (store as any).availability ?? "";
   const description = store.description ?? "";
+  const skills = (store as any).skills ?? [];
+
   const sellerInfo = store.sellerInfo ?? {};
   const location = store.location ?? {};
 
+  const [skillsText, setSkillsText] = useState(
+    Array.isArray(skills) ? skills.join(", ") : ""
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isPositive = (v: unknown) => {
@@ -31,24 +37,20 @@ export default function OtherServiceForm() {
   };
 
   const dispatchValidated = (ok: boolean) => {
-    window.dispatchEvent(
-      new CustomEvent("postform:validated", { detail: { ok } })
-    );
+    window.dispatchEvent(new CustomEvent("postform:validated", { detail: { ok } }));
   };
 
   const scrollToFirstError = (mapped: Record<string, string>) => {
     const first = Object.keys(mapped)[0];
     if (!first) return;
-    const el = formRef.current?.querySelector<HTMLElement>(
-      `[name="${first}"]`
-    );
+    const el = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     el?.focus?.();
   };
 
-  const handlePrice = (v: string) => {
-    setField("price", v);
-    setField("salePrice", v); // backend consistency
+  const commitSkills = () => {
+    const arr = skillsText.split(",").map((s) => s.trim()).filter(Boolean);
+    setField("skills", arr);
   };
 
   const setSeller = (k: "name" | "email" | "phone", v?: string) => {
@@ -63,22 +65,15 @@ export default function OtherServiceForm() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     const mapped: Record<string, string> = {};
 
-    if (!name.trim()) mapped.name = "Service title required";
+    if (!name.trim()) mapped.name = "Title required";
     if (!serviceType) mapped.serviceType = "Service type required";
     if (!isPositive(price)) mapped.price = "Valid price required";
-    if (!location?.address?.trim())
-      mapped.location = "Location required";
-
-    if (!sellerInfo?.name?.trim())
-      mapped.sellerName = "Contact name required";
-    if (!sellerInfo?.phone?.trim())
-      mapped.sellerPhone = "Phone required";
+    if (!sellerInfo?.name?.trim()) mapped.sellerName = "Contact name required";
+    if (!sellerInfo?.phone?.trim()) mapped.sellerPhone = "Phone required";
 
     setErrors(mapped);
-
     if (Object.keys(mapped).length > 0) {
       scrollToFirstError(mapped);
       toast.error("Please fix highlighted fields");
@@ -88,7 +83,7 @@ export default function OtherServiceForm() {
 
     setField("name", name.trim());
     setField("description", description.trim());
-
+    commitSkills();
     setErrors({});
     dispatchValidated(true);
   };
@@ -98,44 +93,47 @@ export default function OtherServiceForm() {
       ref={formRef}
       data-post-form="true"
       onSubmit={onSubmit}
-      className="max-w-3xl mx-auto mt-6 space-y-6"
+      className="max-w-3xl mx-auto my-8 space-y-6"
     >
-      <h2 className="text-2xl font-semibold">Post Other Service</h2>
+      <h2 className="text-2xl font-semibold text-center">Creative Service</h2>
+
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
-        <ToggleGroupButton value="repair">Repair</ToggleGroupButton>
-        <ToggleGroupButton value="consultancy">Consultancy</ToggleGroupButton>
-        <ToggleGroupButton value="misc">Miscellaneous</ToggleGroupButton>
+        <ToggleGroupButton value="graphic-design">Graphic Design</ToggleGroupButton>
+        <ToggleGroupButton value="photography">Photography</ToggleGroupButton>
+        <ToggleGroupButton value="videography">Videography</ToggleGroupButton>
+        <ToggleGroupButton value="writing">Writing / Copywriting</ToggleGroupButton>
+        <ToggleGroupButton value="music-audio">Music / Audio</ToggleGroupButton>
+        <ToggleGroupButton value="web-design">Web / UI Design</ToggleGroupButton>
         <ToggleGroupButton value="other">Other</ToggleGroupButton>
       </ToggleButtonGroup>
 
-      {/* Title */}
-      <FormField
-        label="Adv Title"
-        field="name"
-        value={name}
-        onChange={(v) => setField("name", v)}
-        required
-      />
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Skills / Tools</label>
+        <input
+          className="border rounded w-full py-2 px-3"
+          placeholder="e.g. Photoshop, Premiere Pro, Copywriting"
+          value={skillsText}
+          onChange={(e) => setSkillsText(e.target.value)}
+          onBlur={commitSkills}
+        />
+        <p className="text-sm text-slate-500">Comma-separate skills — they will be saved as a list.</p>
+      </div>
 
-      {/* Description */}
-      <FormField
-        label="Adv Details"
-        field="description"
-        type="textarea"
-        value={description}
-        onChange={(v) => setField("description", v)}
-        required
-      />
+      <ToggleButtonGroup title="Rate Type" singleSelect value={rateType ? [rateType] : []} onChange={(v) => setField("rateType", v[0] ?? "")}>
+        <ToggleGroupButton value="hourly">Hourly</ToggleGroupButton>
+        <ToggleGroupButton value="per-project">Per Project</ToggleGroupButton>
+        <ToggleGroupButton value="per-day">Per Day</ToggleGroupButton>
+      </ToggleButtonGroup>
 
-      {/* Price & Availability */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField
           label={`Price (${currency})`}
           field="price"
           type="number"
           value={price}
-          onChange={(v) => handlePrice(String(v))}
+          onChange={(v) => setField("price", v)}
           required
         />
         <FormField
@@ -146,40 +144,48 @@ export default function OtherServiceForm() {
         />
       </div>
 
-      {/* Location */}
       <input
-        className="border rounded px-3 py-2 w-full"
-        placeholder="Service Location"
+        name="location"
+        className="border rounded w-full px-3 py-2"
+        placeholder="Location (if in-person)"
         value={location?.address ?? ""}
         onChange={(e) => setLoc(e.target.value)}
-        required
       />
 
-      {/* Contact */}
-      {/* <div className="grid grid-cols-3 gap-4 border-t pt-6">
+      <FormField
+        label="Adv Details"
+        field="description"
+        type="textarea"
+        value={description}
+        onChange={(v) => setField("description", v)}
+       required />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-6">
         <input
+          name="sellerName"
           className="border rounded px-3 py-2"
           placeholder="Contact Name"
           value={sellerInfo?.name ?? ""}
           onChange={(e) => setSeller("name", e.target.value)}
-          required
         />
         <input
+          name="sellerEmail"
           className="border rounded px-3 py-2"
-          placeholder="Phone"
-          value={sellerInfo?.phone ?? ""}
-          onChange={(e) => setSeller("phone", e.target.value)}
-          required
-        />
-        <input
-          className="border rounded px-3 py-2"
+          type="email"
           placeholder="Email"
           value={sellerInfo?.email ?? ""}
           onChange={(e) => setSeller("email", e.target.value)}
         />
-      </div> */}
+        <input
+          name="sellerPhone"
+          className="border rounded px-3 py-2"
+          type="tel"
+          placeholder="Phone"
+          value={sellerInfo?.phone ?? ""}
+          onChange={(e) => setSeller("phone", e.target.value)}
+        />
+      </div>
 
-      {/* Hidden submit button for global Next flow */}
       <button type="submit" className="sr-only" />
     </form>
   );

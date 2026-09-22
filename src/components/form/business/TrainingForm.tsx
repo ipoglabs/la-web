@@ -58,7 +58,7 @@ export default function TrainingOpportunitiesForm() {
 
         {/* Title */}
         <FormField
-          label="Training Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Advanced React Workshop"
           required
@@ -102,7 +102,7 @@ export default function TrainingOpportunitiesForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe the training, topics covered, duration, and benefits"

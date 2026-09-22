@@ -43,10 +43,10 @@ export default function ServiceWantedForm() {
 
         {/* Title (optional) */}
         <FormField
-          label="Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Need plumber for kitchen sink repair"
-        />
+         required />
 
         {/* Service Type */}
         <FormField
@@ -58,7 +58,7 @@ export default function ServiceWantedForm() {
 
         {/* Description */}
         <FormField
-          label="Description of Service Needed"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide details of what you need, timing, any constraints…"

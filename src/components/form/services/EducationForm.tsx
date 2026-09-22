@@ -94,7 +94,7 @@ export default function EducationForm() {
       <h2 className="text-2xl font-bold">Post Education Service</h2>
 
       <FormField
-        label="Service Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -154,12 +154,12 @@ export default function EducationForm() {
       </div>
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Contact */}
       {/* <div className="grid grid-cols-3 gap-4 border-t pt-6">

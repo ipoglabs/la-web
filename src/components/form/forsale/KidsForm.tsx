@@ -97,7 +97,7 @@ export default function BabyKidsForm() {
     >
       <h2 className="text-2xl font-bold">Post Baby & Kids Item</h2>
 
-      <FormField label="Ad Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <ToggleButtonGroup title="Condition" singleSelect value={condition ? [condition] : []} onChange={(v) => setField("condition", v[0] ?? "")}>
         <ToggleGroupButton value="new">New</ToggleGroupButton>
@@ -136,7 +136,7 @@ export default function BabyKidsForm() {
         />
       </div>
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <div className="space-y-3 border-t pt-4">
         <h3 className="text-lg font-semibold">Contact Details</h3>

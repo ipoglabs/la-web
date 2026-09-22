@@ -150,7 +150,7 @@ export default function TechnologyServiceForm() {
 
       {/* Title */}
       <FormField
-        label="Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -160,7 +160,7 @@ export default function TechnologyServiceForm() {
 
       {/* Description */}
       <FormField
-        label="Service Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

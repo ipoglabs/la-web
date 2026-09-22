@@ -105,9 +105,9 @@ export default function PartsForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Post Vehicle Parts & Accessories</h2>
 
-      <FormField label="Part Name" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <ToggleButtonGroup title="Parts Category" singleSelect value={partsCategory ? [partsCategory] : []} onChange={(v) => setField("partsCategory", v[0] ?? "")}>
         <ToggleGroupButton value="engine">Engine Parts</ToggleGroupButton>

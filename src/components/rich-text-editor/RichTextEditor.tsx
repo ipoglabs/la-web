@@ -16,6 +16,7 @@ export interface RichTextEditorProps {
   onChange?: (html: string) => void;
   placeholder?: string;
   maxLength?: number;
+  className?: string;
 }
 
 // ── Toolbar definition ────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export function RichTextEditor({
   onChange,
   placeholder = "Write something...",
   maxLength = 2000,
+  className,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const seededRef = useRef(false);
@@ -155,7 +157,8 @@ export function RichTextEditor({
           "w-full bg-white rounded-md transition-all duration-150",
           "border-[1.5px]",
           overLimit && !focused ? "border-red-400" : "border-slate-400",
-          focused && "border-b-[3px] border-b-blue-500"
+          focused && "border-b-[3px] border-b-blue-500",
+          className
         )}
       >
         {/* ── Toolbar row ────────────────────────────────────────────── */}

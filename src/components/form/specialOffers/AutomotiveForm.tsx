@@ -6,6 +6,7 @@ import FormField from "@/components/form/fields/FormField";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { toast } from "sonner";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 export default function AutomotiveForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -18,6 +19,7 @@ export default function AutomotiveForm() {
   const category = store.category;
   const subcategory = store.subcategory;
 
+  const name = store.name ?? "";
   const make = (store as any).make ?? "";
   const model = (store as any).model ?? "";
   const year = (store as any).year ?? "";
@@ -89,6 +91,7 @@ export default function AutomotiveForm() {
 
     const mapped: Record<string, string> = {};
 
+    if (!name.trim()) mapped.name = "Title is required";
     if (!make.trim()) mapped.make = "Make required";
     if (!model.trim()) mapped.model = "Model required";
     if (!isPositive(price)) mapped.salePrice = "Invalid price";
@@ -107,6 +110,7 @@ export default function AutomotiveForm() {
     }
 
     // clean persist
+    setField("name", sanitizeAdTitle(name.trim()));
     setField("make", make.trim());
     setField("model", model.trim());
     setField("description", description.trim());
@@ -123,6 +127,14 @@ export default function AutomotiveForm() {
       className="space-y-6 max-w-3xl mx-auto p-6"
     >
       <h2 className="text-2xl font-bold">Post a Vehicle</h2>
+
+      <FormField
+        label="Adv Title"
+        field="name"
+        value={name}
+        onChange={(v) => setField("name", sanitizeAdTitle(String(v)))}
+        required
+      />
 
       <ToggleButtonGroup title="Vehicle Type" singleSelect value={subcategory ? [subcategory] : []} onChange={(v) => setField("subcategory", v[0] ?? "")}>
         <ToggleGroupButton value="car">Car</ToggleGroupButton>
@@ -244,12 +256,12 @@ export default function AutomotiveForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       <button type="submit" className="sr-only" />
     </form>

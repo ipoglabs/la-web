@@ -58,7 +58,7 @@ export default function StartupSupportForm() {
 
         {/* Title */}
         <FormField
-          label="Startup / Service Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Seeking Seed Funding for Fintech Startup"
           required
@@ -102,7 +102,7 @@ export default function StartupSupportForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe your startup, stage, goals, and support needed"

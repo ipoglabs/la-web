@@ -125,7 +125,7 @@ export default function TravelServiceForm() {
 
       {/* Title */}
       <FormField
-        label="Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -183,7 +183,7 @@ export default function TravelServiceForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

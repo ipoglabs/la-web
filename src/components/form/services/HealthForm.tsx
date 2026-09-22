@@ -98,7 +98,7 @@ export default function HealthServiceForm() {
 
       {/* Title */}
       <FormField
-        label="Service Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -190,7 +190,7 @@ export default function HealthServiceForm() {
       </div>
 
       <FormField
-        label="Service Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

@@ -58,7 +58,7 @@ export default function PartnershipOpportunitiesForm() {
 
         {/* Title */}
         <FormField
-          label="Opportunity Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Seeking Strategic Distribution Partner"
           required
@@ -95,7 +95,7 @@ export default function PartnershipOpportunitiesForm() {
 
         {/* Proposal Details (from config) */}
         <FormField
-          label="Proposal Details"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe partnership expectations, collaboration model, revenue sharing, etc."

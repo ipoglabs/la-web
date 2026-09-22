@@ -107,7 +107,7 @@ export default function HomeServiceForm() {
 
       {/* Title */}
       <FormField
-        label="Service Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -116,7 +116,7 @@ export default function HomeServiceForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

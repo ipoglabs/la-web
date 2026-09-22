@@ -120,7 +120,7 @@ export default function B2CServiceForm() {
       </h2>
 
       <FormField
-        label="Service Name"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -159,7 +159,7 @@ export default function B2CServiceForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

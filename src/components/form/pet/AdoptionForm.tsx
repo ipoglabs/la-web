@@ -6,6 +6,7 @@ import FormField from "@/components/form/fields/FormField";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { toast } from "sonner";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 export default function PetAdoptionForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -75,7 +76,7 @@ export default function PetAdoptionForm() {
     }
 
     setField("petName", petName.trim());
-    setField("name", petName.trim());
+    setField("name", sanitizeAdTitle(petName.trim()));
     setField("description", description.trim());
     setErrors({});
     dispatchValidated(true);
@@ -91,7 +92,7 @@ export default function PetAdoptionForm() {
     >
       <h2 className="text-2xl font-semibold text-center">Post Pet for Adoption</h2>
 
-      <FormField label="Pet Name" field="petName" value={petName} onChange={(v) => setField("petName", v)} required />
+      <FormField label="Adv Title" field="petName" value={petName} onChange={(v) => setField("petName", v)} required />
 
       <ToggleButtonGroup title="Pet Type" singleSelect value={petType ? [petType] : []} onChange={(v) => setField("petType", v[0] ?? "")}>
         <ToggleGroupButton value="dog">Dog</ToggleGroupButton>
@@ -127,7 +128,7 @@ export default function PetAdoptionForm() {
         placeholder="Enter amount or 0 if free"
       />
 
-      <FormField label="Additional Information" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <div className="space-y-1">
         <label className="text-sm font-medium">Location *</label>

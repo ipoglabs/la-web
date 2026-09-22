@@ -95,7 +95,7 @@ export default function PropertySaleForm() {
 
       {/* Basic */}
       <FormField
-        label="Listing Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -103,12 +103,12 @@ export default function PropertySaleForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Pricing */}
       <FormField

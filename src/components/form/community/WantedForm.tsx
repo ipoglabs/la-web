@@ -55,7 +55,7 @@ export default function WantedForm() {
 
         {/* Title */}
         <FormField
-          label="Item / Service Wanted"
+          label="Adv Title"
           field="name"
           placeholder="What are you looking for?"
           required
@@ -63,7 +63,7 @@ export default function WantedForm() {
 
         {/* Description (matches config key) */}
         <FormField
-          label="Wanted Details"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide details of the item or service you want"

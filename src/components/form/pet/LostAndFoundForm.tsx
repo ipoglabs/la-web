@@ -92,9 +92,9 @@ export default function PetLostFoundForm() {
         <ToggleGroupButton value="found">Found</ToggleGroupButton>
       </ToggleButtonGroup>
 
-      <FormField label="Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <FormField label="Pet Type" field="petType" value={petType} onChange={(v) => setField("petType", v)} required />

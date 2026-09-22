@@ -103,7 +103,7 @@ export default function JobFulltimeForm() {
       />
 
       <FormField
-        label="Job Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -111,7 +111,7 @@ export default function JobFulltimeForm() {
       />
 
       <FormField
-        label="Job Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}

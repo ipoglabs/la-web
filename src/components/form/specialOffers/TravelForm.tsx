@@ -5,6 +5,7 @@ import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import FormField from "@/components/form/fields/FormField";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { toast } from "sonner";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
 
 export default function TravelTourismForm() {
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -97,6 +98,7 @@ export default function TravelTourismForm() {
     }
 
     setField("tourTitle", tourTitle.trim());
+    setField("name", sanitizeAdTitle(tourTitle.trim()));
     setField("description", description.trim());
 
     setErrors({});
@@ -113,7 +115,7 @@ export default function TravelTourismForm() {
       <h2 className="text-2xl font-bold">Travel & Tourism</h2>
 
       <FormField
-        label="Tour / Package Title"
+        label="Adv Title"
         field="tourTitle"
         value={tourTitle}
         onChange={(v) => setField("tourTitle", v)}
@@ -130,12 +132,12 @@ export default function TravelTourismForm() {
       </ToggleButtonGroup>
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Start Date" field="startDate" type="date" value={startDate} onChange={(v) => setField("startDate", v)} />

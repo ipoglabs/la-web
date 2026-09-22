@@ -114,7 +114,7 @@ export default function RetailShoppingForm() {
       <h2 className="text-2xl font-bold">Retail & Shopping</h2>
 
       <FormField
-        label="Product Name"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -159,12 +159,12 @@ export default function RetailShoppingForm() {
       />
 
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* <h3 className="text-lg font-semibold">Seller Information</h3>
 

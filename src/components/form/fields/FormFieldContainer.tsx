@@ -6,6 +6,7 @@ import { FormHelperText } from "./FormHelperText";
 interface FormFieldProps {
   label: string;
   htmlFor: string;
+  required?: boolean;
   error?: string;
   children: React.ReactNode;
   className?: string;
@@ -16,6 +17,7 @@ interface FormFieldProps {
 export function FormField({
   label,
   htmlFor,
+  required,
   error,
   children,
   className,
@@ -42,7 +44,7 @@ export function FormField({
         className="text-base font-normal text-slate-800 mb-1"
         htmlFor={htmlFor}
       >
-        {label}
+        {label} {required ? <span className="text-red-500">*</span> : null}
       </Label>
 
       {error && (

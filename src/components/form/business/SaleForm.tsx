@@ -60,7 +60,7 @@ export default function BusinessSaleLeaseForm() {
 
         {/* Title */}
         <FormField
-          label="Business Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Restaurant for Sale in Chennai"
           required
@@ -98,7 +98,7 @@ export default function BusinessSaleLeaseForm() {
 
         {/* Description */}
         <FormField
-          label="Business Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Provide full details about the business, revenue, assets, lease terms, etc."

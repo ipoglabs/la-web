@@ -58,7 +58,7 @@ export default function FreelanceContractorForm() {
 
         {/* Service Title */}
         <FormField
-          label="Service Title"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Web Developer, Graphic Designer"
           required
@@ -109,7 +109,7 @@ export default function FreelanceContractorForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe your services in detail..."

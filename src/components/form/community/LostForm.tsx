@@ -55,7 +55,7 @@ export default function LostAndFoundForm() {
 
         {/* Item Title */}
         <FormField
-          label="Item Name"
+          label="Adv Title"
           field="name"
           placeholder="e.g., Wallet, Phone, Dog"
           required
@@ -63,7 +63,7 @@ export default function LostAndFoundForm() {
 
         {/* Description */}
         <FormField
-          label="Description"
+          label="Adv Details"
           field="description"
           type="textarea"
           placeholder="Describe the item (color, brand, unique features)"

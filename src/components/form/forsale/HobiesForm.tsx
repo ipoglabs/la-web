@@ -97,7 +97,7 @@ export default function HobbiesCollectionsForm() {
     >
       <h2 className="text-2xl font-bold">Post Hobbies & Collections Item</h2>
 
-      <FormField label="Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <ToggleButtonGroup title="Item Type" singleSelect value={itemType ? [itemType] : []} onChange={(v) => setField("itemType", v[0] ?? "")}>
         <ToggleGroupButton value="art">Art</ToggleGroupButton>
@@ -146,7 +146,7 @@ export default function HobbiesCollectionsForm() {
         />
       </div>
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <div className="space-y-3 border-t pt-4">
         <h3 className="text-lg font-semibold">Contact Details</h3>

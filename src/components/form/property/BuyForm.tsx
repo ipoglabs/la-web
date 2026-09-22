@@ -2,13 +2,17 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/components/form/fields/FormFieldWrapper";
 import { FormField as FormFieldContainer } from "@/components/form/fields/FormFieldContainer";
 import { usePropertyConfig } from "@/lib/hooks/usePropertyConfig";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
+
+const FACILITY_OPTIONS = ["Lift", "Security", "Power Backup", "Water Supply", "Fire Safety"];
+const NEGOTIABLE_OPTIONS = ["Yes", "No"];
 
 export default function BuyForm() {
   const config   = usePropertyConfig();
@@ -23,6 +27,12 @@ export default function BuyForm() {
   const builtup_area = usePostFormStore((s) => (s as any).builtup_area) ?? "";
   const carpet_area  = usePostFormStore((s) => (s as any).carpet_area) ?? "";
   const amenities    = (usePostFormStore((s) => (s as any).amenities) as string[]) ?? [];
+  const beds         = usePostFormStore((s) => (s as any).beds) ?? "";
+  const baths        = usePostFormStore((s) => (s as any).baths) ?? "";
+  const facilities   = (usePostFormStore((s) => (s as any).facilities) as string[]) ?? [];
+  const negotiable   = usePostFormStore((s) => (s as any).negotiable) ?? "";
+  const ownership    = usePostFormStore((s) => (s as any).ownership) ?? "";
+  const age          = usePostFormStore((s) => (s as any).age) ?? "";
 
   return (
     <div className="w-full max-w-xl space-y-6">
@@ -40,24 +50,21 @@ export default function BuyForm() {
       </ToggleButtonGroup>
 
       {/* Title */}
-      <FormFieldContainer label="Listing Title" htmlFor="name">
+      <FormFieldContainer label="Adv Title" htmlFor="name" required>
         <Input
           id="name"
           name="name"
           value={name}
-          onChange={(e) => setField("name", e.target.value)}
+          onChange={(e) => setField("name", sanitizeAdTitle(e.target.value))}
         />
       </FormFieldContainer>
 
       {/* Description */}
-      <FormFieldContainer label="Description" htmlFor="description">
-        <Textarea
-          id="description"
-          name="description"
-          placeholder="Describe the property…"
+      <FormFieldContainer label="Adv Details" htmlFor="description" required>
+        <RichTextEditor
           value={description}
-          onChange={(e) => setField("description", e.target.value)}
-          rows={5}
+          onChange={(html) => setField("description", html)}
+          placeholder="Describe the property…"
         />
       </FormFieldContainer>
 
@@ -93,6 +100,75 @@ export default function BuyForm() {
           />
         </FormFieldContainer>
       </FormFieldWrapper>
+
+      {/* Beds / Baths / Age */}
+      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-3 md:gap-4">
+        <FormFieldContainer label="Beds" htmlFor="beds">
+          <Input
+            id="beds"
+            name="beds"
+            type="number"
+            value={beds as any}
+            onChange={(e) => setField("beds", e.target.value)}
+          />
+        </FormFieldContainer>
+
+        <FormFieldContainer label="Baths" htmlFor="baths">
+          <Input
+            id="baths"
+            name="baths"
+            type="number"
+            value={baths as any}
+            onChange={(e) => setField("baths", e.target.value)}
+          />
+        </FormFieldContainer>
+
+        <FormFieldContainer label="Property Age" htmlFor="age">
+          <Input
+            id="age"
+            name="age"
+            placeholder="e.g. 5 years / New Construction"
+            value={age}
+            onChange={(e) => setField("age", e.target.value)}
+          />
+        </FormFieldContainer>
+      </FormFieldWrapper>
+
+      {/* Negotiable / Ownership */}
+      <FormFieldWrapper className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
+        <ToggleButtonGroup
+          title="Negotiable"
+          singleSelect
+          value={negotiable ? [negotiable] : []}
+          onChange={(v) => setField("negotiable", v[0] ?? "")}
+        >
+          {NEGOTIABLE_OPTIONS.map((o) => (
+            <ToggleGroupButton key={o} value={o}>{o}</ToggleGroupButton>
+          ))}
+        </ToggleButtonGroup>
+
+        <ToggleButtonGroup
+          title="Ownership"
+          singleSelect
+          value={ownership ? [ownership] : []}
+          onChange={(v) => setField("ownership", v[0] ?? "")}
+        >
+          {config.sale.ownershipTypes.map((o) => (
+            <ToggleGroupButton key={o.value} value={o.value}>{o.label}</ToggleGroupButton>
+          ))}
+        </ToggleButtonGroup>
+      </FormFieldWrapper>
+
+      {/* Facilities */}
+      <ToggleButtonGroup
+        title="Facilities"
+        value={facilities}
+        onChange={(v) => setField("facilities", v)}
+      >
+        {FACILITY_OPTIONS.map((f) => (
+          <ToggleGroupButton key={f} value={f}>{f}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
 
       {/* Amenities */}
       <ToggleButtonGroup

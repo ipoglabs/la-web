@@ -122,7 +122,7 @@ export default function EntertainmentForm() {
 
       {/* Event Title */}
       <FormField
-        label="Event / Entertainment Title"
+        label="Adv Title"
         field="name"
         value={name}
         onChange={(v) => setField("name", v)}
@@ -214,12 +214,12 @@ export default function EntertainmentForm() {
 
       {/* Description */}
       <FormField
-        label="Description"
+        label="Adv Details"
         field="description"
         type="textarea"
         value={description}
         onChange={(v) => setField("description", v)}
-      />
+       required />
 
       {/* Contact */}
       {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

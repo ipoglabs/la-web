@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { usePostFormStore } from "@/app/(main)/post/store/postFormStore";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { FormFieldWrapper } from "@/components/form/fields/FormFieldWrapper";
@@ -11,6 +11,14 @@ import { cn as cx } from "@/lib/utils";
 import { usePropertyConfig } from "@/lib/hooks/usePropertyConfig";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { toast } from "sonner";
+import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
+
+const RULE_OPTIONS = [
+  "Smoking Allowed",
+  "Pets Allowed",
+  "Visitors Allowed",
+  "Cooking Allowed",
+];
 
 export default function RoomRentalForm() {
   const formRef  = useRef<HTMLFormElement | null>(null);
@@ -28,6 +36,7 @@ export default function RoomRentalForm() {
   const preferred_tenants = usePostFormStore((s) => (s as any).preferred_tenants) ?? "";
   const gender_pref  = usePostFormStore((s) => (s as any).gender_pref) ?? "";
   const amenities    = (usePostFormStore((s) => (s as any).amenities) as string[]) ?? [];
+  const rules        = (usePostFormStore((s) => (s as any).rules) as string[]) ?? [];
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -104,22 +113,20 @@ export default function RoomRentalForm() {
       </ToggleButtonGroup>
 
       {/* Title */}
-      <FormFieldContainer label="Listing Title" htmlFor="name" error={errors.name}>
+      <FormFieldContainer label="Adv Title" htmlFor="name" error={errors.name} required>
         <Input
           id="name"
           name="name"
           value={name}
-          onChange={(e) => setField("name", e.target.value)}
+          onChange={(e) => setField("name", sanitizeAdTitle(e.target.value))}
         />
       </FormFieldContainer>
 
       {/* Description */}
-      <FormFieldContainer label="Description" htmlFor="description" error={errors.description}>
-        <Textarea
-          id="description"
-          name="description"
+      <FormFieldContainer label="Adv Details" htmlFor="description" error={errors.description} required>
+        <RichTextEditor
           value={description}
-          onChange={(e) => setField("description", e.target.value)}
+          onChange={(html) => setField("description", html)}
         />
       </FormFieldContainer>
 
@@ -173,6 +180,17 @@ export default function RoomRentalForm() {
       >
         {config.roomRental.amenities.map((a) => (
           <ToggleGroupButton key={a} value={a}>{a}</ToggleGroupButton>
+        ))}
+      </ToggleButtonGroup>
+
+      {/* House Rules */}
+      <ToggleButtonGroup
+        title="House Rules"
+        value={rules}
+        onChange={(v) => setField("rules", v)}
+      >
+        {RULE_OPTIONS.map((r) => (
+          <ToggleGroupButton key={r} value={r}>{r}</ToggleGroupButton>
         ))}
       </ToggleButtonGroup>
 

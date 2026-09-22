@@ -97,7 +97,7 @@ export default function HomeFurnitureForm() {
     >
       <h2 className="text-2xl font-bold">Post Home & Furniture</h2>
 
-      <FormField label="Ad Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
+      <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField label="Material" field="material" value={material} onChange={(v) => setField("material", v)} />
@@ -121,7 +121,7 @@ export default function HomeFurnitureForm() {
         required
       />
 
-      <FormField label="Description" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)} />
+      <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />
 
       <div className="space-y-1">
         <label className="text-sm font-medium">Location</label>
