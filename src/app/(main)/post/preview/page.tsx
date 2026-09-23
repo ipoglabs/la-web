@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
-import PostHeader from "../components/PostHeader";
 import ReviewDetailsSection from "../components/ReviewSection";
 import { updatePost } from "@/app/actions/updatePost";
 import { usePostFormStore } from "../store/postFormStore";
@@ -364,8 +363,6 @@ export default function PreviewPage() {
 
   return (
     <>
-      <PostHeader />
-
       {loading && (
         <SubmitProgressModal status={stepStatus} errorMessage={clientError} />
       )}

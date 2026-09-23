@@ -20,5 +20,5 @@ export default async function PostPage() {
     redirect("/account-settings?verify=1");
   }
 
-  redirect("/post/select-category");
+  redirect("/post/select-category?new=1");
 }
