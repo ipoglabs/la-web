@@ -29,7 +29,7 @@ export function buildPostFormData(data: StoreState) {
   });
 
   const normCat = normalizeCategory(data.category);
-  const normSub = normalizeSubcategory(data.subcategory);
+  const normSub = normalizeSubcategory(data.category, data.subcategory);
   const spec = CATEGORY_CONFIG[normCat]?.[normSub];
 
   const applySpec = (fields?: FieldSpec[]) => {

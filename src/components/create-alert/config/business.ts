@@ -1,5 +1,5 @@
 import type { MainCategory } from "../types";
-import { field, workArrangement, conditionFull, experience } from "./shared";
+import { field, workArrangement, conditionFull, experience, serviceMode } from "./shared";
 
 export const business: MainCategory = {
   id: "business",
@@ -114,6 +114,37 @@ export const business: MainCategory = {
       ],
     },
     {
+      id: "b2c_service",
+      label: "B2C Service",
+      icon: "users",
+      filters: [
+        {
+          id: "service_type",
+          label: "Service",
+          type: "toggle",
+          options: [
+            { label: "Home Services",   value: "home"       },
+            { label: "Health & Beauty", value: "health"     },
+            { label: "Education",       value: "education"  },
+            { label: "Events",          value: "events"     },
+            { label: "Repairs",         value: "repairs"    },
+            { label: "Delivery",        value: "delivery"   },
+            { label: "Other",           value: "other"      },
+          ],
+        },
+        serviceMode,
+        {
+          id: "provider",
+          label: "Provider",
+          type: "toggle",
+          options: [
+            { label: "Individual", value: "individual" },
+            { label: "Company",    value: "company"    },
+          ],
+        },
+      ],
+    },
+    {
       id: "freelance_contractors",
       label: "Freelance Contractors",
       icon: "user-check",
@@ -222,6 +253,37 @@ export const business: MainCategory = {
       ],
     },
     {
+      id: "training",
+      label: "Training Opportunities",
+      icon: "graduation-cap",
+      filters: [
+        field,
+        {
+          id: "training_mode",
+          label: "Mode",
+          type: "toggle",
+          options: [
+            { label: "In-person", value: "inperson" },
+            { label: "Online",    value: "online", icon: "laptop" },
+            { label: "Hybrid",    value: "hybrid"   },
+          ],
+        },
+        {
+          id: "duration",
+          label: "Duration",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",         value: "any" },
+            { label: "< 1 day",     value: "1d"  },
+            { label: "1-3 days",    value: "3d"  },
+            { label: "1-4 weeks",   value: "4w"  },
+            { label: "1-3 months",  value: "3m"  },
+          ],
+        },
+      ],
+    },
+    {
       id: "franchise",
       label: "Franchise Opportunities",
       icon: "layout-grid",
@@ -262,6 +324,90 @@ export const business: MainCategory = {
             { label: "Unit Franchise",   value: "unit"   },
             { label: "Master Franchise", value: "master" },
             { label: "Area Dev",         value: "area"   },
+          ],
+        },
+      ],
+    },
+    {
+      id: "business_events",
+      label: "Business Events",
+      icon: "calendar",
+      filters: [
+        {
+          id: "event_type",
+          label: "Event Type",
+          type: "toggle",
+          options: [
+            { label: "Networking",  value: "networking"  },
+            { label: "Conference",  value: "conference"  },
+            { label: "Trade Show",  value: "tradeshow"   },
+            { label: "Workshop",    value: "workshop"    },
+            { label: "Webinar",     value: "webinar", icon: "laptop" },
+          ],
+        },
+        {
+          id: "event_mode",
+          label: "Mode",
+          type: "toggle",
+          options: [
+            { label: "In-person", value: "inperson" },
+            { label: "Online",    value: "online", icon: "laptop" },
+            { label: "Hybrid",    value: "hybrid"   },
+          ],
+        },
+      ],
+    },
+    {
+      id: "financial_services",
+      label: "Financial Services",
+      icon: "landmark",
+      filters: [
+        {
+          id: "service_type",
+          label: "Service",
+          type: "toggle",
+          options: [
+            { label: "Business Loans", value: "loans"      },
+            { label: "Investment",     value: "investment" },
+            { label: "Insurance",      value: "insurance"  },
+            { label: "Accounting",     value: "accounting" },
+            { label: "Tax Advisory",   value: "tax"        },
+            { label: "Other",          value: "other"      },
+          ],
+        },
+        {
+          id: "provider",
+          label: "Provider",
+          type: "toggle",
+          options: [
+            { label: "Individual", value: "individual" },
+            { label: "Company",    value: "company"    },
+          ],
+        },
+      ],
+    },
+    {
+      id: "misc",
+      label: "Miscellaneous",
+      icon: "more-horizontal",
+      filters: [field],
+    },
+    {
+      id: "wanted",
+      label: "Wanted",
+      icon: "search",
+      filters: [
+        field,
+        {
+          id: "urgency",
+          label: "Urgency",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",       value: "any"      },
+            { label: "Immediate", value: "immediate" },
+            { label: "This week", value: "week"      },
+            { label: "Flexible",  value: "flexible"  },
           ],
         },
       ],

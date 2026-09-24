@@ -1,0 +1,12 @@
+- generic [active] [ref=e1]:
+  - region "Notifications alt+T"
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e8]:
+        - heading "LokalAds Back Office" [level=1] [ref=e9]
+        - paragraph [ref=e10]: Secure administration portal for managing users, ads and operations
+      - link [ref=e11] [cursor=pointer]:
+        - /url: /bo-login
+        - button "Login to Back Office" [ref=e12]
+      - paragraph [ref=e13]: Authorized personnel only
+  - alert [ref=e14]

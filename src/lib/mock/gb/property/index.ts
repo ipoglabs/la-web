@@ -6,6 +6,7 @@ export { PROPERTY_STUDENTS } from './for-students';
 export { PROPERTY_COMMERCIAL } from './commercial';
 export { PROPERTY_HOLIDAY } from './holiday-rental';
 export { PROPERTY_LAND } from './land';
+export { PROPERTY_NEW_PROJECTS } from './new-projects';
 export { PROPERTY_WANTED } from './wanted';
 
 import { PROPERTY_RENT } from './to-rent';
@@ -15,6 +16,7 @@ import { PROPERTY_STUDENTS } from './for-students';
 import { PROPERTY_COMMERCIAL } from './commercial';
 import { PROPERTY_HOLIDAY } from './holiday-rental';
 import { PROPERTY_LAND } from './land';
+import { PROPERTY_NEW_PROJECTS } from './new-projects';
 import { PROPERTY_WANTED } from './wanted';
 
 export const ALL_PROPERTY_LISTINGS: MockListing[] = [
@@ -25,6 +27,7 @@ export const ALL_PROPERTY_LISTINGS: MockListing[] = [
   ...PROPERTY_COMMERCIAL,
   ...PROPERTY_HOLIDAY,
   ...PROPERTY_LAND,
+  ...PROPERTY_NEW_PROJECTS,
   ...PROPERTY_WANTED,
 ];
 
@@ -37,6 +40,7 @@ export const GB_PROPERTY_SUBCATEGORY_MAP: Record<string, MockListing[]> = {
   commercial: PROPERTY_COMMERCIAL,
   holiday_rental: PROPERTY_HOLIDAY,
   land: PROPERTY_LAND,
+  new_projects: PROPERTY_NEW_PROJECTS,
   wanted: PROPERTY_WANTED,
 };
 

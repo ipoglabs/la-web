@@ -6,6 +6,7 @@ import { IN_PROPERTY_STUDENTS }  from "./for-students";
 import { IN_PROPERTY_COMMERCIAL } from "./commercial";
 import { IN_PROPERTY_HOLIDAY }   from "./holiday-rental";
 import { IN_PROPERTY_LAND }      from "./land";
+import { IN_PROPERTY_NEW_PROJECTS } from "./new-projects";
 import { IN_PROPERTY_WANTED }    from "./wanted";
 
 export {
@@ -16,6 +17,7 @@ export {
   IN_PROPERTY_COMMERCIAL,
   IN_PROPERTY_HOLIDAY,
   IN_PROPERTY_LAND,
+  IN_PROPERTY_NEW_PROJECTS,
   IN_PROPERTY_WANTED,
 };
 
@@ -27,6 +29,7 @@ export const IN_PROPERTY_SUBCATEGORY_MAP = {
   commercial:     IN_PROPERTY_COMMERCIAL,
   holiday_rental: IN_PROPERTY_HOLIDAY,
   land:           IN_PROPERTY_LAND,
+  new_projects:   IN_PROPERTY_NEW_PROJECTS,
   wanted:         IN_PROPERTY_WANTED,
 } as const;
 
@@ -38,5 +41,6 @@ export const IN_ALL_PROPERTY_LISTINGS: MockListing[] = [
   ...IN_PROPERTY_COMMERCIAL,
   ...IN_PROPERTY_HOLIDAY,
   ...IN_PROPERTY_LAND,
+  ...IN_PROPERTY_NEW_PROJECTS,
   ...IN_PROPERTY_WANTED,
 ];

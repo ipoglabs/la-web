@@ -1,6 +1,13 @@
 import type { FieldSpec } from "./types";
 
 export const servicesConfig: Record<string, FieldSpec[]> = {
+  business: [
+    { key: "serviceType", type: "string", label: "Service Type" },
+    { key: "availability", type: "string", label: "Availability" },
+    { key: "price", type: "currency", label: "Price (₹)" },
+    { key: "description", type: "string", label: "Description" },
+  ],
+
   education: [
     { key: "educationType", type: "string", label: "Education Type" },
     { key: "subject", type: "string", label: "Subject" },
@@ -58,6 +65,14 @@ export const servicesConfig: Record<string, FieldSpec[]> = {
     { key: "mode", type: "string", label: "Mode" },
     { key: "qualification", type: "string", label: "Qualification" },
     { key: "price", type: "currency", label: "Fee (₹)" },
+    { key: "availability", type: "string", label: "Availability" },
+  ],
+
+  creative: [
+    { key: "serviceType", type: "string", label: "Service Type" },
+    { key: "skills", type: "array", label: "Skills / Tools" },
+    { key: "rateType", type: "string", label: "Rate Type" },
+    { key: "price", type: "currency", label: "Price (₹)" },
     { key: "availability", type: "string", label: "Availability" },
   ],
 

@@ -125,9 +125,13 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     // filter would need to overlap-match rather than $gte/$lte a single
     // field — left unfiltered rather than guessed at.
   },
-  // new_projects: posting/config/property.ts has no "new projects" entry at
-  // all (unlike every other sub) — no posts have ever captured structured
-  // fields for it, so there's nothing to filter on; falls through to {}.
+  new_projects: {
+    // Mirrors "to_buy": propertyType is the only structured text field
+    // posting/config/property.ts's "new projects / off-plan" FieldSpec
+    // captures that has a matching filter here.
+    text: { prop_type: "propertyType" },
+    priceField: "salePrice",
+  },
 };
 
 // listed_by (every sub), land_action (land), stay_length (holiday_rental),

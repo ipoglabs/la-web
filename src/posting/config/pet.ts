@@ -1,6 +1,17 @@
 import type { FieldSpec } from "./types";
 
 export const petConfig: Record<string, FieldSpec[]> = {
+  forsale: [
+    { key: "petName", type: "string", label: "Pet Name" },
+    { key: "petType", type: "string", label: "Pet Type" },
+    { key: "breed", type: "string", label: "Breed" },
+    { key: "ageText", type: "string", label: "Age" },
+    { key: "gender", type: "string", label: "Gender" },
+    { key: "vaccination", type: "string", label: "Vaccination" },
+    { key: "size", type: "string", label: "Size" },
+    { key: "price", type: "currency", label: "Price (₹)" },
+  ],
+
   adoption: [
     { key: "petName", type: "string", label: "Pet Name" },
     { key: "petType", type: "string", label: "Pet Type" },

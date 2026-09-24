@@ -18,7 +18,7 @@ import type { MockListing } from "./mock-listing-schema";
 import {
   ALL_PROPERTY_LISTINGS,
   PROPERTY_RENT, PROPERTY_BUY, PROPERTY_ROOMS, PROPERTY_STUDENTS,
-  PROPERTY_COMMERCIAL, PROPERTY_HOLIDAY, PROPERTY_LAND, PROPERTY_WANTED,
+  PROPERTY_COMMERCIAL, PROPERTY_HOLIDAY, PROPERTY_LAND, PROPERTY_NEW_PROJECTS, PROPERTY_WANTED,
 } from "./gb/property";
 
 // ── Vehicles ──────────────────────────────────────────────────────────────────
@@ -183,6 +183,7 @@ export const CATEGORY_MAP: Record<string, Record<string, MockListing[]>> = {
     commercial:     PROPERTY_COMMERCIAL,
     holiday_rental: PROPERTY_HOLIDAY,
     land:           PROPERTY_LAND,
+    new_projects:   PROPERTY_NEW_PROJECTS,
     wanted:         PROPERTY_WANTED,
   },
   vehicles: {

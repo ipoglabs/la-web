@@ -10,6 +10,7 @@ import Post from "@/models/post";
 import User from "@/models/user";
 import { publicPostFilter } from "@/lib/postVisibility";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
+import { LEGACY_SUBCATEGORY_ALIASES, exactCaseInsensitive } from "@/lib/postSubcategoryAliases";
 import type { IAlert } from "@/models/Alert";
 
 /**
@@ -47,7 +48,16 @@ export async function findAlertMatches(
 
   if (alert.subCategory) {
     const subLabel = SUBCATEGORY_LABELS[alert.category]?.[alert.subCategory];
-    query.subcategory = subLabel ? { $in: [alert.subCategory, subLabel] } : alert.subCategory;
+    // Include legacy raw strings (e.g. "Car", "Bikes") that alias to this
+    // id (see lib/postSubcategoryAliases.ts), so an alert watching a
+    // subcategory still fires for a real post written with old wording.
+    const legacyRaw = Object.entries(LEGACY_SUBCATEGORY_ALIASES[alert.category] ?? {})
+      .filter(([, id]) => id === alert.subCategory)
+      .map(([raw]) => exactCaseInsensitive(raw));
+    const values: (string | RegExp)[] = [alert.subCategory, subLabel, ...legacyRaw].filter(
+      (v): v is string | RegExp => Boolean(v),
+    );
+    query.subcategory = values.length > 1 ? { $in: values } : values[0];
   }
 
   if (alert.location) {

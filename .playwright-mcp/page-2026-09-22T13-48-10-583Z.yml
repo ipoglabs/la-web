@@ -1,0 +1,83 @@
+- generic [ref=e2]:
+  - button "Open Next.js Dev Tools" [ref=e8] [cursor=pointer]
+  - alert [ref=e1]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - link "lokalads logo lokalads India Beta" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e16]
+          - generic [ref=e17]:
+            - img "lokalads" [ref=e18]
+            - generic [ref=e19]: India
+          - generic [ref=e20]: Beta
+        - generic [ref=e21]:
+          - link "POST" [ref=e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: "6"
+          - button "Account menu" [ref=e27]
+    - main [ref=e32]:
+      - main [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - heading "Select a Category" [level=1] [ref=e36]
+            - paragraph [ref=e37]: Pick the category that matches your advertisement.
+          - generic [ref=e39]:
+            - button "Vehicles" [ref=e41] [cursor=pointer]
+            - generic [ref=e42]:
+              - paragraph [ref=e43]: Which type of Vehicles?
+              - group "toggle group" [ref=e45]:
+                - generic [ref=e46]:
+                  - button "Car" [active] [ref=e47] [cursor=pointer]
+                  - button "Motorcycle" [ref=e49] [cursor=pointer]
+                  - button "Van" [ref=e51] [cursor=pointer]
+                  - button "Truck" [ref=e53] [cursor=pointer]
+                  - button "Parts & Accessories" [ref=e55] [cursor=pointer]
+                  - button "Boats" [ref=e57] [cursor=pointer]
+                  - button "Electric Vehicles" [ref=e59] [cursor=pointer]
+                  - button "Wanted" [ref=e61] [cursor=pointer]
+        - generic [ref=e64]:
+          - generic [ref=e66]:
+            - generic [ref=e67]: Step 1 / 5
+            - generic [ref=e68]: select category
+          - generic [ref=e71]:
+            - button "Cancel" [ref=e73] [cursor=pointer]
+            - button "Next" [ref=e75] [cursor=pointer]
+    - contentinfo [ref=e76]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - link "lokalads logo lokalads India" [ref=e80] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e81]
+            - generic [ref=e82]:
+              - img "lokalads" [ref=e83]
+              - generic [ref=e84]: India
+          - generic [ref=e85]:
+            - link "Instagram" [ref=e86] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e89] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e92] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e95] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e98] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e101]
+        - paragraph [ref=e104]: find anything, anywhere with care...
+      - generic [ref=e105]:
+        - separator [ref=e106]
+        - generic [ref=e107]:
+          - paragraph [ref=e108]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=e109]:
+            - button "Privacy Policy" [ref=e111]
+            - button "Terms & Conditions" [ref=e115]
+            - button "Cookie Policy" [ref=e119]
+            - generic [ref=e122]: Timeline
+            - button "Feedback" [ref=e126]
+      - generic [ref=e128]:
+        - paragraph [ref=e129]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e130] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

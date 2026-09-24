@@ -1,0 +1,124 @@
+- generic [active] [ref=f7e10]:
+  - button "Open Next.js Dev Tools" [ref=f7e6] [cursor=pointer]
+  - alert [ref=f7e11]
+  - generic [ref=f7e12]:
+    - banner [ref=f7e13]:
+      - generic [ref=f7e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f7e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f7e16]
+          - generic [ref=f7e17]:
+            - img "lokalads" [ref=f7e18]
+            - generic [ref=f7e19]: India
+          - generic [ref=f7e20]: Beta
+        - generic [ref=f7e21]:
+          - link "POST" [ref=f7e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f7e23] [cursor=pointer]
+          - button "Account menu" [ref=f7e27]
+    - main [ref=f7e32]:
+      - main [ref=f7e137]:
+        - generic [ref=f7e138]:
+          - heading "Advertisement Details" [level=1] [ref=f7e139]
+          - paragraph [ref=f7e140]: Fill in the main details.
+        - generic [ref=f7e141]:
+          - generic [ref=f7e142]:
+            - generic [ref=f7e143]:
+              - paragraph [ref=f7e145]: Property Type
+              - group "Property Type" [ref=f7e146]:
+                - button "HDB Flat" [ref=f7e147] [cursor=pointer]
+                - button "Condominium" [ref=f7e149] [cursor=pointer]
+                - button "Executive Condo" [ref=f7e151] [cursor=pointer]
+                - button "Landed Property" [ref=f7e153] [cursor=pointer]
+                - button "Shophouse" [ref=f7e155] [cursor=pointer]
+                - button "Other" [ref=f7e157] [cursor=pointer]
+            - generic [ref=f7e159]:
+              - generic [ref=f7e160]:
+                - text: Adv Title
+                - generic [ref=f7e161]: "*"
+              - textbox "Adv Title *" [ref=f7e162]
+            - generic [ref=f7e163]:
+              - generic [ref=f7e164]:
+                - text: Adv Details
+                - generic [ref=f7e165]: "*"
+              - generic [ref=f7e166]:
+                - generic [ref=f7e167]:
+                  - generic [ref=f7e169]:
+                    - button "Bold" [ref=f7e170]
+                    - button "Italic" [ref=f7e175]
+                    - button "Underline" [ref=f7e180]
+                    - button "Strikethrough" [ref=f7e189]
+                    - button "Bullet List" [ref=f7e196]
+                    - button "Number List" [ref=f7e201]
+                    - button "Title" [ref=f7e206]
+                    - button "Quote" [ref=f7e210]
+                  - generic [ref=f7e217]:
+                    - generic [aria-hidden]: Describe the project…
+                - generic [ref=f7e219]: 0 / 2000
+            - generic [ref=f7e221]:
+              - generic [ref=f7e222]:
+                - generic [ref=f7e223]: Developer Name
+                - textbox "Developer Name" [ref=f7e224]
+              - generic [ref=f7e225]:
+                - generic [ref=f7e226]: Possession Date
+                - textbox "Possession Date" [ref=f7e227]
+            - generic [ref=f7e228]:
+              - generic [ref=f7e229]:
+                - generic [ref=f7e230]: Starting Price (INR)
+                - spinbutton "Starting Price (INR)" [ref=f7e231]
+              - generic [ref=f7e232]:
+                - generic [ref=f7e233]: Built-up Area (sq ft)
+                - spinbutton "Built-up Area (sq ft)" [ref=f7e234]
+            - generic [ref=f7e235]:
+              - paragraph [ref=f7e237]: Amenities
+              - group "Amenities" [ref=f7e238]:
+                - button "Parking" [ref=f7e239] [cursor=pointer]
+                - button "Swimming Pool" [ref=f7e241] [cursor=pointer]
+                - button "Gym" [ref=f7e243] [cursor=pointer]
+                - button "BBQ Pit" [ref=f7e245] [cursor=pointer]
+                - button "Near MRT" [ref=f7e247] [cursor=pointer]
+                - button "Security" [ref=f7e249] [cursor=pointer]
+          - generic [ref=f7e251]:
+            - generic [ref=f7e253]:
+              - generic [ref=f7e254]: Step 2 / 5
+              - generic [ref=f7e255]: details
+            - generic [ref=f7e258]:
+              - button "Back" [ref=f7e260] [cursor=pointer]
+              - button "Next" [ref=f7e262] [cursor=pointer]
+    - contentinfo [ref=f7e78]:
+      - generic [ref=f7e80]:
+        - generic [ref=f7e81]:
+          - link "lokalads logo lokalads India" [ref=f7e82] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f7e83]
+            - generic [ref=f7e84]:
+              - img "lokalads" [ref=f7e85]
+              - generic [ref=f7e86]: India
+          - generic [ref=f7e87]:
+            - link "Instagram" [ref=f7e88] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f7e91] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f7e94] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f7e97] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f7e100] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f7e103]
+        - paragraph [ref=f7e106]: find anything, anywhere with care...
+      - generic [ref=f7e107]:
+        - separator [ref=f7e108]
+        - generic [ref=f7e109]:
+          - paragraph [ref=f7e110]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f7e111]:
+            - button "Privacy Policy" [ref=f7e113]
+            - button "Terms & Conditions" [ref=f7e117]
+            - button "Cookie Policy" [ref=f7e121]
+            - generic [ref=f7e124]: Timeline
+            - button "Feedback" [ref=f7e128]
+      - generic [ref=f7e130]:
+        - paragraph [ref=f7e131]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f7e132] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

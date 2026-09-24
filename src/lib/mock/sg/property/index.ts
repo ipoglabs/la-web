@@ -6,6 +6,7 @@ import { SG_PROPERTY_STUDENTS }  from "./for-students";
 import { SG_PROPERTY_COMMERCIAL } from "./commercial";
 import { SG_PROPERTY_HOLIDAY }   from "./holiday-rental";
 import { SG_PROPERTY_LAND }      from "./land";
+import { SG_PROPERTY_NEW_PROJECTS } from "./new-projects";
 import { SG_PROPERTY_WANTED }    from "./wanted";
 
 export {
@@ -16,6 +17,7 @@ export {
   SG_PROPERTY_COMMERCIAL,
   SG_PROPERTY_HOLIDAY,
   SG_PROPERTY_LAND,
+  SG_PROPERTY_NEW_PROJECTS,
   SG_PROPERTY_WANTED,
 };
 
@@ -27,6 +29,7 @@ export const SG_PROPERTY_SUBCATEGORY_MAP = {
   commercial:     SG_PROPERTY_COMMERCIAL,
   holiday_rental: SG_PROPERTY_HOLIDAY,
   land:           SG_PROPERTY_LAND,
+  new_projects:   SG_PROPERTY_NEW_PROJECTS,
   wanted:         SG_PROPERTY_WANTED,
 } as const;
 
@@ -38,5 +41,6 @@ export const SG_ALL_PROPERTY_LISTINGS: MockListing[] = [
   ...SG_PROPERTY_COMMERCIAL,
   ...SG_PROPERTY_HOLIDAY,
   ...SG_PROPERTY_LAND,
+  ...SG_PROPERTY_NEW_PROJECTS,
   ...SG_PROPERTY_WANTED,
 ];

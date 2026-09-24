@@ -61,6 +61,28 @@ export const vehiclesConfig: Record<string, FieldSpec[]> = {
     { key: "salePrice", type: "currency", label: "Price (₹)", required: true },
   ],
 
+  boats: [
+    ...generic,
+    { key: "make", type: "string", label: "Make" },
+    { key: "model", type: "string", label: "Model" },
+    { key: "year", type: "number", label: "Year" },
+    { key: "boatType", type: "string", label: "Boat Type", required: true },
+    { key: "lengthFt", type: "number", label: "Length (ft)" },
+    { key: "engineType", type: "string", label: "Engine Type" },
+    { key: "condition", type: "string", label: "Condition" },
+    { key: "salePrice", type: "currency", label: "Price (₹)", required: true },
+  ],
+
+  electric_vehicles: [
+    ...base,
+    { key: "vehicleType", type: "string", label: "Vehicle Type" },
+    { key: "batteryCapacity", type: "number", label: "Battery Capacity", unit: "kWh" },
+    { key: "rangeKm", type: "number", label: "Range", unit: "km" },
+    { key: "chargingType", type: "string", label: "Charging Type" },
+    { key: "color", type: "string", label: "Color" },
+    { key: "salePrice", type: "currency", label: "Price (₹)", required: true },
+  ],
+
   wanted: [
     ...generic,
     { key: "make", type: "string", label: "Make" },

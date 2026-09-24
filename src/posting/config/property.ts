@@ -95,6 +95,17 @@ export const propertyConfig: Record<string, FieldSpec[]> = {
     { key: "preferred_locations", type: "array", label: "Preferred Locations" },
   ],
 
+  "new projects / off-plan": [
+    { key: "name", type: "string", label: "Listing Title", required: true },
+    { key: "description", type: "string", label: "Description", required: true },
+    { key: "propertyType", type: "string", label: "Property Type" },
+    { key: "developerName", type: "string", label: "Developer Name" },
+    { key: "possessionDate", type: "date", label: "Possession Date" },
+    { key: "salePrice", type: "currency", label: "Starting Price (₹)", required: true },
+    { key: "builtup_area", type: "number", label: "Built-up Area (sq ft)" },
+    { key: "amenities", type: "array", label: "Amenities" },
+  ],
+
   wanted: [
     { key: "minBudget", type: "currency", label: "Min Budget (₹)" },
     { key: "maxBudget", type: "currency", label: "Max Budget (₹)" },

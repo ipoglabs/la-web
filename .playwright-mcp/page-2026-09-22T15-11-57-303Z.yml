@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "lokalads logo lokalads India Beta" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e7]
+          - generic [ref=e8]:
+            - img "lokalads" [ref=e9]
+            - generic [ref=e10]: India
+          - generic [ref=e11]: Beta
+        - generic [ref=e12]:
+          - link "POST" [ref=e13] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=e14] [cursor=pointer]
+          - button "Account menu" [ref=e18]
+    - main [ref=e23]:
+      - main [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - heading "Select a Category" [level=1] [ref=e27]
+            - paragraph [ref=e28]: Pick the category that matches your advertisement.
+          - generic [ref=e30]:
+            - button "Property" [ref=e32] [cursor=pointer]
+            - generic [ref=e33]:
+              - paragraph [ref=e34]: Which type of Property?
+              - group "toggle group" [ref=e36]:
+                - generic [ref=e37]:
+                  - button "To Rent" [ref=e38] [cursor=pointer]
+                  - button "To Buy" [ref=e40] [cursor=pointer]
+                  - button "Room Rental" [ref=e42] [cursor=pointer]
+                  - button "For Students" [ref=e44] [cursor=pointer]
+                  - button "Commercial" [ref=e46] [cursor=pointer]
+                  - button "Holiday Rental" [ref=e48] [cursor=pointer]
+                  - button "Land for Sale/Lease" [ref=e50] [cursor=pointer]
+                  - button "New Projects / Off-Plan" [ref=e52] [cursor=pointer]
+                  - button "Wanted" [ref=e54] [cursor=pointer]
+        - generic [ref=e57]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Step 1 / 5
+            - generic [ref=e61]: select category
+          - generic [ref=e64]:
+            - button "Cancel" [ref=e66] [cursor=pointer]
+            - button "Next" [ref=e68] [cursor=pointer]
+    - contentinfo [ref=e69]:
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - link "lokalads logo lokalads India" [ref=e73] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e74]
+            - generic [ref=e75]:
+              - img "lokalads" [ref=e76]
+              - generic [ref=e77]: India
+          - generic [ref=e78]:
+            - link "Instagram" [ref=e79] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e82] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e85] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e88] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e91] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e94]
+        - paragraph [ref=e97]: find anything, anywhere with care...
+      - generic [ref=e98]:
+        - separator [ref=e99]
+        - generic [ref=e100]:
+          - paragraph [ref=e101]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=e102]:
+            - button "Privacy Policy" [ref=e104]
+            - button "Terms & Conditions" [ref=e108]
+            - button "Cookie Policy" [ref=e112]
+            - generic [ref=e115]: Timeline
+            - button "Feedback" [ref=e119]
+      - generic [ref=e121]:
+        - paragraph [ref=e122]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e123] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

@@ -1,0 +1,134 @@
+- generic [active] [ref=f8e11]:
+  - button "Open Next.js Dev Tools" [ref=f8e6] [cursor=pointer]
+  - alert [ref=f8e10]
+  - generic [ref=f8e12]:
+    - banner [ref=f8e13]:
+      - generic [ref=f8e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f8e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f8e16]
+          - generic [ref=f8e17]:
+            - img "lokalads" [ref=f8e18]
+            - generic [ref=f8e19]: India
+          - generic [ref=f8e20]: Beta
+        - generic [ref=f8e21]:
+          - link "POST" [ref=f8e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f8e23] [cursor=pointer]
+          - button "Account menu" [ref=f8e27]
+    - main [ref=f8e32]:
+      - main [ref=f8e137]:
+        - generic [ref=f8e138]:
+          - heading "Advertisement Details" [level=1] [ref=f8e139]
+          - paragraph [ref=f8e140]: Fill in the main details.
+        - generic [ref=f8e141]:
+          - generic [ref=f8e142]:
+            - heading "Post Wanted Property" [level=2] [ref=f8e143]
+            - generic [ref=f8e144]:
+              - paragraph [ref=f8e146]: Looking For
+              - group "Looking For" [ref=f8e147]:
+                - button "HDB Flat" [ref=f8e148] [cursor=pointer]
+                - button "Condominium" [ref=f8e150] [cursor=pointer]
+                - button "Landed Property" [ref=f8e152] [cursor=pointer]
+                - button "Room Rental" [ref=f8e154] [cursor=pointer]
+                - button "Commercial" [ref=f8e156] [cursor=pointer]
+                - button "Other" [ref=f8e158] [cursor=pointer]
+            - generic [ref=f8e160]:
+              - generic [ref=f8e161]:
+                - text: Adv Title
+                - generic [ref=f8e162]: "*"
+              - textbox "Adv Title *" [ref=f8e163]
+            - generic [ref=f8e164]:
+              - generic [ref=f8e165]:
+                - text: Adv Details
+                - generic [ref=f8e166]: "*"
+              - generic [ref=f8e167]:
+                - generic [ref=f8e168]:
+                  - generic [ref=f8e170]:
+                    - button "Bold" [ref=f8e171]
+                    - button "Italic" [ref=f8e176]
+                    - button "Underline" [ref=f8e181]
+                    - button "Strikethrough" [ref=f8e190]
+                    - button "Bullet List" [ref=f8e197]
+                    - button "Number List" [ref=f8e202]
+                    - button "Title" [ref=f8e207]
+                    - button "Quote" [ref=f8e211]
+                  - generic [ref=f8e218]:
+                    - generic [aria-hidden]: Write something...
+                - generic [ref=f8e220]: 0 / 2000
+            - generic [ref=f8e222]:
+              - text: Preferred Locations
+              - textbox "Comma-separated locations" [ref=f8e223]
+            - generic [ref=f8e224]:
+              - generic [ref=f8e225]:
+                - generic [ref=f8e226]: Min Budget (INR)
+                - spinbutton "Min Budget (INR)" [ref=f8e227]
+              - generic [ref=f8e228]:
+                - generic [ref=f8e229]: Max Budget (INR)
+                - spinbutton "Max Budget (INR)" [ref=f8e230]
+            - generic [ref=f8e231]:
+              - generic [ref=f8e232]:
+                - generic [ref=f8e233]: Min Area (sq ft)
+                - spinbutton "Min Area (sq ft)" [ref=f8e234]
+              - generic [ref=f8e235]:
+                - generic [ref=f8e236]: Beds
+                - spinbutton "Beds" [ref=f8e237]
+              - generic [ref=f8e238]:
+                - generic [ref=f8e239]: Baths
+                - spinbutton "Baths" [ref=f8e240]
+            - generic [ref=f8e241]:
+              - paragraph [ref=f8e243]: Preferred Amenities
+              - group "Preferred Amenities" [ref=f8e244]:
+                - button "Parking" [ref=f8e245] [cursor=pointer]
+                - button "Swimming Pool" [ref=f8e247] [cursor=pointer]
+                - button "Gym" [ref=f8e249] [cursor=pointer]
+                - button "Security" [ref=f8e251] [cursor=pointer]
+                - button "Near MRT" [ref=f8e253] [cursor=pointer]
+                - button "Balcony" [ref=f8e255] [cursor=pointer]
+                - button "BBQ Pit" [ref=f8e257] [cursor=pointer]
+                - button "Garden" [ref=f8e259] [cursor=pointer]
+            - button [ref=f8e261]
+          - generic [ref=f8e262]:
+            - generic [ref=f8e264]:
+              - generic [ref=f8e265]: Step 2 / 5
+              - generic [ref=f8e266]: details
+            - generic [ref=f8e269]:
+              - button "Back" [ref=f8e271] [cursor=pointer]
+              - button "Next" [ref=f8e273] [cursor=pointer]
+    - contentinfo [ref=f8e78]:
+      - generic [ref=f8e80]:
+        - generic [ref=f8e81]:
+          - link "lokalads logo lokalads India" [ref=f8e82] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f8e83]
+            - generic [ref=f8e84]:
+              - img "lokalads" [ref=f8e85]
+              - generic [ref=f8e86]: India
+          - generic [ref=f8e87]:
+            - link "Instagram" [ref=f8e88] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f8e91] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f8e94] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f8e97] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f8e100] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f8e103]
+        - paragraph [ref=f8e106]: find anything, anywhere with care...
+      - generic [ref=f8e107]:
+        - separator [ref=f8e108]
+        - generic [ref=f8e109]:
+          - paragraph [ref=f8e110]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f8e111]:
+            - button "Privacy Policy" [ref=f8e113]
+            - button "Terms & Conditions" [ref=f8e117]
+            - button "Cookie Policy" [ref=f8e121]
+            - generic [ref=f8e124]: Timeline
+            - button "Feedback" [ref=f8e128]
+      - generic [ref=f8e130]:
+        - paragraph [ref=f8e131]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f8e132] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

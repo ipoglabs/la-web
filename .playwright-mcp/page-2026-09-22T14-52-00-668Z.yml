@@ -1,0 +1,136 @@
+- generic [active] [ref=f2e10]:
+  - button "Open Next.js Dev Tools" [ref=f2e6] [cursor=pointer]
+  - alert [ref=f2e11]
+  - generic [ref=f2e12]:
+    - banner [ref=f2e13]:
+      - generic [ref=f2e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f2e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f2e16]
+          - generic [ref=f2e17]:
+            - img "lokalads" [ref=f2e18]
+            - generic [ref=f2e19]: India
+          - generic [ref=f2e20]: Beta
+        - generic [ref=f2e21]:
+          - link "POST" [ref=f2e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f2e23] [cursor=pointer]
+          - button "Account menu" [ref=f2e27]
+    - main [ref=f2e32]:
+      - main [ref=f2e137]:
+        - generic [ref=f2e138]:
+          - heading "Advertisement Details" [level=1] [ref=f2e139]
+          - paragraph [ref=f2e140]: Fill in the main details.
+        - generic [ref=f2e141]:
+          - generic [ref=f2e142]:
+            - heading "Add Room for Rent" [level=2] [ref=f2e143]
+            - generic [ref=f2e144]:
+              - paragraph [ref=f2e146]: Room Type*
+              - group "Room Type*" [ref=f2e147]:
+                - button "Master Room" [ref=f2e148] [cursor=pointer]
+                - button "Common Room" [ref=f2e150] [cursor=pointer]
+                - button "Single Room" [ref=f2e152] [cursor=pointer]
+                - button "Entire Unit" [ref=f2e154] [cursor=pointer]
+                - button "Other" [ref=f2e156] [cursor=pointer]
+            - generic [ref=f2e158]:
+              - generic [ref=f2e159]:
+                - text: Adv Title
+                - generic [ref=f2e160]: "*"
+              - textbox "Adv Title *" [ref=f2e161]
+            - generic [ref=f2e162]:
+              - generic [ref=f2e163]:
+                - text: Adv Details
+                - generic [ref=f2e164]: "*"
+              - generic [ref=f2e165]:
+                - generic [ref=f2e166]:
+                  - generic [ref=f2e168]:
+                    - button "Bold" [ref=f2e169]
+                    - button "Italic" [ref=f2e174]
+                    - button "Underline" [ref=f2e179]
+                    - button "Strikethrough" [ref=f2e188]
+                    - button "Bullet List" [ref=f2e195]
+                    - button "Number List" [ref=f2e200]
+                    - button "Title" [ref=f2e205]
+                    - button "Quote" [ref=f2e209]
+                  - generic [ref=f2e216]:
+                    - generic [aria-hidden]: Write something...
+                - generic [ref=f2e218]: 0 / 2000
+            - generic [ref=f2e220]:
+              - generic [ref=f2e221]:
+                - generic [ref=f2e222]: Rent (INR)
+                - spinbutton "Rent (INR)" [ref=f2e223]
+              - generic [ref=f2e224]:
+                - generic [ref=f2e225]: Deposit
+                - spinbutton "Deposit" [ref=f2e226]
+            - generic [ref=f2e227]:
+              - generic [ref=f2e228]: Available From
+              - textbox "Available From" [ref=f2e229]
+            - generic [ref=f2e230]:
+              - paragraph [ref=f2e232]: Preferred Tenants
+              - group "Preferred Tenants" [ref=f2e233]:
+                - button "Any" [ref=f2e234] [cursor=pointer]
+                - button "Students" [ref=f2e236] [cursor=pointer]
+                - button "Working Professionals" [ref=f2e238] [cursor=pointer]
+                - button "Family" [ref=f2e240] [cursor=pointer]
+            - generic [ref=f2e242]:
+              - paragraph [ref=f2e244]: Gender Preference
+              - group "Gender Preference" [ref=f2e245]:
+                - button "Any" [ref=f2e246] [cursor=pointer]
+                - button "Male" [ref=f2e248] [cursor=pointer]
+                - button "Female" [ref=f2e250] [cursor=pointer]
+            - generic [ref=f2e252]:
+              - paragraph [ref=f2e254]: Amenities
+              - group "Amenities" [ref=f2e255]:
+                - button "WiFi" [ref=f2e256] [cursor=pointer]
+                - button "Air Conditioning" [ref=f2e258] [cursor=pointer]
+                - button "Kitchen Access" [ref=f2e260] [cursor=pointer]
+                - button "Washing Machine" [ref=f2e262] [cursor=pointer]
+                - button "TV" [ref=f2e264] [cursor=pointer]
+                - button "Parking" [ref=f2e266] [cursor=pointer]
+                - button "Near MRT" [ref=f2e268] [cursor=pointer]
+                - button "Cooking Allowed" [ref=f2e270] [cursor=pointer]
+            - button [ref=f2e272]
+          - generic [ref=f2e273]:
+            - generic [ref=f2e275]:
+              - generic [ref=f2e276]: Step 2 / 5
+              - generic [ref=f2e277]: details
+            - generic [ref=f2e280]:
+              - button "Back" [ref=f2e282] [cursor=pointer]
+              - button "Next" [ref=f2e284] [cursor=pointer]
+    - contentinfo [ref=f2e78]:
+      - generic [ref=f2e80]:
+        - generic [ref=f2e81]:
+          - link "lokalads logo lokalads India" [ref=f2e82] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f2e83]
+            - generic [ref=f2e84]:
+              - img "lokalads" [ref=f2e85]
+              - generic [ref=f2e86]: India
+          - generic [ref=f2e87]:
+            - link "Instagram" [ref=f2e88] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f2e91] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f2e94] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f2e97] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f2e100] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f2e103]
+        - paragraph [ref=f2e106]: find anything, anywhere with care...
+      - generic [ref=f2e107]:
+        - separator [ref=f2e108]
+        - generic [ref=f2e109]:
+          - paragraph [ref=f2e110]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f2e111]:
+            - button "Privacy Policy" [ref=f2e113]
+            - button "Terms & Conditions" [ref=f2e117]
+            - button "Cookie Policy" [ref=f2e121]
+            - generic [ref=f2e124]: Timeline
+            - button "Feedback" [ref=f2e128]
+      - generic [ref=f2e130]:
+        - paragraph [ref=f2e131]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f2e132] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

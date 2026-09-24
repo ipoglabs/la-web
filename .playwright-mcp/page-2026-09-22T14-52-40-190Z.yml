@@ -1,0 +1,83 @@
+- generic [ref=f5e11]:
+  - button "Open Next.js Dev Tools" [ref=f5e6] [cursor=pointer]
+  - alert [ref=f5e10]
+  - generic [ref=f5e12]:
+    - banner [ref=f5e13]:
+      - generic [ref=f5e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f5e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f5e16]
+          - generic [ref=f5e17]:
+            - img "lokalads" [ref=f5e18]
+            - generic [ref=f5e19]: India
+          - generic [ref=f5e20]: Beta
+        - generic [ref=f5e21]:
+          - link "POST" [ref=f5e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f5e23] [cursor=pointer]
+          - button "Account menu" [ref=f5e27]
+    - main [ref=f5e32]:
+      - main [ref=f5e33]:
+        - generic [ref=f5e34]:
+          - generic [ref=f5e35]:
+            - heading "Select a Category" [level=1] [ref=f5e36]
+            - paragraph [ref=f5e37]: Pick the category that matches your advertisement.
+          - generic [ref=f5e39]:
+            - button "Property" [ref=f5e41] [cursor=pointer]
+            - generic [ref=f5e42]:
+              - paragraph [ref=f5e43]: Which type of Property?
+              - group "toggle group" [ref=f5e45]:
+                - generic [ref=f5e46]:
+                  - button "To Rent" [ref=f5e47] [cursor=pointer]
+                  - button "To Buy" [ref=f5e49] [cursor=pointer]
+                  - button "Room Rental" [ref=f5e51] [cursor=pointer]
+                  - button "For Students" [ref=f5e53] [cursor=pointer]
+                  - button "Commercial" [ref=f5e55] [cursor=pointer]
+                  - button "Holiday Rental" [active] [ref=f5e57] [cursor=pointer]
+                  - button "Land for Sale/Lease" [ref=f5e59] [cursor=pointer]
+                  - button "New Projects / Off-Plan" [ref=f5e61] [cursor=pointer]
+                  - button "Wanted" [ref=f5e63] [cursor=pointer]
+        - generic [ref=f5e66]:
+          - generic [ref=f5e68]:
+            - generic [ref=f5e69]: Step 1 / 5
+            - generic [ref=f5e70]: select category
+          - generic [ref=f5e73]:
+            - button "Cancel" [ref=f5e75] [cursor=pointer]
+            - button "Next" [ref=f5e77] [cursor=pointer]
+    - contentinfo [ref=f5e78]:
+      - generic [ref=f5e80]:
+        - generic [ref=f5e81]:
+          - link "lokalads logo lokalads India" [ref=f5e82] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f5e83]
+            - generic [ref=f5e84]:
+              - img "lokalads" [ref=f5e85]
+              - generic [ref=f5e86]: India
+          - generic [ref=f5e87]:
+            - link "Instagram" [ref=f5e88] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f5e91] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f5e94] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f5e97] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f5e100] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f5e103]
+        - paragraph [ref=f5e106]: find anything, anywhere with care...
+      - generic [ref=f5e107]:
+        - separator [ref=f5e108]
+        - generic [ref=f5e109]:
+          - paragraph [ref=f5e110]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f5e111]:
+            - button "Privacy Policy" [ref=f5e113]
+            - button "Terms & Conditions" [ref=f5e117]
+            - button "Cookie Policy" [ref=f5e121]
+            - generic [ref=f5e124]: Timeline
+            - button "Feedback" [ref=f5e128]
+      - generic [ref=f5e130]:
+        - paragraph [ref=f5e131]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f5e132] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

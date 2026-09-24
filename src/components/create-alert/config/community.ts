@@ -100,6 +100,37 @@ export const community: MainCategory = {
       ],
     },
     {
+      id: "classes",
+      label: "Classes",
+      icon: "book-open",
+      filters: [
+        {
+          id: "subject",
+          label: "Subject",
+          type: "toggle",
+          options: [
+            { label: "Music",       value: "music"    },
+            { label: "Art",         value: "art"      },
+            { label: "Dance",       value: "dance"    },
+            { label: "Fitness",     value: "fitness"  },
+            { label: "Language",    value: "language" },
+            { label: "Cooking",     value: "cooking"  },
+            { label: "Academic",    value: "academic" },
+            { label: "Other",       value: "other"    },
+          ],
+        },
+        {
+          id: "class_mode",
+          label: "Mode",
+          type: "toggle",
+          options: [
+            { label: "In-person", value: "inperson" },
+            { label: "Online",    value: "online", icon: "laptop" },
+          ],
+        },
+      ],
+    },
+    {
       id: "volunteering",
       label: "Volunteering & Charity",
       icon: "heart",
@@ -154,6 +185,37 @@ export const community: MainCategory = {
             { label: "Any",       value: "any"      },
             { label: "In-person", value: "inperson" },
             { label: "Online",    value: "online"   },
+          ],
+        },
+      ],
+    },
+    {
+      id: "courses",
+      label: "Classes & Courses",
+      icon: "graduation-cap",
+      filters: [
+        {
+          id: "qualification",
+          label: "Qualification",
+          type: "toggle",
+          options: [
+            { label: "Certificate", value: "certificate" },
+            { label: "Diploma",     value: "diploma"     },
+            { label: "Workshop",    value: "workshop"    },
+            { label: "None",        value: "none"        },
+          ],
+        },
+        {
+          id: "duration",
+          label: "Duration",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",        value: "any" },
+            { label: "< 1 week",   value: "1w"  },
+            { label: "1-4 weeks",  value: "4w"  },
+            { label: "1-3 months", value: "3m"  },
+            { label: "3+ months",  value: "3mup" },
           ],
         },
       ],
@@ -325,6 +387,24 @@ export const community: MainCategory = {
           options: [
             { label: "Offering Ride",  value: "offering" },
             { label: "Looking for Ride", value: "seeking" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "wanted",
+      label: "Wanted",
+      icon: "search",
+      filters: [
+        {
+          id: "gen_category",
+          label: "Category",
+          type: "toggle",
+          options: [
+            { label: "Volunteering", value: "volunteering" },
+            { label: "Classes",      value: "classes"      },
+            { label: "Event Help",   value: "event"        },
+            { label: "Other",        value: "other"        },
           ],
         },
       ],

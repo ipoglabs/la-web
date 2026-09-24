@@ -1,0 +1,159 @@
+- generic [active] [ref=e2]:
+  - button "Open Next.js Dev Tools" [ref=e8] [cursor=pointer]
+  - alert [ref=e1]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - link "lokalads logo lokalads India Beta" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e16]
+          - generic [ref=e17]:
+            - img "lokalads" [ref=e18]
+            - generic [ref=e19]: India
+          - generic [ref=e20]: Beta
+        - generic [ref=e21]:
+          - link "POST" [ref=e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: "6"
+          - button "Account menu" [ref=e27]
+    - main [ref=e32]:
+      - main [ref=e135]:
+        - generic [ref=e136]:
+          - heading "Advertisement Details" [level=1] [ref=e137]
+          - paragraph [ref=e138]: Fill in the main details.
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - heading "Post a Car for Sale" [level=2] [ref=e141]
+            - generic [ref=e142]:
+              - generic [ref=e143]:
+                - text: Ad Title
+                - generic [ref=e144]: "*"
+              - textbox "Ad Title *" [ref=e145]: Toyota 1 Best 50 off tag a-z, A-Z 0-9.
+            - generic [ref=e146]:
+              - generic [ref=e147]: Description
+              - generic [ref=e148]:
+                - generic [ref=e149]:
+                  - generic [ref=e151]:
+                    - button "Bold" [ref=e152]
+                    - button "Italic" [ref=e157]
+                    - button "Underline" [ref=e162]
+                    - button "Strikethrough" [ref=e171]
+                    - button "Bullet List" [ref=e178]
+                    - button "Number List" [ref=e183]
+                    - button "Title" [ref=e188]
+                    - button "Quote" [ref=e192]
+                  - generic [ref=e199]:
+                    - generic [aria-hidden]: Write something...
+                - generic [ref=e201]: 0 / 2000
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - text: Price (INR)
+                - generic [ref=e205]: "*"
+              - spinbutton "Price (INR) *" [ref=e206]
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]:
+                  - text: Make
+                  - generic [ref=e210]: "*"
+                - textbox "Make *" [ref=e211]
+              - generic [ref=e212]:
+                - generic [ref=e213]:
+                  - text: Model
+                  - generic [ref=e214]: "*"
+                - textbox "Model *" [ref=e215]
+              - generic [ref=e216]:
+                - generic [ref=e217]: Year
+                - spinbutton "Year" [ref=e218]
+              - generic [ref=e219]:
+                - generic [ref=e220]: Mileage (km)
+                - spinbutton "Mileage (km)" [ref=e221]
+            - generic [ref=e222]:
+              - paragraph [ref=e224]: Fuel Type
+              - group "Fuel Type" [ref=e225]:
+                - button "Petrol" [ref=e226] [cursor=pointer]
+                - button "Diesel" [ref=e228] [cursor=pointer]
+                - button "Electric" [ref=e230] [cursor=pointer]
+                - button "Hybrid" [ref=e232] [cursor=pointer]
+                - button "CNG" [ref=e234] [cursor=pointer]
+            - generic [ref=e236]:
+              - paragraph [ref=e238]: Transmission
+              - group "Transmission" [ref=e239]:
+                - button "Manual" [ref=e240] [cursor=pointer]
+                - button "Automatic" [ref=e242] [cursor=pointer]
+            - generic [ref=e244]:
+              - paragraph [ref=e246]: Body Type
+              - group "Body Type" [ref=e247]:
+                - button "SUV" [ref=e248] [cursor=pointer]
+                - button "Sedan" [ref=e250] [cursor=pointer]
+                - button "Hatchback" [ref=e252] [cursor=pointer]
+                - button "Coupe" [ref=e254] [cursor=pointer]
+                - button "MPV" [ref=e256] [cursor=pointer]
+            - generic [ref=e258]:
+              - generic [ref=e259]:
+                - generic [ref=e260]: Color
+                - textbox "Color" [ref=e261]
+              - generic [ref=e262]:
+                - generic [ref=e263]: Owner Type
+                - textbox "Owner Type" [ref=e264]
+            - generic [ref=e265]:
+              - generic [ref=e266]:
+                - generic [ref=e267]: Registration Number
+                - textbox "Registration Number" [ref=e268]
+              - generic [ref=e269]:
+                - generic [ref=e270]: Insurance Valid Till
+                - textbox "Insurance Valid Till" [ref=e271]
+            - generic [ref=e272]:
+              - paragraph [ref=e274]: Service History
+              - group "Service History" [ref=e275]:
+                - button "Full" [ref=e276] [cursor=pointer]
+                - button "Partial" [ref=e278] [cursor=pointer]
+                - button "None" [ref=e280] [cursor=pointer]
+            - generic [ref=e282]:
+              - text: Features
+              - textbox "e.g. Sunroof, ABS, Alloy Wheels" [ref=e283]
+            - button [ref=e284]
+          - generic [ref=e285]:
+            - generic [ref=e287]:
+              - generic [ref=e288]: Step 2 / 5
+              - generic [ref=e289]: details
+            - generic [ref=e292]:
+              - button "Back" [ref=e294] [cursor=pointer]
+              - button "Next" [ref=e296] [cursor=pointer]
+    - contentinfo [ref=e76]:
+      - generic [ref=e78]:
+        - generic [ref=e79]:
+          - link "lokalads logo lokalads India" [ref=e80] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e81]
+            - generic [ref=e82]:
+              - img "lokalads" [ref=e83]
+              - generic [ref=e84]: India
+          - generic [ref=e85]:
+            - link "Instagram" [ref=e86] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e89] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e92] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e95] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e98] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e101]
+        - paragraph [ref=e104]: find anything, anywhere with care...
+      - generic [ref=e105]:
+        - separator [ref=e106]
+        - generic [ref=e107]:
+          - paragraph [ref=e108]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=e109]:
+            - button "Privacy Policy" [ref=e111]
+            - button "Terms & Conditions" [ref=e115]
+            - button "Cookie Policy" [ref=e119]
+            - generic [ref=e122]: Timeline
+            - button "Feedback" [ref=e126]
+      - generic [ref=e128]:
+        - paragraph [ref=e129]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e130] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

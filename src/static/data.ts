@@ -42,6 +42,11 @@ export const categoryIN = {
         },
         {
           id: 8,
+          itemName: 'New Projects / Off-Plan',
+          routePath: '/main1/item3',
+        },
+        {
+          id: 9,
           itemName: 'Wanted',
           routePath: '/main1/item3',
         }
@@ -74,7 +79,7 @@ export const categoryIN = {
         },
         {
           id: 5,
-          itemName: 'Temptoary & Sesonal',
+          itemName: 'Temporary & Seasonal',
           routePath: '/main2/item3',
         },
         {
@@ -116,6 +121,16 @@ export const categoryIN = {
         },
         {
           id: 6,
+          itemName: 'Boats',
+          routePath: '/main3/item3',
+        },
+        {
+          id: 7,
+          itemName: 'Electric Vehicles',
+          routePath: '/main3/item3',
+        },
+        {
+          id: 8,
           itemName: 'Wanted',
           routePath: '/main3/item3',
         }
@@ -173,6 +188,11 @@ export const categoryIN = {
         },
         {
           id: 10,
+          itemName: 'Creative Services',
+          routePath: '/main3/item3',
+        },
+        {
+          id: 11,
           itemName: 'Wanted',
           routePath: '/main3/item3',
         }
@@ -408,6 +428,11 @@ export const categoryIN = {
         },
         {
           id: 9,
+          itemName: 'Rideshare & Carpool',
+          routePath: '/main3/item3',
+        },
+        {
+          id: 10,
           itemName: 'Wanted',
           routePath: '/main3/item3',
         }

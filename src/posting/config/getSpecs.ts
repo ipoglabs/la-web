@@ -5,7 +5,7 @@ import type { FieldSpec } from "./types";
 
 export function getSpecs(category: string, subcategory: string): FieldSpec[] {
   const cat = normalizeCategory(category);
-  const sub = normalizeSubcategory(subcategory);
+  const sub = normalizeSubcategory(category, subcategory);
 
   const byCat = CATEGORY_CONFIG[cat];
   const specs = byCat?.[sub];

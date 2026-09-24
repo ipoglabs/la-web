@@ -1,0 +1,89 @@
+- generic [active] [ref=f1e11]:
+  - button "Open Next.js Dev Tools" [ref=f1e6] [cursor=pointer]
+  - alert [ref=f1e10]
+  - generic [ref=f1e12]:
+    - banner [ref=f1e13]:
+      - generic [ref=f1e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f1e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f1e16]
+          - generic [ref=f1e17]:
+            - img "lokalads" [ref=f1e18]
+            - generic [ref=f1e19]: India
+          - generic [ref=f1e20]: Beta
+        - generic [ref=f1e21]:
+          - link "POST" [ref=f1e22] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f1e23] [cursor=pointer]
+          - button "Account menu" [ref=f1e27]
+    - main [ref=f1e32]:
+      - main [ref=f1e33]:
+        - generic [ref=f1e34]:
+          - generic [ref=f1e35]:
+            - heading "Select a Category" [level=1] [ref=f1e36]
+            - paragraph [ref=f1e37]: Pick the category that matches your advertisement.
+          - generic [ref=f1e39]:
+            - paragraph [ref=f1e40]: Select a category
+            - generic [ref=f1e41]:
+              - button [ref=f1e42]:
+                - paragraph [ref=f1e50]: Property
+              - button [ref=f1e51]:
+                - paragraph [ref=f1e58]: Jobs
+              - button [ref=f1e59]:
+                - paragraph [ref=f1e67]: Vehicles
+              - button [ref=f1e68]:
+                - paragraph [ref=f1e74]: Services
+              - button [ref=f1e75]:
+                - paragraph [ref=f1e84]: Pets
+              - button [ref=f1e85]:
+                - paragraph [ref=f1e92]: For Sale
+              - button [ref=f1e93]:
+                - paragraph [ref=f1e100]: Business
+              - button [ref=f1e101]:
+                - paragraph [ref=f1e110]: Community & Events
+              - button [ref=f1e111]:
+                - paragraph [ref=f1e118]: Special Offers
+        - generic [ref=f1e120]:
+          - generic [ref=f1e122]:
+            - generic [ref=f1e123]: Step 1 / 5
+            - generic [ref=f1e124]: select category
+          - generic [ref=f1e127]:
+            - button "Cancel" [ref=f1e129] [cursor=pointer]
+            - button "Next" [disabled] [ref=f1e131] [cursor=pointer]
+    - contentinfo [ref=f1e132]:
+      - generic [ref=f1e134]:
+        - generic [ref=f1e135]:
+          - link "lokalads logo lokalads India" [ref=f1e136] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f1e137]
+            - generic [ref=f1e138]:
+              - img "lokalads" [ref=f1e139]
+              - generic [ref=f1e140]: India
+          - generic [ref=f1e141]:
+            - link "Instagram" [ref=f1e142] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f1e145] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f1e148] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f1e151] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f1e154] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f1e157]
+        - paragraph [ref=f1e160]: find anything, anywhere with care...
+      - generic [ref=f1e161]:
+        - separator [ref=f1e162]
+        - generic [ref=f1e163]:
+          - paragraph [ref=f1e164]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f1e165]:
+            - button "Privacy Policy" [ref=f1e167]
+            - button "Terms & Conditions" [ref=f1e171]
+            - button "Cookie Policy" [ref=f1e175]
+            - generic [ref=f1e178]: Timeline
+            - button "Feedback" [ref=f1e182]
+      - generic [ref=f1e184]:
+        - paragraph [ref=f1e185]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f1e186] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

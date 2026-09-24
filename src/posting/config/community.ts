@@ -38,6 +38,15 @@ export const communityConfig: Record<string, FieldSpec[]> = {
   general: [
     { key: "description", type: "string", label: "Details" },
   ],
+  rideshare: [
+    { key: "rideType", type: "string", label: "I am", required: true },
+    { key: "fromLocation", type: "string", label: "From", required: true },
+    { key: "toLocation", type: "string", label: "To", required: true },
+    { key: "rideDate", type: "date", label: "Date" },
+    { key: "seatsAvailable", type: "number", label: "Seats Available" },
+    { key: "description", type: "string", label: "Details" },
+  ],
+
   wanted: [
     { key: "description", type: "string", label: "Wanted Details" },
   ],

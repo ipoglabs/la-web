@@ -16,6 +16,7 @@ import {
   isKnownSubcategory,
 } from "@/lib/mock/country-map";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
+import { LEGACY_SUBCATEGORY_ALIASES, exactCaseInsensitive } from "@/lib/postSubcategoryAliases";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
 import { publicPostFilter } from "@/lib/postVisibility";
 import { resolvePostSort } from "@/lib/postSort";
@@ -88,9 +89,50 @@ export async function GET(
       // cookie) are treated as visible in every market rather than nowhere.
       $or: [{ country }, { country: { $exists: false } }],
     };
+
+    // Real per-subcategory counts for the filter sidebar — same category/
+    // visibility/country scope as baseQuery (grouped BEFORE `sub` narrows
+    // baseQuery below, so every subcategory gets a count, not just the
+    // selected one). Post.subcategory can hold either the canonical id or
+    // the display label depending on which posting flow wrote it (see the
+    // comment above baseQuery), so group on the raw value and fold both
+    // forms back onto the same id via SUBCATEGORY_LABELS.
+    const subLabels = SUBCATEGORY_LABELS[category] ?? {};
+    const legacyAliases = LEGACY_SUBCATEGORY_ALIASES[category] ?? {};
+    const labelToId = new Map<string, string>();
+    for (const [id, label] of Object.entries(subLabels)) {
+      labelToId.set(id.toLowerCase(), id);
+      if (label) labelToId.set(label.toLowerCase(), id);
+    }
+    for (const [rawLegacy, id] of Object.entries(legacyAliases)) {
+      labelToId.set(rawLegacy, id);
+    }
+    const countsBySubcategory: Record<string, number> = {};
+    for (const id of Object.keys(subLabels)) countsBySubcategory[id] = 0;
+
+    const subCountRows = await Post.aggregate<{ _id: string | null; count: number }>([
+      { $match: baseQuery },
+      { $group: { _id: "$subcategory", count: { $sum: 1 } } },
+    ]);
+    for (const row of subCountRows) {
+      const id = labelToId.get(String(row._id ?? "").toLowerCase());
+      if (id) countsBySubcategory[id] = (countsBySubcategory[id] ?? 0) + row.count;
+    }
+
     if (sub) {
       const subLabel = SUBCATEGORY_LABELS[category]?.[sub];
-      baseQuery.subcategory = subLabel ? { $in: [sub, subLabel] } : sub;
+      // Include any legacy raw strings (e.g. "Car", "Bikes") that alias to
+      // this id, so a real post written with old wording still shows up
+      // when a user filters specifically to this subcategory. Matched
+      // case-insensitively since alias keys are lowercase but the actual
+      // stored casing varies ("Car", "car", ...).
+      const legacyRaw = Object.entries(legacyAliases)
+        .filter(([, id]) => id === sub)
+        .map(([raw]) => exactCaseInsensitive(raw));
+      const values: (string | RegExp)[] = [sub, subLabel, ...legacyRaw].filter(
+        (v): v is string | RegExp => Boolean(v),
+      );
+      baseQuery.subcategory = values.length > 1 ? { $in: values } : values[0];
     }
 
     // Filter sidebar values (see lib/listing-filters.ts's URL contract) →
@@ -144,10 +186,7 @@ export async function GET(
       currency: COUNTRY_CONFIGS[country].currency,
       total: items.length,
       generatedAt: new Date().toISOString(),
-      // Category filter facets/counts stay mock-derived for now — Post
-      // doesn't cleanly support that faceting yet (see the scoping note in
-      // useListingFilters.ts's consumers).
-      countsBySubcategory: getCountsForMarket(category, country),
+      countsBySubcategory,
       items,
     };
 

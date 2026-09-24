@@ -1,0 +1,161 @@
+- generic [active] [ref=f10e11]:
+  - button "Open Next.js Dev Tools" [ref=f10e367] [cursor=pointer]:
+    - generic [ref=f10e370]:
+      - text: Rendering
+      - generic [ref=f10e371]:
+        - generic [ref=f10e372]: .
+        - generic [ref=f10e373]: .
+        - generic [ref=f10e374]: .
+  - alert [ref=f10e10]
+  - generic [ref=f10e12]:
+    - banner [ref=f10e13]:
+      - generic [ref=f10e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f10e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f10e16]
+          - generic [ref=f10e17]:
+            - img "lokalads" [ref=f10e18]
+            - generic [ref=f10e19]: India
+          - generic [ref=f10e20]: Beta
+        - generic [ref=f10e21]:
+          - link "POST" [ref=f10e22] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=f10e23] [cursor=pointer]:
+            - generic [ref=f10e24]: "6"
+          - button "Account menu" [ref=f10e27]:
+            - generic [ref=f10e28]:
+              - generic [ref=f10e29]: JA
+              - generic "online" [ref=f10e31]
+    - main [ref=f10e32]:
+      - generic [ref=f10e376]:
+        - heading "Submitting your ad…" [level=3] [ref=f10e377]
+        - list [ref=f10e378]:
+          - listitem [ref=f10e379]:
+            - generic [ref=f10e383]: Validating details
+          - listitem [ref=f10e384]:
+            - generic [ref=f10e388]: Uploading photos
+          - listitem [ref=f10e389]:
+            - generic [ref=f10e393]: Preparing your ad
+          - listitem [ref=f10e394]:
+            - generic [ref=f10e397]: Saving to server
+          - listitem [ref=f10e398]:
+            - generic [ref=f10e401]: Finishing up
+      - main [ref=f10e262]:
+        - generic [ref=f10e263]:
+          - generic [ref=f10e264]:
+            - heading "Review Details" [level=1] [ref=f10e265]
+            - paragraph [ref=f10e266]: Review everything before submitting.
+          - button "Debug" [ref=f10e268]
+          - generic [ref=f10e269]:
+            - generic [ref=f10e270]:
+              - generic [ref=f10e271]: Category
+              - button "Change" [ref=f10e272]
+            - generic [ref=f10e275]:
+              - generic [ref=f10e276]: Category
+              - generic [ref=f10e277]: Vehicles ➝ Cars
+            - separator [ref=f10e278]
+          - generic [ref=f10e279]:
+            - generic [ref=f10e280]:
+              - generic [ref=f10e281]: Basic Details
+              - button "Change" [ref=f10e282]
+            - generic [ref=f10e283]:
+              - generic [ref=f10e285]:
+                - generic [ref=f10e286]: Title
+                - generic [ref=f10e287]: Test Car Listing
+              - generic [ref=f10e289]:
+                - generic [ref=f10e290]: Description
+                - generic [ref=f10e291]: A well maintained test car for sale, low mileage.
+            - separator [ref=f10e292]
+          - generic [ref=f10e293]:
+            - generic [ref=f10e294]:
+              - generic [ref=f10e295]: Additional Details
+              - button "Change" [ref=f10e296]
+            - generic [ref=f10e297]:
+              - generic [ref=f10e299]:
+                - generic [ref=f10e300]: Ad Title
+                - generic [ref=f10e301]: Test Car Listing
+              - generic [ref=f10e303]:
+                - generic [ref=f10e304]: Description
+                - generic [ref=f10e305]: A well maintained test car for sale, low mileage.
+              - generic [ref=f10e307]:
+                - generic [ref=f10e308]: Make
+                - generic [ref=f10e309]: Toyota
+              - generic [ref=f10e311]:
+                - generic [ref=f10e312]: Model
+                - generic [ref=f10e313]: Corolla
+              - generic [ref=f10e315]:
+                - generic [ref=f10e316]: Price (₹)
+                - generic [ref=f10e317]: ₹500,000
+            - separator [ref=f10e318]
+          - generic [ref=f10e319]:
+            - generic [ref=f10e320]:
+              - generic [ref=f10e321]: Location
+              - button "Change" [ref=f10e322]
+            - generic [ref=f10e325]:
+              - generic [ref=f10e326]: Address
+              - generic [ref=f10e327]: Tiruchirappalli, Tamil Nadu, India
+            - iframe [ref=f10e329]
+            - separator [ref=f10e330]
+          - generic [ref=f10e331]:
+            - generic [ref=f10e332]:
+              - generic [ref=f10e333]: Photos
+              - button "Change" [ref=f10e334]
+            - img "Photo 1" [ref=f10e336]
+            - separator [ref=f10e337]
+          - generic [ref=f10e338]:
+            - generic [ref=f10e339]: Contact
+            - generic [ref=f10e341]:
+              - generic [ref=f10e343]:
+                - generic [ref=f10e344]: Name
+                - generic [ref=f10e345]: Jayapriya
+              - generic [ref=f10e347]:
+                - generic [ref=f10e348]: Email
+                - generic [ref=f10e349]: jp.naga85@gmail.com
+              - generic [ref=f10e351]:
+                - generic [ref=f10e352]: Phone
+                - generic [ref=f10e353]: "+919840912665"
+            - generic [ref=f10e354]: Auto-filled from your profile
+          - generic [ref=f10e355]:
+            - generic [ref=f10e357]:
+              - generic [ref=f10e358]: Step 5 / 5
+              - generic [ref=f10e359]: preview
+            - generic [ref=f10e362]:
+              - button "Back" [ref=f10e364] [cursor=pointer]
+              - button "Submitting…" [disabled] [ref=f10e402] [cursor=pointer]
+    - contentinfo [ref=f10e65]:
+      - generic [ref=f10e67]:
+        - generic [ref=f10e68]:
+          - link "lokalads logo lokalads India" [ref=f10e69] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f10e70]
+            - generic [ref=f10e71]:
+              - img "lokalads" [ref=f10e72]
+              - generic [ref=f10e73]: India
+          - generic [ref=f10e74]:
+            - link "Instagram" [ref=f10e75] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f10e78] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f10e81] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f10e84] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f10e87] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f10e90]
+        - paragraph [ref=f10e93]: find anything, anywhere with care...
+      - generic [ref=f10e94]:
+        - separator [ref=f10e95]
+        - generic [ref=f10e96]:
+          - paragraph [ref=f10e97]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f10e98]:
+            - button "Privacy Policy" [ref=f10e100]
+            - button "Terms & Conditions" [ref=f10e104]
+            - button "Cookie Policy" [ref=f10e108]
+            - generic [ref=f10e111]: Timeline
+            - button "Feedback" [ref=f10e115]
+      - generic [ref=f10e117]:
+        - paragraph [ref=f10e118]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f10e119] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"
