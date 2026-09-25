@@ -95,8 +95,6 @@ export default function CreativeServicesForm() {
       onSubmit={onSubmit}
       className="max-w-3xl mx-auto my-8 space-y-6"
     >
-      <h2 className="text-2xl font-semibold text-center">Creative Service</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>

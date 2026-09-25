@@ -118,8 +118,6 @@ export default function EntertainmentForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Entertainment Event</h2>
-
       {/* Event Title */}
       <FormField
         label="Adv Title"

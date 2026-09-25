@@ -115,10 +115,6 @@ export default function B2CServiceForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">
-        Post Your B2C Service
-      </h2>
-
       <FormField
         label="Adv Title"
         field="name"

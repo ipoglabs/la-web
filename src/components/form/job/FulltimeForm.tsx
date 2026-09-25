@@ -91,8 +91,6 @@ export default function JobFulltimeForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Full-Time Job</h2>
-
 
       <FormField
         label="Company"

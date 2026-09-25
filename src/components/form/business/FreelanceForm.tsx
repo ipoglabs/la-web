@@ -36,10 +36,6 @@ export default function FreelanceContractorForm() {
   return (
     <Card className="max-w-3xl mx-auto mt-6 shadow-lg rounded-2xl">
       <CardContent className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold">
-          Freelance / Contractor Service
-        </h2>
-
         {/* Category / Subcategory */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField

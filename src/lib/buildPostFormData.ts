@@ -1,10 +1,16 @@
 import { normalizeCategory, normalizeSubcategory } from "@/posting/config/normalize";
 import { CATEGORY_CONFIG, FALLBACK_OPTIONAL_FIELDS } from "@/posting/config/categoryConfig";
 import type { FieldSpec } from "@/posting/config/types";
+import type { PostFormSchemaData } from "@/posting/form-schema/types";
 
 type StoreState = any;
 
-export function buildPostFormData(data: StoreState) {
+/**
+ * `schema` is the DB-driven form the details step rendered, when the
+ * category is on it — its fields are submitted instead of the static
+ * posting/config spec, so every field the user saw is sent.
+ */
+export function buildPostFormData(data: StoreState, schema?: PostFormSchemaData | null) {
   const fd = new FormData();
 
   // postId is used by addPost to pre-set _id so it matches the R2 folder name
@@ -42,6 +48,20 @@ export function buildPostFormData(data: StoreState) {
       else fd.append(field.key, String(value));
     }
   };
+
+  if (schema) {
+    for (const field of schema.sections.flatMap((s) => s.fields)) {
+      if (field.key === "name" || field.key === "description") continue;
+      const value: unknown = data[field.key];
+      if (value === undefined || value === null || value === "") continue;
+      if (Array.isArray(value)) {
+        if (value.length) fd.append(field.key, JSON.stringify(value));
+      } else {
+        fd.append(field.key, String(value));
+      }
+    }
+    return fd;
+  }
 
   applySpec(spec);
   applySpec(FALLBACK_OPTIONAL_FIELDS);

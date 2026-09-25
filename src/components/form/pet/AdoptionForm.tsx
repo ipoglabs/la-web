@@ -90,8 +90,6 @@ export default function PetAdoptionForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Pet for Adoption</h2>
-
       <FormField label="Adv Title" field="petName" value={petName} onChange={(v) => setField("petName", v)} required />
 
       <ToggleButtonGroup title="Pet Type" singleSelect value={petType ? [petType] : []} onChange={(v) => setField("petType", v[0] ?? "")}>

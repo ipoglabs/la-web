@@ -107,8 +107,6 @@ export default function PetsForSaleForm() {
       onSubmit={onSubmit}
       className="space-y-6"
     >
-      <h2 className="text-2xl font-semibold text-center">Post a Pet</h2>
-
       <ToggleButtonGroup title="Post Type" singleSelect value={subcategory ? [subcategory] : []} onChange={(v) => setField("subcategory", v[0] ?? "")}>
         <ToggleGroupButton value="For Sale">For Sale</ToggleGroupButton>
         <ToggleGroupButton value="Adoption">Adoption</ToggleGroupButton>

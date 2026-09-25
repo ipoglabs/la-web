@@ -97,8 +97,6 @@ export default function BooksMusicMediaForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Books · Music · Media</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <ToggleButtonGroup title="Item Type" singleSelect value={mediaType ? [mediaType] : []} onChange={(v) => setField("mediaType", v[0] ?? "")}>

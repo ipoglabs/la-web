@@ -105,8 +105,6 @@ export default function TruckForm() {
       onSubmit={onSubmit}
       className="space-y-8"
     >
-      <h2 className="text-2xl font-semibold text-center">Post a Truck for Sale</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />

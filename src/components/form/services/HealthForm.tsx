@@ -94,8 +94,6 @@ export default function HealthServiceForm() {
       onSubmit={onSubmit}
       className="max-w-3xl mx-auto my-6 space-y-6"
     >
-      <h2 className="text-2xl font-bold">Post Health Service</h2>
-
       {/* Title */}
       <FormField
         label="Adv Title"

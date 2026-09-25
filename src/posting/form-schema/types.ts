@@ -2,13 +2,15 @@
 // app/api/post-form-schema serves it, post/details/DynamicPostForm renders it).
 // Kept free of mongoose so client components can import it.
 //
-// Field `key`s MUST match the keys in posting/config/<category>.ts —
-// buildPostFormData() only submits keys listed there, and the preview /
-// listing pages read the same keys.
+// Field `key`s are the post form store keys and the saved post's keys. A key
+// that is a Post model path (models/post.ts) is saved there, so existing
+// listing/filter code keeps reading it; any other key is saved under
+// `post.attributes` (see form-schema/extractFields.ts).
 
 export type FormFieldType =
   | "text"        // single-line text
   | "richtext"    // RichTextEditor (HTML)
+  | "textarea"    // multi-line plain text
   | "number"      // plain number, optional `unit` suffix (e.g. sq ft)
   | "currency"    // number shown with the country's currency
   | "date"
@@ -38,7 +40,7 @@ export interface FormFieldDef {
   gteField?: string;
   /** Numeric: value must be <= this other field's value (e.g. floor ≤ totalFloors). */
   lteField?: string;
-  /** Text / richtext: max characters of visible text (HTML tags not counted). */
+  /** Text / textarea / richtext: max characters of visible text (HTML tags not counted). */
   maxLength?: number;
   /** Text rules: "adTitle" = letters, digits, spaces and . , - only
    *  (stripped while typing, rejected by the server). */

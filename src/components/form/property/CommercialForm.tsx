@@ -97,8 +97,6 @@ export default function CommercialForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Add Commercial Property</h2>
-
       {/* Title */}
       <FormFieldContainer label="Adv Title" htmlFor="name" error={errors.name} required>
         <Input

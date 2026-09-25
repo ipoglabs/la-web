@@ -112,8 +112,6 @@ export default function HomeLivingForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Home & Living</h2>
-
       <FormField
         label="Adv Title"
         field="name"

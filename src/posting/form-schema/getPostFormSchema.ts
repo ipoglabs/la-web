@@ -5,13 +5,8 @@
 
 import dbConnect from "@/lib/db";
 import PostFormSchema from "@/models/PostFormSchema";
-import { getDefaultPropertySchema } from "./defaults/property";
+import { getDefaultSchema } from "./defaults";
 import type { PostFormSchemaData, PostFormSchemaResponse } from "./types";
-
-function getDefault(category: string, subcategory: string, country: string): PostFormSchemaData | null {
-  if (category === "Property") return getDefaultPropertySchema(subcategory, country);
-  return null;
-}
 
 export async function getPostFormSchema(
   category: string,
@@ -30,6 +25,6 @@ export async function getPostFormSchema(
     console.error("[post-form-schema] DB lookup failed, using defaults:", err);
   }
 
-  const fallback = getDefault(category, subcategory, cc);
+  const fallback = getDefaultSchema(category, subcategory, cc);
   return { schema: fallback, source: fallback ? "default" : "none" };
 }

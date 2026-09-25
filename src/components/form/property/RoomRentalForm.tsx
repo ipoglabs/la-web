@@ -95,8 +95,6 @@ export default function RoomRentalForm() {
       onSubmit={onSubmit}
       className="w-full max-w-xl space-y-6"
     >
-      <h2 className="text-2xl font-semibold text-center">Add Room for Rent</h2>
-
       {/* Room Type */}
       <ToggleButtonGroup
         title="Room Type"

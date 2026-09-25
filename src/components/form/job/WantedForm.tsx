@@ -86,8 +86,6 @@ export default function JobWantedForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Job Wanted</h2>
-
       <FormField
         label="Your Name"
         field="candidateName"

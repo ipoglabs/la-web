@@ -2,7 +2,11 @@
 "use server";
 
 import { Types } from "mongoose";
-import { validatePostSubmission } from "@/posting/form-schema/validateSubmission";
+import {
+  getSubmissionSchema,
+  readSchemaValues,
+  validateSubmission,
+} from "@/posting/form-schema/validateSubmission";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
@@ -346,20 +350,43 @@ export async function updatePost(
       return { ok: false, error: errors.join(" • ") };
     }
 
-    // ----- Clean $set and final safety -----
-    const $set = stripUndef(updateRaw);
-
-    // ----- Category-specific rules from the DB-driven form schema -----
-    // Checked on the post as it will look after this update (stored values
-    // overlaid with the submitted ones), in the post's own market.
-    const schemaErrors = await validatePostSubmission({
+    // ----- DB-driven form schema -----
+    // The form submits every schema field it shows, so the schema's fields
+    // replace the hand-written mapping above: model paths go to $set (or
+    // $unset when emptied), the rest replace `attributes` wholesale.
+    const { schema, error: schemaLookupError } = await getSubmissionSchema({
       category: effective.category,
       subcategory: effective.subcategory,
       country: current.country,
-      data: { ...(current as unknown as Record<string, unknown>), ...$set },
     });
-    if (schemaErrors.length) {
-      return { ok: false, error: schemaErrors.join(" • ") };
+    if (schemaLookupError) {
+      return { ok: false, error: schemaLookupError };
+    }
+
+    const $unset: Record<string, ""> = {};
+    if (schema) {
+      const values = readSchemaValues(formData, schema);
+      Object.assign(updateRaw, values.fields);
+      for (const key of values.unset) {
+        delete updateRaw[key];
+        $unset[key] = "";
+      }
+      if (Object.keys(values.attributes).length) updateRaw.attributes = values.attributes;
+      else $unset.attributes = "";
+    }
+
+    // ----- Clean $set and final safety -----
+    const $set = stripUndef(updateRaw);
+
+    // Checked on the post as it will look after this update (stored values
+    // overlaid with the submitted ones), in the post's own market.
+    if (schema) {
+      const after: Record<string, unknown> = { ...(current as unknown as Record<string, unknown>), ...$set };
+      for (const key of Object.keys($unset)) delete after[key];
+      const schemaErrors = validateSubmission(schema, { ...after, ...($set.attributes as Record<string, unknown> | undefined) });
+      if (schemaErrors.length) {
+        return { ok: false, error: schemaErrors.join(" • ") };
+      }
     }
 
     // Final safety: ensure ownerId is a valid ObjectId
@@ -369,7 +396,7 @@ export async function updatePost(
 
     const doc = await Post.findOneAndUpdate(
       { _id: new Types.ObjectId(postId) },
-      { $set },
+      Object.keys($unset).length ? { $set, $unset } : { $set },
       { new: true, runValidators: true }
     ).lean();
 

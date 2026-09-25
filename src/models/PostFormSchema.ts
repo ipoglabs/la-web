@@ -36,7 +36,7 @@ const FieldSchema = new Schema<FormFieldDef>(
     type: {
       type: String,
       required: true,
-      enum: ["text", "richtext", "number", "currency", "date", "select", "multiselect", "tags"],
+      enum: ["text", "richtext", "textarea", "number", "currency", "date", "select", "multiselect", "tags"],
     },
     label: { type: String, required: true },
     required: Boolean,

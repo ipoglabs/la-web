@@ -37,7 +37,7 @@ function validateField(
       : `${field.label} is required.`;
   }
 
-  if ((field.type === "text" || field.type === "richtext") && typeof value === "string") {
+  if ((field.type === "text" || field.type === "textarea" || field.type === "richtext") && typeof value === "string") {
     if (field.maxLength !== undefined && plainText(value).length > field.maxLength) {
       return `${field.label} must be ${fmt(field.maxLength)} characters or fewer.`;
     }

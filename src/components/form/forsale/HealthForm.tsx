@@ -95,8 +95,6 @@ export default function HealthBeautyForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Post Health & Beauty Item</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <FormField label="Product Type" field="productType" value={productType} onChange={(v) => setField("productType", v)} required />

@@ -6,7 +6,7 @@
 // so upload → preview → submit → edit work unchanged.
 
 import React from "react";
-import { LaInput, LaTagInput } from "@/components/la";
+import { LaInput, LaTagInput, LaTextarea } from "@/components/la";
 import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
@@ -148,6 +148,23 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
             onChange={(html) => set(html)}
           />
         </div>
+      );
+      break;
+
+    case "textarea":
+      control = (
+        <LaTextarea
+          id={field.key}
+          name={field.key}
+          rows={4}
+          maxLength={field.maxLength}
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => set(e.target.value)}
+          placeholder={field.placeholder}
+          status={error ? "error" : "default"}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+        />
       );
       break;
 

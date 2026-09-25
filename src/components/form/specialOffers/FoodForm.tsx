@@ -100,8 +100,6 @@ export default function FoodDiningForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Food & Dining Service</h2>
-
       {/* Service Name */}
       <FormField
         label="Adv Title"

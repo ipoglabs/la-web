@@ -93,8 +93,6 @@ export default function HomeServiceForm() {
       onSubmit={onSubmit}
       className="max-w-3xl mx-auto mt-6 space-y-6"
     >
-      <h2 className="text-2xl font-semibold">Post Home Service</h2>
-
       <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
         <ToggleGroupButton value="cleaning">Cleaning</ToggleGroupButton>
         <ToggleGroupButton value="plumbing">Plumbing</ToggleGroupButton>

@@ -85,8 +85,6 @@ export default function PetLostFoundForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto"
     >
-      <h2 className="text-2xl font-semibold text-center">Pet Lost &amp; Found</h2>
-
       <ToggleButtonGroup title="Report Type" singleSelect value={reportType ? [reportType] : []} onChange={(v) => setField("reportType", v[0] ?? "")}>
         <ToggleGroupButton value="lost">Lost</ToggleGroupButton>
         <ToggleGroupButton value="found">Found</ToggleGroupButton>

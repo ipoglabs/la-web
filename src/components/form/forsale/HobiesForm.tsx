@@ -95,8 +95,6 @@ export default function HobbiesCollectionsForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Post Hobbies & Collections Item</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <ToggleButtonGroup title="Item Type" singleSelect value={itemType ? [itemType] : []} onChange={(v) => setField("itemType", v[0] ?? "")}>

@@ -97,8 +97,6 @@ export default function HolidayRentalForm() {
       onSubmit={onSubmit}
       className="w-full max-w-xl space-y-6"
     >
-      <h2 className="text-2xl font-semibold text-center">Add Holiday Rental</h2>
-
       {/* Title */}
       <FormFieldContainer label="Adv Title" htmlFor="name" error={errors.name} required>
         <Input

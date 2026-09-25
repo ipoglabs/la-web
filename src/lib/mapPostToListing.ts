@@ -2,6 +2,7 @@ import type { Listing, KeyValueRow } from "@/types/listing";
 import type { IPost } from "@/models/post";
 import { type LeanPost, resolvePostId, resolvePrice, resolveDetailsLabel, mapStatus } from "@/lib/mapPostToFeaturedItem";
 import { sanitizeDescriptionToHtml } from "@/lib/sanitizeDescription";
+import type { FormFieldDef, PostFormSchemaData } from "@/posting/form-schema/types";
 
 /** Subset of the real User doc this mapper needs — pass a `.populate("ownerId", ...)` result. */
 export type LeanOwner = {
@@ -62,6 +63,48 @@ function buildKeyDetails(post: LeanPost): KeyValueRow[] {
   return rows;
 }
 
+// Headline price fields — already shown as the listing's price label.
+const PRICE_KEYS = new Set(["price", "salePrice", "rentPrice", "rent", "rateNightly", "rateMonthly", "salary", "hourlyRate", "budget"]);
+
+function formatSchemaValue(field: FormFieldDef, value: unknown): string | null {
+  if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) return null;
+  const labels = new Map((field.options ?? []).map((o) => [o.value, o.label]));
+  const label = (v: unknown) => labels.get(String(v)) ?? String(v);
+
+  if (Array.isArray(value)) return value.map(label).join(", ");
+  switch (field.type) {
+    case "number":
+    case "currency": {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+      const shown = n.toLocaleString("en");
+      return field.unit ? `${shown} ${field.unit}` : shown;
+    }
+    case "date": {
+      const d = new Date(String(value));
+      return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    }
+    default:
+      return label(value);
+  }
+}
+
+/** Every filled-in field of the post's own DB-driven form, labelled as the seller saw it. */
+function buildSchemaKeyDetails(post: LeanPost, schema: PostFormSchemaData): KeyValueRow[] {
+  const rows: KeyValueRow[] = [
+    { key: "Category", value: post.category },
+    { key: "Subcategory", value: post.subcategory },
+  ];
+  const attributes = (post.attributes ?? {}) as Record<string, unknown>;
+  for (const field of schema.sections.flatMap((s) => s.fields)) {
+    if (field.key === "name" || field.key === "description" || PRICE_KEYS.has(field.key)) continue;
+    const value = (post as unknown as Record<string, unknown>)[field.key] ?? attributes[field.key];
+    const shown = formatSchemaValue(field, value);
+    if (shown) rows.push({ key: field.label, value: shown });
+  }
+  return rows;
+}
+
 function buildGoodToKnow(post: LeanPost, sellerName: string): KeyValueRow[] {
   const rows: KeyValueRow[] = [
     { key: "Listed By", value: sellerName },
@@ -83,6 +126,9 @@ export function mapPostToListing(
    * every real call site should compute and pass the true count.
    */
   activeListingsCount: number = 1,
+  /** The post's DB-driven form, when its category is on it — the detail
+   *  table then lists every field that form collected (incl. `attributes`). */
+  schema?: PostFormSchemaData | null,
 ): Listing {
   const id = resolvePostId(post);
   const { priceLabel, priceSuffix } = resolvePrice(post);
@@ -107,7 +153,7 @@ export function mapPostToListing(
     postedAt: new Date(post.createdAt ?? Date.now()).toISOString(),
     status: mapStatus(post.status, post.isSuspended),
     description: sanitizeDescriptionToHtml(post.description ?? ""),
-    keyDetails: buildKeyDetails(post),
+    keyDetails: schema ? buildSchemaKeyDetails(post, schema) : buildKeyDetails(post),
     goodToKnow: buildGoodToKnow(post, sellerName),
     coordinates,
     seller: {

@@ -115,8 +115,6 @@ export default function HealthWellnessForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Health & Wellness Service</h2>
-
       {/* Service Name */}
       <FormField
         label="Adv Title"

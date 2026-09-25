@@ -79,8 +79,6 @@ export default function VehicleWantedForm() {
       onSubmit={onSubmit}
       className="space-y-8"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Vehicle Wanted</h2>
-
       <FormField
         label="Adv Title"
         field="name"

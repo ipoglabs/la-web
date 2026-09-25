@@ -99,8 +99,6 @@ export default function PetWantedForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto"
     >
-      <h2 className="text-2xl font-semibold text-center">Pet Wanted</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />

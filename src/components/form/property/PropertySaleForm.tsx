@@ -76,8 +76,6 @@ export default function PropertySaleForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Add Property for Sale</h2>
-
       {/* Property Type */}
       <ToggleButtonGroup
         title="Property Type"

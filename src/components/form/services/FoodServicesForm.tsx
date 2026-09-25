@@ -108,8 +108,6 @@ export default function FoodServiceForm() {
       onSubmit={onSubmit}
       className="max-w-3xl mx-auto my-6 space-y-6"
     >
-      <h2 className="text-2xl font-bold">Post Food Service</h2>
-
       <FormField
         label="Adv Title"
         field="name"

@@ -5,6 +5,8 @@ import { Types } from "mongoose";
 import Post from "@/models/post";
 import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
 import { publicPostFilter } from "@/lib/postVisibility";
+import { isDynamicFormCategory } from "@/posting/form-schema/rollout";
+import { getPostFormSchema } from "@/posting/form-schema/getPostFormSchema";
 import { getActiveListingCountsByOwner } from "@/lib/postActiveListingsCount";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import type { Listing } from "@/types/listing";
@@ -82,7 +84,11 @@ export async function resolvePostListingContext(publicId: string): Promise<{
   const { ownerId, ...rest } = post;
   const activeCounts = await getActiveListingCountsByOwner([ownerId?._id]);
   const activeListingsCount = ownerId?._id ? activeCounts.get(String(ownerId._id)) ?? 1 : 1;
-  const listing = mapPostToListing(rest, ownerId ?? null, activeListingsCount);
+  const schema =
+    rest.country && isDynamicFormCategory(rest.category)
+      ? (await getPostFormSchema(rest.category, rest.subcategory, rest.country)).schema
+      : null;
+  const listing = mapPostToListing(rest, ownerId ?? null, activeListingsCount, schema);
 
   const cat = resolveCategoryId(rest.category);
   const sub = resolveSubcategoryId(cat, rest.subcategory);

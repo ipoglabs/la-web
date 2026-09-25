@@ -3,8 +3,9 @@
 // Requires MONGODB_URI in your environment.
 //
 // Seeds the `postformschemas` collection (models/PostFormSchema.ts) with the
-// default Property forms from src/posting/form-schema/defaults/property.ts —
-// 9 subcategories × IN/GB/SG = 27 documents.
+// default form for every category × subcategory in config/categories × IN/GB/SG,
+// from src/posting/form-schema/defaults. Fails without writing anything if a
+// subcategory has no default form.
 //
 // By default only INSERTS missing documents, so hand edits made in the DB are
 // never overwritten. Pass --force to reset every document back to the defaults.
@@ -12,10 +13,15 @@
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
 import PostFormSchema from "../src/models/PostFormSchema";
-import { getAllDefaultPropertySchemas } from "../src/posting/form-schema/defaults/property";
+import { getAllDefaultSchemas } from "../src/posting/form-schema/defaults";
 
 async function seed() {
   const force = process.argv.includes("--force");
+  const { schemas, missing } = getAllDefaultSchemas();
+  if (missing.length) {
+    throw new Error(`No default form for:\n  ${missing.join("\n  ")}`);
+  }
+
   await dbConnect();
   await PostFormSchema.syncIndexes();
 
@@ -23,7 +29,7 @@ async function seed() {
   let reset = 0;
   let skipped = 0;
 
-  for (const schema of getAllDefaultPropertySchemas()) {
+  for (const schema of schemas) {
     const filter = { category: schema.category, subcategory: schema.subcategory, country: schema.country };
 
     if (force) {

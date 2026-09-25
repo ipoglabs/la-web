@@ -111,10 +111,6 @@ export default function TravelServiceForm() {
       onSubmit={onSubmit}
       className="max-w-3xl mx-auto my-8 space-y-6"
     >
-      <h2 className="text-2xl font-semibold text-center">
-        Post Travel Service
-      </h2>
-
       <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
         <ToggleGroupButton value="tour">Tour</ToggleGroupButton>
         <ToggleGroupButton value="package">Package</ToggleGroupButton>

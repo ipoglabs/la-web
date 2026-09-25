@@ -10,7 +10,11 @@ import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
 import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
 import { getVerificationStatus } from "@/lib/verification";
 import { logActivity } from "@/lib/activityLog";
-import { validatePostSubmission } from "@/posting/form-schema/validateSubmission";
+import {
+  getSubmissionSchema,
+  readSchemaValues,
+  validateSubmission,
+} from "@/posting/form-schema/validateSubmission";
 
 type LocationData = {
   address?: string;
@@ -358,16 +362,28 @@ export async function addPost(
     const rawCountry = cookieStore.get(COUNTRY_COOKIE)?.value ?? "";
     const country = isAllowedCountry(rawCountry) ? rawCountry.toLowerCase() : undefined;
 
-    // Category-specific rules from the DB-driven form schema — the same
-    // definition the form rendered, so the client can't skip it.
-    const schemaErrors = await validatePostSubmission({
+    // DB-driven form: read exactly the fields the rendered schema defines
+    // (overriding the hand-written mapping above for those keys) and
+    // enforce its rules, so the client can't skip them.
+    const { schema, error: schemaLookupError } = await getSubmissionSchema({
       category: postData.category,
       subcategory: postData.subcategory,
       country,
-      data: postData,
     });
-    if (schemaErrors.length) {
-      return { ok: false, error: schemaErrors.join(" • ") };
+    if (schemaLookupError) {
+      return { ok: false, error: schemaLookupError };
+    }
+
+    let attributes: Record<string, unknown> | undefined;
+    if (schema) {
+      const values = readSchemaValues(formData, schema);
+      Object.assign(postData, values.fields);
+      attributes = Object.keys(values.attributes).length ? values.attributes : undefined;
+
+      const schemaErrors = validateSubmission(schema, { ...postData, ...attributes });
+      if (schemaErrors.length) {
+        return { ok: false, error: schemaErrors.join(" • ") };
+      }
     }
 
     const adsId = await generateAdsId();
@@ -375,6 +391,7 @@ export async function addPost(
     const newPost = new Post({
       ...(preGenId ? { _id: preGenId } : {}),
       ...postData,
+      attributes,
       adsId,
       country,
     });

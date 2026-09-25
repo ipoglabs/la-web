@@ -110,8 +110,6 @@ export default function PetAccessoriesForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-3xl mx-auto"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Pet Accessories</h2>
-
       <FormField label="Adv Title" field="accessoryName" value={accessoryName} onChange={(v) => setField("accessoryName", v)} required />
 
       <ToggleButtonGroup title="Category" singleSelect value={partsCategory ? [partsCategory] : []} onChange={(v) => setField("partsCategory", v[0] ?? "")}>

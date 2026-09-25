@@ -95,8 +95,6 @@ export default function CarSaleForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Post a Car for Sale</h2>
-
       <FormField label="Adv Title" field="name" value={name} onChange={(v) => setField("name", v)} required />
 
       <FormField label="Adv Details" field="description" type="textarea" value={description} onChange={(v) => setField("description", v)}  required />

@@ -113,8 +113,6 @@ export default function ElectronicsGadgetsForm() {
       onSubmit={onSubmit}
       className="space-y-6 max-w-2xl mx-auto p-6"
     >
-      <h2 className="text-2xl font-bold">Electronics & Gadgets</h2>
-
       {/* Product Name */}
       <FormField
         label="Adv Title"

@@ -87,8 +87,6 @@ export default function JobTemporaryForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Temporary Job</h2>
-
       <FormField
         label="Adv Title"
         field="name"

@@ -78,8 +78,6 @@ export default function JobPartTimeForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Part-Time Job</h2>
-
       <FormField
         label="Adv Title"
         field="name"

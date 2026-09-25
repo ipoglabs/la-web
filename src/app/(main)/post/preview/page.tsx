@@ -20,6 +20,10 @@ import { deleteImageVariants } from "@/lib/media/imageVariants";
 import { useAuthStore } from "@/store/authStore";
 import { getSpecs } from "@/posting/config/getSpecs";
 import type { FieldSpec } from "@/posting/config/types";
+import { isDynamicFormCategory } from "@/posting/form-schema/rollout";
+import { schemaToSpecs } from "@/posting/form-schema/schemaToSpecs";
+import { usePostFormSchema } from "@/lib/hooks/usePostFormSchema";
+import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import SubmitProgressModal, {
   SUBMIT_STEPS,
   type SubmitStepStatus,
@@ -27,13 +31,13 @@ import SubmitProgressModal, {
 
 /* ---------------- HELPERS ---------------- */
 
-function fmtCurrency(v: unknown) {
+function fmtCurrency(v: unknown, currency: string) {
   if (!v) return "—";
   const n = Number(v);
   if (Number.isNaN(n)) return String(v);
   return new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: "INR",
+    currency,
     maximumFractionDigits: 0,
   }).format(n);
 }
@@ -44,7 +48,7 @@ function fmtDate(v: unknown) {
   return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString();
 }
 
-function renderByType(spec: FieldSpec, value: any): string {
+function renderByType(spec: FieldSpec, value: any, currency: string): string {
   if (
     value === undefined ||
     value === null ||
@@ -58,7 +62,7 @@ function renderByType(spec: FieldSpec, value: any): string {
     return Array.isArray(value) ? value.join(", ") : "—";
   }
 
-  if (spec.type === "currency") return fmtCurrency(value);
+  if (spec.type === "currency") return fmtCurrency(value, currency);
   if (spec.type === "date") return fmtDate(value);
 
   if (spec.type === "boolean") {
@@ -85,6 +89,14 @@ export default function PreviewPage() {
   const data = usePostFormStore();
   const setField = usePostFormStore((s) => s.setField);
   const user = useAuthStore((s) => s.user);
+
+  const { countryCode, countryConfig } = useCountryConfig();
+  const useDynamicForm = isDynamicFormCategory(data.category);
+  const { schema, loading: schemaLoading } = usePostFormSchema(
+    useDynamicForm ? data.category : null,
+    data.subcategory,
+    countryCode.toUpperCase()
+  );
 
   const [loading, setLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
@@ -197,10 +209,13 @@ export default function PreviewPage() {
 
   /* ---------------- SPECS ---------------- */
 
-  const specs = useMemo(() => {
-    if (!data.category || !data.subcategory) return [];
-    return getSpecs(data.category, data.subcategory);
-  }, [data.category, data.subcategory]);
+  // DB-form categories show exactly the fields their schema defines, with
+  // choice values shown by their option labels.
+  const { specs, optionLabels } = useMemo(() => {
+    if (schema) return schemaToSpecs(schema);
+    if (!data.category || !data.subcategory) return { specs: [], optionLabels: {} };
+    return { specs: getSpecs(data.category, data.subcategory), optionLabels: {} };
+  }, [schema, data.category, data.subcategory]);
 
   const groupedFields = useMemo(() => {
     const groups: Record<string, any[]> = {
@@ -216,17 +231,24 @@ export default function PreviewPage() {
     });
 
     for (const spec of specs) {
-      const v = (data as any)[spec.key];
-      if (!v || (Array.isArray(v) && v.length === 0)) continue;
+      const raw = (data as any)[spec.key];
+      if (!raw || (Array.isArray(raw) && raw.length === 0)) continue;
+
+      const labels = optionLabels[spec.key];
+      const v = labels
+        ? Array.isArray(raw)
+          ? raw.map((x: string) => labels[x] ?? x)
+          : labels[raw] ?? raw
+        : raw;
 
       groups.categorySpecific.push({
         title: spec.label,
-        value: renderByType(spec, v),
+        value: renderByType(spec, v, countryConfig.currency),
       });
     }
 
     return groups;
-  }, [data, specs]);
+  }, [data, specs, optionLabels, countryConfig.currency]);
 
   /* ---------------- NAVIGATION GUARD ---------------- */
 
@@ -251,6 +273,15 @@ export default function PreviewPage() {
       setClientError(message);
       toast.error(message);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (useDynamicForm && !schema) {
+      const message = schemaLoading
+        ? "Form is still loading. Please try again."
+        : "Could not load the form for this subcategory.";
+      setClientError(message);
+      toast.error(message);
       return;
     }
 
@@ -307,11 +338,14 @@ export default function PreviewPage() {
       setStep("upload", "done");
 
       setStep("build", "active");
-      const fd = buildPostFormData({
-        ...store,
-        sellerInfo,
-        images: resolvedImages,
-      });
+      const fd = buildPostFormData(
+        {
+          ...store,
+          sellerInfo,
+          images: resolvedImages,
+        },
+        schema
+      );
       setStep("build", "done");
 
       setStep("save", "active");

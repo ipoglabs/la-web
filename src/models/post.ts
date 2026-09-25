@@ -197,6 +197,10 @@ export interface IPost {
   // Service → Wanted
   urgency?: string;
 
+  /** DB-driven form fields that have no dedicated path above, keyed by the
+   *  form schema's field key (see posting/form-schema/validateSubmission.ts). */
+  attributes?: Record<string, unknown>;
+
   /** ===== Moderation ===== */
   isSuspended?: boolean;
   suspendedAt?: Date;
@@ -400,6 +404,9 @@ const PostSchema = new Schema<IPost>(
 
     // Service wanted
     urgency: String,
+
+    // DB-driven form fields without a dedicated path above
+    attributes: { type: Schema.Types.Mixed },
 
 /* 🔴 Moderation — real ad reports live on the separate AdReport collection
    (src/components/report-ad/model.ts), wired into app/api/reports/*,

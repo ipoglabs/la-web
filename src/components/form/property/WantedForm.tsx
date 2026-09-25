@@ -101,8 +101,6 @@ export default function WantedPropertyForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-xl"
     >
-      <h2 className="text-2xl font-semibold text-center">Post Wanted Property</h2>
-
       {/* Property Type */}
       <ToggleButtonGroup
         title="Looking For"

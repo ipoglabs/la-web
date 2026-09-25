@@ -77,6 +77,15 @@ function toStoreShape(post: AnyPost): Partial<PostFormState> {
     "destination","packageDetails","agencyName","durationText","level","urgency",
   ] as const;
 
+  // DB-driven form fields without a dedicated Post path are stored under
+  // `attributes`; flatten them back to the store keys the form reads.
+  if (post.attributes && typeof post.attributes === "object") {
+    for (const [key, val] of Object.entries(post.attributes as Record<string, unknown>)) {
+      if (key in core) continue;
+      (core as Record<string, unknown>)[key] = Array.isArray(val) ? [...val] : val;
+    }
+  }
+
   for (const key of passthroughKeys) {
     const val = post[key];
     if (val !== undefined) {

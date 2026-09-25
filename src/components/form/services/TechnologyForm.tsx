@@ -136,8 +136,6 @@ export default function TechnologyServiceForm() {
       onSubmit={onSubmit}
       className="space-y-6 w-full max-w-3xl mx-auto"
     >
-      <h2 className="text-2xl font-semibold text-center">Technology Service</h2>
-
       <ToggleButtonGroup title="Service Type" singleSelect value={serviceType ? [serviceType] : []} onChange={(v) => setField("serviceType", v[0] ?? "")}>
         <ToggleGroupButton value="it-support">IT Support</ToggleGroupButton>
         <ToggleGroupButton value="software-development">Software Development</ToggleGroupButton>
