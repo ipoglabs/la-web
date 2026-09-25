@@ -9,6 +9,7 @@ import React from "react";
 import { LaInput, LaTagInput, LaTextarea } from "@/components/la";
 import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { GoodToKnowEditor, type GoodToKnowPoint } from "@/components/good-to-know/GoodToKnow";
+import { DateInput } from "@/components/date-input";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
@@ -226,14 +227,29 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       );
       break;
 
+    // Same DD/MM/YYYY input as registration's Date of Birth; stores ISO
+    // (YYYY-MM-DD) like before and shows its own error message.
     case "date":
+      control = (
+        <DateInput
+          id={field.key}
+          label={field.label}
+          value={typeof value === "string" ? value : ""}
+          onChange={(iso) => set(iso ?? "")}
+          inputFormat="DMY"
+          blurDisplay="long"
+          error={error}
+        />
+      );
+      break;
+
     case "text":
     default:
       control = (
         <LaInput
           id={field.key}
           name={field.key}
-          type={field.type === "date" ? "date" : "text"}
+          type="text"
           maxLength={field.type === "text" ? field.maxLength : undefined}
           value={typeof value === "string" ? value : value == null ? "" : String(value)}
           onChange={(e) =>
@@ -251,7 +267,7 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
     <div data-field={field.key} className="flex flex-col gap-1.5">
       {label}
       {control}
-      {field.type === "tags" && !error ? null : footer}
+      {(field.type === "tags" && !error) || (field.type === "date" && error) ? null : footer}
     </div>
   );
 }
