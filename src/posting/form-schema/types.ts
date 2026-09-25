@@ -34,6 +34,9 @@ export const GOOD_TO_KNOW = {
   valueMax: 60,
 } as const;
 
+/** Allowed characters and length for a "place" tag — shared by the form and the server. */
+export const PLACE_TAG = { pattern: /^[a-zA-Z0-9 .'&-]*$/, maxLength: 40 } as const;
+
 export interface FormFieldOption {
   value: string;
   label: string;
@@ -59,8 +62,12 @@ export interface FormFieldDef {
   /** Text / textarea / richtext: max characters of visible text (HTML tags not counted). */
   maxLength?: number;
   /** Text rules: "adTitle" = letters, digits, spaces and . , - only
-   *  (stripped while typing, rejected by the server). */
-  format?: "adTitle";
+   *  (stripped while typing, rejected by the server).
+   *  Tags rules: "place" = each tag is a place name — letters, digits,
+   *  spaces and . ' & - (e.g. "Stoke-on-Trent", "St. John's Wood"). */
+  format?: "adTitle" | "place";
+  /** Tags / multiselect: most entries allowed (shows an "n/max" counter on tags). */
+  maxItems?: number;
   /** Grid width on md+ screens; always full width on mobile. */
   width?: "full" | "half" | "third";
 }

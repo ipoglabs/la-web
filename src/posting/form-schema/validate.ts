@@ -1,4 +1,4 @@
-import type { FormFieldDef, PostFormSchemaData } from "./types";
+import { PLACE_TAG, type FormFieldDef, type PostFormSchemaData } from "./types";
 import { goodToKnowError, normalizeGoodToKnow } from "./goodToKnow";
 
 // Mirrors sanitizeAdTitle (posting/validation/sanitizeAdTitle.ts): the form
@@ -60,6 +60,19 @@ function validateField(
     const values = Array.isArray(value) ? value.map(String) : [String(value)];
     if (field.type === "select" && values.length > 1) return `${field.label} accepts only one choice.`;
     if (values.some((v) => !allowed.has(v))) return `${field.label} has an invalid choice.`;
+  }
+
+  if ((field.type === "tags" || field.type === "multiselect") && Array.isArray(value)) {
+    if (field.maxItems !== undefined && value.length > field.maxItems) {
+      return `${field.label} allows up to ${fmt(field.maxItems)}.`;
+    }
+    if (field.type === "tags" && field.format === "place") {
+      const bad = value.find((v) => {
+        const s = String(v);
+        return !PLACE_TAG.pattern.test(s) || s.length > PLACE_TAG.maxLength;
+      });
+      if (bad !== undefined) return `${field.label}: "${String(bad)}" isn't a valid place name.`;
+    }
   }
 
   if (field.type === "date" && Number.isNaN(Date.parse(String(value)))) {

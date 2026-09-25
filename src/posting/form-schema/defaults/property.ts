@@ -25,6 +25,13 @@ const basics: FormSection = {
   ],
 };
 
+/** Placeholder areas for Preferred Locations, per market. */
+const AREA_EXAMPLES: Record<string, string> = {
+  IN: "e.g. Andheri West, Koramangala…",
+  GB: "e.g. Camden, Didsbury…",
+  SG: "e.g. Tampines, Bukit Timah…",
+};
+
 const bedsBaths = (): FormFieldDef[] => [
   { key: "beds", type: "number", label: "Beds", min: 1, width: "half" },
   { key: "baths", type: "number", label: "Baths", min: 1, width: "half" },
@@ -269,7 +276,10 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
               key: "preferred_locations",
               type: "tags",
               label: "Preferred Locations",
-              placeholder: "Type a location and press Enter",
+              placeholder: AREA_EXAMPLES[country] ?? "e.g. your preferred area…",
+              hint: "Type an area and press Enter — add up to 5",
+              format: "place",
+              maxItems: 5,
             },
           ],
         },

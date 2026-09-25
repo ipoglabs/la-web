@@ -18,6 +18,7 @@
  *   • Remove tag:   × button · Backspace when input is empty (removes last)
  *   • Validation:   a-z A-Z 0-9 + spaces only · min 2 · max 30 chars
  *                   no duplicates (case-insensitive)
+ *                   (`pattern` / `maxLength` override the defaults, e.g. for place names)
  *   • OR logic hint shown below: alerts fire if any tag matches
  */
 
@@ -36,6 +37,14 @@ export interface LaTagInputProps {
   maxTags?: number;
   className?: string;
   hint?: string;
+  /** Plural noun used in the limit message ("Max 5 locations"). Default "keywords". */
+  itemNoun?: string;
+  /** Allowed characters per tag. Default: letters, numbers and spaces. */
+  pattern?: RegExp;
+  /** Shown when a tag doesn't match `pattern`. */
+  patternMessage?: string;
+  /** Max characters per tag. Default 30. */
+  maxLength?: number;
 }
 
 export function LaTagInput({
@@ -45,6 +54,10 @@ export function LaTagInput({
   maxTags,
   className,
   hint = "Alerts fire if a listing matches any keyword",
+  itemNoun = "keywords",
+  pattern = ALLOWED_RE,
+  patternMessage = "Only letters, numbers and spaces allowed",
+  maxLength = MAX_LEN,
 }: LaTagInputProps) {
   const [input, setInput] = React.useState("");
   const [error, setError] = React.useState("");
@@ -55,16 +68,16 @@ export function LaTagInput({
     const trimmed = raw.trim().replace(/\s+/g, " ");
     if (!trimmed) { setInput(""); return; }
 
-    if (!ALLOWED_RE.test(trimmed)) {
-      setError("Only letters, numbers and spaces allowed");
+    if (!pattern.test(trimmed)) {
+      setError(patternMessage);
       return;
     }
     if (trimmed.length < MIN_LEN) {
       setError(`At least ${MIN_LEN} characters`);
       return;
     }
-    if (trimmed.length > MAX_LEN) {
-      setError(`Max ${MAX_LEN} characters`);
+    if (trimmed.length > maxLength) {
+      setError(`Max ${maxLength} characters`);
       return;
     }
     if (value.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
@@ -72,7 +85,7 @@ export function LaTagInput({
       return;
     }
     if (maxTags && value.length >= maxTags) {
-      setError(`Max ${maxTags} keywords`);
+      setError(`Max ${maxTags} ${itemNoun}`);
       return;
     }
 
@@ -147,7 +160,7 @@ export function LaTagInput({
 
         {/* Text input */}
         {atMax ? (
-          <span className="text-sm text-slate-400">Limit reached</span>
+          <span className="text-sm text-slate-500">Limit reached</span>
         ) : (
           <input
             ref={inputRef}
@@ -161,7 +174,7 @@ export function LaTagInput({
               if (input.trim()) tryCommit(input);
             }}
             placeholder={value.length === 0 ? placeholder : "Add another…"}
-            className="min-w-24 flex-1 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+            className="min-w-24 flex-1 bg-transparent text-base text-gray-900 placeholder:text-slate-500 focus:outline-none"
           />
         )}
       </div>
@@ -171,12 +184,12 @@ export function LaTagInput({
         {error ? (
           <p className="text-sm text-red-500">{error}</p>
         ) : (
-          <p className="text-sm text-slate-400">{hint}</p>
+          <p className="text-sm text-slate-500">{hint}</p>
         )}
         {maxTags && (
           <p className={cn(
             "shrink-0 text-sm tabular-nums",
-            value.length >= maxTags ? "font-medium text-amber-600" : "text-slate-400",
+            value.length >= maxTags ? "font-medium text-amber-600" : "text-slate-500",
           )}>
             {value.length}/{maxTags}
           </p>

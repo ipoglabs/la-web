@@ -12,7 +12,7 @@ import { GoodToKnowEditor, type GoodToKnowPoint } from "@/components/good-to-kno
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
-import { GOOD_TO_KNOW, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
+import { GOOD_TO_KNOW, PLACE_TAG, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
 import { cn } from "@/lib/utils";
 
 interface DynamicPostFormProps {
@@ -179,16 +179,30 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       );
       break;
 
-    case "tags":
+    // Same tag input as Create Alert's Keywords: chips, helper line and an
+    // "n/max" counter — the hint renders inside it, so the footer below only
+    // shows errors for this type.
+    case "tags": {
+      const place = field.format === "place";
       control = (
         <LaTagInput
           value={Array.isArray(value) ? (value as string[]) : []}
           onChange={(tags) => set(tags)}
           placeholder={field.placeholder}
-          hint=""
+          hint={field.hint ?? ""}
+          maxTags={field.maxItems}
+          itemNoun={place ? "locations" : "entries"}
+          {...(place
+            ? {
+                pattern: PLACE_TAG.pattern,
+                patternMessage: "Only letters, numbers, spaces and . ' & - allowed",
+                maxLength: PLACE_TAG.maxLength,
+              }
+            : {})}
         />
       );
       break;
+    }
 
     case "number":
     case "currency":
@@ -237,7 +251,7 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
     <div data-field={field.key} className="flex flex-col gap-1.5">
       {label}
       {control}
-      {footer}
+      {field.type === "tags" && !error ? null : footer}
     </div>
   );
 }
