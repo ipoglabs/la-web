@@ -22,6 +22,7 @@ import { getSpecs } from "@/posting/config/getSpecs";
 import type { FieldSpec } from "@/posting/config/types";
 import { isDynamicFormCategory } from "@/posting/form-schema/rollout";
 import { schemaToSpecs } from "@/posting/form-schema/schemaToSpecs";
+import { normalizeGoodToKnow } from "@/posting/form-schema/goodToKnow";
 import { usePostFormSchema } from "@/lib/hooks/usePostFormSchema";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import SubmitProgressModal, {
@@ -245,6 +246,11 @@ export default function PreviewPage() {
         title: spec.label,
         value: renderByType(spec, v, countryConfig.currency),
       });
+    }
+
+    // Seller's own Good To Know points, as their own label/value rows.
+    for (const point of normalizeGoodToKnow((data as unknown as Record<string, unknown>).goodToKnow)?.points ?? []) {
+      groups.categorySpecific.push({ title: point.label, value: point.value });
     }
 
     return groups;

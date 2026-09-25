@@ -167,6 +167,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
     description,
     keyDetails: keyDetails2,
     goodToKnow,
+    sellerFacts,
     images,
     seller,
     coordinates,
@@ -229,7 +230,16 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
 
             <ListingDetailsTable title="Listing Details" rows={keyDetails2} className={card} />
 
-            <ListingUserFacts title="Good To Know" items={goodToKnow} className={card} />
+            {/* Seller's own points share the "Good To Know" card when they kept
+                that title; any other title they picked gets its own card. */}
+            {sellerFacts && sellerFacts.title !== "Good To Know" && (
+              <ListingUserFacts title={sellerFacts.title} items={sellerFacts.rows} className={card} />
+            )}
+            <ListingUserFacts
+              title="Good To Know"
+              items={sellerFacts?.title === "Good To Know" ? [...sellerFacts.rows, ...goodToKnow] : goodToKnow}
+              className={card}
+            />
 
             {/* Map — mobile only */}
             <ListingMap location={location} lat={coordinates.lat} lng={coordinates.lng} className="md:hidden" />

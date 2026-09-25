@@ -8,10 +8,11 @@
 import React from "react";
 import { LaInput, LaTagInput, LaTextarea } from "@/components/la";
 import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
+import { GoodToKnowEditor, type GoodToKnowPoint } from "@/components/good-to-know/GoodToKnow";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
-import type { FormFieldDef, PostFormSchemaData } from "@/posting/form-schema/types";
+import { GOOD_TO_KNOW, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
 import { cn } from "@/lib/utils";
 
 interface DynamicPostFormProps {
@@ -95,6 +96,16 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       {field.hint}
     </p>
   ) : null;
+
+  // Seller-written label/value points — the editor renders its own title pill.
+  if (field.type === "goodToKnow") {
+    return (
+      <div data-field={field.key} className="flex flex-col gap-2">
+        <GoodToKnowField value={value as GoodToKnowValue | undefined} onChange={set} />
+        {footer}
+      </div>
+    );
+  }
 
   // Choice fields: the toggle group renders its own (accessible) title.
   if (field.type === "select" || field.type === "multiselect") {
@@ -228,5 +239,40 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       {control}
       {footer}
     </div>
+  );
+}
+
+// ── Good To Know ─────────────────────────────────────────────────────────────
+// GoodToKnowEditor keeps its own row state and only reads its initial props,
+// so it's seeded once from the store (edit mode brings saved points back)
+// and every change is written back as { title, points }.
+
+function GoodToKnowField({
+  value,
+  onChange,
+}: {
+  value: GoodToKnowValue | undefined;
+  onChange: (next: GoodToKnowValue) => void;
+}) {
+  const [initial] = React.useState(() => ({
+    title: value?.title ?? GOOD_TO_KNOW.titles[0],
+    points: value?.points?.length ? value.points : [{ label: "", value: "" }],
+  }));
+  const latest = React.useRef(initial);
+
+  const emit = (patch: Partial<GoodToKnowValue>) => {
+    latest.current = { ...latest.current, ...patch };
+    onChange(latest.current);
+  };
+
+  return (
+    <GoodToKnowEditor
+      maxPoints={GOOD_TO_KNOW.maxPoints}
+      titleOptions={[...GOOD_TO_KNOW.titles]}
+      defaultTitle={initial.title}
+      initialPoints={initial.points}
+      onTitleChange={(title) => emit({ title })}
+      onChange={(points: GoodToKnowPoint[]) => emit({ points: points.map(({ label, value: v }) => ({ label, value: v })) })}
+    />
   );
 }

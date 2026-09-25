@@ -8,6 +8,7 @@
 
 import { getPropertyConfig } from "@/config/property";
 import type { FormFieldDef, FormFieldOption, FormSection, PostFormSchemaData } from "../types";
+import { GOOD_TO_KNOW_FIELD } from "./shared";
 
 const CATEGORY = "Property";
 export const PROPERTY_COUNTRIES = ["IN", "GB", "SG"] as const;
@@ -21,6 +22,7 @@ const basics: FormSection = {
   fields: [
     { key: "name", type: "text", label: "Adv Title", required: true, format: "adTitle" },
     { key: "description", type: "richtext", label: "Adv Details", required: true },
+    GOOD_TO_KNOW_FIELD,
   ],
 };
 

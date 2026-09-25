@@ -1,4 +1,5 @@
 import type { FormFieldDef, PostFormSchemaData } from "./types";
+import { goodToKnowError, normalizeGoodToKnow } from "./goodToKnow";
 
 // Mirrors sanitizeAdTitle (posting/validation/sanitizeAdTitle.ts): the form
 // strips anything else while typing, so the server rejects it outright.
@@ -28,6 +29,12 @@ function validateField(
   data: Record<string, unknown>,
   labelOf: (key: string) => string,
 ): string | null {
+  if (field.type === "goodToKnow") {
+    const gtk = normalizeGoodToKnow(data[field.key]);
+    if (!gtk) return field.required ? `Please add at least one ${field.label} point.` : null;
+    return goodToKnowError(gtk);
+  }
+
   const value = data[field.key];
 
   if (isEmpty(value)) {

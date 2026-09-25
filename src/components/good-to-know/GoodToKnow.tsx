@@ -238,7 +238,7 @@ export function GoodToKnowEditor({
           {title}
           <ChevronDown
             aria-hidden="true"
-            className={cn("size-3.5 text-slate-400 transition-transform duration-150", titleOpen && "rotate-180")}
+            className={cn("size-3.5 text-slate-500 transition-transform duration-150", titleOpen && "rotate-180")}
           />
         </button>
 
@@ -265,8 +265,8 @@ export function GoodToKnowEditor({
 
       {/* ── Column headers ── */}
       <div className="flex items-center gap-2">
-        <p className="flex-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Label</p>
-        <p className="flex-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Value / Detail</p>
+        <p className="flex-1 text-sm font-semibold text-slate-600">Label</p>
+        <p className="flex-1 text-sm font-semibold text-slate-600">Value / Detail</p>
         <div className="w-20 shrink-0" />
       </div>
 
@@ -359,7 +359,7 @@ export function GoodToKnowEditor({
 
       {/* ── Footer ── */}
       <div className="flex items-center justify-between pt-1">
-        <p className="text-xs text-slate-400">
+        <p className="text-sm text-slate-500">
           {filledCount} of {maxPoints} points added
         </p>
         <LaButton
@@ -394,7 +394,7 @@ export function GoodToKnowUserView({
       </div>
 
       {visible.length === 0 ? (
-        <p className="px-5 py-4 text-sm text-slate-400">No details added yet.</p>
+        <p className="px-5 py-4 text-sm text-slate-500">No details added yet.</p>
       ) : (
         <ul className="divide-y divide-slate-100">
           {visible.map((point, idx) => (

@@ -16,7 +16,23 @@ export type FormFieldType =
   | "date"
   | "select"      // single choice (chips)
   | "multiselect" // many choices (chips)
-  | "tags";       // free-text list of strings
+  | "tags"        // free-text list of strings
+  | "goodToKnow"; // seller-written label/value points (components/good-to-know)
+
+/** Stored value of a "goodToKnow" field — the section title the seller
+ *  picked plus their label/value points (empty rows dropped). */
+export interface GoodToKnowValue {
+  title: string;
+  points: { label: string; value: string }[];
+}
+
+/** Title choices and limits shared by the editor, validation and the listing page. */
+export const GOOD_TO_KNOW = {
+  titles: ["Good To Know", "Key Details", "At a Glance", "Highlights", "Quick Facts"],
+  maxPoints: 10,
+  labelMax: 40,
+  valueMax: 60,
+} as const;
 
 export interface FormFieldOption {
   value: string;

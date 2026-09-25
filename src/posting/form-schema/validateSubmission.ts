@@ -9,6 +9,7 @@ import Post from "@/models/post";
 import { isDynamicFormCategory } from "./rollout";
 import { getPostFormSchema } from "./getPostFormSchema";
 import { validateAgainstSchema } from "./validate";
+import { normalizeGoodToKnow } from "./goodToKnow";
 import type { FormFieldDef, PostFormSchemaData } from "./types";
 
 /**
@@ -66,6 +67,7 @@ function schemaFields(schema: PostFormSchemaData): FormFieldDef[] {
 }
 
 function readValue(field: FormFieldDef, raw: FormDataEntryValue | null): unknown {
+  if (field.type === "goodToKnow") return normalizeGoodToKnow(raw);
   const s = typeof raw === "string" ? raw.trim() : "";
   if (!s) return undefined;
 

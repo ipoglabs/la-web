@@ -3,6 +3,7 @@ import type { IPost } from "@/models/post";
 import { type LeanPost, resolvePostId, resolvePrice, resolveDetailsLabel, mapStatus } from "@/lib/mapPostToFeaturedItem";
 import { sanitizeDescriptionToHtml } from "@/lib/sanitizeDescription";
 import type { FormFieldDef, PostFormSchemaData } from "@/posting/form-schema/types";
+import { normalizeGoodToKnow } from "@/posting/form-schema/goodToKnow";
 
 /** Subset of the real User doc this mapper needs — pass a `.populate("ownerId", ...)` result. */
 export type LeanOwner = {
@@ -97,7 +98,7 @@ function buildSchemaKeyDetails(post: LeanPost, schema: PostFormSchemaData): KeyV
   ];
   const attributes = (post.attributes ?? {}) as Record<string, unknown>;
   for (const field of schema.sections.flatMap((s) => s.fields)) {
-    if (field.key === "name" || field.key === "description" || PRICE_KEYS.has(field.key)) continue;
+    if (field.key === "name" || field.key === "description" || field.type === "goodToKnow" || PRICE_KEYS.has(field.key)) continue;
     const value = (post as unknown as Record<string, unknown>)[field.key] ?? attributes[field.key];
     const shown = formatSchemaValue(field, value);
     if (shown) rows.push({ key: field.label, value: shown });
@@ -114,6 +115,14 @@ function buildGoodToKnow(post: LeanPost, sellerName: string): KeyValueRow[] {
   if (post.condition) rows.push({ key: "Condition", value: post.condition });
   if (post.deliveryAvailable) rows.push({ key: "Delivery", value: post.deliveryAvailable });
   return rows.slice(0, 6);
+}
+
+function buildSellerFacts(post: LeanPost): Listing["sellerFacts"] {
+  const gtk = normalizeGoodToKnow((post.attributes as Record<string, unknown> | undefined)?.goodToKnow);
+  const rows = (gtk?.points ?? [])
+    .filter((p) => p.label && p.value)
+    .map((p) => ({ key: p.label, value: p.value }));
+  return gtk && rows.length ? { title: gtk.title, rows } : undefined;
 }
 
 export function mapPostToListing(
@@ -155,6 +164,7 @@ export function mapPostToListing(
     description: sanitizeDescriptionToHtml(post.description ?? ""),
     keyDetails: schema ? buildSchemaKeyDetails(post, schema) : buildKeyDetails(post),
     goodToKnow: buildGoodToKnow(post, sellerName),
+    sellerFacts: buildSellerFacts(post),
     coordinates,
     seller: {
       // Real Mongo User id when the owner is populated — this is what lets

@@ -18,11 +18,19 @@ export const YES_NO = pairs([
   ["no", "No"],
 ]);
 
-/** Title + details, first on every form. */
+/** Title, details and the seller's own Good To Know points — first on every form. */
+export const GOOD_TO_KNOW_FIELD: FormFieldDef = {
+  key: "goodToKnow",
+  type: "goodToKnow",
+  label: "Good To Know",
+  hint: "Add any extra detail buyers should know, e.g. Parking → Available.",
+};
+
 export const basics: FormSection = {
   fields: [
     { key: "name", type: "text", label: "Adv Title", required: true, format: "adTitle" },
     { key: "description", type: "richtext", label: "Adv Details", required: true },
+    GOOD_TO_KNOW_FIELD,
   ],
 };
 

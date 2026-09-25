@@ -219,6 +219,8 @@ export interface Listing {
   description: string;                           // sanitised HTML
   keyDetails: KeyValueRow[];
   goodToKnow:  KeyValueRow[];
+  /** The seller's own Good To Know points from the post form, under the title they picked. */
+  sellerFacts?: { title: string; rows: KeyValueRow[] };
   coordinates: { lat: number; lng: number };
   seller: Seller;
 }

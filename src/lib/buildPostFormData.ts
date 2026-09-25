@@ -2,6 +2,7 @@ import { normalizeCategory, normalizeSubcategory } from "@/posting/config/normal
 import { CATEGORY_CONFIG, FALLBACK_OPTIONAL_FIELDS } from "@/posting/config/categoryConfig";
 import type { FieldSpec } from "@/posting/config/types";
 import type { PostFormSchemaData } from "@/posting/form-schema/types";
+import { normalizeGoodToKnow } from "@/posting/form-schema/goodToKnow";
 
 type StoreState = any;
 
@@ -52,6 +53,11 @@ export function buildPostFormData(data: StoreState, schema?: PostFormSchemaData 
   if (schema) {
     for (const field of schema.sections.flatMap((s) => s.fields)) {
       if (field.key === "name" || field.key === "description") continue;
+      if (field.type === "goodToKnow") {
+        const gtk = normalizeGoodToKnow(data[field.key]);
+        if (gtk) fd.append(field.key, JSON.stringify(gtk));
+        continue;
+      }
       const value: unknown = data[field.key];
       if (value === undefined || value === null || value === "") continue;
       if (Array.isArray(value)) {
