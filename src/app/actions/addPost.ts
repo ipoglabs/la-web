@@ -10,6 +10,7 @@ import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
 import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
 import { getVerificationStatus } from "@/lib/verification";
 import { logActivity } from "@/lib/activityLog";
+import { validatePostSubmission } from "@/posting/form-schema/validateSubmission";
 
 type LocationData = {
   address?: string;
@@ -347,8 +348,6 @@ export async function addPost(
       return { ok: false, error: errors.join(" • ") };
     }
 
-    const adsId = await generateAdsId();
-
     // Market this post belongs to, from the same country cookie the rest of
     // the app reads (see lib/country-context.ts) — public listings read
     // paths scope by this field. A post created without a valid cookie (rare
@@ -358,6 +357,20 @@ export async function addPost(
     const cookieStore = await cookies();
     const rawCountry = cookieStore.get(COUNTRY_COOKIE)?.value ?? "";
     const country = isAllowedCountry(rawCountry) ? rawCountry.toLowerCase() : undefined;
+
+    // Category-specific rules from the DB-driven form schema — the same
+    // definition the form rendered, so the client can't skip it.
+    const schemaErrors = await validatePostSubmission({
+      category: postData.category,
+      subcategory: postData.subcategory,
+      country,
+      data: postData,
+    });
+    if (schemaErrors.length) {
+      return { ok: false, error: schemaErrors.join(" • ") };
+    }
+
+    const adsId = await generateAdsId();
 
     const newPost = new Post({
       ...(preGenId ? { _id: preGenId } : {}),

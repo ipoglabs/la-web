@@ -2,6 +2,7 @@
 "use server";
 
 import { Types } from "mongoose";
+import { validatePostSubmission } from "@/posting/form-schema/validateSubmission";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
@@ -347,6 +348,19 @@ export async function updatePost(
 
     // ----- Clean $set and final safety -----
     const $set = stripUndef(updateRaw);
+
+    // ----- Category-specific rules from the DB-driven form schema -----
+    // Checked on the post as it will look after this update (stored values
+    // overlaid with the submitted ones), in the post's own market.
+    const schemaErrors = await validatePostSubmission({
+      category: effective.category,
+      subcategory: effective.subcategory,
+      country: current.country,
+      data: { ...(current as unknown as Record<string, unknown>), ...$set },
+    });
+    if (schemaErrors.length) {
+      return { ok: false, error: schemaErrors.join(" • ") };
+    }
 
     // Final safety: ensure ownerId is a valid ObjectId
     if ("ownerId" in $set && !($set.ownerId instanceof Types.ObjectId)) {

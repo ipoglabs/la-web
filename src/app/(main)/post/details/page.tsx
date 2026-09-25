@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useCallback, useEffect } from "react";
+import React, { useMemo, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
@@ -14,6 +14,16 @@ import { normalizeCategory } from "@/posting/config/normalize";
 import { validatePost } from "@/posting/validation/validatePost";
 import { useAuthStore } from "@/store/authStore";
 import { LaChip } from "@/components/la/la-chip";
+import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
+import { usePostFormSchema } from "@/lib/hooks/usePostFormSchema";
+import { validateAgainstSchema } from "@/posting/form-schema/validate";
+import { isDynamicFormCategory } from "@/posting/form-schema/rollout";
+import DynamicPostForm from "./DynamicPostForm";
+
+// ✅ DB-DRIVEN FORM ROLLOUT — categories listed in posting/form-schema/rollout.ts
+// render the single schema-driven DynamicPostForm instead of the
+// per-subcategory forms in components/form/* (untouched, still the fallback).
+
 
 
 // ✅ CATEGORY NORMALIZATION
@@ -294,6 +304,28 @@ export default function DetailsPage() {
 
   const user = useAuthStore((s) => s.user);
 
+  const { countryCode, countryConfig } = useCountryConfig();
+  const useDynamicForm = isDynamicFormCategory(category);
+  const {
+    schema,
+    loading: schemaLoading,
+    error: schemaError,
+  } = usePostFormSchema(
+    useDynamicForm ? category : null,
+    subcategory,
+    countryCode.toUpperCase()
+  );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const clearFieldError = useCallback((key: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
  // ✅ AUTO-FILL SELLER (SAFE MERGE — FINAL FIX)
 useEffect(() => {
   if (!user) return;
@@ -336,13 +368,13 @@ useEffect(() => {
   }, [category, subcategory]);
 
   const SpecificForm = useMemo(() => {
-    if (!importKey) return null;
+    if (!importKey || useDynamicForm) return null;
 
     return dynamic(() => import(`@/components/form/${importKey}`), {
       ssr: false,
       loading: () => <p>Loading form...</p>,
     });
-  }, [importKey]);
+  }, [importKey, useDynamicForm]);
 
   const handleNext = useCallback(() => {
     if (!category || !subcategory) {
@@ -351,6 +383,29 @@ useEffect(() => {
     }
 
     const store = usePostFormStore.getState();
+
+    if (useDynamicForm) {
+      if (!schema) {
+        toast.error("Form is still loading. Please try again.");
+        return;
+      }
+      const schemaErrors = validateAgainstSchema(
+        schema,
+        store as unknown as Record<string, unknown>
+      );
+      setFieldErrors(schemaErrors);
+      const firstKey = Object.keys(schemaErrors)[0];
+      if (firstKey) {
+        toast.error("Please fix the highlighted fields.");
+        document
+          .querySelector<HTMLElement>(`[data-field="${firstKey}"]`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById(firstKey)?.focus({ preventScroll: true });
+        return;
+      }
+      router.push("/post/upload-photo");
+      return;
+    }
 
     const errors = validatePost(
       normalizeCategory(category),
@@ -364,7 +419,7 @@ useEffect(() => {
     }
 
     router.push("/post/upload-photo");
-  }, [category, subcategory, router]);
+  }, [category, subcategory, router, useDynamicForm, schema]);
 
   return (
     <>
@@ -379,7 +434,26 @@ useEffect(() => {
         )}
 
         <div className="w-full max-w-xl mt-4">
-          {SpecificForm ? <SpecificForm /> : <p>No form found</p>}
+          {useDynamicForm ? (
+            schemaLoading ? (
+              <p className="text-sm text-slate-700">Loading form...</p>
+            ) : schema ? (
+              <DynamicPostForm
+                schema={schema}
+                currencySymbol={countryConfig.currencySymbol}
+                errors={fieldErrors}
+                onFieldChange={clearFieldError}
+              />
+            ) : (
+              <p className="text-sm text-rose-600">
+                {schemaError ?? "No form found for this subcategory."}
+              </p>
+            )
+          ) : SpecificForm ? (
+            <SpecificForm />
+          ) : (
+            <p>No form found</p>
+          )}
 
           <PostFooter
             showBack
