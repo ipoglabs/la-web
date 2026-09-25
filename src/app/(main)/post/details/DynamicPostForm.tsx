@@ -2,7 +2,7 @@
 
 // One form for every subcategory — fields come from the DB schema
 // (models/PostFormSchema.ts via /api/post-form-schema), values go into the
-// same post form store keys the hand-built forms in components/form/* use,
+// same post form store keys the rest of the post flow reads,
 // so upload → preview → submit → edit work unchanged.
 
 import React from "react";

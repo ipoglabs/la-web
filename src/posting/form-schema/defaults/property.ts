@@ -1,7 +1,6 @@
 // Default "Property" post-form schemas, one per subcategory × country.
 //
-// These mirror the hand-built forms in components/form/property/* field for
-// field (same store keys, same options from config/property/<CC>.ts). They are
+// Same store keys as older Property posts, options from config/property/<CC>.ts. They are
 // the seed for the `postformschemas` collection (scripts/seed-post-form-schemas.ts)
 // and the fallback the API serves when no DB document exists yet. Once seeded,
 // edit the DB documents — not this file — to change the live form.

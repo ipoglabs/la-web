@@ -1,4 +1,4 @@
-// Default "Vehicles" post-form schemas — mirror components/form/vehicles/*.
+// Default "Vehicles" post-form schemas.
 
 import { getVehicleConfig } from "@/config/vehicle";
 import type { FormFieldDef, FormSection } from "../types";

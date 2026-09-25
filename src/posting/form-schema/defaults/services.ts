@@ -1,4 +1,4 @@
-// Default "Services" post-form schemas — mirror components/form/services/*.
+// Default "Services" post-form schemas.
 
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, opts, pairs, YES_NO } from "./shared";

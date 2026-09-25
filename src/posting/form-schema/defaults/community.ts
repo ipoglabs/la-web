@@ -1,4 +1,4 @@
-// Default "Community" post-form schemas — mirror components/form/community/*.
+// Default "Community" post-form schemas.
 
 import type { FormSection } from "../types";
 import { basics, pairs } from "./shared";

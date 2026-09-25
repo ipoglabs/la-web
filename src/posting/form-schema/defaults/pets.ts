@@ -1,4 +1,4 @@
-// Default "Pets" post-form schemas — mirror components/form/pet/*.
+// Default "Pets" post-form schemas.
 
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, pairs } from "./shared";

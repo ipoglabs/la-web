@@ -1,4 +1,4 @@
-// Default "Business" post-form schemas — mirror components/form/business/*.
+// Default "Business" post-form schemas.
 
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, pairs } from "./shared";

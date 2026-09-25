@@ -1,4 +1,4 @@
-// Default "Special Offers" post-form schemas — mirror components/form/specialOffers/*.
+// Default "Special Offers" post-form schemas.
 // Every offer shares the price / discount / validity block; each subcategory
 // adds the handful of fields specific to it.
 

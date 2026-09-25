@@ -1,6 +1,6 @@
 // Default post-form schemas for the categories promoted out of the old
 // "For Sale" bucket (Electronics & Tech, Fashion & Clothing, …). Their old
-// forms were borrowed from components/form/forsale|services and most of what
+// forms were borrowed from other categories and most of what
 // they collected was never saved; these give each category its own fields.
 //
 // Field choices follow what the leading classifieds in our markets ask for

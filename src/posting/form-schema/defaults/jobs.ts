@@ -1,4 +1,4 @@
-// Default "Jobs" post-form schemas — mirror components/form/job/*.
+// Default "Jobs" post-form schemas.
 
 import { getJobConfig } from "@/config/job";
 import type { FormFieldDef, FormSection } from "../types";
