@@ -7,7 +7,7 @@ import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 
 import { LaButton } from "@/components/la/la-button";
-import { X, Info } from "lucide-react";
+import { X } from "lucide-react";
 
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
@@ -152,19 +152,12 @@ export default function UploadPhotoPage() {
   return (
     <>
       <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
-        <PageHeader title="Upload Photos" description="Add photos to make your advertisement stand out." />
+        <PageHeader
+          title="Upload Photos"
+          description="Add photos to make your advertisement stand out (JPG, PNG, WebP, GIF, HEIC / HEIF)."
+        />
 
         <div className="w-full max-w-xl mt-6">
-
-          {/* Allowed formats info */}
-          <div className="flex items-start gap-2 mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-            <Info size={16} className="mt-0.5 shrink-0 text-blue-500" />
-            <span>
-              <span className="font-medium">Allowed formats: </span>
-              JPG, PNG, WebP, GIF, HEIC / HEIF (iPhone photos).
-              Videos, documents, and other file types are not accepted.
-            </span>
-          </div>
 
           {/* Processing indicator */}
           {processing && (
