@@ -6,7 +6,7 @@
 // so upload → preview → submit → edit work unchanged.
 
 import React from "react";
-import { LaInput, LaTagInput, LaTextarea } from "@/components/la";
+import { LaInput, LaSkeleton, LaTagInput, LaTextarea } from "@/components/la";
 import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { GoodToKnowEditor, type GoodToKnowPoint } from "@/components/good-to-know/GoodToKnow";
 import { DateInput } from "@/components/date-input";
@@ -304,5 +304,67 @@ function GoodToKnowField({
       onTitleChange={(title) => emit({ title })}
       onChange={(points: GoodToKnowPoint[]) => emit({ points: points.map(({ label, value: v }) => ({ label, value: v })) })}
     />
+  );
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+// Shown while /api/post-form-schema loads. Mirrors the real form's cards and
+// grid (title, details editor, Good To Know, then a category section) so the
+// page doesn't jump when the fields arrive.
+
+function SkeletonField({ tall, className }: { tall?: boolean; className?: string }) {
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      <LaSkeleton shape="text" className="w-28" />
+      <LaSkeleton className={tall ? "h-36 w-full" : "h-10 w-full"} />
+    </div>
+  );
+}
+
+function SkeletonChips() {
+  return (
+    <div className="col-span-6 flex flex-col gap-2">
+      <LaSkeleton shape="text" className="w-32" />
+      <div className="flex flex-wrap gap-2">
+        {["w-20", "w-24", "w-16", "w-28", "w-20"].map((w, i) => (
+          <LaSkeleton key={i} className={cn("h-9 rounded-full", w)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function DynamicPostFormSkeleton() {
+  const card = "rounded-xl border border-slate-200 bg-white p-5 shadow-sm";
+  return (
+    <div role="status" aria-busy="true" className="flex w-full flex-col gap-6">
+      <span className="sr-only">Loading form…</span>
+
+      {/* Adv Title · Adv Details · Good To Know */}
+      <div aria-hidden="true" className={cn(card, "flex flex-col gap-5")}>
+        <SkeletonField />
+        <SkeletonField tall />
+        <div className="flex flex-col gap-3">
+          <LaSkeleton className="h-8 w-36 rounded-full" />
+          <div className="flex gap-2">
+            <LaSkeleton className="h-10 flex-1" />
+            <LaSkeleton className="h-10 flex-1" />
+          </div>
+        </div>
+      </div>
+
+      {/* Category section */}
+      <div aria-hidden="true" className={card}>
+        <LaSkeleton shape="text" className="mb-5 h-5 w-24" />
+        <div className="grid grid-cols-6 gap-x-4 gap-y-5">
+          <SkeletonChips />
+          <SkeletonField className="col-span-6 md:col-span-3" />
+          <SkeletonField className="col-span-6 md:col-span-3" />
+          <SkeletonChips />
+          <SkeletonField className="col-span-6 md:col-span-3" />
+          <SkeletonField className="col-span-6 md:col-span-3" />
+        </div>
+      </div>
+    </div>
   );
 }

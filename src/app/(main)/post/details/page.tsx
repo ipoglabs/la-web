@@ -14,7 +14,7 @@ import { LaChip } from "@/components/la/la-chip";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { usePostFormSchema } from "@/lib/hooks/usePostFormSchema";
 import { validateAgainstSchema } from "@/posting/form-schema/validate";
-import DynamicPostForm from "./DynamicPostForm";
+import DynamicPostForm, { DynamicPostFormSkeleton } from "./DynamicPostForm";
 
 // One DB-driven form for every category (post/details/DynamicPostForm.tsx);
 // its fields come from the category/subcategory/country schema in the DB.
@@ -117,7 +117,7 @@ useEffect(() => {
 
         <div className="w-full max-w-xl mt-4">
           {schemaLoading ? (
-            <p className="text-sm text-slate-700">Loading form...</p>
+            <DynamicPostFormSkeleton />
           ) : schema ? (
             <DynamicPostForm
               schema={schema}
