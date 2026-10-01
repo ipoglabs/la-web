@@ -39,11 +39,6 @@ function ReviewDetailsSection({
 }: ReviewSectionProps) {
   const router = useRouter();
 
-  const country =
-    typeof window !== "undefined"
-      ? window.location.pathname.split("/")[1]
-      : "";
-
   const gridClass = allowedToWrap
     ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
     : "flex flex-col w-full";
@@ -53,10 +48,10 @@ function ReviewDetailsSection({
 
     // ✅ delegate to parent if provided
     if (onChange) {
-      onChange(`/${country}${routeBackTo}`);
+      onChange(routeBackTo);
     } else {
       window.scrollTo(0, 0);
-      router.push(`/${country}${routeBackTo}`);
+      router.push(routeBackTo);
     }
   };
 

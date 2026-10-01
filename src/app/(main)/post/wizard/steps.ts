@@ -34,3 +34,11 @@ export function nextStep(step: StepKey): StepKey | null {
   const i = stepIndex(step);
   return i >= 0 && i < STEPS.length - 1 ? STEPS[i + 1] : null;
 }
+
+// "Change" on the review page opens a single step with ?from=review; that
+// step's Next/Back then return straight to review instead of walking on.
+export const FROM_REVIEW_PARAM = "from=review";
+
+export function reviewEditRoute(step: StepKey) {
+  return `${STEP_ROUTES[step]}?${FROM_REVIEW_PARAM}`;
+}

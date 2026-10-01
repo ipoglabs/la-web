@@ -1,0 +1,20 @@
+[    5436ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/:0
+[    6778ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:128
+[    6779ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:128
+[    6794ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:153
+[    6794ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:153
+[    7732ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:23
+[    7734ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:23
+[    8623ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:23
+[    8623ms] [ERROR] Unrecognized Content-Security-Policy directive 'prefetch-src'. @ https://www.irctc.co.in/public/60c2d05d830d81dc2b55688c61470d13f0308b726f18:23
+[    9698ms] [WARNING] Mixed Content: The page at 'https://www.irctc.co.in/nget/train-search' was loaded over HTTPS, but requested an insecure element 'http://contents.irctc.co.in/en/GPT_NWEB_HOME_TOP1.jpeg'. This request was automatically upgraded to HTTPS, For more information see https://blog.chromium.org/2019/10/no-more-mixed-messages-about-https.html @ https://www.irctc.co.in/nget/train-search:0
+[    9699ms] [WARNING] Mixed Content: The page at 'https://www.irctc.co.in/nget/train-search' was loaded over HTTPS, but requested an insecure element 'http://contents.irctc.co.in/en/GPT_NWEB_HOME_TOP.jpeg'. This request was automatically upgraded to HTTPS, For more information see https://blog.chromium.org/2019/10/no-more-mixed-messages-about-https.html @ https://www.irctc.co.in/nget/train-search:0
+[    9699ms] [WARNING] Mixed Content: The page at 'https://www.irctc.co.in/nget/train-search' was loaded over HTTPS, but requested an insecure element 'http://contents.irctc.co.in/en/GPT_NWEB_HOME_CENTER.jpeg'. This request was automatically upgraded to HTTPS, For more information see https://blog.chromium.org/2019/10/no-more-mixed-messages-about-https.html @ https://www.irctc.co.in/nget/train-search:0
+[    9699ms] [WARNING] Mixed Content: The page at 'https://www.irctc.co.in/nget/train-search' was loaded over HTTPS, but requested an insecure element 'http://contents.irctc.co.in/en/HOME_BOTTOM_RIGHT.jpeg'. This request was automatically upgraded to HTTPS, For more information see https://blog.chromium.org/2019/10/no-more-mixed-messages-about-https.html @ https://www.irctc.co.in/nget/train-search:0
+[   10166ms] Uncaught ReferenceError: dishaSdk is not defined
+    at <anonymous> (https://sdk.irctc.corover.ai/askdisha-bucket/chatbotlib.min.js?1790570182091:52:30)
+[   10564ms] A user gesture is required to request Pointer Lock.
+[   10948ms] A user gesture is required to request Pointer Lock.
+[   69644ms] [INFO] Autofocus processing was blocked because a document already has a focused element. @ https://www.irctc.co.in/nget/train-search:0
+[   69710ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://www.irctc.co.in/nget/train-search:0
+[  142899ms] [ERROR] Failed to load resource: the server responded with a status of 504 (Gateway Timeout) @ https://www.irctc.co.in/9vvihL/4H/Uy/XY7Z/oSuOFtj6uiIB8/3b1GzGutGufa0Gc37z/aRc-Ag/HHg/mCWlcZm4:0

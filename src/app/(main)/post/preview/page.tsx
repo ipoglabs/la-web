@@ -11,6 +11,7 @@ import ReviewDetailsSection from "../components/ReviewSection";
 import { updatePost } from "@/app/actions/updatePost";
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
+import { reviewEditRoute } from "../wizard/steps";
 
 import { addPost } from "@/app/actions/addPost";
 import { buildPostFormData } from "@/lib/buildPostFormData";
@@ -393,8 +394,8 @@ export default function PreviewPage() {
   };
 
   const handleChangeNavigation = (path: string) => {
-    // Preserve postId so R2 folder stays consistent if user edits then comes back
-    usePostFormStore.setState({ editMode: false });
+    // Keep postId + editMode so an existing ad is still updated (not duplicated)
+    // after the user edits one section and comes back.
     window.scrollTo(0, 0);
     router.push(path);
   };
@@ -447,7 +448,7 @@ export default function PreviewPage() {
           {/* CATEGORY */}
          <ReviewDetailsSection
   title="Category"
-  routeBackTo="/select-category"
+  routeBackTo={reviewEditRoute("select-category")}
   onChange={handleChangeNavigation}
   dataProvider={[
     {
@@ -460,7 +461,7 @@ export default function PreviewPage() {
           {/* BASIC */}
          <ReviewDetailsSection
   title="Basic Details"
-  routeBackTo="/details"
+  routeBackTo={reviewEditRoute("details")}
   onChange={handleChangeNavigation}
   dataProvider={groupedFields.basic}
 />
@@ -469,7 +470,7 @@ export default function PreviewPage() {
           {groupedFields.categorySpecific.length > 0 && (
            <ReviewDetailsSection
   title="Additional Details"
-  routeBackTo="/post/details"
+  routeBackTo={reviewEditRoute("details")}
   onChange={handleChangeNavigation}
   dataProvider={groupedFields.categorySpecific}
 />
@@ -478,7 +479,7 @@ export default function PreviewPage() {
           {/* LOCATION */}
           <ReviewDetailsSection
   title="Location"
-  routeBackTo="/pick-location"
+  routeBackTo={reviewEditRoute("pick-location")}
   onChange={handleChangeNavigation}
   mapData={
     data.location?.lat && data.location?.lng
@@ -497,7 +498,7 @@ export default function PreviewPage() {
           {imgUrls.length > 0 && (
             <ReviewDetailsSection
   title="Photos"
-  routeBackTo="/upload-photo"
+  routeBackTo={reviewEditRoute("upload-photo")}
   onChange={handleChangeNavigation}
   imageProvider={imgUrls.map((u) => ({ imageUrl: u }))}
 />

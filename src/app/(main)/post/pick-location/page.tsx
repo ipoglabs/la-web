@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import LocationPickerMap from "@/components/LocationPickerMap";
 import PostFooter from "../components/PostFooter";
+import { useFromReview } from "../wizard/useFromReview";
 import PostHeader from "../components/PostHeader";
 import PageHeader from "../components/PageHeader";
 import { usePostFormStore } from "../store/postFormStore";
@@ -24,6 +25,7 @@ export default function SelectLocationPage() {
   useWizardGuard("pick-location");
 
   const router = useRouter();
+  const fromReview = useFromReview();
 
   const location = usePostFormStore((s) => s.location);
   const setField = usePostFormStore((s) => s.setField);
@@ -300,7 +302,8 @@ export default function SelectLocationPage() {
             showBack
             showNext
             isNextDisabled={!hasSelection}
-            onBack={() => router.push("/post/upload-photo")}
+            nextLabel={fromReview ? "Save & Review" : undefined}
+            onBack={() => router.push(fromReview ? "/post/preview" : "/post/upload-photo")}
             onNext={() => router.push("/post/preview")}
           />
         </div>

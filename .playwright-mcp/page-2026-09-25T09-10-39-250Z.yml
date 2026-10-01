@@ -1,0 +1,67 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e5]:
+        - link "lokalads logo lokalads United Kingdom Beta" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e7]
+          - generic [ref=e8]:
+            - img "lokalads" [ref=e9]
+            - generic [ref=e10]: United Kingdom
+          - generic [ref=e11]: Beta
+        - generic [ref=e12]:
+          - link "POST" [ref=e13] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=e14] [cursor=pointer]
+          - button "Account menu" [ref=e18]
+    - main [ref=e23]:
+      - main [ref=e24]:
+        - heading "Advertisement Details" [level=1] [ref=e26]
+        - generic [ref=e27]: Electronics & Tech › Mobile Phones & Tablets
+        - generic [ref=e29]:
+          - paragraph [ref=e30]: Loading form...
+          - generic [ref=e31]:
+            - generic [ref=e33]:
+              - generic [ref=e34]: Step 2 / 5
+              - generic [ref=e35]: details
+            - generic [ref=e38]:
+              - button "Back" [ref=e40] [cursor=pointer]
+              - button "Next" [ref=e42] [cursor=pointer]
+    - contentinfo [ref=e43]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - link "lokalads logo lokalads United Kingdom" [ref=e47] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e48]
+            - generic [ref=e49]:
+              - img "lokalads" [ref=e50]
+              - generic [ref=e51]: United Kingdom
+          - generic [ref=e52]:
+            - link "Instagram" [ref=e53] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e56] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e59] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e62] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e65] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e68]
+        - paragraph [ref=e71]: find anything, anywhere with care...
+      - generic [ref=e72]:
+        - separator [ref=e73]
+        - generic [ref=e74]:
+          - paragraph [ref=e75]: © 2025 Lokalads UK Ltd. | Co. Reg. No. 12345678.
+          - generic [ref=e76]:
+            - button "Privacy Policy" [ref=e78]
+            - button "Terms & Conditions" [ref=e82]
+            - button "Cookie Policy" [ref=e86]
+            - generic [ref=e89]: Timeline
+            - button "Feedback" [ref=e93]
+      - generic [ref=e95]:
+        - paragraph [ref=e96]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e97] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

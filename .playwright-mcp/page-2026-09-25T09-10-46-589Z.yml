@@ -1,0 +1,169 @@
+- generic [ref=f3e1]:
+  - alert [ref=f3e2]
+  - generic [ref=f3e3]:
+    - banner [ref=f3e4]:
+      - generic [ref=f3e5]:
+        - link "lokalads logo lokalads United Kingdom Beta" [ref=f3e6] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f3e7]
+          - generic [ref=f3e8]:
+            - img "lokalads" [ref=f3e9]
+            - generic [ref=f3e10]: United Kingdom
+          - generic [ref=f3e11]: Beta
+        - generic [ref=f3e12]:
+          - link "POST" [ref=f3e13] [cursor=pointer]:
+            - /url: /login?redirect=/post
+          - button "View saved listings" [ref=f3e14] [cursor=pointer]
+          - button "Account menu" [ref=f3e18]
+    - main [ref=f3e23]:
+      - main [ref=f3e24]:
+        - heading "Advertisement Details" [level=1] [ref=f3e26]
+        - generic [ref=f3e27]: Property › Wanted
+        - generic [ref=f3e29]:
+          - generic [ref=f3e30]:
+            - generic [ref=f3e32]:
+              - generic [ref=f3e34]:
+                - generic [ref=f3e35]: Adv Title*
+                - textbox "Adv Title*" [ref=f3e36]
+              - generic [ref=f3e38]:
+                - generic [ref=f3e39]: Adv Details*
+                - generic "Adv Details*" [ref=f3e40]:
+                  - generic [ref=f3e41]:
+                    - generic [ref=f3e42]:
+                      - generic [ref=f3e44]:
+                        - button "Bold" [ref=f3e45]
+                        - button "Italic" [ref=f3e50]
+                        - button "Underline" [ref=f3e55]
+                        - button "Strikethrough" [ref=f3e64]
+                        - button "Bullet List" [ref=f3e71]
+                        - button "Number List" [ref=f3e76]
+                        - button "Title" [ref=f3e81]
+                        - button "Quote" [ref=f3e85]
+                      - generic [ref=f3e92]:
+                        - generic [aria-hidden]: Write something...
+                    - generic [ref=f3e94]: 0 / 2000
+              - generic [ref=f3e97]:
+                - generic [ref=f3e98]:
+                  - button "Good To Know" [ref=f3e100]
+                  - generic [ref=f3e103]:
+                    - paragraph [ref=f3e104]: Label
+                    - paragraph [ref=f3e105]: Value / Detail
+                  - generic [ref=f3e107]:
+                    - generic [ref=f3e108]:
+                      - textbox "Label for row 1" [ref=f3e109]:
+                        - /placeholder: e.g. Parking
+                      - textbox "Value for row 1" [ref=f3e110]:
+                        - /placeholder: e.g. Available
+                    - button "Remove row 1" [disabled] [ref=f3e111]
+                  - generic [ref=f3e115]:
+                    - paragraph [ref=f3e116]: 0 of 10 points added
+                    - button "Add point" [disabled]
+                - paragraph [ref=f3e117]: Add any extra detail buyers should know, e.g. Parking → Available.
+            - region [ref=f3e118]:
+              - heading "Looking For" [level=2] [ref=f3e119]
+              - generic [ref=f3e120]:
+                - generic [ref=f3e123]:
+                  - paragraph [ref=f3e125]: Looking For*
+                  - group "Looking For*" [ref=f3e126]:
+                    - button "Flat / Apartment" [ref=f3e127] [cursor=pointer]
+                    - button "Terraced House" [ref=f3e129] [cursor=pointer]
+                    - button "Semi-Detached" [ref=f3e131] [cursor=pointer]
+                    - button "Detached House" [ref=f3e133] [cursor=pointer]
+                    - button "Room" [ref=f3e135] [cursor=pointer]
+                    - button "Commercial" [ref=f3e137] [cursor=pointer]
+                    - button "Other" [ref=f3e139] [cursor=pointer]
+                - generic [ref=f3e142]:
+                  - generic [ref=f3e143]: Min Budget
+                  - generic [ref=f3e144]:
+                    - generic [aria-hidden]:
+                      - generic: £
+                    - spinbutton "Min Budget" [ref=f3e145]
+                - generic [ref=f3e147]:
+                  - generic [ref=f3e148]: Max Budget
+                  - generic [ref=f3e149]:
+                    - generic [aria-hidden]:
+                      - generic: £
+                    - spinbutton "Max Budget" [ref=f3e150]
+                - generic [ref=f3e152]:
+                  - generic [ref=f3e153]: Min Area
+                  - generic [ref=f3e154]:
+                    - spinbutton "Min Area" [ref=f3e155]
+                    - generic [aria-hidden]:
+                      - generic: sq ft
+                - generic [ref=f3e157]:
+                  - generic [ref=f3e158]: Beds
+                  - spinbutton "Beds" [ref=f3e159]
+                - generic [ref=f3e161]:
+                  - generic [ref=f3e162]: Baths
+                  - spinbutton "Baths" [ref=f3e163]
+                - generic [ref=f3e165]:
+                  - generic [ref=f3e166]: Preferred Locations
+                  - generic [ref=f3e167]:
+                    - generic [ref=f3e168]:
+                      - generic [ref=f3e169]:
+                        - text: Stoke-on-Trent
+                        - button "Remove Stoke-on-Trent" [ref=f3e170]
+                      - generic [ref=f3e274]:
+                        - text: St. John's Wood
+                        - button "Remove St. John's Wood" [ref=f3e275]
+                      - textbox "Add another…" [active] [ref=f3e174]
+                    - generic [ref=f3e175]:
+                      - paragraph [ref=f3e176]: Type an area and press Enter — add up to 5
+                      - paragraph [ref=f3e177]: 2/5
+            - region [ref=f3e178]:
+              - heading "Features" [level=2] [ref=f3e179]
+              - generic [ref=f3e183]:
+                - paragraph [ref=f3e185]: Preferred Amenities
+                - group "Preferred Amenities" [ref=f3e186]:
+                  - button "Parking" [ref=f3e187] [cursor=pointer]
+                  - button "Garden" [ref=f3e189] [cursor=pointer]
+                  - button "Garage" [ref=f3e191] [cursor=pointer]
+                  - button "Balcony" [ref=f3e193] [cursor=pointer]
+                  - button "Central Heating" [ref=f3e195] [cursor=pointer]
+                  - button "Double Glazing" [ref=f3e197] [cursor=pointer]
+                  - button "Pets Allowed" [ref=f3e199] [cursor=pointer]
+                  - button "Security" [ref=f3e201] [cursor=pointer]
+          - generic [ref=f3e203]:
+            - generic [ref=f3e205]:
+              - generic [ref=f3e206]: Step 2 / 5
+              - generic [ref=f3e207]: details
+            - generic [ref=f3e210]:
+              - button "Back" [ref=f3e212] [cursor=pointer]
+              - button "Next" [ref=f3e214] [cursor=pointer]
+    - contentinfo [ref=f3e215]:
+      - generic [ref=f3e217]:
+        - generic [ref=f3e218]:
+          - link "lokalads logo lokalads United Kingdom" [ref=f3e219] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f3e220]
+            - generic [ref=f3e221]:
+              - img "lokalads" [ref=f3e222]
+              - generic [ref=f3e223]: United Kingdom
+          - generic [ref=f3e224]:
+            - link "Instagram" [ref=f3e225] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f3e228] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f3e231] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f3e234] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f3e237] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f3e240]
+        - paragraph [ref=f3e243]: find anything, anywhere with care...
+      - generic [ref=f3e244]:
+        - separator [ref=f3e245]
+        - generic [ref=f3e246]:
+          - paragraph [ref=f3e247]: © 2025 Lokalads UK Ltd. | Co. Reg. No. 12345678.
+          - generic [ref=f3e248]:
+            - button "Privacy Policy" [ref=f3e250]
+            - button "Terms & Conditions" [ref=f3e254]
+            - button "Cookie Policy" [ref=f3e258]
+            - generic [ref=f3e261]: Timeline
+            - button "Feedback" [ref=f3e265]
+      - generic [ref=f3e267]:
+        - paragraph [ref=f3e268]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f3e269] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

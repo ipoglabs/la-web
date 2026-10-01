@@ -1,0 +1,16 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - region [ref=e3]:
+      - heading "This page doesn’t exist" [level=1] [ref=e4]
+      - paragraph [ref=e5]: It may have been moved, removed, or never existed.
+      - button "Go back" [ref=e6] [cursor=pointer]
+      - generic "HTTP status, error code, and request ID" [ref=e7]:
+        - paragraph [ref=e8]: 404 NOT_FOUND
+        - paragraph [ref=e9]: sin1::vqsvq-1790321743749-b8894a9b340f
+  - generic "Documentation, logs, and debugging actions" [ref=e10]:
+    - link "View NOT_FOUND documentation" [ref=e11] [cursor=pointer]:
+      - /url: https://vercel.com/docs/errors/not_found
+      - generic [ref=e12]: View Documentation
+    - button "Copy NOT_FOUND debugging instructions to clipboard" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: Copy Debug Prompt
+    - status [ref=e17]

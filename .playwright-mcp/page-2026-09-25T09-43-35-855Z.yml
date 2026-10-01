@@ -1,0 +1,177 @@
+- generic [ref=f8e1]:
+  - button "Open Next.js Dev Tools" [ref=f8e7] [cursor=pointer]
+  - alert [ref=f8e11]
+  - generic [ref=f8e12]:
+    - banner [ref=f8e13]:
+      - generic [ref=f8e14]:
+        - link "lokalads logo lokalads India Beta" [ref=f8e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=f8e16]
+          - generic [ref=f8e17]:
+            - img "lokalads" [ref=f8e18]
+            - generic [ref=f8e19]: India
+          - generic [ref=f8e20]: Beta
+        - generic [ref=f8e21]:
+          - link "POST" [ref=f8e22] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=f8e23] [cursor=pointer]:
+            - generic [ref=f8e24]: "6"
+          - button "Account menu" [ref=f8e27]:
+            - generic [ref=f8e28]:
+              - generic [ref=f8e29]: JA
+              - generic "online" [ref=f8e31]
+    - main [ref=f8e32]:
+      - main [ref=f8e33]:
+        - heading "Advertisement Details" [level=1] [ref=f8e35]
+        - generic [ref=f8e36]: Special Offers › Banking & Finance
+        - generic [ref=f8e38]:
+          - generic [ref=f8e39]:
+            - generic [ref=f8e41]:
+              - generic [ref=f8e43]:
+                - generic [ref=f8e44]: Adv Title*
+                - textbox "Adv Title*" [ref=f8e45]
+              - generic [ref=f8e47]:
+                - generic [ref=f8e48]: Adv Details*
+                - generic "Adv Details*" [ref=f8e49]:
+                  - generic [ref=f8e50]:
+                    - generic [ref=f8e51]:
+                      - generic [ref=f8e53]:
+                        - button "Bold" [ref=f8e54]
+                        - button "Italic" [ref=f8e59]
+                        - button "Underline" [ref=f8e64]
+                        - button "Strikethrough" [ref=f8e73]
+                        - button "Bullet List" [ref=f8e80]
+                        - button "Number List" [ref=f8e85]
+                        - button "Title" [ref=f8e90]
+                        - button "Quote" [ref=f8e94]
+                      - generic [ref=f8e101]:
+                        - generic [aria-hidden]: Write something...
+                    - generic [ref=f8e103]: 0 / 2000
+              - generic [ref=f8e106]:
+                - generic [ref=f8e107]:
+                  - button "Good To Know" [ref=f8e109]
+                  - generic [ref=f8e112]:
+                    - paragraph [ref=f8e113]: Label
+                    - paragraph [ref=f8e114]: Value / Detail
+                  - generic [ref=f8e116]:
+                    - generic [ref=f8e117]:
+                      - textbox "Label for row 1" [ref=f8e118]:
+                        - /placeholder: e.g. Parking
+                      - textbox "Value for row 1" [ref=f8e119]:
+                        - /placeholder: e.g. Available
+                    - button "Remove row 1" [disabled] [ref=f8e120]
+                  - generic [ref=f8e124]:
+                    - paragraph [ref=f8e125]: 0 of 10 points added
+                    - button "Add point" [disabled]
+                - paragraph [ref=f8e126]: Add any extra detail buyers should know, e.g. Parking → Available.
+            - region [ref=f8e127]:
+              - heading "Deal" [level=2] [ref=f8e128]
+              - generic [ref=f8e129]:
+                - generic [ref=f8e132]:
+                  - paragraph [ref=f8e134]: Deal Type*
+                  - group "Deal Type*" [ref=f8e135]:
+                    - button "Loan" [ref=f8e136] [cursor=pointer]
+                    - button "Credit Card" [ref=f8e138] [cursor=pointer]
+                    - button "Investment" [ref=f8e140] [cursor=pointer]
+                    - button "Insurance" [ref=f8e142] [cursor=pointer]
+                    - button "Savings" [ref=f8e144] [cursor=pointer]
+                    - button "Other" [ref=f8e146] [cursor=pointer]
+                - generic [ref=f8e149]:
+                  - generic [ref=f8e150]: Bank / Financial Institution
+                  - textbox "Bank / Financial Institution" [ref=f8e151]
+                - generic [ref=f8e153]:
+                  - generic [ref=f8e154]: Interest Rate / Returns
+                  - textbox "Interest Rate / Returns" [ref=f8e155]
+                - generic [ref=f8e157]:
+                  - generic [ref=f8e158]: Tenure
+                  - textbox "Tenure" [ref=f8e159]
+                - generic [ref=f8e161]:
+                  - generic [ref=f8e162]: Minimum Amount
+                  - generic [ref=f8e163]:
+                    - generic [aria-hidden]:
+                      - generic: ₹
+                    - spinbutton "Minimum Amount" [ref=f8e164]
+                - generic [ref=f8e166]:
+                  - generic [ref=f8e167]: Maximum Amount
+                  - generic [ref=f8e168]:
+                    - generic [aria-hidden]:
+                      - generic: ₹
+                    - spinbutton "Maximum Amount" [ref=f8e169]
+                - generic [ref=f8e171]:
+                  - generic [ref=f8e172]: Eligibility Criteria
+                  - textbox "Eligibility Criteria" [ref=f8e173]
+                - generic [ref=f8e175]:
+                  - generic [ref=f8e176]: Required Documents
+                  - textbox "Required Documents" [ref=f8e177]
+            - region [ref=f8e178]:
+              - heading "Offer" [level=2] [ref=f8e179]
+              - generic [ref=f8e180]:
+                - generic [ref=f8e182]:
+                  - generic [ref=f8e183]: Offer Price
+                  - generic [ref=f8e184]:
+                    - generic [aria-hidden]:
+                      - generic: ₹
+                    - spinbutton "Offer Price" [ref=f8e185]
+                - generic [ref=f8e187]:
+                  - generic [ref=f8e188]: Discount / Deal
+                  - textbox "Discount / Deal" [ref=f8e189]:
+                    - /placeholder: e.g. 20% off
+                - generic [ref=f8e191]:
+                  - generic [ref=f8e192]: Coupon Code
+                  - textbox "Coupon Code" [active] [ref=f8e193]
+                - generic [ref=f8e195]:
+                  - generic [ref=f8e196]: Valid Until
+                  - generic [ref=f8e197]:
+                    - generic [ref=f8e198]: Valid Until
+                    - button "Date field, click to edit" [ref=f8e279]: 31 December 2026
+                - generic [ref=f8e201]:
+                  - generic [ref=f8e202]: Website / Booking Link
+                  - textbox "Website / Booking Link" [ref=f8e203]:
+                    - /placeholder: https://
+                - generic [ref=f8e205]:
+                  - generic [ref=f8e206]: Terms & Conditions
+                  - textbox "Terms & Conditions" [ref=f8e207]
+          - generic [ref=f8e208]:
+            - generic [ref=f8e210]:
+              - generic [ref=f8e211]: Step 2 / 5
+              - generic [ref=f8e212]: details
+            - generic [ref=f8e215]:
+              - button "Back" [ref=f8e217] [cursor=pointer]
+              - button "Next" [ref=f8e219] [cursor=pointer]
+    - contentinfo [ref=f8e220]:
+      - generic [ref=f8e222]:
+        - generic [ref=f8e223]:
+          - link "lokalads logo lokalads India" [ref=f8e224] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=f8e225]
+            - generic [ref=f8e226]:
+              - img "lokalads" [ref=f8e227]
+              - generic [ref=f8e228]: India
+          - generic [ref=f8e229]:
+            - link "Instagram" [ref=f8e230] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=f8e233] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=f8e236] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=f8e239] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=f8e242] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=f8e245]
+        - paragraph [ref=f8e248]: find anything, anywhere with care...
+      - generic [ref=f8e249]:
+        - separator [ref=f8e250]
+        - generic [ref=f8e251]:
+          - paragraph [ref=f8e252]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=f8e253]:
+            - button "Privacy Policy" [ref=f8e255]
+            - button "Terms & Conditions" [ref=f8e259]
+            - button "Cookie Policy" [ref=f8e263]
+            - generic [ref=f8e266]: Timeline
+            - button "Feedback" [ref=f8e270]
+      - generic [ref=f8e272]:
+        - paragraph [ref=f8e273]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=f8e274] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

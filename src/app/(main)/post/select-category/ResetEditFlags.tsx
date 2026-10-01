@@ -15,6 +15,12 @@ export default function ResetEditFlags() {
   const setField = usePostFormStore((s) => s.setField);
 
   useEffect(() => {
+    // Opened from the review page's "Change" — keep the draft's postId and
+    // editMode so it still saves to the same ad.
+    if (new URLSearchParams(window.location.search).get("from") === "review") {
+      return;
+    }
+
     // Clear edit wiring and assign a fresh postId for this new post creation flow
     setField("editMode", false);
     setField("postId", generateObjectId());

@@ -1,0 +1,124 @@
+- generic [active] [ref=e2]:
+  - button "Open Next.js Dev Tools" [ref=e8] [cursor=pointer]
+  - alert [ref=e1]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - link "lokalads logo lokalads India Beta" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e16]
+          - generic [ref=e17]:
+            - img "lokalads" [ref=e18]
+            - generic [ref=e19]: India
+          - generic [ref=e20]: Beta
+        - generic [ref=e21]:
+          - link "POST" [ref=e22] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: "6"
+          - button "Account menu" [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]: JA
+              - generic "online" [ref=e31]
+    - main [ref=e32]:
+      - main [ref=e1024]:
+        - heading "Advertisement Details" [level=1] [ref=e1026]
+        - generic [ref=e1027]: Free & Giveaway › General
+        - generic [ref=e1029]:
+          - generic [ref=e1030]:
+            - generic [ref=e1032]:
+              - generic [ref=e1034]:
+                - generic [ref=e1035]: Adv Title*
+                - textbox "Adv Title*" [ref=e1036]: Playwright test chair EDITED
+              - generic [ref=e1038]:
+                - generic [ref=e1039]: Adv Details*
+                - generic "Adv Details*" [ref=e1040]:
+                  - generic [ref=e1041]:
+                    - generic [ref=e1042]:
+                      - generic [ref=e1044]:
+                        - button "Bold" [ref=e1045]
+                        - button "Italic" [ref=e1050]
+                        - button "Underline" [ref=e1055]
+                        - button "Strikethrough" [ref=e1064]
+                        - button "Bullet List" [ref=e1071]
+                        - button "Number List" [ref=e1076]
+                        - button "Title" [ref=e1081]
+                        - button "Quote" [ref=e1085]
+                      - generic [ref=e1092]: A sturdy wooden chair, free to collect.
+                    - generic [ref=e1094]: 0 / 2000
+              - generic [ref=e1097]:
+                - generic [ref=e1098]:
+                  - button "Good To Know" [ref=e1100]
+                  - generic [ref=e1103]:
+                    - paragraph [ref=e1104]: Label
+                    - paragraph [ref=e1105]: Value / Detail
+                  - generic [ref=e1107]:
+                    - generic [ref=e1108]:
+                      - textbox "Label for row 1" [ref=e1109]:
+                        - /placeholder: e.g. Parking
+                      - textbox "Value for row 1" [ref=e1110]:
+                        - /placeholder: e.g. Available
+                    - button "Remove row 1" [disabled] [ref=e1111]
+                  - generic [ref=e1115]:
+                    - paragraph [ref=e1116]: 0 of 10 points added
+                    - button "Add point" [disabled]
+                - paragraph [ref=e1117]: Add any extra detail buyers should know, e.g. Parking → Available.
+            - region [ref=e1118]:
+              - heading "Item" [level=2] [ref=e1119]
+              - generic [ref=e1120]:
+                - generic [ref=e1123]:
+                  - paragraph [ref=e1125]: Condition*
+                  - group "Condition*" [ref=e1126]:
+                    - button "Brand New" [ref=e1127] [cursor=pointer]
+                    - button "Like New" [ref=e1129] [cursor=pointer]
+                    - button "Lightly Used" [ref=e1131] [cursor=pointer]
+                    - button "Well Used" [ref=e1133] [cursor=pointer]
+                    - button "Heavily Used" [ref=e1135] [cursor=pointer]
+                - generic [ref=e1138]:
+                  - generic [ref=e1139]: Pickup Availability
+                  - textbox "Pickup Availability" [ref=e1140]:
+                    - /placeholder: e.g. Weekday evenings
+          - generic [ref=e1141]:
+            - generic [ref=e1143]:
+              - generic [ref=e1144]: Step 2 / 5
+              - generic [ref=e1145]: details
+            - generic [ref=e1148]:
+              - button "Back" [ref=e1150] [cursor=pointer]
+              - button "Save & Review" [ref=e1152] [cursor=pointer]
+    - contentinfo [ref=e211]:
+      - generic [ref=e213]:
+        - generic [ref=e214]:
+          - link "lokalads logo lokalads India" [ref=e215] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e216]
+            - generic [ref=e217]:
+              - img "lokalads" [ref=e218]
+              - generic [ref=e219]: India
+          - generic [ref=e220]:
+            - link "Instagram" [ref=e221] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e224] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e227] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e230] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e233] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e236]
+        - paragraph [ref=e239]: find anything, anywhere with care...
+      - generic [ref=e240]:
+        - separator [ref=e241]
+        - generic [ref=e242]:
+          - paragraph [ref=e243]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=e244]:
+            - button "Privacy Policy" [ref=e246]
+            - button "Terms & Conditions" [ref=e250]
+            - button "Cookie Policy" [ref=e254]
+            - generic [ref=e257]: Timeline
+            - button "Feedback" [ref=e261]
+      - generic [ref=e263]:
+        - paragraph [ref=e264]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e265] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

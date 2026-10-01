@@ -9,6 +9,7 @@ import PostFooter from "../components/PostFooter";
 
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
+import { useFromReview } from "../wizard/useFromReview";
 import { useAuthStore } from "@/store/authStore";
 import { LaChip } from "@/components/la/la-chip";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
@@ -23,6 +24,7 @@ export default function DetailsPage() {
   useWizardGuard("details");
 
   const router = useRouter();
+  const fromReview = useFromReview();
 
   const category = usePostFormStore((s) => s.category);
   const subcategory = usePostFormStore((s) => s.subcategory);
@@ -100,8 +102,8 @@ useEffect(() => {
       document.getElementById(firstKey)?.focus({ preventScroll: true });
       return;
     }
-    router.push("/post/upload-photo");
-  }, [category, subcategory, router, schema]);
+    router.push(fromReview ? "/post/preview" : "/post/upload-photo");
+  }, [category, subcategory, router, schema, fromReview]);
 
   return (
     <>
@@ -134,8 +136,11 @@ useEffect(() => {
           <PostFooter
             showBack
             showNext
+            nextLabel={fromReview ? "Save & Review" : undefined}
             onNext={handleNext}
-            onBack={() => router.push("/post/select-category")}
+            onBack={() =>
+              router.push(fromReview ? "/post/preview" : "/post/select-category")
+            }
           />
         </div>
       </main>

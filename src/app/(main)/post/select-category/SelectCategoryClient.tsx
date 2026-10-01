@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
 import { usePostFormStore } from "../store/postFormStore";
+import { reviewEditRoute } from "../wizard/steps";
 
 import { CATEGORIES, type CategoryItem } from "@/config/categories";
 import { resolveCardColor, resolveCardIcon } from "@/config/categories/visuals";
@@ -23,6 +24,7 @@ export default function SelectCategoryClient() {
   // left over from a previous draft doesn't make a brand-new post jump straight
   // to the sub-category screen instead of the category grid.
   const isFreshEntry = searchParams.get("new") === "1";
+  const fromReview = searchParams.get("from") === "review";
 
   const setField = usePostFormStore((s) => s.setField);
   const reset = usePostFormStore((s) => s.reset);
@@ -88,8 +90,21 @@ export default function SelectCategoryClient() {
   const handleNext = () => {
     if (!canContinue) return;
 
+    const prev = usePostFormStore.getState();
+    const unchanged =
+      prev.category === currentCategory!.label &&
+      prev.subcategory === selectedSubCategory;
+
     setField("category", currentCategory!.label);
     setField("subcategory", selectedSubCategory!);
+
+    // From review: same subcategory → straight back; a new subcategory has
+    // different fields, so fill those in and then return to review. (A new
+    // category wipes the draft via reset(), so prev.name is empty → full flow.)
+    if (fromReview && prev.name) {
+      router.push(unchanged ? "/post/preview" : reviewEditRoute("details"));
+      return;
+    }
 
     router.push("/post/details");
   };
@@ -182,7 +197,9 @@ export default function SelectCategoryClient() {
           showSubmit={false}
           isNextDisabled={!canContinue}
           onNext={handleNext}
-          onCancel={() => window.history.back()}
+          onCancel={() =>
+            fromReview ? router.push("/post/preview") : window.history.back()
+          }
         />
       </div>
     </main>

@@ -1,0 +1,76 @@
+- generic [active] [ref=e2]:
+  - button "Open Next.js Dev Tools" [ref=e8] [cursor=pointer]
+  - alert [ref=e1]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - link "lokalads logo lokalads India Beta" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e16]
+          - generic [ref=e17]:
+            - img "lokalads" [ref=e18]
+            - generic [ref=e19]: India
+          - generic [ref=e20]: Beta
+        - generic [ref=e21]:
+          - link "POST" [ref=e22] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: "6"
+          - button "Account menu" [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]: JA
+              - generic "online" [ref=e31]
+    - main [ref=e32]:
+      - main [ref=e428]:
+        - generic [ref=e429]:
+          - heading "Upload Photos" [level=1] [ref=e430]
+          - paragraph [ref=e431]: Add photos to make your advertisement stand out (JPG, PNG, WebP, GIF, HEIC / HEIF).
+        - generic [ref=e432]:
+          - button [ref=e433]:
+            - paragraph [ref=e434]: Drag & drop photos here, or click to browse
+            - paragraph [ref=e435]: 0 / 10 photos
+            - button "Browse Files" [ref=e436] [cursor=pointer]
+          - generic [ref=e437]:
+            - generic [ref=e439]:
+              - generic [ref=e440]: Step 3 / 5
+              - generic [ref=e441]: upload photo
+            - generic [ref=e444]:
+              - button "Back" [ref=e446] [cursor=pointer]
+              - button "Next" [disabled] [ref=e448] [cursor=pointer]
+    - contentinfo [ref=e211]:
+      - generic [ref=e213]:
+        - generic [ref=e214]:
+          - link "lokalads logo lokalads India" [ref=e215] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e216]
+            - generic [ref=e217]:
+              - img "lokalads" [ref=e218]
+              - generic [ref=e219]: India
+          - generic [ref=e220]:
+            - link "Instagram" [ref=e221] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e224] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e227] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e230] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e233] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e236]
+        - paragraph [ref=e239]: find anything, anywhere with care...
+      - generic [ref=e240]:
+        - separator [ref=e241]
+        - generic [ref=e242]:
+          - paragraph [ref=e243]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=e244]:
+            - button "Privacy Policy" [ref=e246]
+            - button "Terms & Conditions" [ref=e250]
+            - button "Cookie Policy" [ref=e254]
+            - generic [ref=e257]: Timeline
+            - button "Feedback" [ref=e261]
+      - generic [ref=e263]:
+        - paragraph [ref=e264]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e265] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"

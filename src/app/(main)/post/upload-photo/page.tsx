@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import PageHeader from "../components/PageHeader";
 import PostFooter from "../components/PostFooter";
+import { useFromReview } from "../wizard/useFromReview";
 
 import { LaButton } from "@/components/la/la-button";
 import { X } from "lucide-react";
@@ -42,6 +43,7 @@ export default function UploadPhotoPage() {
   useWizardGuard("upload-photo");
 
   const router = useRouter();
+  const fromReview = useFromReview();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const images = usePostFormStore((s) => s.images);
@@ -238,8 +240,9 @@ export default function UploadPhotoPage() {
             showNext
             showSubmit={false}
             isNextDisabled={isNextDisabled}
-            onBack={() => router.push("/post/details")}
-            onNext={() => router.push("/post/pick-location")}
+            nextLabel={fromReview ? "Save & Review" : undefined}
+            onBack={() => router.push(fromReview ? "/post/preview" : "/post/details")}
+            onNext={() => router.push(fromReview ? "/post/preview" : "/post/pick-location")}
           />
         </div>
       </main>

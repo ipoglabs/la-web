@@ -1,0 +1,131 @@
+- generic [active] [ref=e2]:
+  - button "Open Next.js Dev Tools" [ref=e8] [cursor=pointer]
+  - alert [ref=e1]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - link "lokalads logo lokalads India Beta" [ref=e15] [cursor=pointer]:
+          - /url: /
+          - img "lokalads logo" [ref=e16]
+          - generic [ref=e17]:
+            - img "lokalads" [ref=e18]
+            - generic [ref=e19]: India
+          - generic [ref=e20]: Beta
+        - generic [ref=e21]:
+          - link "POST" [ref=e22] [cursor=pointer]:
+            - /url: /post
+          - button "View saved listings" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: "6"
+          - button "Account menu" [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]: JA
+              - generic "online" [ref=e31]
+    - main [ref=e32]:
+      - main [ref=e1374]:
+        - generic [ref=e1375]:
+          - generic [ref=e1376]:
+            - heading "Review Details" [level=1] [ref=e1377]
+            - paragraph [ref=e1378]: Review everything before submitting.
+          - button "Debug" [ref=e1380]
+          - generic [ref=e1381]:
+            - generic [ref=e1382]:
+              - generic [ref=e1383]: Category
+              - button "Change" [ref=e1384]
+            - generic [ref=e1387]:
+              - generic [ref=e1388]: Category
+              - generic [ref=e1389]: Free & Giveaway ➝ General
+            - separator [ref=e1390]
+          - generic [ref=e1391]:
+            - generic [ref=e1392]:
+              - generic [ref=e1393]: Basic Details
+              - button "Change" [ref=e1394]
+            - generic [ref=e1395]:
+              - generic [ref=e1397]:
+                - generic [ref=e1398]: Title
+                - generic [ref=e1399]: Playwright test chair EDITED
+              - generic [ref=e1401]:
+                - generic [ref=e1402]: Description
+                - generic [ref=e1403]: A sturdy wooden chair, free to collect.
+            - separator [ref=e1404]
+          - generic [ref=e1405]:
+            - generic [ref=e1406]:
+              - generic [ref=e1407]: Additional Details
+              - button "Change" [ref=e1408]
+            - generic [ref=e1411]:
+              - generic [ref=e1412]: Condition
+              - generic [ref=e1413]: Like New
+            - separator [ref=e1414]
+          - generic [ref=e1415]:
+            - generic [ref=e1416]:
+              - generic [ref=e1417]: Location
+              - button "Change" [ref=e1418]
+            - generic [ref=e1421]:
+              - generic [ref=e1422]: Address
+              - generic [ref=e1423]: Tiruchirappalli, Tamil Nadu, India
+            - iframe [ref=e1425]
+            - separator [ref=e1426]
+          - generic [ref=e1427]:
+            - generic [ref=e1428]:
+              - generic [ref=e1429]: Photos
+              - button "Change" [ref=e1430]
+            - generic [ref=e1431]:
+              - img "Photo 1" [ref=e1432]
+              - img "Photo 2" [ref=e1433]
+            - separator [ref=e1434]
+          - generic [ref=e1435]:
+            - generic [ref=e1436]: Contact
+            - generic [ref=e1438]:
+              - generic [ref=e1440]:
+                - generic [ref=e1441]: Name
+                - generic [ref=e1442]: Jayapriya
+              - generic [ref=e1444]:
+                - generic [ref=e1445]: Email
+                - generic [ref=e1446]: jp.naga85@gmail.com
+              - generic [ref=e1448]:
+                - generic [ref=e1449]: Phone
+                - generic [ref=e1450]: "+919840912665"
+            - generic [ref=e1451]: Auto-filled from your profile
+          - generic [ref=e1452]:
+            - generic [ref=e1454]:
+              - generic [ref=e1455]: Step 5 / 5
+              - generic [ref=e1456]: preview
+            - generic [ref=e1459]:
+              - button "Back" [ref=e1461] [cursor=pointer]
+              - button "Submit" [ref=e1463] [cursor=pointer]
+    - contentinfo [ref=e211]:
+      - generic [ref=e213]:
+        - generic [ref=e214]:
+          - link "lokalads logo lokalads India" [ref=e215] [cursor=pointer]:
+            - /url: /
+            - img "lokalads logo" [ref=e216]
+            - generic [ref=e217]:
+              - img "lokalads" [ref=e218]
+              - generic [ref=e219]: India
+          - generic [ref=e220]:
+            - link "Instagram" [ref=e221] [cursor=pointer]:
+              - /url: https://www.instagram.com/lokaladsglobal/
+            - link "Threads" [ref=e224] [cursor=pointer]:
+              - /url: https://www.threads.com/@lokaladsglobal
+            - link "Facebook" [ref=e227] [cursor=pointer]:
+              - /url: https://www.facebook.com/lokaladscom/
+            - link "LinkedIn" [ref=e230] [cursor=pointer]:
+              - /url: https://www.linkedin.com/in/lokalads
+            - link "YouTube" [ref=e233] [cursor=pointer]:
+              - /url: https://www.youtube.com/@lokaladsglobal
+          - button "Expand footer navigation" [ref=e236]
+        - paragraph [ref=e239]: find anything, anywhere with care...
+      - generic [ref=e240]:
+        - separator [ref=e241]
+        - generic [ref=e242]:
+          - paragraph [ref=e243]: © 2025 Lokalads India Pvt. Ltd. | Co. Reg. No. U74999KA2020PTC123456.
+          - generic [ref=e244]:
+            - button "Privacy Policy" [ref=e246]
+            - button "Terms & Conditions" [ref=e250]
+            - button "Cookie Policy" [ref=e254]
+            - generic [ref=e257]: Timeline
+            - button "Feedback" [ref=e261]
+      - generic [ref=e263]:
+        - paragraph [ref=e264]: “Your support makes lokalads possible. Lets grow together!”
+        - link "Support Lokalads" [ref=e265] [cursor=pointer]:
+          - /url: /donate
+  - region "Notifications alt+T"
