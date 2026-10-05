@@ -234,7 +234,8 @@ export default function PreviewPage() {
 
     for (const spec of specs) {
       const raw = (data as any)[spec.key];
-      if (!raw || (Array.isArray(raw) && raw.length === 0)) continue;
+      // Not `!raw`: 0 is a real answer ("Ground" floor, "None" parking).
+      if (raw == null || raw === "" || (Array.isArray(raw) && raw.length === 0)) continue;
 
       const labels = optionLabels[spec.key];
       const v = labels

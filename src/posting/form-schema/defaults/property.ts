@@ -32,10 +32,38 @@ const AREA_EXAMPLES: Record<string, string> = {
   SG: "e.g. Tampines, Bukit Timah…",
 };
 
-const bedsBaths = (): FormFieldDef[] => [
-  { key: "beds", type: "number", label: "Beds", min: 1, width: "half" },
-  { key: "baths", type: "number", label: "Baths", min: 1, width: "half" },
+// ── Count chips ─────────────────────────────────────────────────────────────
+// Small counts are picked from chips, not typed. Values stay numeric strings
+// (the Post paths are Numbers), and the last "n+" chip saves n — search's
+// "5+ BR" / "8+ guests" / "high floor" buckets are all >= ranges.
+const counts = (from: number, to: number, zeroLabel?: string): FormFieldOption[] => [
+  ...Array.from({ length: to - from }, (_, i) => {
+    const n = from + i;
+    return { value: String(n), label: n === 0 && zeroLabel ? zeroLabel : String(n) };
+  }),
+  { value: String(to), label: `${to}+` },
 ];
+const COUNT_1_TO_5 = counts(1, 5);
+const COUNT_0_TO_5 = counts(0, 5, "None");
+
+const BEDS: FormFieldDef = { key: "beds", type: "select", label: "Beds", options: COUNT_1_TO_5 };
+const BATHS: FormFieldDef = { key: "baths", type: "select", label: "Baths", options: COUNT_1_TO_5 };
+// Whole flats to rent/buy can be studios — saved as 0 beds, which is what
+// search's "Studio" bedrooms filter matches.
+const BEDS_WITH_STUDIO: FormFieldDef = { ...BEDS, options: counts(0, 5, "Studio") };
+const bedsBaths = (opts: { studio?: boolean } = {}): FormFieldDef[] => [opts.studio ? BEDS_WITH_STUDIO : BEDS, BATHS];
+
+/** Lease lengths in months; 11 months is the standard Indian rental agreement. */
+function leaseTermOptions(country: string): FormFieldOption[] {
+  const months = country === "IN" ? [1, 3, 6, 11, 12, 24] : [1, 3, 6, 12, 24];
+  return [
+    ...months.map((m) => ({
+      value: String(m),
+      label: m === 12 ? "1 year" : m === 24 ? "2 years" : `${m} ${m === 1 ? "month" : "months"}`,
+    })),
+    { value: "36", label: "3+ years" },
+  ];
+}
 
 function buildSections(subcategory: string, country: string): FormSection[] | null {
   const c = getPropertyConfig(country);
@@ -53,7 +81,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
             { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, width: "half" },
             { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
             { key: "carpet_area", type: "number", label: "Carpet Area", unit: area, min: 1, width: "half" },
-            ...bedsBaths(),
+            ...bedsBaths({ studio: true }),
             { key: "age", type: "text", label: "Property Age", placeholder: "e.g. 5 years", width: "half" },
             { key: "ownership", type: "select", label: "Ownership", options: c.sale.ownershipTypes },
           ],
@@ -77,10 +105,10 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
             { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "third" },
             { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "third" },
             { key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "third" },
-            ...bedsBaths(),
+            ...bedsBaths({ studio: true }),
             { key: "furnishing", type: "select", label: "Furnishing", options: c.rent.furnishingOptions },
             { key: "available_from", type: "date", label: "Available From", width: "half" },
-            { key: "leaseTerm", type: "number", label: "Lease Term", unit: "months", min: 1, width: "half" },
+            { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country) },
           ],
         },
         {
@@ -104,15 +132,15 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
             { key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "third" },
             { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
             { key: "carpet_area", type: "number", label: "Carpet Area", unit: area, min: 1, width: "half" },
-            { key: "floor", type: "number", label: "Floor", min: 0, width: "half" },
-            { key: "totalFloors", type: "number", label: "Total Floors", min: 1, width: "half" },
-            { key: "washrooms", type: "number", label: "Washrooms", min: 0, width: "half" },
-            { key: "parkingSpaces", type: "number", label: "Parking Spaces", min: 0, width: "half" },
+            { key: "floor", type: "select", label: "Floor", options: counts(0, 10, "Ground"), lteField: "totalFloors" },
+            { key: "totalFloors", type: "select", label: "Total Floors", options: counts(1, 10) },
+            { key: "washrooms", type: "select", label: "Washrooms", options: COUNT_0_TO_5 },
+            { key: "parkingSpaces", type: "select", label: "Parking Spaces", options: COUNT_0_TO_5 },
             { key: "furnishing", type: "select", label: "Furnishing", options: opts(["Furnished", "Semi-Furnished", "Unfurnished"]) },
             { key: "pantry", type: "select", label: "Pantry", options: YES_NO, width: "half" },
             { key: "powerBackup", type: "select", label: "Power Backup", options: YES_NO, width: "half" },
             { key: "available_from", type: "date", label: "Available From", width: "half" },
-            { key: "leaseTerm", type: "number", label: "Lease Term", unit: "months", min: 1, width: "half" },
+            { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country) },
           ],
         },
         {
@@ -163,9 +191,9 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           title: "Property",
           fields: [
             { key: "holidayType", type: "select", label: "Holiday Property Type", required: true, options: c.holiday.propertyTypes },
-            { key: "guests", type: "number", label: "Guests", min: 1, width: "third" },
-            { key: "beds", type: "number", label: "Beds", min: 1, width: "third" },
-            { key: "baths", type: "number", label: "Baths", min: 1, width: "third" },
+            { key: "guests", type: "select", label: "Guests", options: counts(1, 8) },
+            BEDS,
+            BATHS,
           ],
         },
         {
@@ -319,15 +347,6 @@ const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   description: { maxLength: 2000 }, // matches RichTextEditor's counter
   age: { maxLength: 30 },
   developerName: { maxLength: 100 },
-
-  beds: { max: 50 },
-  baths: { max: 50 },
-  guests: { max: 100 },
-  washrooms: { max: 100 },
-  parkingSpaces: { max: 1000 },
-  floor: { max: 200, lteField: "totalFloors" },
-  totalFloors: { max: 200 },
-  leaseTerm: { max: 120 }, // months = 10 years
 
   builtup_area: { max: AREA_MAX },
   carpet_area: { max: AREA_MAX, lteField: "builtup_area" },

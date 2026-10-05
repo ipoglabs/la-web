@@ -59,7 +59,9 @@ function validateField(
     const allowed = new Set(field.options.map((o) => o.value));
     const values = Array.isArray(value) ? value.map(String) : [String(value)];
     if (field.type === "select" && values.length > 1) return `${field.label} accepts only one choice.`;
-    if (values.some((v) => !allowed.has(v))) return `${field.label} has an invalid choice.`;
+    // Also hit by older posts saved before a field became chips (e.g. a typed
+    // 20-month lease term), so tell the seller what to do, not just "invalid".
+    if (values.some((v) => !allowed.has(v))) return `Please choose ${field.label.toLowerCase()} from the options.`;
   }
 
   if ((field.type === "tags" || field.type === "multiselect") && Array.isArray(value)) {
@@ -88,6 +90,12 @@ function validateField(
     if (field.max !== undefined && n > field.max) {
       return `${field.label} must be ${fmt(field.max)} or less.`;
     }
+  }
+
+  // Cross-field bounds — numbers, and number chips (e.g. Floor ≤ Total Floors).
+  if (field.gteField || field.lteField) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return null;
     if (field.gteField) {
       const other = data[field.gteField];
       if (!isEmpty(other) && n < Number(other)) {

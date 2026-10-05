@@ -111,7 +111,10 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
   // Choice fields: the toggle group renders its own (accessible) title.
   if (field.type === "select" || field.type === "multiselect") {
     const single = field.type === "select";
-    const selected = single ? (value ? [String(value)] : []) : Array.isArray(value) ? (value as string[]) : [];
+    // `!= null`, not truthiness: number chips save 0 ("Ground", "None").
+    const selected = single
+      ? value != null && value !== "" ? [String(value)] : []
+      : Array.isArray(value) ? (value as string[]) : [];
     return (
       <div data-field={field.key} className="flex flex-col gap-1">
         <ToggleButtonGroup
