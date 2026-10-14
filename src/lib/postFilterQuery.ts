@@ -15,9 +15,9 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Only `property` is wired today — every other category falls through to
- * {} (no-op), matching the previous "filters are UI-only" behavior so
- * nothing regresses elsewhere.
+ * Property has full filter mappings. Other categories only get the price
+ * range (see CATEGORY_PRICE_FIELD); their other filter toggles are still
+ * UI-only.
  */
 
 function escapeRegex(value: string): string {
@@ -319,11 +319,33 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
+// Outside Property, a post's price is its `salePrice` (Jobs: `salary`).
+// Free / Giveaway and Community posts have no price to filter on.
+const CATEGORY_PRICE_FIELD: Record<string, string | null> = {
+  jobs: "salary",
+  free_giveaway: null,
+  community: null,
+};
+
+/** Whether a category / sub's search has a working price filter (the listings UI hides it otherwise). */
+export function hasPriceFilter(category: string, sub: string): boolean {
+  if (category === "property") return Boolean(PROPERTY_SUB_FILTERS[sub]?.priceField);
+  return CATEGORY_PRICE_FIELD[category] !== null;
+}
+
 export function buildFilterQuery(
   category: string,
   sub: string,
   filterValues: Record<string, string[]>
 ): Record<string, unknown> {
   if (category === "property") return buildPropertyQuery(sub, filterValues);
-  return {};
+
+  const field = CATEGORY_PRICE_FIELD[category] === undefined ? "salePrice" : CATEGORY_PRICE_FIELD[category];
+  const min = filterValues.price_min?.[0];
+  const max = filterValues.price_max?.[0];
+  if (!field || (!min && !max)) return {};
+  const range: Record<string, number> = {};
+  if (min) range.$gte = Number(min);
+  if (max) range.$lte = Number(max);
+  return { [field]: range };
 }

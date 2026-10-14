@@ -24,6 +24,7 @@
 
 import { ALERT_CONFIG } from "@/components/create-alert/config";
 import type { FilterConfig } from "@/components/create-alert/types";
+import { hasPriceFilter } from "@/lib/postFilterQuery";
 
 // Re-export so callers only import from this file
 export type { FilterConfig };
@@ -132,6 +133,51 @@ function propertyPriceKind(sub: string, values: Record<string, string[]>): Prope
   }
 }
 
+// Every other category: one of four step sets per market, by how much its
+// things usually cost. Jobs filter on the salary, which sellers enter
+// without a period, so its steps span monthly and yearly pay.
+type CategoryPriceTier = "small" | "goods" | "big" | "salary";
+const CATEGORY_STEPS: Record<string, Record<CategoryPriceTier, readonly number[]>> = {
+  in: {
+    small: [100, 250, 500, 1000, 2000, 3000, 5000, 7500, 10000, 20000, 50000],
+    goods: [500, 1000, 2000, 5000, 10000, 20000, 30000, 50000, 75000, 100000, 200000, 500000],
+    big: [50000, 100000, 200000, 300000, 500000, 750000, 1000000, 1500000, 2000000, 3000000, 5000000, 10000000],
+    salary: [5000, 10000, 15000, 20000, 30000, 50000, 75000, 100000, 200000, 500000, 1000000, 2000000, 5000000],
+  },
+  gb: {
+    small: [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000],
+    goods: [10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000],
+    big: [500, 1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000, 50000, 100000],
+    salary: [500, 1000, 2000, 3000, 5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000, 150000],
+  },
+  sg: {
+    small: [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000],
+    goods: [10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000],
+    big: [5000, 10000, 20000, 30000, 50000, 75000, 100000, 150000, 200000, 300000, 500000],
+    salary: [500, 1000, 2000, 3000, 4000, 5000, 7500, 10000, 20000, 50000, 100000, 200000],
+  },
+};
+
+const CATEGORY_TIER: Record<string, CategoryPriceTier> = {
+  vehicles: "big",
+  jobs: "salary",
+  books_media_collectibles: "small",
+  food_dining: "small",
+  tickets_vouchers: "small",
+  health_beauty: "small",
+  special_offers: "small",
+  // everything else ("goods"): electronics, furniture, fashion, sports, music, baby, pets, services, education, travel, business
+};
+/** Subs priced unlike their category. */
+const SUB_TIER: Record<string, CategoryPriceTier> = {
+  "vehicles/parts_accessories": "goods",
+  "business/biz_for_sale": "big",
+};
+
+function categoryTier(cat: string, sub: string): CategoryPriceTier {
+  return SUB_TIER[`${cat}/${sub}`] ?? CATEGORY_TIER[cat] ?? "goods";
+}
+
 // Keyed as "cat/sub" — falls back to GENERAL_STEPS if not found
 const PRICE_SPECS: Record<string, PriceSpec> = {
   "property/to_rent":       { steps: RENT_STEPS    },
@@ -200,7 +246,7 @@ export function priceUnit(
 
 /**
  * Returns the ListingFilterConfig[] for the given cat + sub pair.
- * Always injects a price range filter first.
+ * Injects a price range filter first wherever the sub has a price to filter on.
  * Returns [] when cat or sub is empty (sub-picker / uncategorised state).
  */
 export function resolveFilters(
@@ -222,14 +268,20 @@ export function resolveFilters(
   if (!subCat) return [];
 
   // Inject price range as the first filter — always present for every sub
+  // No price to filter on (Free / Giveaway, Community, Property Wanted) → no price filter.
+  if (!hasPriceFilter(cat, sub)) return [...(subCat.filters as FilterConfig[])];
+
+  const market = opts.country?.toLowerCase() ?? "";
   const kind = cat === "property" ? propertyPriceKind(sub, opts.values ?? {}) : undefined;
-  const marketSteps = kind ? PROPERTY_STEPS[opts.country?.toLowerCase() ?? ""]?.[kind] : undefined;
+  const marketSteps = kind
+    ? PROPERTY_STEPS[market]?.[kind]
+    : cat !== "property" ? CATEGORY_STEPS[market]?.[categoryTier(cat, sub)] : undefined;
   const spec = marketSteps ? { steps: marketSteps } : PRICE_SPECS[`${cat}/${sub}`] ?? { steps: GENERAL_STEPS };
   const unit = priceUnit(cat, sub, opts.country, opts.values);
   const priceFilter: RangeFilterConfig = {
     type: "range",
     id: "price",
-    label: unit ? `Price ${unit}` : "Price",
+    label: cat === "jobs" ? "Salary" : unit ? `Price ${unit}` : "Price",
     steps: spec.steps,
     prefix: opts.currencySymbol ?? "£",
     unit,
