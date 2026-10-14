@@ -3,7 +3,7 @@
 // as "Like New").
 
 import type { FieldSpec } from "@/posting/config/types";
-import type { FormFieldDef, PostFormSchemaData } from "./types";
+import { isFieldVisible, type FormFieldDef, type PostFormSchemaData } from "./types";
 
 const SPEC_TYPE: Record<FormFieldDef["type"], FieldSpec["type"]> = {
   text: "string",
@@ -18,7 +18,8 @@ const SPEC_TYPE: Record<FormFieldDef["type"], FieldSpec["type"]> = {
   goodToKnow: "array", // never used — goodToKnow fields are skipped below
 };
 
-export function schemaToSpecs(schema: PostFormSchemaData): {
+/** `data` (the post's values) drops fields its showWhen rules hide. */
+export function schemaToSpecs(schema: PostFormSchemaData, data?: Record<string, unknown>): {
   specs: FieldSpec[];
   optionLabels: Record<string, Record<string, string>>;
 } {
@@ -29,6 +30,7 @@ export function schemaToSpecs(schema: PostFormSchemaData): {
     // Title and details are shown separately by the preview; Good To Know
     // points are listed by it as their own label/value rows.
     if (field.key === "name" || field.key === "description" || field.type === "goodToKnow") continue;
+    if (data && !isFieldVisible(field, data)) continue;
     specs.push({ key: field.key, type: SPEC_TYPE[field.type], label: field.label, unit: field.unit });
     if (field.options?.length) {
       optionLabels[field.key] = Object.fromEntries(field.options.map((o) => [o.value, o.label]));

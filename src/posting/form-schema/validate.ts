@@ -1,4 +1,4 @@
-import { PLACE_TAG, type FormFieldDef, type PostFormSchemaData } from "./types";
+import { PLACE_TAG, isFieldVisible, type FormFieldDef, type PostFormSchemaData } from "./types";
 import { goodToKnowError, normalizeGoodToKnow } from "./goodToKnow";
 
 // Mirrors sanitizeAdTitle (posting/validation/sanitizeAdTitle.ts): the form
@@ -124,6 +124,7 @@ export function validateAgainstSchema(
   const errors: Record<string, string> = {};
   for (const section of schema.sections) {
     for (const field of section.fields) {
+      if (!isFieldVisible(field, data)) continue;
       const msg = validateField(field, data, labelOf);
       if (msg) errors[field.key] = msg;
     }

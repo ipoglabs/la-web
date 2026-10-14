@@ -23,12 +23,14 @@ export const INPropertyConfig: PropertyFormConfig = {
   },
 
   buy: {
+    // Plots and commercial units have their own subcategories
+    // (Land for Sale / Lease, Commercial).
     propertyTypes: [
       { value: "Apartment",        label: "Apartment / Flat" },
+      { value: "BuilderFloor",     label: "Builder Floor" },
       { value: "IndependentHouse", label: "Independent House" },
       { value: "Villa",            label: "Villa" },
-      { value: "Plot",             label: "Plot / Land" },
-      { value: "Commercial",       label: "Commercial" },
+      { value: "Penthouse",        label: "Penthouse" },
       { value: "Other",            label: "Other" },
     ],
     amenities: ["Parking", "Gym", "Swimming Pool", "Garden", "Power Backup", "Club House"],

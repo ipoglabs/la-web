@@ -214,10 +214,10 @@ export default function PreviewPage() {
   // DB-form categories show exactly the fields their schema defines, with
   // choice values shown by their option labels.
   const { specs, optionLabels } = useMemo(() => {
-    if (schema) return schemaToSpecs(schema);
+    if (schema) return schemaToSpecs(schema, data as unknown as Record<string, unknown>);
     if (!data.category || !data.subcategory) return { specs: [], optionLabels: {} };
     return { specs: getSpecs(data.category, data.subcategory), optionLabels: {} };
-  }, [schema, data.category, data.subcategory]);
+  }, [schema, data]);
 
   const groupedFields = useMemo(() => {
     const groups: Record<string, any[]> = {

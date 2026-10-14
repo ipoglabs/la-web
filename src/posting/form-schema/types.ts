@@ -70,6 +70,31 @@ export interface FormFieldDef {
   maxItems?: number;
   /** Grid width on md+ screens; always full width on mobile. */
   width?: "full" | "half" | "third";
+  /** Value a new post starts with (e.g. Negotiable = "No"). Not applied when editing. */
+  defaultValue?: string;
+  /** Show the field only while another field's value matches — e.g. Tenure
+   *  Remaining only for a leasehold. A hidden field isn't validated or saved. */
+  showWhen?: FieldCondition;
+}
+
+export interface FieldCondition {
+  /** Key of the field this one depends on. */
+  field: string;
+  /** Show only when that field's value is one of these. */
+  in?: string[];
+  /** Show only when that field's value is none of these (an empty value counts as none). */
+  notIn?: string[];
+}
+
+/** Whether `field` is shown for the current form values (see FormFieldDef.showWhen). */
+export function isFieldVisible(field: FormFieldDef, data: Record<string, unknown>): boolean {
+  const rule = field.showWhen;
+  if (!rule) return true;
+  const raw = data[rule.field];
+  const value = raw == null ? "" : String(raw);
+  if (rule.in && !rule.in.includes(value)) return false;
+  if (rule.notIn && rule.notIn.includes(value)) return false;
+  return true;
 }
 
 export interface FormSection {

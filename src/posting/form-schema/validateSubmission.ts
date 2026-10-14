@@ -10,7 +10,7 @@ import { isDynamicFormCategory } from "./rollout";
 import { getPostFormSchema } from "./getPostFormSchema";
 import { validateAgainstSchema } from "./validate";
 import { normalizeGoodToKnow } from "./goodToKnow";
-import type { FormFieldDef, PostFormSchemaData } from "./types";
+import { isFieldVisible, type FormFieldDef, type PostFormSchemaData } from "./types";
 
 /**
  * Keys a form schema may never write, whatever the DB document says —
@@ -103,8 +103,13 @@ export function readSchemaValues(formData: FormData, schema: PostFormSchemaData)
   const attributes: Record<string, unknown> = {};
   const unset: string[] = [];
 
-  for (const field of schemaFields(schema)) {
-    const value = readValue(field, formData.get(field.key));
+  const fieldDefs = schemaFields(schema);
+  const raw = Object.fromEntries(fieldDefs.map((f) => [f.key, readValue(f, formData.get(f.key))]));
+
+  for (const field of fieldDefs) {
+    // A field hidden by its showWhen rule is saved as empty, even if the
+    // seller filled it in before changing the field it depends on.
+    const value = isFieldVisible(field, raw) ? raw[field.key] : undefined;
     const isEmpty = value === undefined || (Array.isArray(value) && value.length === 0);
     const onModel = Boolean(Post.schema.path(field.key));
 

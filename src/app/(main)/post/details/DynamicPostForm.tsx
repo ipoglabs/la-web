@@ -13,7 +13,7 @@ import { DateInput } from "@/components/date-input";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
-import { GOOD_TO_KNOW, PLACE_TAG, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
+import { GOOD_TO_KNOW, PLACE_TAG, isFieldVisible, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
 import { cn } from "@/lib/utils";
 
 interface DynamicPostFormProps {
@@ -30,6 +30,19 @@ const WIDTH_CLASS: Record<NonNullable<FormFieldDef["width"]>, string> = {
 };
 
 export default function DynamicPostForm({ schema, currencySymbol, errors, onFieldChange }: DynamicPostFormProps) {
+  // A new post starts with each field's defaultValue (e.g. Negotiable = No).
+  // Only unanswered fields — a value the seller already chose, or cleared, stays.
+  React.useEffect(() => {
+    const state = usePostFormStore.getState();
+    if (state.editMode) return;
+    const values = state as unknown as Record<string, unknown>;
+    for (const field of schema.sections.flatMap((s) => s.fields)) {
+      if (field.defaultValue !== undefined && values[field.key] === undefined) {
+        state.setField(field.key, field.defaultValue);
+      }
+    }
+  }, [schema]);
+
   return (
     <form
       data-post-form="true"
@@ -50,20 +63,30 @@ export default function DynamicPostForm({ schema, currencySymbol, errors, onFiel
           )}
           <div className="grid grid-cols-6 gap-x-4 gap-y-5">
             {section.fields.map((field) => (
-              <div key={field.key} className={WIDTH_CLASS[field.width ?? "full"]}>
+              <FieldSlot key={field.key} field={field}>
                 <DynamicField
                   field={field}
                   currencySymbol={currencySymbol}
                   error={errors[field.key]}
                   onFieldChange={onFieldChange}
                 />
-              </div>
+              </FieldSlot>
             ))}
           </div>
         </section>
       ))}
     </form>
   );
+}
+
+// Grid cell for one field; renders nothing while its showWhen rule hides it.
+function FieldSlot({ field, children }: { field: FormFieldDef; children: React.ReactNode }) {
+  const dependsOn = field.showWhen?.field;
+  const visible = usePostFormStore((s) =>
+    dependsOn ? isFieldVisible(field, s as unknown as Record<string, unknown>) : true,
+  );
+  if (!visible) return null;
+  return <div className={WIDTH_CLASS[field.width ?? "full"]}>{children}</div>;
 }
 
 // ── Single field ─────────────────────────────────────────────────────────────

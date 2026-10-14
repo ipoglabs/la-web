@@ -30,6 +30,15 @@ const OptionSchema = new Schema(
   { _id: false },
 );
 
+const ConditionSchema = new Schema(
+  {
+    field: { type: String, required: true },
+    in: { type: [String], default: undefined },
+    notIn: { type: [String], default: undefined },
+  },
+  { _id: false },
+);
+
 const FieldSchema = new Schema<FormFieldDef>(
   {
     key: { type: String, required: true, trim: true },
@@ -52,6 +61,8 @@ const FieldSchema = new Schema<FormFieldDef>(
     format: { type: String, enum: ["adTitle", "place"] },
     maxItems: Number,
     width: { type: String, enum: ["full", "half", "third"] },
+    defaultValue: String,
+    showWhen: { type: ConditionSchema, default: undefined },
   },
   { _id: false },
 );

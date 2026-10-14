@@ -14,7 +14,32 @@ export const PROPERTY_COUNTRIES = ["IN", "GB", "SG"] as const;
 
 const opts = (values: string[]): FormFieldOption[] => values.map((v) => ({ value: v, label: v }));
 const YES_NO = opts(["Yes", "No"]);
-const FACILITIES = opts(["Lift", "Security", "Power Backup", "Water Supply", "Fire Safety"]);
+const FACILITIES_LIST = ["Lift", "Security", "Power Backup", "Water Supply", "Fire Safety"];
+const FACILITIES = opts(FACILITIES_LIST);
+/** Joins option lists, dropping repeats (first spelling wins). */
+const mergeLists = (...lists: string[][]): string[] => [...new Set(lists.flat())];
+
+// ── To Buy ──────────────────────────────────────────────────────────────────
+const PROPERTY_AGE: FormFieldOption[] = [
+  { value: "UnderConstruction", label: "Under construction" },
+  { value: "0-1", label: "New (0–1 yr)" },
+  { value: "1-5", label: "1–5 yrs" },
+  { value: "5-10", label: "5–10 yrs" },
+  { value: "10-20", label: "10–20 yrs" },
+  { value: "20+", label: "20+ yrs" },
+];
+const FACING = opts(["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]);
+/** Same saved values everywhere ("Builder") so search can filter one way; GB/SG say "Developer". */
+const listedByOptions = (country: string): FormFieldOption[] => [
+  { value: "Owner", label: "Owner" },
+  { value: "Agent", label: "Agent" },
+  { value: "Builder", label: country === "IN" ? "Builder" : "Developer" },
+];
+/** Ownership values (config/property sale.ownershipTypes) that come with a lease term. */
+const LEASEHOLDS: Record<string, string[]> = {
+  GB: ["Leasehold", "SharedOwnership"],
+  SG: ["Leasehold99", "Leasehold999"],
+};
 
 // ── Shared building blocks ──────────────────────────────────────────────────
 const basics: FormSection = {
@@ -77,20 +102,54 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           title: "Property",
           fields: [
             { key: "propertyType", type: "select", label: "Property Type", required: true, options: c.buy.propertyTypes },
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: listedByOptions(country) },
             { key: "salePrice", type: "currency", label: "Sale Price", required: true, min: 1, width: "half" },
-            { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, width: "half" },
-            { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
-            { key: "carpet_area", type: "number", label: "Carpet Area", unit: area, min: 1, width: "half" },
+            { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, defaultValue: "No", width: "half" },
+            // "Carpet area" is an Indian term; GB and SG listings show one floor area.
+            ...(country === "IN"
+              ? ([
+                  { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
+                  { key: "carpet_area", type: "number", label: "Carpet Area", unit: area, min: 1, width: "half" },
+                ] satisfies FormFieldDef[])
+              : ([{ key: "builtup_area", type: "number", label: "Floor Area", unit: area, min: 1, width: "half" }] satisfies FormFieldDef[])),
             ...bedsBaths({ studio: true }),
-            { key: "age", type: "text", label: "Property Age", placeholder: "e.g. 5 years", width: "half" },
+            { key: "furnishing", type: "select", label: "Furnishing", options: c.rent.furnishingOptions },
+            { key: "floor", type: "select", label: "Floor", options: counts(0, 10, "Ground"), lteField: "totalFloors" },
+            { key: "totalFloors", type: "select", label: "Total Floors", options: counts(1, 10) },
+            { key: "parkingSpaces", type: "select", label: "Parking Spaces", options: COUNT_0_TO_5 },
+            ...(country === "IN"
+              ? ([{ key: "facing", type: "select", label: "Facing", options: FACING }] satisfies FormFieldDef[])
+              : []),
+            { key: "age", type: "select", label: "Property Age", options: PROPERTY_AGE },
             { key: "ownership", type: "select", label: "Ownership", options: c.sale.ownershipTypes },
+            ...(LEASEHOLDS[country]
+              ? ([
+                  {
+                    key: "tenureRemaining",
+                    type: "number",
+                    label: "Tenure Remaining",
+                    unit: "years",
+                    min: 1,
+                    max: 999,
+                    width: "half",
+                    showWhen: { field: "ownership", in: LEASEHOLDS[country] },
+                  },
+                ] satisfies FormFieldDef[])
+              : []),
+            ...(country === "GB"
+              ? ([
+                  { key: "councilTaxBand", type: "select", label: "Council Tax Band", options: opts(["A", "B", "C", "D", "E", "F", "G", "H"]) },
+                  { key: "epcRating", type: "select", label: "EPC Rating", options: opts(["A", "B", "C", "D", "E", "F", "G"]) },
+                ] satisfies FormFieldDef[])
+              : []),
           ],
         },
         {
           title: "Features",
           fields: [
-            { key: "facilities", type: "multiselect", label: "Facilities", options: FACILITIES },
-            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(c.buy.amenities) },
+            // One list: sellers couldn't tell whether Lift or Gym was a
+            // "facility" or an "amenity".
+            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(mergeLists(FACILITIES_LIST, c.buy.amenities)) },
           ],
         },
       ];
@@ -345,7 +404,6 @@ const AREA_MAX = 10_000_000; // sq ft (~230 acres) — covers large land parcels
 const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   name: { maxLength: 100 },
   description: { maxLength: 2000 }, // matches RichTextEditor's counter
-  age: { maxLength: 30 },
   developerName: { maxLength: 100 },
 
   builtup_area: { max: AREA_MAX },
