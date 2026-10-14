@@ -166,6 +166,46 @@ const LAND_APPROVALS: Record<string, FormFieldOption[]> = {
 /** Boundary wall has its own field, so it isn't repeated here. */
 const LAND_FEATURES = opts(["Road Access", "Corner Plot", "Water Connection", "Electricity Connection", "Gated Community"]);
 
+// ── New Projects / Off-Plan ─────────────────────────────────────────────────
+/** New HDB flats are sold by HDB itself, so SG has no HDB option. */
+const NEW_PROJECT_TYPES: Record<string, FormFieldOption[]> = {
+  IN: [
+    { value: "Apartment", label: "Apartment" },
+    { value: "Villa", label: "Villa" },
+    { value: "Plot", label: "Plot" },
+    { value: "RowHouse", label: "Row House" },
+  ],
+  GB: [
+    { value: "Flats", label: "Flats" },
+    { value: "Houses", label: "Houses" },
+    { value: "Mixed", label: "Mixed" },
+  ],
+  SG: [
+    { value: "Condo", label: "Condominium" },
+    { value: "ExecCondo", label: "Executive Condo" },
+    { value: "Landed", label: "Landed" },
+  ],
+};
+const unitConfigOptions = (country: string): FormFieldOption[] =>
+  country === "IN"
+    ? [...["1", "2", "3", "4"].map((n) => ({ value: n, label: `${n} BHK` })), { value: "5", label: "5+ BHK" }, { value: "Plots", label: "Plots" }]
+    : [{ value: "0", label: "Studio" }, ...["1", "2", "3", "4"].map((n) => ({ value: n, label: `${n} bed` })), { value: "5", label: "5+ bed" }];
+const CONSTRUCTION_STATUSES: FormFieldOption[] = [
+  { value: "NewLaunch", label: "New launch" },
+  { value: "UnderConstruction", label: "Under construction" },
+  { value: "ReadyToMove", label: "Ready to move" },
+];
+/** Developers announce a month or quarter, not a day. Hidden when the project is ready to move. */
+const POSSESSION_OPTIONS: FormFieldOption[] = [
+  { value: "6months", label: "Within 6 months" },
+  ...["2026", "2027", "2028", "2029", "2030"].map((y) => ({ value: y, label: y })),
+];
+const PROJECT_EXAMPLES: Record<string, string> = {
+  IN: "e.g. Prestige Lakeside",
+  GB: "e.g. Royal Wharf",
+  SG: "e.g. The Continuum",
+};
+
 // ── Holiday Rental ──────────────────────────────────────────────────────────
 const MIN_STAYS: FormFieldOption[] = [
   { value: "1", label: "1 night" },
@@ -712,11 +752,43 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
         {
           title: "Project",
           fields: [
-            { key: "propertyType", type: "select", label: "Property Type", options: c.buy.propertyTypes },
-            { key: "developerName", type: "text", label: "Developer Name", width: "half" },
-            { key: "possessionDate", type: "date", label: "Possession Date", width: "half" },
-            { key: "salePrice", type: "currency", label: "Starting Price", required: true, min: 1, width: "half" },
-            { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
+            { key: "projectName", type: "text", label: "Project Name", required: true, placeholder: PROJECT_EXAMPLES[country], maxLength: 100, width: "half" },
+            { key: "developerName", type: "text", label: "Developer Name", required: true, width: "half" },
+            // Indian law requires the RERA number on every new-project ad.
+            ...(country === "IN"
+              ? ([
+                  { key: "reraNumber", type: "text", label: "RERA Number", required: true, placeholder: "e.g. P51800012345", maxLength: 50 },
+                ] satisfies FormFieldDef[])
+              : []),
+            { key: "propertyType", type: "select", label: "Property Type", required: true, options: NEW_PROJECT_TYPES[country] ?? [] },
+            { key: "unitConfigs", type: "multiselect", label: "Unit Configurations", required: true, options: unitConfigOptions(country) },
+            { key: "constructionStatus", type: "select", label: "Construction Status", required: true, options: CONSTRUCTION_STATUSES },
+            {
+              key: "possession",
+              type: "select",
+              label: "Possession",
+              options: POSSESSION_OPTIONS,
+              showWhen: { field: "constructionStatus", notIn: ["ReadyToMove"] },
+            },
+            // A project sells many units, so price and area are ranges. Price From
+            // stays `salePrice` so listing prices and search keep working.
+            { key: "salePrice", type: "currency", label: "Price From", required: true, min: 1, width: "half" },
+            { key: "salePriceTo", type: "currency", label: "Price To", min: 1, gteField: "salePrice", width: "half" },
+            { key: "builtup_area", type: "number", label: "Area From", unit: area, min: 1, width: "half" },
+            { key: "areaTo", type: "number", label: "Area To", unit: area, min: 1, gteField: "builtup_area", width: "half" },
+            { key: "totalUnits", type: "number", label: "Total Units", min: 1, max: 100_000, width: "half" },
+            {
+              key: "ownership",
+              type: "select",
+              label: "Tenure",
+              // Power of Attorney sales don't apply to a developer's new units.
+              options: c.sale.ownershipTypes.filter((o) => o.value !== "PowerOfAttorney"),
+            },
+            ...(country === "GB"
+              ? ([
+                  { key: "buyerIncentives", type: "text", label: "Buyer Incentives", placeholder: "e.g. Stamp duty paid", maxLength: 100 },
+                ] satisfies FormFieldDef[])
+              : []),
           ],
         },
         {
@@ -782,6 +854,7 @@ const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   name: { maxLength: 100 },
   description: { maxLength: 2000 }, // matches RichTextEditor's counter
   developerName: { maxLength: 100 },
+  areaTo: { max: AREA_MAX },
   nearbyCollege: { maxLength: 100 },
   nearbyAttraction: { maxLength: 100 },
 
