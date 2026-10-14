@@ -140,6 +140,37 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
 // visible but inert, same as before this change, until a real field is
 // added to capture them.
 
+/**
+ * Rent filters compare the rent per month. Some forms let the seller quote
+ * it another way (Rent Period, saved as `attributes.rentPeriod` — see
+ * posting/form-schema/defaults/property.ts), so the stored `rentPrice` is
+ * converted first: per week × 52 / 12, per year / 12, and per-sq-ft rents
+ * × `builtup_area`. A per-sq-ft rent with no floor area has no monthly
+ * figure and is left out of a price-filtered search.
+ */
+function monthlyRentInRange(min: number | undefined, max: number | undefined): Record<string, unknown> {
+  const monthly = {
+    $switch: {
+      branches: [
+        { case: { $eq: ["$attributes.rentPeriod", "week"] }, then: { $divide: [{ $multiply: ["$rentPrice", 52] }, 12] } },
+        { case: { $eq: ["$attributes.rentPeriod", "year"] }, then: { $divide: ["$rentPrice", 12] } },
+        {
+          case: { $eq: ["$attributes.rentPeriod", "areaYear"] },
+          then: { $divide: [{ $multiply: ["$rentPrice", "$builtup_area"] }, 12] },
+        },
+        { case: { $eq: ["$attributes.rentPeriod", "areaMonth"] }, then: { $multiply: ["$rentPrice", "$builtup_area"] } },
+      ],
+      default: "$rentPrice",
+    },
+  };
+  // $isNumber first: in $expr a missing value sorts below every number, so a
+  // bare $lte would let posts with no rent through.
+  const conditions: unknown[] = [{ $isNumber: monthly }];
+  if (min !== undefined) conditions.push({ $gte: [monthly, min] });
+  if (max !== undefined) conditions.push({ $lte: [monthly, max] });
+  return { $expr: { $and: conditions } };
+}
+
 function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<string, unknown> {
   const map = PROPERTY_SUB_FILTERS[sub];
   if (!map) return {};
@@ -161,10 +192,14 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
     const priceMin = fv.price_min?.[0];
     const priceMax = fv.price_max?.[0];
     if (priceMin || priceMax) {
-      const range: Record<string, number> = {};
-      if (priceMin) range.$gte = Number(priceMin);
-      if (priceMax) range.$lte = Number(priceMax);
-      clauses.push({ [map.priceField]: range });
+      if (map.priceField === "rentPrice") {
+        clauses.push(monthlyRentInRange(priceMin ? Number(priceMin) : undefined, priceMax ? Number(priceMax) : undefined));
+      } else {
+        const range: Record<string, number> = {};
+        if (priceMin) range.$gte = Number(priceMin);
+        if (priceMax) range.$lte = Number(priceMax);
+        clauses.push({ [map.priceField]: range });
+      }
     }
   }
 
