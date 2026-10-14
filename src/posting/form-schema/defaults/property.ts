@@ -782,6 +782,17 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           fields: [
             { key: "projectName", type: "text", label: "Project Name", required: true, placeholder: PROJECT_EXAMPLES[country], maxLength: 100, width: "half" },
             { key: "developerName", type: "text", label: "Developer Name", required: true, width: "half" },
+            {
+              key: "listedBy",
+              type: "select",
+              label: "Listed By",
+              required: true,
+              // Saved as "Builder" like the other forms' Builder / Developer choice.
+              options: [
+                { value: "Builder", label: country === "IN" ? "Builder" : "Developer" },
+                { value: "Agent", label: "Agent" },
+              ],
+            },
             // Indian law requires the RERA number on every new-project ad.
             ...(country === "IN"
               ? ([

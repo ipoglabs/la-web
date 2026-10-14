@@ -221,12 +221,11 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     // captures that has a matching filter here.
     text: { prop_type: "propertyType" },
     choice: { completion: COMPLETION },
+    listedBy: true,
     priceField: "salePrice",
   },
 };
 
-// listed_by on New Projects stays inert: its form records the developer's
-// name instead of asking Listed By.
 
 /**
  * Rent filters compare the rent per month. Some forms let the seller quote
