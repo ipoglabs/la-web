@@ -42,6 +42,25 @@ export interface RangeFilterConfig {
   prefix?: string;
   /** What one price covers, e.g. "per month" — shown in the label and the active-filter chip */
   unit?: string;
+  /** Country code ("in" | "gb" | "sg") — picks the number style (₹ lakh / crore in India) */
+  country?: string;
+}
+
+/**
+ * A price as the filter shows it: "₹50 L" / "₹1.5 Cr" in India (how Indian
+ * buyers read property prices), "£1.5M" from a million elsewhere, else the
+ * full amount with grouping ("£1,250", "₹40,000").
+ */
+export function formatPrice(n: number, filter: Pick<RangeFilterConfig, "prefix" | "country">): string {
+  const prefix = filter.prefix ?? "";
+  const short = (v: number) => Number(v.toFixed(2)).toString();
+  if (filter.country?.toLowerCase() === "in") {
+    if (n >= 10_000_000) return `${prefix}${short(n / 10_000_000)} Cr`;
+    if (n >= 100_000) return `${prefix}${short(n / 100_000)} L`;
+    return `${prefix}${n.toLocaleString("en-IN")}`;
+  }
+  if (n >= 1_000_000) return `${prefix}${short(n / 1_000_000)}M`;
+  return `${prefix}${n.toLocaleString("en-GB")}`;
 }
 
 /** Union of all filter config types used by the listing UI */
@@ -61,6 +80,57 @@ const VEHICLE_STEPS = [500, 1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 3
 const GENERAL_STEPS = [10, 25, 50, 100, 200, 400, 600, 800, 1000, 1500, 2000, 3000, 5000, 7500, 10000, 20000, 50000] as const;
 
 type PriceSpec = { steps: readonly number[] };
+
+// Property prices differ by orders of magnitude between markets (a ₹ rent
+// vs a £ rent) and between rents and sale prices, so property steps are per
+// market and per kind of price. Rents are per month (see priceUnit).
+type PropertyPriceKind = "rent" | "room" | "holiday" | "sale" | "commercialRent";
+const PROPERTY_STEPS: Record<string, Record<PropertyPriceKind, readonly number[]>> = {
+  in: {
+    rent: [2000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000, 300000, 500000],
+    room: [2000, 3000, 4000, 5000, 6000, 8000, 10000, 12000, 15000, 20000, 25000, 30000, 40000, 50000],
+    holiday: [500, 1000, 1500, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 30000, 50000, 100000],
+    sale: [500000, 1000000, 2000000, 3000000, 4000000, 5000000, 7500000, 10000000, 15000000, 20000000, 30000000, 50000000, 100000000, 200000000],
+    commercialRent: [10000, 20000, 30000, 50000, 75000, 100000, 150000, 200000, 300000, 500000, 1000000, 2000000],
+  },
+  gb: {
+    rent: [300, 500, 750, 1000, 1250, 1500, 1750, 2000, 2500, 3000, 4000, 5000, 7500, 10000, 15000],
+    room: [300, 400, 500, 600, 700, 800, 900, 1000, 1250, 1500, 2000, 2500, 3000],
+    holiday: [50, 75, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000],
+    sale: [50000, 75000, 100000, 150000, 200000, 250000, 300000, 400000, 500000, 750000, 1000000, 1500000, 2000000, 3000000, 5000000, 10000000],
+    commercialRent: [500, 1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000, 50000, 100000],
+  },
+  sg: {
+    rent: [1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7500, 10000, 15000, 20000],
+    room: [500, 700, 800, 900, 1000, 1200, 1500, 1800, 2000, 2500, 3000, 4000],
+    // SG holiday lets are monthly-only
+    holiday: [1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7500, 10000, 15000, 20000],
+    sale: [300000, 400000, 500000, 600000, 800000, 1000000, 1250000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 10000000, 20000000],
+    commercialRent: [1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000, 50000, 100000],
+  },
+};
+
+/** Which kind of price a property sub's filter compares; Commercial and Land follow their Rent / Sale toggle. */
+function propertyPriceKind(sub: string, values: Record<string, string[]>): PropertyPriceKind | undefined {
+  switch (sub) {
+    case "to_rent":
+      return "rent";
+    case "room_rental":
+    case "for_students":
+      return "room";
+    case "holiday_rental":
+      return "holiday";
+    case "to_buy":
+    case "new_projects":
+      return "sale";
+    case "commercial":
+      return values.listing_type?.[0] === "sale" ? "sale" : "commercialRent";
+    case "land":
+      return values.land_action?.[0] === "lease" ? "commercialRent" : "sale";
+    default:
+      return undefined;
+  }
+}
 
 // Keyed as "cat/sub" — falls back to GENERAL_STEPS if not found
 const PRICE_SPECS: Record<string, PriceSpec> = {
@@ -152,7 +222,9 @@ export function resolveFilters(
   if (!subCat) return [];
 
   // Inject price range as the first filter — always present for every sub
-  const spec = PRICE_SPECS[`${cat}/${sub}`] ?? { steps: GENERAL_STEPS };
+  const kind = cat === "property" ? propertyPriceKind(sub, opts.values ?? {}) : undefined;
+  const marketSteps = kind ? PROPERTY_STEPS[opts.country?.toLowerCase() ?? ""]?.[kind] : undefined;
+  const spec = marketSteps ? { steps: marketSteps } : PRICE_SPECS[`${cat}/${sub}`] ?? { steps: GENERAL_STEPS };
   const unit = priceUnit(cat, sub, opts.country, opts.values);
   const priceFilter: RangeFilterConfig = {
     type: "range",
@@ -161,6 +233,7 @@ export function resolveFilters(
     steps: spec.steps,
     prefix: opts.currencySymbol ?? "£",
     unit,
+    country: opts.country,
   };
 
   return [priceFilter, ...(subCat.filters as FilterConfig[])];
@@ -271,8 +344,7 @@ export function deriveActiveChips(
       const minVal = filterValues[`${filter.id}_min`]?.[0];
       const maxVal = filterValues[`${filter.id}_max`]?.[0];
       if (!minVal && !maxVal) return;
-      const fmt = (v: string) =>
-        `${filter.prefix ?? ""}${Number(v).toLocaleString()}`;
+      const fmt = (v: string) => formatPrice(Number(v), filter);
       const range = minVal && maxVal
         ? `${fmt(minVal)} \u2013 ${fmt(maxVal)}`
         : minVal ? `${fmt(minVal)}+`

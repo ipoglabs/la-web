@@ -8,7 +8,7 @@ import {
   Outline_CheckCircle_24by24,
 } from "@/components/icons/la-icons";
 import { cn } from "@/lib/utils";
-import { isRangeFilter, type ListingFilterConfig, type RangeFilterConfig } from "@/lib/listing-filters";
+import { formatPrice, isRangeFilter, type ListingFilterConfig, type RangeFilterConfig } from "@/lib/listing-filters";
 
 // ── Range filter row — Min / Max dropdowns ────────────────────────────────────
 
@@ -23,7 +23,7 @@ function RangeFilterRow({ filter, values, onChange }: RangeFilterRowProps) {
   const maxKey = `${filter.id}_max`;
   const minVal = values[minKey]?.[0] ?? "";
   const maxVal = values[maxKey]?.[0] ?? "";
-  const fmt = (n: number) => `${filter.prefix ?? ""}${n.toLocaleString()}`;
+  const fmt = (n: number) => formatPrice(n, filter);
 
   // Min: "No Min" first, then exclude steps >= current max
   const minOptions = [
