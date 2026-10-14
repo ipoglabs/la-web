@@ -127,9 +127,7 @@ export const GBPropertyConfig: PropertyFormConfig = {
       { value: "Commercial",   label: "Commercial" },
       { value: "Other",        label: "Other" },
     ],
-    amenities: [
-      "Parking", "Garden", "Garage", "Balcony",
-      "Central Heating", "Double Glazing", "Pets Allowed", "Security",
-    ],
+    // Kept to 6: seekers tick everything when the list is long.
+    amenities: ["Parking", "Garden", "Garage", "Balcony", "Central Heating", "Double Glazing"],
   },
 };

@@ -129,9 +129,7 @@ export const INPropertyConfig: PropertyFormConfig = {
       { value: "Plot",             label: "Plot / Land" },
       { value: "Other",            label: "Other" },
     ],
-    amenities: [
-      "Parking", "Lift", "Power Backup", "Security", "Water Supply",
-      "Balcony", "Garden", "Gym", "Swimming Pool", "Club House",
-    ],
+    // Kept to 6: seekers tick everything when the list is long.
+    amenities: ["Parking", "Lift", "Power Backup", "Security", "Gym", "Swimming Pool"],
   },
 };

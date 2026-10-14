@@ -206,6 +206,27 @@ const PROJECT_EXAMPLES: Record<string, string> = {
   SG: "e.g. The Continuum",
 };
 
+// ── Wanted ──────────────────────────────────────────────────────────────────
+/** Which config/property wanted.propertyTypes values are rooms, plots and commercial units. */
+const WANTED_TYPE_GROUPS: Record<string, { room: string[]; plot: string[]; commercial: string[] }> = {
+  IN: { room: ["RoomPG"], plot: ["Plot"], commercial: ["Commercial"] },
+  GB: { room: ["Room"], plot: [], commercial: ["Commercial"] },
+  SG: { room: ["Room"], plot: [], commercial: ["Commercial"] },
+};
+const MOVE_IN_BY: FormFieldOption[] = [
+  { value: "Immediately", label: "Immediately" },
+  { value: "1month", label: "Within 1 month" },
+  { value: "1-3months", label: "1–3 months" },
+  { value: "3-6months", label: "3–6 months" },
+  { value: "Flexible", label: "Flexible" },
+];
+const wantedFurnishing = (country: string): FormFieldOption[] => [
+  { value: "Any", label: "Any" },
+  { value: "Furnished", label: "Furnished" },
+  { value: "Semi", label: country === "IN" ? "Semi-Furnished" : country === "GB" ? "Part Furnished" : "Partially Furnished" },
+  { value: "Unfurnished", label: "Unfurnished" },
+];
+
 // ── Holiday Rental ──────────────────────────────────────────────────────────
 const MIN_STAYS: FormFieldOption[] = [
   { value: "1", label: "1 night" },
@@ -797,17 +818,85 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
         },
       ];
 
-    case "Wanted":
+    case "Wanted": {
+      const toBuy = { field: "wantTo", in: ["Buy"] };
+      const toRent = { field: "wantTo", in: ["Rent"] };
+      const types = WANTED_TYPE_GROUPS[country] ?? { room: [], plot: [], commercial: [] };
+      // Room, plot and commercial seekers can't answer bed counts.
+      const hasBeds = { field: "propertyType", notIn: [...types.room, ...types.plot, ...types.commercial] };
       return [
         basics,
         {
           title: "Looking For",
           fields: [
+            { key: "wantTo", type: "select", label: "Want To", required: true, options: opts(["Buy", "Rent"]) },
             { key: "propertyType", type: "select", label: "Looking For", required: true, options: c.wanted.propertyTypes },
-            { key: "minBudget", type: "currency", label: "Min Budget", min: 1, width: "half" },
-            { key: "maxBudget", type: "currency", label: "Max Budget", min: 1, gteField: "minBudget", width: "half" },
-            { key: "minArea", type: "number", label: "Min Area", unit: area, min: 1 },
-            ...bedsBaths(),
+            // Rent budgets are monthly, so they get their own (labelled) fields.
+            { key: "minBudget", type: "currency", label: "Min Budget", min: 1, width: "half", showWhen: toBuy },
+            { key: "maxBudget", type: "currency", label: "Max Budget", required: true, min: 1, gteField: "minBudget", width: "half", showWhen: toBuy },
+            { key: "minRentBudget", type: "currency", label: "Min Budget (per month)", min: 1, width: "half", showWhen: toRent },
+            {
+              key: "maxRentBudget",
+              type: "currency",
+              label: "Max Budget (per month)",
+              required: true,
+              min: 1,
+              gteField: "minRentBudget",
+              width: "half",
+              showWhen: toRent,
+            },
+            // No area for a room; land is asked for in the market's own units.
+            {
+              key: "minArea",
+              type: "number",
+              label: "Min Area",
+              unit: area,
+              min: 1,
+              showWhen: { field: "propertyType", notIn: [...types.room, ...types.plot] },
+            },
+            ...(types.plot.length
+              ? ([
+                  { key: "minPlotArea", type: "number", label: "Min Plot Area", min: 0.01, width: "half", showWhen: { field: "propertyType", in: types.plot } },
+                  {
+                    key: "plotAreaUnit",
+                    type: "select",
+                    label: "Area Unit",
+                    options: LAND_AREA_UNITS[country] ?? [],
+                    width: "half",
+                    showWhen: { field: "propertyType", in: types.plot },
+                  },
+                ] satisfies FormFieldDef[])
+              : []),
+            ...bedsBaths({ studio: true }).map((f) => ({ ...f, showWhen: hasBeds })),
+            { key: "moveInBy", type: "select", label: "Move-in By", options: MOVE_IN_BY },
+            { key: "furnishing", type: "select", label: "Furnishing", options: wantedFurnishing(country), showWhen: toRent },
+            ...(country === "GB"
+              ? []
+              : ([
+                  {
+                    key: "tenantType",
+                    type: "select",
+                    label: "Tenant Type",
+                    options: [
+                      { value: "Family", label: "Family" },
+                      { value: "Bachelors", label: "Bachelor(s)" },
+                      { value: "WorkingProfessional", label: "Working Professional" },
+                      { value: "Student", label: "Student" },
+                      { value: "Couple", label: "Couple" },
+                    ],
+                    showWhen: toRent,
+                  },
+                ] satisfies FormFieldDef[])),
+            {
+              key: "pets",
+              type: "select",
+              label: "Pets",
+              options: [
+                { value: "None", label: "No pets" },
+                { value: "Have", label: "Have pets" },
+              ],
+              showWhen: toRent,
+            },
             {
               key: "preferred_locations",
               type: "tags",
@@ -817,6 +906,8 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
               format: "place",
               maxItems: 5,
             },
+            // Seekers often want owners only.
+            { key: "agentsMayContact", type: "select", label: "Agents May Contact", options: YES_NO },
           ],
         },
         {
@@ -824,6 +915,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           fields: [{ key: "amenities", type: "multiselect", label: "Preferred Amenities", options: opts(c.wanted.amenities) }],
         },
       ];
+    }
 
     default:
       return null;
@@ -862,6 +954,7 @@ const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   carpet_area: { max: AREA_MAX, lteField: "builtup_area" },
   plot_area: { max: AREA_MAX },
   minArea: { max: AREA_MAX },
+  minPlotArea: { max: AREA_MAX },
 };
 
 function applyLimits(field: FormFieldDef): FormFieldDef {

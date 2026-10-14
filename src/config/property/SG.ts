@@ -122,9 +122,7 @@ export const SGPropertyConfig: PropertyFormConfig = {
       { value: "Commercial", label: "Commercial" },
       { value: "Other",      label: "Other" },
     ],
-    amenities: [
-      "Parking", "Swimming Pool", "Gym", "Security",
-      "Near MRT", "Balcony", "BBQ Pit", "Garden",
-    ],
+    // Kept to 6: seekers tick everything when the list is long.
+    amenities: ["Parking", "Swimming Pool", "Gym", "Security", "Near MRT", "Balcony"],
   },
 };
