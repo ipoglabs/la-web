@@ -93,8 +93,20 @@ export function useListingFilters(
   const hasActiveFilters = activeChips.length > 0;
   const activeCount = activeChips.length;
 
-  // ── Draft state — local, for mobile sheet ────────────────────────────────
-  const [draftValues, setDraftValues] = useState<Record<string, string[]>>({});
+  // ── Draft state — what the filter panels show before Apply ────────────────
+  // Starts as, and re-syncs to, the applied (URL) filters whenever they
+  // change — page load, chip removal, Apply, back/forward — so the desktop
+  // panel and the mobile sheet never show stale or empty selections.
+  const cloneValues = (v: Record<string, string[]>) =>
+    Object.fromEntries(Object.entries(v).map(([k, vals]) => [k, [...vals]]));
+  const committedKey = searchParams.toString();
+  const [draftValues, setDraftValues] = useState<Record<string, string[]>>(() => cloneValues(filterValues));
+  const [syncedKey, setSyncedKey] = useState(committedKey);
+  if (syncedKey !== committedKey) {
+    // Adjusting state during render (React's pattern for deriving from props)
+    setSyncedKey(committedKey);
+    setDraftValues(cloneValues(filterValues));
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   // Preserve non-filter params (q, sort) across filter changes.
@@ -151,12 +163,8 @@ export function useListingFilters(
 
   // ── Mobile: draft management ──────────────────────────────────────────────
   const openDraft = useCallback(() => {
-    // Deep copy current committed values into draft
-    setDraftValues(
-      Object.fromEntries(
-        Object.entries(filterValues).map(([k, v]) => [k, [...v]])
-      )
-    );
+    // Discard unapplied edits: start from the committed values
+    setDraftValues(cloneValues(filterValues));
   }, [filterValues]);
 
   const setDraftValue = useCallback((filterId: string, values: string[]) => {
