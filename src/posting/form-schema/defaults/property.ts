@@ -228,6 +228,12 @@ const wantedFurnishing = (country: string): FormFieldOption[] => [
 ];
 
 // ── Holiday Rental ──────────────────────────────────────────────────────────
+/** Holiday lets are often run by a property manager rather than an agent. */
+const HOLIDAY_LISTED_BY: FormFieldOption[] = [
+  { value: "Owner", label: "Owner" },
+  { value: "Agent", label: "Agent" },
+  { value: "Manager", label: "Property Manager" },
+];
 const MIN_STAYS: FormFieldOption[] = [
   { value: "1", label: "1 night" },
   { value: "2", label: "2 nights" },
@@ -593,6 +599,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           title: "Property",
           fields: [
             { key: "holidayType", type: "select", label: "Holiday Property Type", required: true, options: c.holiday.propertyTypes },
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: HOLIDAY_LISTED_BY },
             { key: "guests", type: "select", label: "Guests", options: counts(1, 16) },
             { key: "bedrooms", type: "select", label: "Bedrooms", options: COUNT_1_TO_5 },
             BEDS,

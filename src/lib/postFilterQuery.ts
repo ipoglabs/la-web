@@ -81,10 +81,19 @@ interface SubFilterMap {
   };
 }
 
-// listed_by option -> saved Listed By value. "Builder" is shown as
-// "Developer" in GB / SG but saved as "Builder" everywhere. "Helping Hand"
-// and "Property Manager" have no matching Listed By choice on any form.
-const LISTED_BY: Record<string, string> = { owner: "Owner", agent: "Agent", builder: "Builder", developer: "Builder" };
+// listed_by option -> saved Listed By value (each sub's options mirror its
+// post form). "Builder" is shown as "Developer" in GB / SG but saved as
+// "Builder" everywhere.
+const LISTED_BY: Record<string, string> = {
+  owner: "Owner",
+  agent: "Agent",
+  builder: "Builder",
+  developer: "Builder",
+  tenant: "Tenant",
+  operator: "Operator",
+  university: "University",
+  manager: "Manager",
+};
 
 // Holiday Rental: Minimum Stay is saved in nights ("1", "2", "3", "7", "30",
 // "90"). A stay of a weekend / week / month fits listings whose minimum is
@@ -177,6 +186,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     text: { prop_type: "propertyType" },
     bucket: { guests: { field: "guests", table: GUESTS_TO_COUNT } },
     choice: { stay_length: STAY_LENGTH },
+    listedBy: true,
     // The nightly rate where a listing has one. SG holiday listings are
     // monthly-only (no nightly rate), and search is scoped to one country,
     // so in SG the range applies to the monthly rate instead.
@@ -215,8 +225,8 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
   },
 };
 
-// listed_by on Holiday Rental and New Projects stays inert: neither form
-// asks Listed By (New Projects records the developer's name instead).
+// listed_by on New Projects stays inert: its form records the developer's
+// name instead of asking Listed By.
 
 /**
  * Rent filters compare the rent per month. Some forms let the seller quote
