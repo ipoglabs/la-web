@@ -136,7 +136,7 @@ function propertyPriceKind(sub: string, values: Record<string, string[]>): Prope
 // Every other category: one of four step sets per market, by how much its
 // things usually cost. Jobs filter on the salary per month (see
 // monthlySalaryInRange in lib/postFilterQuery.ts).
-type CategoryPriceTier = "small" | "goods" | "big" | "salary" | "hourly";
+type CategoryPriceTier = "small" | "goods" | "big" | "salary" | "hourly" | "stipend" | "budget";
 const CATEGORY_STEPS: Record<string, Record<CategoryPriceTier, readonly number[]>> = {
   in: {
     small: [100, 250, 500, 1000, 2000, 3000, 5000, 7500, 10000, 20000, 50000],
@@ -144,6 +144,8 @@ const CATEGORY_STEPS: Record<string, Record<CategoryPriceTier, readonly number[]
     big: [50000, 100000, 200000, 300000, 500000, 750000, 1000000, 1500000, 2000000, 3000000, 5000000, 10000000],
     salary: [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000, 300000, 500000, 1000000],
     hourly: [50, 75, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000],
+    stipend: [2000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000],
+    budget: [1000, 2500, 5000, 10000, 25000, 50000, 75000, 100000, 200000, 500000, 1000000],
   },
   gb: {
     small: [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000],
@@ -151,6 +153,8 @@ const CATEGORY_STEPS: Record<string, Record<CategoryPriceTier, readonly number[]
     big: [500, 1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000, 50000, 100000],
     salary: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7500, 10000, 15000],
     hourly: [5, 8, 10, 11, 12, 13, 14, 15, 18, 20, 25, 30, 40, 50, 75, 100],
+    stipend: [200, 500, 750, 1000, 1250, 1500, 1750, 2000, 2500, 3000],
+    budget: [50, 100, 250, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000],
   },
   sg: {
     small: [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000],
@@ -158,6 +162,8 @@ const CATEGORY_STEPS: Record<string, Record<CategoryPriceTier, readonly number[]
     big: [5000, 10000, 20000, 30000, 50000, 75000, 100000, 150000, 200000, 300000, 500000],
     salary: [500, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 15000, 20000, 30000],
     hourly: [5, 8, 10, 12, 15, 18, 20, 25, 30, 40, 50, 75, 100],
+    stipend: [200, 300, 500, 800, 1000, 1200, 1500, 2000, 2500, 3000, 4000],
+    budget: [50, 100, 250, 500, 1000, 2000, 3000, 5000, 10000, 20000, 50000],
   },
 };
 
@@ -174,11 +180,13 @@ const CATEGORY_TIER: Record<string, CategoryPriceTier> = {
 /** Subs priced unlike their category. */
 const SUB_TIER: Record<string, CategoryPriceTier> = {
   "jobs/part_time": "hourly",
+  "jobs/internship": "stipend",
   "vehicles/parts_accessories": "goods",
   "business/biz_for_sale": "big",
 };
 
-function categoryTier(cat: string, sub: string): CategoryPriceTier {
+function categoryTier(cat: string, sub: string, values: Record<string, string[]>): CategoryPriceTier {
+  if (cat === "jobs" && sub === "freelance") return values.budget_type?.[0] === "hourly" ? "hourly" : "budget";
   return SUB_TIER[`${cat}/${sub}`] ?? CATEGORY_TIER[cat] ?? "goods";
 }
 
@@ -229,7 +237,11 @@ export function priceUnit(
   country: string | undefined,
   values: Record<string, string[]> = {}
 ): string | undefined {
-  if (cat === "jobs") return sub === "part_time" ? "per hour" : "per month";
+  if (cat === "jobs") {
+    if (sub === "part_time") return "per hour";
+    if (sub === "freelance") return values.budget_type?.[0] === "hourly" ? "per hour" : undefined;
+    return "per month"; // salaries and internship stipends
+  }
   if (cat !== "property") return undefined;
   switch (sub) {
     case "to_rent":
@@ -245,6 +257,12 @@ export function priceUnit(
     default:
       return undefined;
   }
+}
+
+/** "Salary per month", "Pay per hour", "Stipend per month", "Budget" / "Budget per hour". */
+function jobsPriceLabel(sub: string, unit: string | undefined): string {
+  const word = sub === "part_time" ? "Pay" : sub === "internship" ? "Stipend" : sub === "freelance" ? "Budget" : "Salary";
+  return unit ? `${word} ${unit}` : word;
 }
 
 // ── Core resolver ─────────────────────────────────────────────────────────────
@@ -280,13 +298,13 @@ export function resolveFilters(
   const kind = cat === "property" ? propertyPriceKind(sub, opts.values ?? {}) : undefined;
   const marketSteps = kind
     ? PROPERTY_STEPS[market]?.[kind]
-    : cat !== "property" ? CATEGORY_STEPS[market]?.[categoryTier(cat, sub)] : undefined;
+    : cat !== "property" ? CATEGORY_STEPS[market]?.[categoryTier(cat, sub, opts.values ?? {})] : undefined;
   const spec = marketSteps ? { steps: marketSteps } : PRICE_SPECS[`${cat}/${sub}`] ?? { steps: GENERAL_STEPS };
   const unit = priceUnit(cat, sub, opts.country, opts.values);
   const priceFilter: RangeFilterConfig = {
     type: "range",
     id: "price",
-    label: cat === "jobs" ? `${sub === "part_time" ? "Pay" : "Salary"} ${unit}` : unit ? `Price ${unit}` : "Price",
+    label: cat === "jobs" ? jobsPriceLabel(sub, unit) : unit ? `Price ${unit}` : "Price",
     steps: spec.steps,
     prefix: opts.currencySymbol ?? "£",
     unit,

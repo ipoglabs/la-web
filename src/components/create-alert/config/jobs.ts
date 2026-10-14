@@ -40,6 +40,18 @@ export const jobs: MainCategory = {
             { label: "Project", value: "project" },
           ],
         },
+        {
+          // Picks whether the price range compares fixed or hourly budgets
+          id: "budget_type",
+          label: "Budget Type",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",    value: "any"    },
+            { label: "Fixed",  value: "fixed"  },
+            { label: "Hourly", value: "hourly" },
+          ],
+        },
         workArrangement,
       ],
     },

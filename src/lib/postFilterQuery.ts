@@ -331,7 +331,35 @@ const CATEGORY_PRICE_FIELD: Record<string, string | null> = {
 // so it's compared per hour as entered.
 const SUB_PRICE_FIELD: Record<string, string> = {
   "jobs/part_time": "hourlyRate",
+  "jobs/freelance": "budgetAmount",
+  "jobs/internship": "stipendAmount",
 };
+
+/** A price range on `field`, also matching older seed posts that saved their pay as `salary` instead. */
+function rangeWithSalaryFallback(field: string, range: Record<string, number>): Record<string, unknown> {
+  return { $or: [{ [field]: range }, { [field]: { $exists: false }, salary: range }] };
+}
+
+/** Jobs subs whose pay fields need more than a plain range. */
+function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record<string, number> | null): Record<string, unknown> | null {
+  const clauses: Record<string, unknown>[] = [];
+  if (sub === "freelance") {
+    // Freelance budgets are fixed or hourly (Budget Type); the toggle keeps the range comparing like with like.
+    const type = fv.budget_type?.[0];
+    if (type === "fixed") clauses.push({ budgetType: { $ne: "hourly" } });
+    if (type === "hourly") clauses.push({ budgetType: "hourly" });
+    if (range) clauses.push(rangeWithSalaryFallback("budgetAmount", range));
+  } else if (sub === "internship") {
+    const stipend = fv.stipend?.[0];
+    if (stipend === "paid") clauses.push({ $or: [{ stipendType: { $in: ["stipend", "salary"] } }, { stipendAmount: { $gt: 0 } }] });
+    if (stipend === "unpaid") clauses.push({ stipendType: "unpaid" });
+    if (range) clauses.push(rangeWithSalaryFallback("stipendAmount", range));
+  } else {
+    return null;
+  }
+  if (clauses.length === 0) return {};
+  return clauses.length === 1 ? clauses[0] : { $and: clauses };
+}
 
 /** Whether a category / sub's search has a working price filter (the listings UI hides it otherwise). */
 export function hasPriceFilter(category: string, sub: string): boolean {
@@ -351,6 +379,15 @@ export function buildFilterQuery(
     (CATEGORY_PRICE_FIELD[category] === undefined ? "salePrice" : CATEGORY_PRICE_FIELD[category]);
   const min = filterValues.price_min?.[0];
   const max = filterValues.price_max?.[0];
+
+  if (category === "jobs") {
+    const range: Record<string, number> = {};
+    if (min) range.$gte = Number(min);
+    if (max) range.$lte = Number(max);
+    const jobs = buildJobsQuery(sub, filterValues, min || max ? range : null);
+    if (jobs) return jobs;
+  }
+
   if (!field || (!min && !max)) return {};
   if (field === "salary") return monthlySalaryInRange(min ? Number(min) : undefined, max ? Number(max) : undefined);
   const range: Record<string, number> = {};
