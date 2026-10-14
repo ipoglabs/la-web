@@ -59,10 +59,11 @@ export const GBPropertyConfig: PropertyFormConfig = {
   },
 
   roomRental: {
-    roomTypes: ["Single Room", "Double Room", "En-Suite Room", "Studio", "Other"],
+    // Rooms only: whole places (PG / hostel, studio, entire unit) have their own subcategories.
+    roomTypes: ["Single Room", "Double Room", "En-Suite Room", "Other"],
     amenities: [
-      "WiFi", "Bills Included", "Central Heating", "Kitchen Access",
-      "Washing Machine", "TV", "Parking", "Garden", "Pets Allowed",
+      "WiFi", "Central Heating", "Kitchen Access",
+      "Washing Machine", "TV", "Parking", "Garden",
     ],
   },
 

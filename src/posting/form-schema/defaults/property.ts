@@ -65,7 +65,12 @@ const studentListedByOptions = (country: string): FormFieldOption[] => [
   },
   { value: "University", label: "University" },
 ];
-/** Same saved values as To Rent's Bills Included, worded for students. */
+/** Private vs shared bathroom (For Students, Room Rental). */
+const bathroomOptions = (country: string): FormFieldOption[] => [
+  { value: "Attached", label: country === "IN" ? "Attached" : "En-suite" },
+  { value: "Shared", label: "Shared" },
+];
+/** Same saved values as To Rent's Bills Included, worded for students and rooms. */
 const STUDENT_BILLS: FormFieldOption[] = [
   { value: "Yes", label: "All bills" },
   { value: "Some", label: "Some bills" },
@@ -90,6 +95,32 @@ const COLLEGE_EXAMPLES: Record<string, string> = {
   GB: "e.g. University of Manchester",
   SG: "e.g. NUS, NTU",
 };
+// ── Room Rental ─────────────────────────────────────────────────────────────
+/** The building the room is in — HDB and condo rooms price very differently in SG. */
+const ROOM_PROPERTY_TYPES: Record<string, FormFieldOption[]> = {
+  IN: opts(["Apartment", "House"]),
+  GB: opts(["Flat", "House"]),
+  SG: [
+    { value: "HDB", label: "HDB" },
+    { value: "Condo", label: "Condo" },
+    { value: "Landed", label: "Landed" },
+  ],
+};
+/** Room ads are often posted by a flatmate, not the owner. */
+const ROOM_LISTED_BY: FormFieldOption[] = [
+  { value: "Owner", label: "Owner / Live-in landlord" },
+  { value: "Tenant", label: "Current tenant" },
+  { value: "Agent", label: "Agent" },
+];
+/** Day counts, like Holiday Rental's Minimum Stay. */
+const ROOM_MIN_STAYS: FormFieldOption[] = [
+  { value: "30", label: "1 month" },
+  { value: "90", label: "3 months" },
+  { value: "180", label: "6 months" },
+  { value: "365", label: "12 months" },
+  { value: "flexible", label: "Flexible" },
+];
+
 // ── Holiday Rental ──────────────────────────────────────────────────────────
 const MIN_STAYS: FormFieldOption[] = [
   { value: "1", label: "1 night" },
@@ -411,10 +442,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
               key: "bathroom",
               type: "select",
               label: "Bathroom",
-              options: [
-                { value: "Attached", label: country === "IN" ? "Attached" : "En-suite" },
-                { value: "Shared", label: "Shared" },
-              ],
+              options: bathroomOptions(country),
             },
             { key: "occupancy", type: "select", label: "Occupancy", options: c.student.occupancyTypes },
             {
@@ -532,16 +560,48 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           title: "Room",
           fields: [
             { key: "type", type: "select", label: "Room Type", required: true, options: opts(c.roomRental.roomTypes) },
-            { key: "rent", type: "currency", label: "Rent", required: true, min: 1, width: "half" },
-            { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+            { key: "propertyType", type: "select", label: "Property Type", options: ROOM_PROPERTY_TYPES[country] ?? [] },
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: ROOM_LISTED_BY },
+            // `rentPrice`, like the other rent forms, so search filters and sorts all rents together.
+            ...(country === "GB"
+              ? ([
+                  { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "half" },
+                  { key: "rentPeriod", type: "select", label: "Rent Period", required: true, options: RENT_PERIODS, width: "half" },
+                  { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+                ] satisfies FormFieldDef[])
+              : ([
+                  { key: "rentPrice", type: "currency", label: "Rent", unit: "per month", required: true, min: 1, width: "half" },
+                  { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+                ] satisfies FormFieldDef[])),
+            { key: "billsIncluded", type: "select", label: "Bills Included", options: STUDENT_BILLS },
+            { key: "bathroom", type: "select", label: "Bathroom", options: bathroomOptions(country) },
+            { key: "furnishing", type: "select", label: "Furnishing", options: opts(["Furnished", "Unfurnished"]) },
+            { key: "flatmates", type: "select", label: "Current Flatmates", options: counts(0, 5) },
             { key: "available_from", type: "date", label: "Available From", required: true, width: "half" },
+            {
+              key: "minStay",
+              type: "select",
+              label: "Minimum Stay",
+              options: ROOM_MIN_STAYS,
+              ...(country === "SG" ? { hint: "Rooms in HDB flats must be let for at least 6 months." } : {}),
+            },
             {
               key: "preferred_tenants",
               type: "select",
               label: "Preferred Tenants",
               options: opts(["Any", "Students", "Working Professionals", "Family"]),
             },
-            { key: "gender_pref", type: "select", label: "Gender Preference", options: opts(["Any", "Male", "Female"]) },
+            {
+              key: "gender_pref",
+              type: "select",
+              label: "Gender Preference",
+              options: [
+                { value: "Any", label: "Any" },
+                { value: "Male", label: "Male only" },
+                { value: "Female", label: "Female only" },
+                { value: "Couples", label: "Couples welcome" },
+              ],
+            },
           ],
         },
         {

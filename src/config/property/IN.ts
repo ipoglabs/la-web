@@ -57,9 +57,10 @@ export const INPropertyConfig: PropertyFormConfig = {
   },
 
   roomRental: {
-    roomTypes: ["Single Room", "Shared Room", "PG", "Hostel", "Other"],
+    // Rooms only: whole places (PG / hostel, studio, entire unit) have their own subcategories.
+    roomTypes: ["Single Room", "Shared Room", "Other"],
     amenities: [
-      "WiFi", "Attached Bathroom", "Air Conditioning", "Kitchen Access",
+      "WiFi", "Air Conditioning", "Kitchen Access",
       "Washing Machine", "TV/Smart TV", "Balcony", "Parking",
       "Housekeeping", "Meals Included",
     ],

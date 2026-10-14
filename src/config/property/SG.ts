@@ -56,10 +56,11 @@ export const SGPropertyConfig: PropertyFormConfig = {
   },
 
   roomRental: {
-    roomTypes: ["Master Room", "Common Room", "Single Room", "Entire Unit", "Other"],
+    // Rooms only: whole places (PG / hostel, studio, entire unit) have their own subcategories.
+    roomTypes: ["Master Room", "Common Room", "Single Room", "Other"],
     amenities: [
       "WiFi", "Air Conditioning", "Kitchen Access", "Washing Machine",
-      "TV", "Parking", "Near MRT", "Cooking Allowed",
+      "TV", "Parking", "Near MRT",
     ],
   },
 
