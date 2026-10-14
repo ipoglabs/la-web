@@ -326,6 +326,12 @@ const CATEGORY_PRICE_FIELD: Record<string, string | null> = {
   free_giveaway: null,
   community: null,
 };
+// Subs priced on another field than their category. Part Time jobs ask an
+// hourly rate; part-time hours vary too much to turn it into a monthly figure,
+// so it's compared per hour as entered.
+const SUB_PRICE_FIELD: Record<string, string> = {
+  "jobs/part_time": "hourlyRate",
+};
 
 /** Whether a category / sub's search has a working price filter (the listings UI hides it otherwise). */
 export function hasPriceFilter(category: string, sub: string): boolean {
@@ -340,7 +346,9 @@ export function buildFilterQuery(
 ): Record<string, unknown> {
   if (category === "property") return buildPropertyQuery(sub, filterValues);
 
-  const field = CATEGORY_PRICE_FIELD[category] === undefined ? "salePrice" : CATEGORY_PRICE_FIELD[category];
+  const field =
+    SUB_PRICE_FIELD[`${category}/${sub}`] ??
+    (CATEGORY_PRICE_FIELD[category] === undefined ? "salePrice" : CATEGORY_PRICE_FIELD[category]);
   const min = filterValues.price_min?.[0];
   const max = filterValues.price_max?.[0];
   if (!field || (!min && !max)) return {};
