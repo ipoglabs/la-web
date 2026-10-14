@@ -62,15 +62,71 @@ interface SubFilterMap {
   text?: Record<string, string>;
   /** filter id -> { Post numeric field, bucket table } */
   bucket?: Record<string, { field: string; table: Record<string, unknown> }>;
+  /** filter id -> option value -> Mongo clause; several picked = OR, options with no clause are ignored */
+  choice?: Record<string, Record<string, () => Record<string, unknown>>>;
+  /** The sub's post form asks Listed By (`attributes.listedBy`), so the listed_by filter applies */
+  listedBy?: boolean;
   /** Post field the injected price_min/price_max filter range-queries — omitted where no single reliable price field exists for the sub */
   priceField?: string;
   /**
-   * Filter id of a Rent / Sale toggle backed by `attributes.listingFor`
-   * ("Rent" | "Sale"). With it, priceField is the rent and sale listings
-   * are priced on `salePrice` instead.
+   * A rent-or-sale toggle backed by `attributes.listingFor`. `priceField`
+   * is then the rent, and sale listings are priced on `salePrice`. Posts
+   * from before the field existed count as `legacy`.
    */
-  listingForFilter?: string;
+  listingFor?: {
+    filterId: string;
+    rent: { option: string; stored: string };
+    sale: { option: string; stored: string };
+    legacy: "rent" | "sale";
+  };
 }
+
+// listed_by option -> saved Listed By value. "Builder" is shown as
+// "Developer" in GB / SG but saved as "Builder" everywhere. "Helping Hand"
+// and "Property Manager" have no matching Listed By choice on any form.
+const LISTED_BY: Record<string, string> = { owner: "Owner", agent: "Agent", builder: "Builder", developer: "Builder" };
+
+// Holiday Rental: Minimum Stay is saved in nights ("1", "2", "3", "7", "30",
+// "90"). A stay of a weekend / week / month fits listings whose minimum is
+// no longer. SG listings are monthly-only (no nightly rate, no Minimum
+// Stay), so they fit only a monthly stay.
+const nightly = { rateNightly: { $exists: true, $ne: null } };
+const minStayUpTo = (nights: string[]) => ({
+  $and: [nightly, { $or: [{ "attributes.minStay": { $in: nights } }, { "attributes.minStay": { $exists: false } }] }],
+});
+const STAY_LENGTH: Record<string, () => Record<string, unknown>> = {
+  weekend: () => minStayUpTo(["1", "2"]),
+  weekly: () => minStayUpTo(["1", "2", "3", "7"]),
+  monthly: () => ({ $or: [minStayUpTo(["1", "2", "3", "7", "30"]), { rateNightly: { $exists: false } }, { rateNightly: null }] }),
+};
+
+// New Projects: Possession is "6months" or a year, read as "by the end of
+// that year" and bucketed by how far that is from today.
+function possessionWithin(minMonths: number, maxMonths: number): Record<string, unknown> {
+  const now = new Date();
+  const values: string[] = minMonths === 0 ? ["6months"] : [];
+  for (let year = now.getFullYear(); year <= now.getFullYear() + 15; year++) {
+    const monthsAway = (year - now.getFullYear()) * 12 + (12 - (now.getMonth() + 1));
+    if (monthsAway >= minMonths && monthsAway < maxMonths) values.push(String(year));
+  }
+  return { "attributes.constructionStatus": { $ne: "ReadyToMove" }, "attributes.possession": { $in: values } };
+}
+const COMPLETION: Record<string, () => Record<string, unknown>> = {
+  ready: () => ({ "attributes.constructionStatus": "ReadyToMove" }),
+  sub1y: () => possessionWithin(0, 12),
+  "1to2y": () => possessionWithin(12, 24),
+  "2yup": () => possessionWithin(24, Infinity),
+};
+
+// Wanted: buy / rent come from Want To; room / commercial / land from the
+// Looking For type (config/property wanted.propertyTypes).
+const WANTED_TYPE: Record<string, () => Record<string, unknown>> = {
+  rent: () => ({ "attributes.wantTo": "Rent" }),
+  buy: () => ({ "attributes.wantTo": "Buy" }),
+  room: () => ({ propertyType: { $in: ["RoomPG", "Room"] } }),
+  commercial: () => ({ propertyType: "Commercial" }),
+  land: () => ({ propertyType: "Plot" }),
+};
 
 const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
   to_rent: {
@@ -80,6 +136,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
       floor_level: { field: "floor", table: FLOOR_LEVEL_TO_FLOOR },
     },
     priceField: "rentPrice",
+    listedBy: true,
   },
   to_buy: {
     // tenure -> ownership: Post has an `ownership` field (posting/config's
@@ -92,24 +149,34 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
       floor_level: { field: "floor", table: FLOOR_LEVEL_TO_FLOOR },
     },
     priceField: "salePrice",
+    listedBy: true,
   },
   room_rental: {
     text: { room_type: "propertyType", furnishing: "furnishing", gender: "gender_pref" },
     priceField: "rentPrice",
+    listedBy: true,
   },
   for_students: {
     text: { room_type: "propertyType", furnishing: "furnishing", gender: "gender_pref" },
     priceField: "rentPrice",
+    listedBy: true,
   },
   commercial: {
     text: { commercial_type: "propertyType" },
     priceField: "rentPrice",
+    listedBy: true,
     // Listing For on the Commercial post form (since 2026-10-14).
-    listingForFilter: "listing_type",
+    listingFor: {
+      filterId: "listing_type",
+      rent: { option: "rent", stored: "Rent" },
+      sale: { option: "sale", stored: "Sale" },
+      legacy: "rent",
+    },
   },
   holiday_rental: {
     text: { prop_type: "propertyType" },
     bucket: { guests: { field: "guests", table: GUESTS_TO_COUNT } },
+    choice: { stay_length: STAY_LENGTH },
     // Holiday posts store rateNightly (confirmed populated on every sample)
     // — rateWeekly/rateMonthly also exist on Post but the generic
     // price_min/price_max filter has no way to know which rate a seller
@@ -121,10 +188,19 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     // mixed) match real propertyType values seen on land posts directly
     // ("RESIDENTIAL", "AGRICULTURAL", ...).
     text: { land_type: "propertyType" },
-    priceField: "salePrice",
+    priceField: "rentPrice",
+    listedBy: true,
+    // Listing For on the Land post form (since 2026-10-14); older land posts were sale-only.
+    listingFor: {
+      filterId: "land_action",
+      rent: { option: "lease", stored: "Lease" },
+      sale: { option: "sale", stored: "Sale" },
+      legacy: "sale",
+    },
   },
   wanted: {
     text: { prop_type: "propertyType" },
+    choice: { wanted_type: WANTED_TYPE },
     // No reliable single budget field: minBudget/maxBudget describe the
     // buyer's own acceptable range, which the generic price_min/price_max
     // filter would need to overlap-match rather than $gte/$lte a single
@@ -135,15 +211,13 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     // posting/config/property.ts's "new projects / off-plan" FieldSpec
     // captures that has a matching filter here.
     text: { prop_type: "propertyType" },
+    choice: { completion: COMPLETION },
     priceField: "salePrice",
   },
 };
 
-// listed_by (every sub), land_action (land), stay_length (holiday_rental),
-// completion (new_projects), wanted_type (wanted): no backing Post field
-// exists anywhere in the schema for these — those filter toggles stay
-// visible but inert, same as before this change, until a real field is
-// added to capture them.
+// listed_by on Holiday Rental and New Projects stays inert: neither form
+// asks Listed By (New Projects records the developer's name instead).
 
 /**
  * Rent filters compare the rent per month. Some forms let the seller quote
@@ -193,6 +267,17 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
     else if (values.length > 1) clauses.push({ $or: values.map((v) => ({ [field]: table[v] })) });
   }
 
+  for (const [filterId, options] of Object.entries(map.choice ?? {})) {
+    const picked = (fv[filterId] ?? []).filter((v) => v in options).map((v) => options[v]());
+    if (picked.length === 1) clauses.push(picked[0]);
+    else if (picked.length > 1) clauses.push({ $or: picked });
+  }
+
+  if (map.listedBy) {
+    const stored = [...new Set((fv.listed_by ?? []).map((v) => LISTED_BY[v]).filter(Boolean))];
+    if (stored.length > 0) clauses.push({ "attributes.listedBy": { $in: stored } });
+  }
+
   const priceMin = fv.price_min?.[0] ? Number(fv.price_min[0]) : undefined;
   const priceMax = fv.price_max?.[0] ? Number(fv.price_max[0]) : undefined;
   const hasPrice = priceMin !== undefined || priceMax !== undefined;
@@ -204,13 +289,14 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
     return { [field]: range };
   };
 
-  if (map.listingForFilter && map.priceField) {
-    // Posts from before Listing For existed were rent-only, so "not Sale" = rent.
-    const forRent = { "attributes.listingFor": { $ne: "Sale" } };
-    const forSale = { "attributes.listingFor": "Sale" };
-    const listing = (fv[map.listingForFilter] ?? []).find((v) => v === "rent" || v === "sale");
-    if (listing === "rent") clauses.push(forRent, ...(hasPrice ? [priceClause(map.priceField)] : []));
-    else if (listing === "sale") clauses.push(forSale, ...(hasPrice ? [priceClause("salePrice")] : []));
+  if (map.listingFor && map.priceField) {
+    const { filterId, rent, sale, legacy } = map.listingFor;
+    // Posts from before the field existed have none; they count as `legacy`.
+    const forRent = { "attributes.listingFor": legacy === "rent" ? { $ne: sale.stored } : rent.stored };
+    const forSale = { "attributes.listingFor": legacy === "sale" ? { $ne: rent.stored } : sale.stored };
+    const picked = (fv[filterId] ?? []).find((v) => v === rent.option || v === sale.option);
+    if (picked === rent.option) clauses.push(forRent, ...(hasPrice ? [priceClause(map.priceField)] : []));
+    else if (picked === sale.option) clauses.push(forSale, ...(hasPrice ? [priceClause("salePrice")] : []));
     else if (hasPrice) {
       clauses.push({ $or: [{ $and: [forRent, priceClause(map.priceField)] }, { $and: [forSale, priceClause("salePrice")] }] });
     }
