@@ -344,8 +344,33 @@ export function buildFilterQuery(
   const min = filterValues.price_min?.[0];
   const max = filterValues.price_max?.[0];
   if (!field || (!min && !max)) return {};
+  if (field === "salary") return monthlySalaryInRange(min ? Number(min) : undefined, max ? Number(max) : undefined);
   const range: Record<string, number> = {};
   if (min) range.$gte = Number(min);
   if (max) range.$lte = Number(max);
   return { [field]: range };
+}
+
+/**
+ * Salary filters compare pay per month. The seller picks a Pay Period
+ * (`attributes.salaryPeriod`); hourly / daily pay assumes a full-time
+ * 40-hour, 5-day week. Posts from before Pay Period existed count as monthly.
+ */
+function monthlySalaryInRange(min: number | undefined, max: number | undefined): Record<string, unknown> {
+  const weeksPerMonth = 52 / 12;
+  const monthly = {
+    $switch: {
+      branches: [
+        { case: { $eq: ["$attributes.salaryPeriod", "hour"] }, then: { $multiply: ["$salary", 40 * weeksPerMonth] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "day"] }, then: { $multiply: ["$salary", 5 * weeksPerMonth] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "week"] }, then: { $multiply: ["$salary", weeksPerMonth] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "year"] }, then: { $divide: ["$salary", 12] } },
+      ],
+      default: "$salary",
+    },
+  };
+  const conditions: unknown[] = [{ $isNumber: monthly }];
+  if (min !== undefined) conditions.push({ $gte: [monthly, min] });
+  if (max !== undefined) conditions.push({ $lte: [monthly, max] });
+  return { $expr: { $and: conditions } };
 }

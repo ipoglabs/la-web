@@ -134,27 +134,27 @@ function propertyPriceKind(sub: string, values: Record<string, string[]>): Prope
 }
 
 // Every other category: one of four step sets per market, by how much its
-// things usually cost. Jobs filter on the salary, which sellers enter
-// without a period, so its steps span monthly and yearly pay.
+// things usually cost. Jobs filter on the salary per month (see
+// monthlySalaryInRange in lib/postFilterQuery.ts).
 type CategoryPriceTier = "small" | "goods" | "big" | "salary";
 const CATEGORY_STEPS: Record<string, Record<CategoryPriceTier, readonly number[]>> = {
   in: {
     small: [100, 250, 500, 1000, 2000, 3000, 5000, 7500, 10000, 20000, 50000],
     goods: [500, 1000, 2000, 5000, 10000, 20000, 30000, 50000, 75000, 100000, 200000, 500000],
     big: [50000, 100000, 200000, 300000, 500000, 750000, 1000000, 1500000, 2000000, 3000000, 5000000, 10000000],
-    salary: [5000, 10000, 15000, 20000, 30000, 50000, 75000, 100000, 200000, 500000, 1000000, 2000000, 5000000],
+    salary: [5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000, 300000, 500000, 1000000],
   },
   gb: {
     small: [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000],
     goods: [10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000],
     big: [500, 1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000, 50000, 100000],
-    salary: [500, 1000, 2000, 3000, 5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000, 150000],
+    salary: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7500, 10000, 15000],
   },
   sg: {
     small: [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 500, 1000],
     goods: [10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000, 5000],
     big: [5000, 10000, 20000, 30000, 50000, 75000, 100000, 150000, 200000, 300000, 500000],
-    salary: [500, 1000, 2000, 3000, 4000, 5000, 7500, 10000, 20000, 50000, 100000, 200000],
+    salary: [500, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 15000, 20000, 30000],
   },
 };
 
@@ -225,6 +225,7 @@ export function priceUnit(
   country: string | undefined,
   values: Record<string, string[]> = {}
 ): string | undefined {
+  if (cat === "jobs") return "per month";
   if (cat !== "property") return undefined;
   switch (sub) {
     case "to_rent":
@@ -281,7 +282,7 @@ export function resolveFilters(
   const priceFilter: RangeFilterConfig = {
     type: "range",
     id: "price",
-    label: cat === "jobs" ? "Salary" : unit ? `Price ${unit}` : "Price",
+    label: cat === "jobs" ? `Salary ${unit}` : unit ? `Price ${unit}` : "Price",
     steps: spec.steps,
     prefix: opts.currencySymbol ?? "£",
     unit,

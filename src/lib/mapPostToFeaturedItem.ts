@@ -44,6 +44,15 @@ const RENT_PERIOD_SUFFIX: Record<string, string> = {
   areaMonth: "/ sq ft / mo",
 };
 
+/** Price suffix per Jobs Pay Period value (posting/form-schema/defaults/jobs.ts). */
+const SALARY_PERIOD_SUFFIX: Record<string, string> = {
+  hour: "/ hr",
+  day: "/ day",
+  week: "/ week",
+  month: "/ mo",
+  year: "/ yr",
+};
+
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
@@ -56,7 +65,11 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
   if (post.rent != null) return { priceLabel: fmt(post.rent), priceSuffix: "/ mo" };
   if (post.rateNightly != null) return { priceLabel: fmt(post.rateNightly), priceSuffix: "/ night" };
   if (post.rateMonthly != null) return { priceLabel: fmt(post.rateMonthly), priceSuffix: "/ mo" };
-  if (post.salary != null) return { priceLabel: fmt(post.salary) };
+  if (post.salary != null) {
+    // Jobs: Pay Period beside the salary (saved in attributes); older posts have none.
+    const period = String(post.attributes?.salaryPeriod ?? "");
+    return { priceLabel: fmt(post.salary), priceSuffix: SALARY_PERIOD_SUFFIX[period] };
+  }
   if (post.hourlyRate != null) return { priceLabel: fmt(post.hourlyRate), priceSuffix: "/ hr" };
   if (post.price != null) return { priceLabel: fmt(post.price) };
   if (post.budget != null) return { priceLabel: fmt(post.budget) };

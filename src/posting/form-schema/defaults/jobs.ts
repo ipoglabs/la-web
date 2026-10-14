@@ -26,6 +26,30 @@ const dates: FormFieldDef[] = [
   { key: "endDate", type: "date", label: "End Date", width: "half" },
 ];
 
+/**
+ * How a salary is quoted, beside each salary field. New posts start on the
+ * market's usual period: GB pay is quoted per year, IN and SG per month.
+ * Search compares salaries per month (lib/postFilterQuery.ts).
+ */
+const PAY_PERIOD_LABELS: Record<string, string> = {
+  hour: "Per hour",
+  day: "Per day",
+  week: "Per week",
+  month: "Per month",
+  year: "Per year",
+};
+const payPeriod = (country: string, periods: string[]): FormFieldDef => {
+  const usual = country === "GB" ? "year" : "month";
+  return {
+    key: "salaryPeriod",
+    type: "select",
+    label: "Pay Period",
+    options: periods.map((v) => ({ value: v, label: PAY_PERIOD_LABELS[v] })),
+    defaultValue: periods.includes(usual) ? usual : "month",
+    width: "half",
+  };
+};
+
 export const JOBS_SUBCATEGORIES = ["Full Time", "Part Time", "Freelance", "Internship", "Temporary / Seasonal", "Wanted"];
 
 export function jobsSections(subcategory: string, country: string): FormSection[] | null {
@@ -40,6 +64,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
           fields: [
             company,
             { key: "salary", type: "currency", label: "Salary", min: 1, width: "half" },
+            payPeriod(country, ["hour", "month", "year"]),
             { key: "experience", type: "text", label: "Experience", placeholder: "e.g. 2-4 years", width: "half" },
             workMode,
             skills,
@@ -120,6 +145,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
             ...dates,
             { key: "workingHours", type: "text", label: "Working Hours", width: "half" },
             { key: "salary", type: "currency", label: "Pay", min: 1, width: "half" },
+            payPeriod(country, ["hour", "day", "week", "month"]),
             skills,
           ],
         },
@@ -140,6 +166,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
             },
             { key: "experience", type: "text", label: "Experience", width: "half" },
             { key: "salary", type: "currency", label: "Expected Salary", min: 1, width: "half" },
+            payPeriod(country, ["hour", "month", "year"]),
             { key: "available_from", type: "date", label: "Available From", width: "half" },
             skills,
             { key: "preferred_locations", type: "tags", label: "Preferred Locations", placeholder: "Type a location and press Enter" },
