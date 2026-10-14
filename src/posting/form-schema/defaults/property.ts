@@ -121,6 +121,51 @@ const ROOM_MIN_STAYS: FormFieldOption[] = [
   { value: "flexible", label: "Flexible" },
 ];
 
+// ── Land for Sale / Lease ───────────────────────────────────────────────────
+const LAND_TYPES: Record<string, FormFieldOption[]> = {
+  IN: [
+    { value: "ResidentialPlot", label: "Residential Plot" },
+    { value: "Agricultural", label: "Agricultural Land" },
+    { value: "CommercialPlot", label: "Commercial Plot" },
+    { value: "IndustrialPlot", label: "Industrial Plot" },
+    { value: "FarmHousePlot", label: "Farm House Plot" },
+  ],
+  GB: [
+    { value: "BuildingPlot", label: "Building Plot" },
+    { value: "Agricultural", label: "Agricultural / Farmland" },
+    { value: "Paddock", label: "Paddock" },
+    { value: "Woodland", label: "Woodland" },
+    { value: "Development", label: "Development Land" },
+  ],
+  SG: [
+    { value: "LandedPlot", label: "Landed Plot" },
+    { value: "Industrial", label: "Industrial Land" },
+    { value: "Other", label: "Other" },
+  ],
+};
+const LAND_AREA_UNITS: Record<string, FormFieldOption[]> = {
+  IN: opts(["sq ft", "sq yd", "acre", "cent", "guntha", "bigha"]),
+  GB: opts(["sq ft", "acre", "hectare"]),
+  SG: opts(["sq ft", "sq m"]),
+};
+const LEASE_RENT_PERIODS: FormFieldOption[] = [
+  { value: "month", label: "Per month" },
+  { value: "year", label: "Per year" },
+];
+const LEASE_DURATIONS: FormFieldOption[] = [
+  { value: "1", label: "1 year" },
+  { value: "3", label: "3 years" },
+  { value: "5", label: "5 years" },
+  { value: "10", label: "10 years" },
+  { value: "30", label: "30+ years" },
+];
+const LAND_APPROVALS: Record<string, FormFieldOption[]> = {
+  IN: opts(["DTCP", "HMDA", "BDA / BMRDA", "RERA", "Panchayat", "Not approved"]),
+  GB: opts(["Full planning permission", "Outline permission", "No permission"]),
+};
+/** Boundary wall has its own field, so it isn't repeated here. */
+const LAND_FEATURES = opts(["Road Access", "Corner Plot", "Water Connection", "Electricity Connection", "Gated Community"]);
+
 // ── Holiday Rental ──────────────────────────────────────────────────────────
 const MIN_STAYS: FormFieldOption[] = [
   { value: "1", label: "1 night" },
@@ -618,24 +663,48 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
         },
       ];
 
-    case "Land for Sale / Lease":
+    case "Land for Sale / Lease": {
+      const forSale = { field: "listingFor", in: ["Sale"] };
+      const forLease = { field: "listingFor", in: ["Lease"] };
       return [
         basics,
         {
           title: "Land",
           fields: [
-            { key: "propertyType", type: "select", label: "Property Type", options: c.sale.propertyTypes },
-            { key: "plot_area", type: "number", label: "Plot Area", unit: area, required: true, min: 1, width: "half" },
-            { key: "salePrice", type: "currency", label: "Expected Price", required: true, min: 1, width: "half" },
-            { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, width: "half" },
+            { key: "propertyType", type: "select", label: "Land Type", required: true, options: LAND_TYPES[country] ?? [] },
+            { key: "listingFor", type: "select", label: "Listing For", required: true, options: opts(["Sale", "Lease"]) },
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: listedByOptions(country) },
+            // Land is sold in the market's own units (acres, cents, gunthas…), not converted to sq ft.
+            { key: "plot_area", type: "number", label: "Plot Area", required: true, min: 0.01, width: "half" },
+            { key: "plotAreaUnit", type: "select", label: "Area Unit", required: true, options: LAND_AREA_UNITS[country] ?? [], width: "half" },
+            ...(country === "IN"
+              ? ([
+                  { key: "plotLength", type: "number", label: "Plot Length", unit: "ft", min: 1, max: 100_000, width: "half" },
+                  { key: "plotWidth", type: "number", label: "Plot Width", unit: "ft", min: 1, max: 100_000, width: "half" },
+                  { key: "facing", type: "select", label: "Facing", options: FACING },
+                  { key: "roadWidth", type: "number", label: "Road Width", unit: "ft", min: 1, max: 1000, width: "half" },
+                ] satisfies FormFieldDef[])
+              : []),
+            // Sale
+            { key: "salePrice", type: "currency", label: "Expected Price", required: true, min: 1, width: "half", showWhen: forSale },
+            { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, defaultValue: "No", width: "half", showWhen: forSale },
+            // Lease
+            { key: "rentPrice", type: "currency", label: "Lease Rent", required: true, min: 1, width: "half", showWhen: forLease },
+            { key: "rentPeriod", type: "select", label: "Rent Period", required: true, options: LEASE_RENT_PERIODS, width: "half", showWhen: forLease },
+            { key: "leaseDuration", type: "select", label: "Lease Period", options: LEASE_DURATIONS, showWhen: forLease },
+            ...(LAND_APPROVALS[country]
+              ? ([{ key: "approvalStatus", type: "select", label: "Approval Status", options: LAND_APPROVALS[country] }] satisfies FormFieldDef[])
+              : []),
             { key: "ownership", type: "select", label: "Ownership", options: c.sale.ownershipTypes },
+            { key: "boundaryWall", type: "select", label: "Boundary Wall / Fencing", options: YES_NO },
           ],
         },
         {
           title: "Features",
-          fields: [{ key: "amenities", type: "multiselect", label: "Amenities", options: opts(c.sale.amenities) }],
+          fields: [{ key: "amenities", type: "multiselect", label: "Land Features", options: LAND_FEATURES }],
         },
       ];
+    }
 
     case "New Projects / Off-Plan":
       return [
