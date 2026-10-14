@@ -177,10 +177,9 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     text: { prop_type: "propertyType" },
     bucket: { guests: { field: "guests", table: GUESTS_TO_COUNT } },
     choice: { stay_length: STAY_LENGTH },
-    // Holiday posts store rateNightly (confirmed populated on every sample)
-    // — rateWeekly/rateMonthly also exist on Post but the generic
-    // price_min/price_max filter has no way to know which rate a seller
-    // meant, so it applies to the nightly rate only.
+    // The nightly rate where a listing has one. SG holiday listings are
+    // monthly-only (no nightly rate), and search is scoped to one country,
+    // so in SG the range applies to the monthly rate instead.
     priceField: "rateNightly",
   },
   land: {
@@ -286,6 +285,9 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
     const range: Record<string, number> = {};
     if (priceMin !== undefined) range.$gte = priceMin;
     if (priceMax !== undefined) range.$lte = priceMax;
+    if (field === "rateNightly") {
+      return { $or: [{ rateNightly: range }, { rateNightly: { $in: [null] }, rateMonthly: range }] };
+    }
     return { [field]: range };
   };
 
