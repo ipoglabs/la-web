@@ -55,6 +55,41 @@ const COMMERCIAL_RENT_PERIODS: Record<string, (area: string) => FormFieldOption[
     { value: "areaMonth", label: `Per ${area} per month` },
   ],
 };
+// ── For Students ────────────────────────────────────────────────────────────
+const studentListedByOptions = (country: string): FormFieldOption[] => [
+  { value: "Owner", label: "Owner" },
+  { value: "Agent", label: "Agent" },
+  {
+    value: "Operator",
+    label: country === "IN" ? "PG / Hostel Operator" : country === "GB" ? "Accommodation Provider" : "Hostel Operator",
+  },
+  { value: "University", label: "University" },
+];
+/** Same saved values as To Rent's Bills Included, worded for students. */
+const STUDENT_BILLS: FormFieldOption[] = [
+  { value: "Yes", label: "All bills" },
+  { value: "Some", label: "Some bills" },
+  { value: "No", label: "None" },
+];
+const CONTRACT_LENGTHS: FormFieldOption[] = [
+  { value: "term", label: "1 term" },
+  { value: "semester", label: "1 semester" },
+  { value: "6months", label: "6 months" },
+  { value: "academicYear", label: "1 academic year (~44 weeks)" },
+  { value: "year", label: "1 year" },
+  { value: "flexible", label: "Flexible" },
+];
+const CAMPUS_DISTANCES: FormFieldOption[] = [
+  { value: "walking", label: "Walking (< 1 km)" },
+  { value: "1-3", label: "1–3 km" },
+  { value: "3-5", label: "3–5 km" },
+  { value: "5+", label: "5+ km" },
+];
+const COLLEGE_EXAMPLES: Record<string, string> = {
+  IN: "e.g. Delhi University, IIT Bombay",
+  GB: "e.g. University of Manchester",
+  SG: "e.g. NUS, NTU",
+};
 /** Ownership values (config/property sale.ownershipTypes) that come with a lease term. */
 const LEASEHOLDS: Record<string, string[]> = {
   GB: ["Leasehold", "SharedOwnership"],
@@ -330,27 +365,64 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           title: "Property",
           fields: [
             { key: "propertyType", type: "select", label: "Property Type", required: true, options: c.student.propertyTypes },
-            { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "half" },
-            { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
-            ...bedsBaths(),
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: studentListedByOptions(country) },
+            // UK student rent is quoted per week; IN and SG are always monthly.
+            ...(country === "GB"
+              ? ([
+                  { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "half" },
+                  { key: "rentPeriod", type: "select", label: "Rent Period", required: true, options: RENT_PERIODS, width: "half" },
+                  { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+                ] satisfies FormFieldDef[])
+              : ([
+                  { key: "rentPrice", type: "currency", label: "Rent", unit: "per month", required: true, min: 1, width: "half" },
+                  { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+                ] satisfies FormFieldDef[])),
+            { key: "billsIncluded", type: "select", label: "Bills Included", options: STUDENT_BILLS },
+            // Meals change the real price of a PG, so they're a field, not an amenity tick.
+            ...(country === "GB"
+              ? []
+              : ([
+                  { key: "mealsIncluded", type: "select", label: "Meals Included", options: opts(["None", "Breakfast", "Breakfast + Dinner", "All meals"]) },
+                ] satisfies FormFieldDef[])),
+            // Students rent a bed or a room, so a private bathroom matters more than counts.
+            {
+              key: "bathroom",
+              type: "select",
+              label: "Bathroom",
+              options: [
+                { value: "Attached", label: country === "IN" ? "Attached" : "En-suite" },
+                { value: "Shared", label: "Shared" },
+              ],
+            },
             { key: "occupancy", type: "select", label: "Occupancy", options: c.student.occupancyTypes },
             {
               key: "gender_pref",
               type: "select",
               label: "Gender Preference",
+              // Indian and Singapore PGs / hostels are usually single-gender.
+              required: country !== "GB",
               options: [
                 { value: "Boys", label: "Boys" },
                 { value: "Girls", label: "Girls" },
                 { value: "CoEd", label: "Co-ed" },
               ],
             },
+            { key: "available_from", type: "date", label: "Available From", required: true, width: "half" },
+            { key: "contractLength", type: "select", label: "Contract Length", options: CONTRACT_LENGTHS },
+            {
+              key: "nearbyCollege",
+              type: "text",
+              label: "Nearby College / University",
+              placeholder: COLLEGE_EXAMPLES[country] ?? "e.g. the nearest college",
+              maxLength: 100,
+            },
+            { key: "campusDistance", type: "select", label: "Distance to Campus", options: CAMPUS_DISTANCES },
           ],
         },
         {
           title: "Features",
           fields: [
-            { key: "facilities", type: "multiselect", label: "Facilities", options: opts(c.student.facilities) },
-            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(c.student.amenities) },
+            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(mergeLists(c.student.facilities, c.student.amenities)) },
           ],
         },
       ];
@@ -517,6 +589,7 @@ const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   name: { maxLength: 100 },
   description: { maxLength: 2000 }, // matches RichTextEditor's counter
   developerName: { maxLength: 100 },
+  nearbyCollege: { maxLength: 100 },
 
   builtup_area: { max: AREA_MAX },
   carpet_area: { max: AREA_MAX, lteField: "builtup_area" },

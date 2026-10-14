@@ -94,7 +94,7 @@ export const INPropertyConfig: PropertyFormConfig = {
     ],
     facilities: [
       "WiFi", "Study Table & Chair", "Laundry Service", "Housekeeping",
-      "Common Kitchen", "Meals Included", "Gym/Fitness", "Common Room",
+      "Common Kitchen", "Gym/Fitness", "Common Room",
       "Air Conditioning", "Security/CCTV", "Power Backup", "RO Water",
     ],
     amenities: ["Lift", "Parking", "Garden", "Terrace", "Balcony", "24x7 Security"],
