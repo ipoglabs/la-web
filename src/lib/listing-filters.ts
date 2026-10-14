@@ -40,6 +40,8 @@ export interface RangeFilterConfig {
   steps: readonly number[];
   /** Currency / unit prefix, e.g. "\u00a3" */
   prefix?: string;
+  /** What one price covers, e.g. "per month" — shown in the label and the active-filter chip */
+  unit?: string;
 }
 
 /** Union of all filter config types used by the listing UI */
@@ -92,6 +94,38 @@ if (process.env.NODE_ENV !== "production") {
   );
 }
 
+// ── Price unit ───────────────────────────────────────────────────────────────
+
+/**
+ * What the price filter's numbers mean for this sub, so buyers and renters
+ * aren't left guessing. Mirrors lib/postFilterQuery.ts: rents are compared
+ * per month (whatever period the seller quoted), holiday lets per night
+ * (SG holiday lets are monthly-only), sale prices need no unit. Where a
+ * Rent / Sale toggle decides it, `values` (the selected filters) is read.
+ */
+export function priceUnit(
+  cat: string,
+  sub: string,
+  country: string | undefined,
+  values: Record<string, string[]> = {}
+): string | undefined {
+  if (cat !== "property") return undefined;
+  switch (sub) {
+    case "to_rent":
+    case "room_rental":
+    case "for_students":
+      return "per month";
+    case "holiday_rental":
+      return country?.toLowerCase() === "sg" ? "per month" : "per night";
+    case "commercial":
+      return values.listing_type?.[0] === "rent" ? "per month" : undefined;
+    case "land":
+      return values.land_action?.[0] === "lease" ? "per month" : undefined;
+    default:
+      return undefined;
+  }
+}
+
 // ── Core resolver ─────────────────────────────────────────────────────────────
 
 /**
@@ -99,7 +133,18 @@ if (process.env.NODE_ENV !== "production") {
  * Always injects a price range filter first.
  * Returns [] when cat or sub is empty (sub-picker / uncategorised state).
  */
-export function resolveFilters(cat: string, sub: string): ListingFilterConfig[] {
+export function resolveFilters(
+  cat: string,
+  sub: string,
+  opts: {
+    /** Country code ("in" | "gb" | "sg") — decides the price unit where it differs by market */
+    country?: string;
+    /** The market's currency symbol, e.g. "\u20b9" */
+    currencySymbol?: string;
+    /** Currently selected filter values (a Rent / Sale toggle can change the price unit) */
+    values?: Record<string, string[]>;
+  } = {}
+): ListingFilterConfig[] {
   if (!cat || !sub) return [];
   const mainCat = ALERT_CONFIG.find((c) => c.id === cat);
   if (!mainCat) return [];
@@ -108,12 +153,14 @@ export function resolveFilters(cat: string, sub: string): ListingFilterConfig[] 
 
   // Inject price range as the first filter — always present for every sub
   const spec = PRICE_SPECS[`${cat}/${sub}`] ?? { steps: GENERAL_STEPS };
+  const unit = priceUnit(cat, sub, opts.country, opts.values);
   const priceFilter: RangeFilterConfig = {
     type: "range",
     id: "price",
-    label: "Price",
+    label: unit ? `Price ${unit}` : "Price",
     steps: spec.steps,
-    prefix: "£",
+    prefix: opts.currencySymbol ?? "£",
+    unit,
   };
 
   return [priceFilter, ...(subCat.filters as FilterConfig[])];
@@ -226,11 +273,11 @@ export function deriveActiveChips(
       if (!minVal && !maxVal) return;
       const fmt = (v: string) =>
         `${filter.prefix ?? ""}${Number(v).toLocaleString()}`;
-      const label = minVal && maxVal
+      const range = minVal && maxVal
         ? `${fmt(minVal)} \u2013 ${fmt(maxVal)}`
         : minVal ? `${fmt(minVal)}+`
         : `Under ${fmt(maxVal!)}`;
-      chips.push({ id: `${filter.id}__range`, label });
+      chips.push({ id: `${filter.id}__range`, label: filter.unit ? `${range} ${filter.unit}` : range });
     } else {
       const selected = filterValues[filter.id] ?? [];
       selected.forEach((val) => {

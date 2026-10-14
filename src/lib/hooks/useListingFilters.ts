@@ -72,7 +72,12 @@ export interface UseListingFiltersResult {
   clearAll: () => void;
 }
 
-export function useListingFilters(cat: string, sub: string): UseListingFiltersResult {
+export function useListingFilters(
+  cat: string,
+  sub: string,
+  /** The market — sets the price filter's currency symbol and unit */
+  market: { country?: string; currencySymbol?: string } = {}
+): UseListingFiltersResult {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -81,7 +86,7 @@ export function useListingFilters(cat: string, sub: string): UseListingFiltersRe
   const filterValues = parseFilterValues(searchParams);
 
   // ── Resolved filter config ────────────────────────────────────────────────
-  const filters = resolveFilters(cat, sub);
+  const filters = resolveFilters(cat, sub, { ...market, values: filterValues });
 
   // ── Derived chips ─────────────────────────────────────────────────────────
   const activeChips = deriveActiveChips(filterValues, filters);

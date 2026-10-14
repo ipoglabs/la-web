@@ -329,7 +329,7 @@ export default function ListingsPage() {
     clearAndApply,
     applyDraft,
     removeChip,
-  } = useListingFilters(cat, sub);
+  } = useListingFilters(cat, sub, { country: countryCode, currencySymbol: config.currencySymbol });
 
   // ── Data fetch ─────────────────────────────────────────────────────────────
   // ALL search state (keyword, location, filters, sort, page) flows through the
