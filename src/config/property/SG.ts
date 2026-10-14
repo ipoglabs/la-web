@@ -72,7 +72,7 @@ export const SGPropertyConfig: PropertyFormConfig = {
       { value: "coworking",   label: "Co-working" },
       { value: "shophouse",   label: "Shophouse" },
     ],
-    facilities: ["Parking", "Lift", "Security/CCTV", "Fire Safety", "Visitor Parking", "Loading Bay"],
+    facilities: ["Parking", "Lift", "Pantry", "Security/CCTV", "Fire Safety", "Visitor Parking", "Loading Bay"],
     amenities: ["WiFi", "Air Conditioning", "Conference Room", "Reception", "24x7 Access", "Cafeteria"],
   },
 

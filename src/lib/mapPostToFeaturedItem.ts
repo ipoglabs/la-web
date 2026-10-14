@@ -35,13 +35,22 @@ function currencySymbolFor(post: LeanPost): string {
   return (code && COUNTRY_CONFIGS[code]?.currencySymbol) || "$";
 }
 
+/** Price suffix per Rent Period value (posting/form-schema/defaults/property.ts). */
+const RENT_PERIOD_SUFFIX: Record<string, string> = {
+  month: "/ mo",
+  week: "/ week",
+  year: "/ yr",
+  areaYear: "/ sq ft / yr",
+  areaMonth: "/ sq ft / mo",
+};
+
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
   if (post.rentPrice != null) {
-    // GB To Rent posts pick a Rent Period (DB form field, saved in attributes).
-    const weekly = post.attributes?.rentPeriod === "week";
-    return { priceLabel: fmt(post.rentPrice), priceSuffix: weekly ? "/ week" : "/ mo" };
+    // Some forms ask how the rent is quoted (Rent Period, saved in attributes).
+    const period = String(post.attributes?.rentPeriod ?? "month");
+    return { priceLabel: fmt(post.rentPrice), priceSuffix: RENT_PERIOD_SUFFIX[period] ?? "/ mo" };
   }
   if (post.salePrice != null) return { priceLabel: fmt(post.salePrice) };
   if (post.rent != null) return { priceLabel: fmt(post.rent), priceSuffix: "/ mo" };

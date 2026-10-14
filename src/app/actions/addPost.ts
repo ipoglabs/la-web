@@ -378,6 +378,9 @@ export async function addPost(
     if (schema) {
       const values = readSchemaValues(formData, schema);
       Object.assign(postData, values.fields);
+      // Fields the schema left empty or hid (e.g. Rent on a sale listing)
+      // mustn't keep a value from the generic mapping above.
+      for (const key of values.unset) delete (postData as Record<string, unknown>)[key];
       attributes = Object.keys(values.attributes).length ? values.attributes : undefined;
 
       const schemaErrors = validateSubmission(schema, { ...postData, ...attributes });

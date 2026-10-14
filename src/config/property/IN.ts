@@ -74,7 +74,7 @@ export const INPropertyConfig: PropertyFormConfig = {
       { value: "industrial",  label: "Industrial" },
       { value: "coworking",   label: "Co-working" },
     ],
-    facilities: ["Parking", "Lift", "Power Backup", "Security/CCTV", "Fire Safety", "Visitor Parking"],
+    facilities: ["Parking", "Lift", "Power Backup", "Pantry", "Security/CCTV", "Fire Safety", "Visitor Parking"],
     amenities: ["WiFi", "Air Conditioning", "Cafeteria", "Conference Room", "Reception", "24x7 Access"],
   },
 

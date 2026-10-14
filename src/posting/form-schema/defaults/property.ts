@@ -43,6 +43,18 @@ const RENT_PERIODS: FormFieldOption[] = [
   { value: "month", label: "Per month" },
   { value: "week", label: "Per week" },
 ];
+/** How GB and SG commercial rents are quoted (IN is always per month). */
+const COMMERCIAL_RENT_PERIODS: Record<string, (area: string) => FormFieldOption[]> = {
+  GB: (area) => [
+    { value: "month", label: "Per month" },
+    { value: "year", label: "Per year" },
+    { value: "areaYear", label: `Per ${area} per year` },
+  ],
+  SG: (area) => [
+    { value: "month", label: "Per month" },
+    { value: "areaMonth", label: `Per ${area} per month` },
+  ],
+};
 /** Ownership values (config/property sale.ownershipTypes) that come with a lease term. */
 const LEASEHOLDS: Record<string, string[]> = {
   GB: ["Leasehold", "SharedOwnership"],
@@ -212,37 +224,104 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
         },
       ];
 
-    case "Commercial":
+    case "Commercial": {
+      const forRent = { field: "listingFor", in: ["Rent"] };
+      const forSale = { field: "listingFor", in: ["Sale"] };
+      const rentPeriods = COMMERCIAL_RENT_PERIODS[country];
       return [
         basics,
         {
           title: "Property",
           fields: [
             { key: "propertyType", type: "select", label: "Property Type", required: true, options: c.commercial.propertyTypes },
-            { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "third" },
-            { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "third" },
-            { key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "third" },
-            { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
-            { key: "carpet_area", type: "number", label: "Carpet Area", unit: area, min: 1, width: "half" },
-            { key: "floor", type: "select", label: "Floor", options: counts(0, 10, "Ground"), lteField: "totalFloors" },
-            { key: "totalFloors", type: "select", label: "Total Floors", options: counts(1, 10) },
+            { key: "listingFor", type: "select", label: "Listing For", required: true, options: opts(["Rent", "Sale"]) },
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: listedByOptions(country) },
+            // Rent — IN rents are always monthly; GB and SG pick how the rent is quoted.
+            ...(rentPeriods
+              ? ([
+                  { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "half", showWhen: forRent },
+                  {
+                    key: "rentPeriod",
+                    type: "select",
+                    label: "Rent Period",
+                    required: true,
+                    options: rentPeriods(area),
+                    width: "half",
+                    showWhen: forRent,
+                  },
+                ] satisfies FormFieldDef[])
+              : ([
+                  { key: "rentPrice", type: "currency", label: "Rent", unit: "per month", required: true, min: 1, width: "half", showWhen: forRent },
+                ] satisfies FormFieldDef[])),
+            { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half", showWhen: forRent },
+            // Sale
+            { key: "salePrice", type: "currency", label: "Sale Price", required: true, min: 1, width: "half", showWhen: forSale },
+            { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, defaultValue: "No", width: "half", showWhen: forSale },
+            // Running costs — each market names them differently.
+            ...(country === "IN"
+              ? ([{ key: "maintenance", type: "currency", label: "Maintenance", unit: "per month", min: 0, width: "half" }] satisfies FormFieldDef[])
+              : country === "GB"
+                ? ([
+                    { key: "serviceCharge", type: "currency", label: "Service Charge", unit: "per year", min: 0, width: "half" },
+                    { key: "businessRates", type: "currency", label: "Business Rates", unit: "per year", min: 0, width: "half" },
+                  ] satisfies FormFieldDef[])
+                : ([{ key: "serviceCharge", type: "currency", label: "Service Charge", unit: "per month", min: 0, width: "half" }] satisfies FormFieldDef[])),
+            // "Carpet area" is an Indian term; GB and SG listings show one floor area.
+            ...(country === "IN"
+              ? ([
+                  { key: "builtup_area", type: "number", label: "Built-up Area", unit: area, min: 1, width: "half" },
+                  { key: "carpet_area", type: "number", label: "Carpet Area", unit: area, min: 1, width: "half" },
+                ] satisfies FormFieldDef[])
+              : ([{ key: "builtup_area", type: "number", label: "Floor Area", unit: area, min: 1, width: "half" }] satisfies FormFieldDef[])),
+            {
+              key: "ceilingHeight",
+              type: "number",
+              label: "Ceiling Height",
+              unit: "ft",
+              min: 1,
+              max: 200,
+              width: "half",
+              showWhen: { field: "propertyType", in: ["warehouse", "industrial", "workshop"] },
+            },
+            ...FLOOR_FIELDS,
             { key: "washrooms", type: "select", label: "Washrooms", options: COUNT_0_TO_5 },
             { key: "parkingSpaces", type: "select", label: "Parking Spaces", options: COUNT_0_TO_5 },
-            { key: "furnishing", type: "select", label: "Furnishing", options: opts(["Furnished", "Semi-Furnished", "Unfurnished"]) },
-            { key: "pantry", type: "select", label: "Pantry", options: YES_NO, width: "half" },
-            { key: "powerBackup", type: "select", label: "Power Backup", options: YES_NO, width: "half" },
+            // Fit-out levels, not home furnishing — same `furnishing` key so filters keep working.
+            { key: "furnishing", type: "select", label: "Fit-out", options: opts(["Bare Shell", "Warm Shell", "Fully Fitted", "Plug and Play"]) },
+            ...(country === "GB"
+              ? ([
+                  {
+                    key: "useClass",
+                    type: "select",
+                    label: "Use Class",
+                    options: [
+                      { value: "E", label: "E (Commercial, business and service)" },
+                      { value: "B2", label: "B2 (General industrial)" },
+                      { value: "B8", label: "B8 (Storage or distribution)" },
+                      { value: "SuiGeneris", label: "Sui Generis" },
+                    ],
+                  },
+                ] satisfies FormFieldDef[])
+              : []),
+            ...(country === "SG"
+              ? ([
+                  { key: "zoning", type: "select", label: "Zoning", options: opts(["Commercial", "Industrial B1", "Industrial B2", "Business Park"]) },
+                ] satisfies FormFieldDef[])
+              : []),
             { key: "available_from", type: "date", label: "Available From", width: "half" },
-            { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country) },
+            { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country), showWhen: forRent },
           ],
         },
         {
           title: "Features",
           fields: [
+            // Pantry and Power Backup are ticks here, not separate Yes / No questions.
             { key: "facilities", type: "multiselect", label: "Facilities", options: opts(c.commercial.facilities) },
             { key: "amenities", type: "multiselect", label: "Amenities", options: opts(c.commercial.amenities) },
           ],
         },
       ];
+    }
 
     case "For Students":
       return [
