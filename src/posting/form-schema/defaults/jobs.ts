@@ -106,6 +106,13 @@ export function jobsSections(subcategory: string, country: string): FormSection[
               label: "Project Type",
               options: pairs([["web-development", "Web Development"], ["design", "Design"], ["writing", "Writing"], ["marketing", "Marketing"], ["other", "Other"]]),
             },
+            // Same choices as the Freelance search's Engagement filter
+            {
+              key: "engagement",
+              type: "select",
+              label: "Engagement",
+              options: pairs([["oneoff", "One-off"], ["ongoing", "Ongoing"], ["project", "Project"]]),
+            },
             workMode,
             { key: "budgetType", type: "select", label: "Budget Type", options: pairs([["fixed", "Fixed"], ["hourly", "Hourly"]]), width: "half" },
             { key: "budgetAmount", type: "currency", label: "Budget", min: 1, width: "half" },
@@ -124,7 +131,14 @@ export function jobsSections(subcategory: string, country: string): FormSection[
           fields: [
             company,
             workMode,
-            { key: "duration", type: "text", label: "Duration", placeholder: "e.g. 6 months" },
+            // A choice, not free text, so the Internship search's Duration filter can match it
+            {
+              key: "duration",
+              type: "select",
+              label: "Duration",
+              options: pairs([["1", "1 month"], ["2", "2 months"], ["3", "3 months"], ["6", "6 months"], ["12", "12 months"]]),
+              width: "half",
+            },
             ...dates,
             { key: "stipendType", type: "select", label: "Stipend Type", options: pairs([["unpaid", "Unpaid"], ["stipend", "Stipend"], ["salary", "Salary"]]), width: "half" },
             { key: "stipendAmount", type: "currency", label: "Stipend", min: 0, width: "half" },

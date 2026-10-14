@@ -345,6 +345,8 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   const clauses: Record<string, unknown>[] = [];
   if (sub === "freelance") {
     // Freelance budgets are fixed or hourly (Budget Type); the toggle keeps the range comparing like with like.
+    const engagement = fv.engagement?.[0];
+    if (engagement && engagement !== "any") clauses.push({ "attributes.engagement": engagement });
     const type = fv.budget_type?.[0];
     if (type === "fixed") clauses.push({ budgetType: { $ne: "hourly" } });
     if (type === "hourly") clauses.push({ budgetType: "hourly" });
@@ -353,6 +355,9 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
     const stipend = fv.stipend?.[0];
     if (stipend === "paid") clauses.push({ $or: [{ stipendType: { $in: ["stipend", "salary"] } }, { stipendAmount: { $gt: 0 } }] });
     if (stipend === "unpaid") clauses.push({ stipendType: "unpaid" });
+    // Duration is saved in months ("1", "2", "3", "6", "12"); "3 months" covers anything up to 3.
+    const months = { "3m": ["1", "2", "3"], "6m": ["6"], "12m": ["12"] }[fv.duration?.[0] ?? ""];
+    if (months) clauses.push({ duration: { $in: months } });
     if (range) clauses.push(rangeWithSalaryFallback("stipendAmount", range));
   } else {
     return null;
