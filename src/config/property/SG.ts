@@ -98,18 +98,17 @@ export const SGPropertyConfig: PropertyFormConfig = {
   },
 
   holiday: {
+    // Hotels and hostels are the only licensed short stays and don't post here.
     propertyTypes: [
       { value: "ServicedApt", label: "Serviced Apartment" },
       { value: "Villa",       label: "Villa" },
-      { value: "HotelRoom",   label: "Hotel Room" },
       { value: "GuestHouse",  label: "Guest House" },
-      { value: "Hostel",      label: "Hostel" },
       { value: "Other",       label: "Other" },
     ],
     amenities: [
       "WiFi", "Swimming Pool", "Air Conditioning", "Free Parking",
       "BBQ Pit", "Near MRT", "Kitchen", "Washing Machine",
-      "TV", "Garden", "Balcony", "Pet Friendly",
+      "TV", "Garden", "Balcony",
     ],
   },
 

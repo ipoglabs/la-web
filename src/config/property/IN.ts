@@ -114,7 +114,7 @@ export const INPropertyConfig: PropertyFormConfig = {
     amenities: [
       "WiFi", "Swimming Pool", "Air Conditioning", "Free Parking",
       "BBQ Grill", "Outdoor Dining", "Private Beach", "Kitchen",
-      "Washing Machine", "TV", "Garden", "Pet Friendly",
+      "Washing Machine", "TV", "Garden",
     ],
   },
 

@@ -90,6 +90,28 @@ const COLLEGE_EXAMPLES: Record<string, string> = {
   GB: "e.g. University of Manchester",
   SG: "e.g. NUS, NTU",
 };
+// ── Holiday Rental ──────────────────────────────────────────────────────────
+const MIN_STAYS: FormFieldOption[] = [
+  { value: "1", label: "1 night" },
+  { value: "2", label: "2 nights" },
+  { value: "3", label: "3 nights" },
+  { value: "7", label: "7 nights" },
+  { value: "30", label: "1 month" },
+  { value: "90", label: "3 months" },
+];
+/** Whole hours from `from` to `to` (24h values, "2 pm" labels), plus Flexible. */
+const hourOptions = (from: number, to: number): FormFieldOption[] => [
+  ...Array.from({ length: to - from + 1 }, (_, i) => {
+    const h = from + i;
+    const label = h === 12 ? "12 pm" : h > 12 ? `${h - 12} pm` : `${h} am`;
+    return { value: `${String(h).padStart(2, "0")}:00`, label };
+  }),
+  { value: "flexible", label: "Flexible" },
+];
+const ATTRACTION_EXAMPLES: Record<string, string> = {
+  IN: "e.g. 5 min walk to Baga Beach",
+  GB: "e.g. 10 min drive to Windermere",
+};
 /** Ownership values (config/property sale.ownershipTypes) that come with a lease term. */
 const LEASEHOLDS: Record<string, string[]> = {
   GB: ["Leasehold", "SharedOwnership"],
@@ -427,24 +449,65 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
         },
       ];
 
-    case "Holiday Rental":
+    case "Holiday Rental": {
+      // Private homes in Singapore can't be let for under 3 months (URA), so
+      // SG listings are monthly only — no nightly or weekly rates.
+      const monthlyOnly = country === "SG";
       return [
         basics,
         {
           title: "Property",
           fields: [
             { key: "holidayType", type: "select", label: "Holiday Property Type", required: true, options: c.holiday.propertyTypes },
-            { key: "guests", type: "select", label: "Guests", options: counts(1, 8) },
+            { key: "guests", type: "select", label: "Guests", options: counts(1, 16) },
+            { key: "bedrooms", type: "select", label: "Bedrooms", options: COUNT_1_TO_5 },
             BEDS,
             BATHS,
+            ...(monthlyOnly
+              ? []
+              : ([
+                  {
+                    key: "nearbyAttraction",
+                    type: "text",
+                    label: "Distance to Beach / Attraction",
+                    placeholder: ATTRACTION_EXAMPLES[country] ?? "e.g. 5 min walk to the beach",
+                    maxLength: 100,
+                  },
+                ] satisfies FormFieldDef[])),
           ],
         },
         {
           title: "Rates",
           fields: [
-            { key: "rateNightly", type: "currency", label: "Nightly", required: true, min: 1, width: "third" },
-            { key: "rateWeekly", type: "currency", label: "Weekly", min: 0, width: "third" },
-            { key: "rateMonthly", type: "currency", label: "Monthly", min: 0, width: "third" },
+            ...(monthlyOnly
+              ? ([
+                  {
+                    key: "rateMonthly",
+                    type: "currency",
+                    label: "Monthly",
+                    required: true,
+                    min: 1,
+                    width: "half",
+                    hint: "Homes in Singapore can't be let for less than 3 months.",
+                  },
+                ] satisfies FormFieldDef[])
+              : ([
+                  { key: "rateNightly", type: "currency", label: "Nightly", required: true, min: 1, width: "third" },
+                  { key: "rateWeekly", type: "currency", label: "Weekly", min: 0, width: "third" },
+                  { key: "rateMonthly", type: "currency", label: "Monthly", min: 0, width: "third" },
+                ] satisfies FormFieldDef[])),
+            { key: "cleaningFee", type: "currency", label: "Cleaning Fee", min: 0, width: "half" },
+            { key: "deposit", type: "currency", label: "Security Deposit", min: 0, width: "half" },
+          ],
+        },
+        {
+          title: "Stay",
+          fields: [
+            ...(monthlyOnly
+              ? []
+              : ([{ key: "minStay", type: "select", label: "Minimum Stay", options: MIN_STAYS }] satisfies FormFieldDef[])),
+            { key: "checkIn", type: "select", label: "Check-in Time", options: hourOptions(12, 20) },
+            { key: "checkOut", type: "select", label: "Check-out Time", options: hourOptions(8, 12) },
           ],
         },
         {
@@ -460,6 +523,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           ],
         },
       ];
+    }
 
     case "Room Rental":
       return [
@@ -590,6 +654,7 @@ const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   description: { maxLength: 2000 }, // matches RichTextEditor's counter
   developerName: { maxLength: 100 },
   nearbyCollege: { maxLength: 100 },
+  nearbyAttraction: { maxLength: 100 },
 
   builtup_area: { max: AREA_MAX },
   carpet_area: { max: AREA_MAX, lteField: "builtup_area" },

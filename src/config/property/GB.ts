@@ -112,8 +112,7 @@ export const GBPropertyConfig: PropertyFormConfig = {
     ],
     amenities: [
       "WiFi", "Parking", "Garden", "Fireplace", "BBQ",
-      "Pet Friendly", "Kitchen", "Washing Machine", "TV",
-      "Central Heating", "Hot Tub", "Children Friendly",
+      "Kitchen", "Washing Machine", "TV", "Central Heating", "Hot Tub",
     ],
   },
 
