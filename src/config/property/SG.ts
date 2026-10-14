@@ -36,18 +36,6 @@ export const SGPropertyConfig: PropertyFormConfig = {
   },
 
   sale: {
-    propertyTypes: [
-      { value: "HDB",        label: "HDB Flat" },
-      { value: "Condo",      label: "Condominium" },
-      { value: "ExecCondo",  label: "Executive Condo" },
-      { value: "Landed",     label: "Landed Property" },
-      { value: "Shophouse",  label: "Shophouse" },
-      { value: "Other",      label: "Other" },
-    ],
-    amenities: [
-      "Parking", "Swimming Pool", "Gym", "BBQ Pit",
-      "Security", "Near MRT", "Balcony", "Garden",
-    ],
     ownershipTypes: [
       { value: "Freehold",        label: "Freehold" },
       { value: "Leasehold99",     label: "99-Year Leasehold" },

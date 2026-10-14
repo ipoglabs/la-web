@@ -19,8 +19,6 @@ export interface PropertyFormConfig {
   };
 
   sale: {
-    propertyTypes: Option[];
-    amenities: string[];
     ownershipTypes: Option[];
   };
 

@@ -38,19 +38,6 @@ export const GBPropertyConfig: PropertyFormConfig = {
   },
 
   sale: {
-    propertyTypes: [
-      { value: "Flat",         label: "Flat / Apartment" },
-      { value: "Terraced",     label: "Terraced House" },
-      { value: "SemiDetached", label: "Semi-Detached" },
-      { value: "Detached",     label: "Detached House" },
-      { value: "Bungalow",     label: "Bungalow" },
-      { value: "Maisonette",   label: "Maisonette" },
-      { value: "Other",        label: "Other" },
-    ],
-    amenities: [
-      "Parking", "Garden", "Garage", "Balcony",
-      "Double Glazing", "Central Heating", "Security", "EPC Rating A/B",
-    ],
     ownershipTypes: [
       { value: "Freehold",       label: "Freehold" },
       { value: "Leasehold",      label: "Leasehold" },

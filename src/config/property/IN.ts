@@ -37,18 +37,6 @@ export const INPropertyConfig: PropertyFormConfig = {
   },
 
   sale: {
-    propertyTypes: [
-      { value: "Apartment",        label: "Apartment / Flat" },
-      { value: "IndependentHouse", label: "Independent House" },
-      { value: "Villa",            label: "Villa" },
-      { value: "Plot",             label: "Plot / Land" },
-      { value: "Commercial",       label: "Commercial" },
-      { value: "Other",            label: "Other" },
-    ],
-    amenities: [
-      "Parking", "Lift", "Power Backup", "Security", "Water Supply",
-      "Balcony", "Garden", "Gym", "Swimming Pool", "Club House",
-    ],
     ownershipTypes: [
       { value: "Freehold",         label: "Freehold" },
       { value: "Leasehold",        label: "Leasehold" },
