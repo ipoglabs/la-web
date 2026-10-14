@@ -64,6 +64,12 @@ interface SubFilterMap {
   bucket?: Record<string, { field: string; table: Record<string, unknown> }>;
   /** Post field the injected price_min/price_max filter range-queries — omitted where no single reliable price field exists for the sub */
   priceField?: string;
+  /**
+   * Filter id of a Rent / Sale toggle backed by `attributes.listingFor`
+   * ("Rent" | "Sale"). With it, priceField is the rent and sale listings
+   * are priced on `salePrice` instead.
+   */
+  listingForFilter?: string;
 }
 
 const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
@@ -96,11 +102,10 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     priceField: "rentPrice",
   },
   commercial: {
-    // listing_type (rent/sale) has no backing field — every commercial post
-    // sampled only ever has rentPrice, never a salePrice, so there's no
-    // real distinction to query.
     text: { commercial_type: "propertyType" },
     priceField: "rentPrice",
+    // Listing For on the Commercial post form (since 2026-10-14).
+    listingForFilter: "listing_type",
   },
   holiday_rental: {
     text: { prop_type: "propertyType" },
@@ -188,19 +193,29 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
     else if (values.length > 1) clauses.push({ $or: values.map((v) => ({ [field]: table[v] })) });
   }
 
-  if (map.priceField) {
-    const priceMin = fv.price_min?.[0];
-    const priceMax = fv.price_max?.[0];
-    if (priceMin || priceMax) {
-      if (map.priceField === "rentPrice") {
-        clauses.push(monthlyRentInRange(priceMin ? Number(priceMin) : undefined, priceMax ? Number(priceMax) : undefined));
-      } else {
-        const range: Record<string, number> = {};
-        if (priceMin) range.$gte = Number(priceMin);
-        if (priceMax) range.$lte = Number(priceMax);
-        clauses.push({ [map.priceField]: range });
-      }
+  const priceMin = fv.price_min?.[0] ? Number(fv.price_min[0]) : undefined;
+  const priceMax = fv.price_max?.[0] ? Number(fv.price_max[0]) : undefined;
+  const hasPrice = priceMin !== undefined || priceMax !== undefined;
+  const priceClause = (field: string): Record<string, unknown> => {
+    if (field === "rentPrice") return monthlyRentInRange(priceMin, priceMax);
+    const range: Record<string, number> = {};
+    if (priceMin !== undefined) range.$gte = priceMin;
+    if (priceMax !== undefined) range.$lte = priceMax;
+    return { [field]: range };
+  };
+
+  if (map.listingForFilter && map.priceField) {
+    // Posts from before Listing For existed were rent-only, so "not Sale" = rent.
+    const forRent = { "attributes.listingFor": { $ne: "Sale" } };
+    const forSale = { "attributes.listingFor": "Sale" };
+    const listing = (fv[map.listingForFilter] ?? []).find((v) => v === "rent" || v === "sale");
+    if (listing === "rent") clauses.push(forRent, ...(hasPrice ? [priceClause(map.priceField)] : []));
+    else if (listing === "sale") clauses.push(forSale, ...(hasPrice ? [priceClause("salePrice")] : []));
+    else if (hasPrice) {
+      clauses.push({ $or: [{ $and: [forRent, priceClause(map.priceField)] }, { $and: [forSale, priceClause("salePrice")] }] });
     }
+  } else if (map.priceField && hasPrice) {
+    clauses.push(priceClause(map.priceField));
   }
 
   if (clauses.length === 0) return {};
