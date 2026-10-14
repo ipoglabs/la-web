@@ -38,7 +38,11 @@ function currencySymbolFor(post: LeanPost): string {
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
-  if (post.rentPrice != null) return { priceLabel: fmt(post.rentPrice), priceSuffix: "/ mo" };
+  if (post.rentPrice != null) {
+    // GB To Rent posts pick a Rent Period (DB form field, saved in attributes).
+    const weekly = post.attributes?.rentPeriod === "week";
+    return { priceLabel: fmt(post.rentPrice), priceSuffix: weekly ? "/ week" : "/ mo" };
+  }
   if (post.salePrice != null) return { priceLabel: fmt(post.salePrice) };
   if (post.rent != null) return { priceLabel: fmt(post.rent), priceSuffix: "/ mo" };
   if (post.rateNightly != null) return { priceLabel: fmt(post.rateNightly), priceSuffix: "/ night" };

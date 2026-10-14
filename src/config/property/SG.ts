@@ -4,12 +4,12 @@ export const SGPropertyConfig: PropertyFormConfig = {
   areaUnit: "sq ft",
 
   rent: {
+    // No "Studio" type: a studio is Beds = Studio, so it isn't posted two ways.
     propertyTypes: [
       { value: "HDB",        label: "HDB Flat" },
       { value: "Condo",      label: "Condominium" },
       { value: "ExecCondo",  label: "Executive Condo" },
       { value: "Landed",     label: "Landed Property" },
-      { value: "Studio",     label: "Studio" },
       { value: "Other",      label: "Other" },
     ],
     furnishingOptions: [

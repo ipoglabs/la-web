@@ -4,11 +4,11 @@ export const INPropertyConfig: PropertyFormConfig = {
   areaUnit: "sq ft",
 
   rent: {
+    // No "Studio" type: a studio is Beds = Studio, so it isn't posted two ways.
     propertyTypes: [
       { value: "Apartment",        label: "Apartment / Flat" },
       { value: "IndependentHouse", label: "Independent House" },
       { value: "Villa",            label: "Villa" },
-      { value: "Studio",           label: "Studio" },
       { value: "Other",            label: "Other" },
     ],
     furnishingOptions: [

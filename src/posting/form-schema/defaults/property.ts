@@ -15,7 +15,6 @@ export const PROPERTY_COUNTRIES = ["IN", "GB", "SG"] as const;
 const opts = (values: string[]): FormFieldOption[] => values.map((v) => ({ value: v, label: v }));
 const YES_NO = opts(["Yes", "No"]);
 const FACILITIES_LIST = ["Lift", "Security", "Power Backup", "Water Supply", "Fire Safety"];
-const FACILITIES = opts(FACILITIES_LIST);
 /** Joins option lists, dropping repeats (first spelling wins). */
 const mergeLists = (...lists: string[][]): string[] => [...new Set(lists.flat())];
 
@@ -30,10 +29,19 @@ const PROPERTY_AGE: FormFieldOption[] = [
 ];
 const FACING = opts(["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]);
 /** Same saved values everywhere ("Builder") so search can filter one way; GB/SG say "Developer". */
-const listedByOptions = (country: string): FormFieldOption[] => [
+const listedByOptions = (country: string, { builder = true } = {}): FormFieldOption[] => [
   { value: "Owner", label: "Owner" },
   { value: "Agent", label: "Agent" },
-  { value: "Builder", label: country === "IN" ? "Builder" : "Developer" },
+  ...(builder ? [{ value: "Builder", label: country === "IN" ? "Builder" : "Developer" }] : []),
+];
+/** UK listings show the council tax band and EPC rating (Rightmove, Zoopla). */
+const GB_RATINGS: FormFieldDef[] = [
+  { key: "councilTaxBand", type: "select", label: "Council Tax Band", options: opts(["A", "B", "C", "D", "E", "F", "G", "H"]) },
+  { key: "epcRating", type: "select", label: "EPC Rating", options: opts(["A", "B", "C", "D", "E", "F", "G"]) },
+];
+const RENT_PERIODS: FormFieldOption[] = [
+  { value: "month", label: "Per month" },
+  { value: "week", label: "Per week" },
 ];
 /** Ownership values (config/property sale.ownershipTypes) that come with a lease term. */
 const LEASEHOLDS: Record<string, string[]> = {
@@ -78,6 +86,11 @@ const BATHS: FormFieldDef = { key: "baths", type: "select", label: "Baths", opti
 const BEDS_WITH_STUDIO: FormFieldDef = { ...BEDS, options: counts(0, 5, "Studio") };
 const bedsBaths = (opts: { studio?: boolean } = {}): FormFieldDef[] => [opts.studio ? BEDS_WITH_STUDIO : BEDS, BATHS];
 
+const FLOOR_FIELDS: FormFieldDef[] = [
+  { key: "floor", type: "select", label: "Floor", options: counts(0, 10, "Ground"), lteField: "totalFloors" },
+  { key: "totalFloors", type: "select", label: "Total Floors", options: counts(1, 10) },
+];
+
 /** Lease lengths in months; 11 months is the standard Indian rental agreement. */
 function leaseTermOptions(country: string): FormFieldOption[] {
   const months = country === "IN" ? [1, 3, 6, 11, 12, 24] : [1, 3, 6, 12, 24];
@@ -114,8 +127,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
               : ([{ key: "builtup_area", type: "number", label: "Floor Area", unit: area, min: 1, width: "half" }] satisfies FormFieldDef[])),
             ...bedsBaths({ studio: true }),
             { key: "furnishing", type: "select", label: "Furnishing", options: c.rent.furnishingOptions },
-            { key: "floor", type: "select", label: "Floor", options: counts(0, 10, "Ground"), lteField: "totalFloors" },
-            { key: "totalFloors", type: "select", label: "Total Floors", options: counts(1, 10) },
+            ...FLOOR_FIELDS,
             { key: "parkingSpaces", type: "select", label: "Parking Spaces", options: COUNT_0_TO_5 },
             ...(country === "IN"
               ? ([{ key: "facing", type: "select", label: "Facing", options: FACING }] satisfies FormFieldDef[])
@@ -136,12 +148,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
                   },
                 ] satisfies FormFieldDef[])
               : []),
-            ...(country === "GB"
-              ? ([
-                  { key: "councilTaxBand", type: "select", label: "Council Tax Band", options: opts(["A", "B", "C", "D", "E", "F", "G", "H"]) },
-                  { key: "epcRating", type: "select", label: "EPC Rating", options: opts(["A", "B", "C", "D", "E", "F", "G"]) },
-                ] satisfies FormFieldDef[])
-              : []),
+            ...(country === "GB" ? GB_RATINGS : []),
           ],
         },
         {
@@ -161,20 +168,46 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           title: "Property",
           fields: [
             { key: "propertyType", type: "select", label: "Property Type", required: true, options: c.rent.propertyTypes },
-            { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "third" },
-            { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "third" },
-            { key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "third" },
+            { key: "listedBy", type: "select", label: "Listed By", required: true, options: listedByOptions(country, { builder: false }) },
+            // GB rents are quoted per week or per calendar month; IN and SG are always monthly.
+            ...(country === "GB"
+              ? ([
+                  { key: "rentPrice", type: "currency", label: "Rent", required: true, min: 1, width: "half" },
+                  { key: "rentPeriod", type: "select", label: "Rent Period", required: true, options: RENT_PERIODS, width: "half" },
+                  { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+                ] satisfies FormFieldDef[])
+              : ([
+                  { key: "rentPrice", type: "currency", label: "Rent", unit: "per month", required: true, min: 1, width: "half" },
+                  { key: "deposit", type: "currency", label: "Deposit", min: 0, width: "half" },
+                ] satisfies FormFieldDef[])),
+            // Maintenance charges are an Indian concept; GB and SG renters ask about bills.
+            ...(country === "IN"
+              ? ([{ key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "half" }] satisfies FormFieldDef[])
+              : ([{ key: "billsIncluded", type: "select", label: "Bills Included", options: opts(["Yes", "No", "Some"]) }] satisfies FormFieldDef[])),
             ...bedsBaths({ studio: true }),
             { key: "furnishing", type: "select", label: "Furnishing", options: c.rent.furnishingOptions },
-            { key: "available_from", type: "date", label: "Available From", width: "half" },
+            ...FLOOR_FIELDS,
+            { key: "parkingSpaces", type: "select", label: "Parking Spaces", options: counts(0, 3, "None") },
+            { key: "available_from", type: "date", label: "Available From", required: true, immediateOption: "Immediately" },
             { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country) },
+            ...(country === "GB"
+              ? []
+              : ([
+                  {
+                    key: "preferred_tenants",
+                    type: "select",
+                    label: "Preferred Tenants",
+                    options: opts(["Any", "Family", "Bachelors", "Working Professionals", "Students"]),
+                  },
+                ] satisfies FormFieldDef[])),
+            { key: "petsAllowed", type: "select", label: "Pets Allowed", options: opts(["Yes", "No", "By arrangement"]) },
+            ...(country === "GB" ? GB_RATINGS : []),
           ],
         },
         {
           title: "Features",
           fields: [
-            { key: "facilities", type: "multiselect", label: "Facilities", options: FACILITIES },
-            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(c.rent.amenities) },
+            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(mergeLists(FACILITIES_LIST, c.rent.amenities)) },
           ],
         },
       ];

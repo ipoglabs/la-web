@@ -70,6 +70,8 @@ export interface FormFieldDef {
   maxItems?: number;
   /** Grid width on md+ screens; always full width on mobile. */
   width?: "full" | "half" | "third";
+  /** Date: also offer a chip that saves this text instead of a date (e.g. "Immediately"). */
+  immediateOption?: string;
   /** Value a new post starts with (e.g. Negotiable = "No"). Not applied when editing. */
   defaultValue?: string;
   /** Show the field only while another field's value matches — e.g. Tenure

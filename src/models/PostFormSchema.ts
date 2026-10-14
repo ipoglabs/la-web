@@ -61,6 +61,7 @@ const FieldSchema = new Schema<FormFieldDef>(
     format: { type: String, enum: ["adTitle", "place"] },
     maxItems: Number,
     width: { type: String, enum: ["full", "half", "third"] },
+    immediateOption: String,
     defaultValue: String,
     showWhen: { type: ConditionSchema, default: undefined },
   },

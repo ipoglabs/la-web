@@ -77,7 +77,7 @@ function validateField(
     }
   }
 
-  if (field.type === "date" && Number.isNaN(Date.parse(String(value)))) {
+  if (field.type === "date" && value !== field.immediateOption && Number.isNaN(Date.parse(String(value)))) {
     return `${field.label} must be a valid date.`;
   }
 

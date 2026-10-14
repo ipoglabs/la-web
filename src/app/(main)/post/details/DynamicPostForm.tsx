@@ -255,19 +255,37 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
 
     // Same DD/MM/YYYY input as registration's Date of Birth; stores ISO
     // (YYYY-MM-DD) like before and shows its own error message.
-    case "date":
-      control = (
+    // With `immediateOption`, a chip beside it saves that text instead of a
+    // date; typing a date unselects it.
+    case "date": {
+      const immediate = field.immediateOption !== undefined && value === field.immediateOption;
+      const dateInput = (
         <DateInput
           id={field.key}
           label={field.label}
-          value={typeof value === "string" ? value : ""}
+          value={typeof value === "string" && !immediate ? value : ""}
           onChange={(iso) => set(iso ?? "")}
           inputFormat="DMY"
           blurDisplay="long"
           error={error}
         />
       );
+      control = field.immediateOption ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          <div className="flex-1">{dateInput}</div>
+          <ToggleButtonGroup
+            singleSelect
+            value={immediate ? [field.immediateOption] : []}
+            onChange={(v) => set(v[0] ?? "")}
+          >
+            <ToggleGroupButton value={field.immediateOption}>{field.immediateOption}</ToggleGroupButton>
+          </ToggleButtonGroup>
+        </div>
+      ) : (
+        dateInput
+      );
       break;
+    }
 
     case "text":
     default:

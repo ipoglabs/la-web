@@ -4,12 +4,12 @@ export const GBPropertyConfig: PropertyFormConfig = {
   areaUnit: "sq ft",
 
   rent: {
+    // No "Studio" type: a studio is Beds = Studio, so it isn't posted two ways.
     propertyTypes: [
       { value: "Flat",         label: "Flat / Apartment" },
       { value: "Terraced",     label: "Terraced House" },
       { value: "SemiDetached", label: "Semi-Detached" },
       { value: "Detached",     label: "Detached House" },
-      { value: "Studio",       label: "Studio" },
       { value: "Bungalow",     label: "Bungalow" },
       { value: "Other",        label: "Other" },
     ],
@@ -20,7 +20,7 @@ export const GBPropertyConfig: PropertyFormConfig = {
     ],
     amenities: [
       "Parking", "Garden", "Garage", "Balcony",
-      "Double Glazing", "Central Heating", "Security", "Pets Allowed",
+      "Double Glazing", "Central Heating", "Security",
     ],
   },
 
