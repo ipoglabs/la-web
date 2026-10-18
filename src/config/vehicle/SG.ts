@@ -18,5 +18,9 @@ export const SGVehicleConfig: VehicleFormConfig = {
     "Nissan", "Volkswagen", "Audi", "Lexus", "Mitsubishi", "Subaru", "Volvo",
     "Tesla", "BYD", "MG", "Skoda", "Peugeot", "Porsche",
   ],
+  motorcycleMakes: [
+    "Honda", "Yamaha", "Kawasaki", "Suzuki", "BMW", "Triumph", "Ducati", "Harley-Davidson",
+    "KTM", "Royal Enfield", "Aprilia", "Benelli", "Vespa", "Piaggio",
+  ],
   budgetPlaceholder: "e.g. 50000",
 };

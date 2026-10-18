@@ -17,6 +17,10 @@ export const INVehicleConfig: VehicleFormConfig = {
     "MG", "Renault", "Skoda", "Volkswagen", "Nissan", "Jeep", "Citroen", "BYD",
     "Mercedes-Benz", "BMW", "Audi", "Volvo", "Ford", "Chevrolet", "Fiat",
   ],
+  motorcycleMakes: [
+    "Hero", "Honda", "Bajaj", "TVS", "Royal Enfield", "Yamaha", "Suzuki", "KTM",
+    "Kawasaki", "Jawa", "Yezdi", "Harley-Davidson", "Triumph", "BMW", "Ather", "Ola Electric",
+  ],
   budgetPlaceholder: "e.g. 1000000",
 };
 

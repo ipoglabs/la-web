@@ -8,5 +8,7 @@ export interface VehicleFormConfig {
   motorcycleFuelTypes: Option[];
   /** Car makes offered on the Cars post form (an "Other" option is added after these). */
   carMakes: string[];
+  /** Motorcycle / scooter makes on the Motorcycle post form ("Other" is added after these). */
+  motorcycleMakes: string[];
   budgetPlaceholder: string;
 }

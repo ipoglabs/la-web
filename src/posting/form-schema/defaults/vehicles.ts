@@ -35,14 +35,62 @@ const paperwork: FormFieldDef[] = [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Cars ─────────────────────────────────────────────────────────────────────
-// Reworked per market (Vehicles › Cars review, 2026-10-18): GB mileage in
-// miles with MOT and ULEZ, SG COE details, IN registering state instead of
-// the plate. The other subcategories still share makeModel / paperwork.
+// ── Reworked per market: Cars, Motorcycle ────────────────────────────────────
+// From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
+// an MOT, SG COE details, IN registering state instead of the plate. The
+// other subcategories still share makeModel / paperwork.
 
 // Same stored "Yes" / "No" as Property's Negotiable.
 const YES_NO_TEXT = opts(["Yes", "No"]);
-const CAR_COLORS = opts(["White", "Black", "Silver", "Grey", "Blue", "Red", "Brown", "Green", "Other"]);
+const VEHICLE_COLORS = opts(["White", "Black", "Silver", "Grey", "Blue", "Red", "Brown", "Green", "Other"]);
+const listedBy: FormFieldDef = { key: "listedBy", type: "select", label: "Listed By", required: true, options: opts(["Owner", "Dealer"]) };
+const negotiable: FormFieldDef = { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO_TEXT, defaultValue: "No", width: "half" };
+
+/** Make from the market's list (Other asks for it), then Model as text. */
+const makeModelPicked = (makes: string[]): FormFieldDef[] => [
+  { key: "make", type: "select", display: "dropdown", label: "Make", required: true, options: opts([...makes, "Other"]), width: "half" },
+  { key: "makeOther", type: "text", label: "Other Make", required: true, width: "half", showWhen: { field: "make", in: ["Other"] } },
+  { key: "model", type: "text", label: "Model", required: true, width: "half" },
+];
+
+/** KMs Driven, or Mileage in miles in GB — same `kms` key. */
+const distance = (country: string): FormFieldDef =>
+  country === "GB"
+    ? { key: "kms", type: "number", label: "Mileage", unit: "miles", min: 0, width: "half" }
+    : { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" };
+
+/**
+ * The History section per market. GB keeps the plate (buyers run a history
+ * check) and adds MOT Expiry; SG drops the plate for COE Expiry; IN asks
+ * the registering state instead of the plate. `extra` goes before Service
+ * History (Cars: ULEZ in GB, registration date and depreciation in SG).
+ */
+function historyFields(country: string, extra: { GB?: FormFieldDef[]; SG?: FormFieldDef[] } = {}): FormFieldDef[] {
+  const serviceHistoryField: FormFieldDef = { key: "serviceHistory", type: "select", label: "Service History", options: serviceHistory };
+  if (country === "GB") {
+    return [
+      { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]) },
+      { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
+      { key: "motExpiry", type: "date", label: "MOT Expiry", width: "half" },
+      ...(extra.GB ?? []),
+      serviceHistoryField,
+    ];
+  }
+  if (country === "SG") {
+    return [
+      { key: "ownerType", type: "select", label: "No. of Owners", options: opts(["1", "2", "3+"]) },
+      { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half" },
+      ...(extra.SG ?? []),
+      serviceHistoryField,
+    ];
+  }
+  return [
+    { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]) },
+    { key: "registrationState", type: "select", display: "dropdown", label: "Registration State (RTO)", options: opts(IN_REGISTRATION_STATES), width: "half" },
+    { key: "insuranceValidTill", type: "date", label: "Insurance Valid Till", width: "half" },
+    serviceHistoryField,
+  ];
+}
 // Saved as a number (8 = "8+").
 const CAR_SEATS = [
   ...["2", "4", "5", "6", "7"].map((v) => ({ value: v, label: v })),
@@ -51,58 +99,22 @@ const CAR_SEATS = [
 
 function carsSections(country: string, c: VehicleFormConfig): FormSection[] {
   const gb = country === "GB";
-  const sg = country === "SG";
   const india = country === "IN";
 
   const bodyType = opts(["SUV", "Sedan", "Hatchback", ...(india ? ["MUV"] : []), "Coupe", "MPV", "Estate", "Convertible", "Pickup"])
     // GB says Saloon; stored as Sedan everywhere.
     .map((o) => (gb && o.value === "Sedan" ? { ...o, label: "Saloon" } : o));
 
-  const ownerType: FormFieldDef = gb
-    ? { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]) }
-    : sg
-      ? { key: "ownerType", type: "select", label: "No. of Owners", options: opts(["1", "2", "3+"]) }
-      : { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]) };
-
-  const serviceHistoryField: FormFieldDef = { key: "serviceHistory", type: "select", label: "Service History", options: serviceHistory };
-
-  const history: FormFieldDef[] = gb
-    ? [
-        ownerType,
-        { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
-        { key: "motExpiry", type: "date", label: "MOT Expiry", width: "half" },
-        { key: "ulezCompliant", type: "select", label: "ULEZ Compliant", options: YES_NO_TEXT },
-        serviceHistoryField,
-      ]
-    : sg
-      ? [
-          ownerType,
-          { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half" },
-          { key: "registrationDate", type: "date", label: "Registration Date", width: "half" },
-          { key: "depreciationPerYear", type: "currency", label: "Depreciation per Year", unit: "/ year", min: 0, width: "half" },
-          serviceHistoryField,
-        ]
-      : [
-          ownerType,
-          { key: "registrationState", type: "select", display: "dropdown", label: "Registration State (RTO)", options: opts(IN_REGISTRATION_STATES), width: "half" },
-          { key: "insuranceValidTill", type: "date", label: "Insurance Valid Till", width: "half" },
-          serviceHistoryField,
-        ];
-
   return [
     basics,
     {
       title: "Vehicle",
       fields: [
-        { key: "listedBy", type: "select", label: "Listed By", required: true, options: opts(["Owner", "Dealer"]) },
+        listedBy,
         { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
-        { key: "make", type: "select", display: "dropdown", label: "Make", required: true, options: opts([...c.carMakes, "Other"]), width: "half" },
-        { key: "makeOther", type: "text", label: "Other Make", required: true, width: "half", showWhen: { field: "make", in: ["Other"] } },
-        { key: "model", type: "text", label: "Model", required: true, width: "half" },
+        ...makeModelPicked(c.carMakes),
         { key: "year", type: "number", label: "Year", required: true, width: "half" },
-        gb
-          ? { key: "kms", type: "number", label: "Mileage", unit: "miles", min: 0, width: "half" }
-          : { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
+        distance(country),
         gb
           ? { key: "engineCapacity", type: "number", label: "Engine Size", unit: "litres", min: 0.5, width: "half" }
           : { key: "engineCapacity", type: "number", label: "Engine Size", unit: "cc", min: 50, width: "half" },
@@ -110,13 +122,64 @@ function carsSections(country: string, c: VehicleFormConfig): FormSection[] {
         // AMT (automated manual) is an Indian term.
         { key: "transmission", type: "select", label: "Transmission", options: india ? transmission : transmission.slice(0, 2) },
         { key: "bodyType", type: "select", label: "Body Type", options: bodyType },
-        { key: "color", type: "select", label: "Color", options: CAR_COLORS },
+        { key: "color", type: "select", label: "Color", options: VEHICLE_COLORS },
         { key: "seatingCapacity", type: "select", label: "Seats", options: CAR_SEATS },
         { ...price, width: "half" },
-        { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO_TEXT, defaultValue: "No", width: "half" },
+        negotiable,
       ],
     },
-    { title: "History", fields: history },
+    {
+      title: "History",
+      fields: historyFields(country, {
+        GB: [{ key: "ulezCompliant", type: "select", label: "ULEZ Compliant", options: YES_NO_TEXT }],
+        SG: [
+          { key: "registrationDate", type: "date", label: "Registration Date", width: "half" },
+          { key: "depreciationPerYear", type: "currency", label: "Depreciation per Year", unit: "/ year", min: 0, width: "half" },
+        ],
+      }),
+    },
+  ];
+}
+
+// Saved as slugs; search filters on them (lib/postFilterQuery.ts).
+const BIKE_TYPES = pairs([
+  ["scooter", "Scooter"],
+  ["commuter", "Commuter"],
+  ["sports", "Sports"],
+  ["cruiser", "Cruiser"],
+  ["adventure", "Adventure / Touring"],
+  ["offroad", "Off-road"],
+  ["moped", "Moped"],
+]);
+
+function motorcycleSections(country: string, c: VehicleFormConfig): FormSection[] {
+  return [
+    basics,
+    {
+      title: "Vehicle",
+      fields: [
+        listedBy,
+        { key: "bikeType", type: "select", label: "Bike Type", required: true, options: BIKE_TYPES },
+        { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
+        ...makeModelPicked(c.motorcycleMakes),
+        { key: "year", type: "number", label: "Year", required: true, width: "half" },
+        distance(country),
+        { key: "engineCapacity", type: "number", label: "Engine Capacity", unit: "cc", min: 1, width: "half" },
+        // Hybrid motorbikes are almost unknown — the option invited mistakes.
+        { key: "fuelType", type: "select", label: "Fuel Type", options: pairs([["petrol", "Petrol"], ["electric", "Electric"]]) },
+        // Indian buyers say geared / gearless; same stored values.
+        {
+          key: "transmission",
+          type: "select",
+          label: "Transmission",
+          options: country === "IN" ? pairs([["manual", "Geared"], ["automatic", "Gearless (scooter)"]]) : transmission.slice(0, 2),
+        },
+        { key: "color", type: "select", label: "Color", options: VEHICLE_COLORS },
+        { ...price, width: "half" },
+        negotiable,
+      ],
+    },
+    { title: "History", fields: historyFields(country) },
   ];
 }
 
@@ -139,24 +202,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return carsSections(country, c);
 
     case "Motorcycle":
-      return [
-        basics,
-        {
-          title: "Vehicle",
-          fields: [
-            ...makeModel(true),
-            { key: "year", type: "number", label: "Year", required: true, width: "half" },
-            { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
-            { key: "engineCapacity", type: "number", label: "Engine Capacity", unit: "cc", min: 1, width: "half" },
-            { key: "color", type: "text", label: "Color", width: "half" },
-            { key: "fuelType", type: "select", label: "Fuel Type", options: c.motorcycleFuelTypes },
-            { key: "transmission", type: "select", label: "Transmission", options: transmission.slice(0, 2) },
-            { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
-            price,
-          ],
-        },
-        { title: "History", fields: paperwork },
-      ];
+      return motorcycleSections(country, c);
 
     case "Van":
       return [

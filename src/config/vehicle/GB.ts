@@ -19,5 +19,9 @@ export const GBVehicleConfig: VehicleFormConfig = {
     "Mazda", "MINI", "Land Rover", "Jaguar", "Volvo", "Tesla", "MG", "Citroen",
     "Fiat", "Suzuki", "Dacia", "Lexus", "Porsche",
   ],
+  motorcycleMakes: [
+    "Honda", "Yamaha", "Kawasaki", "Suzuki", "BMW", "Triumph", "Ducati", "Harley-Davidson",
+    "KTM", "Royal Enfield", "Aprilia", "Husqvarna", "Vespa", "Piaggio", "Lexmoto",
+  ],
   budgetPlaceholder: "e.g. 15000",
 };
