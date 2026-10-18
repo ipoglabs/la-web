@@ -15,7 +15,7 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles (except EV and Wanted) have full filter mappings. Other categories
+ * Property and Vehicles (except Wanted) have full filter mappings. Other categories
  * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
  * toggles are still UI-only.
  */
@@ -370,7 +370,7 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
-// ── Vehicles › Cars, Motorcycle, Van, Truck, Boats, Parts & Accessories ──────
+// ── Vehicles (all but Wanted) ────────────────────────────────────────────────
 // Values are what the post forms save (posting/form-schema/defaults/
 // vehicles.ts, reworked 2026-10-18). Older posts typed some of them, so
 // text matches ignore case. Filters a sub doesn't offer never arrive.
@@ -419,8 +419,15 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
   const maxMileage = Number(first("max_mileage"));
   if (maxMileage) clauses.push({ kms: { $lte: maxMileage } });
 
+  // Cars › Electric also finds electric cars posted under Electric Vehicles
+  // (they have Vehicle Type = car and no Fuel Type); see carsAlsoSearchEv.
+  const fuel = picked("fuel_type");
+  if (sub === "cars" && fuel.includes("electric")) {
+    clauses.push({ $or: [{ fuelType: { $in: fuel.map(exactInsensitive) } }, { "attributes.vehicleType": "car" }] });
+  }
+
   for (const [id, field] of [
-    ["fuel_type", "fuelType"],
+    ...(sub === "cars" && fuel.includes("electric") ? [] : ([["fuel_type", "fuelType"]] as const)),
     ["body_type", "bodyType"],
     ["bike_type", "attributes.bikeType"],
     ["van_type", "attributes.vanType"],
@@ -434,6 +441,7 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
     ["boat_type", "attributes.boatType"],
     ["hull", "attributes.hullMaterial"],
     ["engine_type", "attributes.engineType"],
+    ["charging_port", "attributes.chargingPort"],
     ["color", "color"],
   ] as const) {
     const values = picked(id);
@@ -463,6 +471,17 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
   const origin = first("origin");
   if (origin) clauses.push({ "attributes.partOrigin": origin });
   if (first("delivery") === "yes") clauses.push({ "attributes.dealMethod": "delivery" });
+
+  // EV: "scooter" was the old Type value for electric two-wheelers.
+  const evType = picked("ev_type").map((v) => (v === "scooter" ? "motorcycle" : v));
+  if (evType.length) clauses.push({ "attributes.vehicleType": { $in: evType } });
+  // Range is saved in the market's unit (km, or miles in GB), like Mileage.
+  const rangeMin = Number(first("range_min"));
+  if (rangeMin) clauses.push({ "attributes.rangeKm": { $gte: rangeMin } });
+  const healthMin = Number(first("battery_health_min"));
+  if (healthMin) clauses.push({ "attributes.batteryHealth": { $gte: healthMin } });
+  if (first("dc_fast") === "yes") clauses.push({ "attributes.dcFastCharging": "Yes" });
+  if (first("charger") === "yes") clauses.push({ "attributes.chargerIncluded": "Yes" });
 
   if (first("trailer") === "yes") clauses.push({ "attributes.trailerIncluded": "Yes" });
   if (first("mooring") === "yes") clauses.push({ "attributes.mooringIncluded": "Yes" });
@@ -508,6 +527,15 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
   return clauses;
 }
 
+/**
+ * Cars searched with Fuel Type = Electric also cover the Electric Vehicles
+ * subcategory: the listings route widens its subcategory match to it, and
+ * only that subcategory's cars (Vehicle Type = car) get through.
+ */
+export function carsAlsoSearchEv(category: string, sub: string, filterValues: Record<string, string[]>): boolean {
+  return category === "vehicles" && sub === "cars" && (filterValues.fuel_type ?? []).includes("electric");
+}
+
 /** Whether a category / sub's search has a working price filter (the listings UI hides it otherwise). */
 export function hasPriceFilter(category: string, sub: string): boolean {
   if (category === "property") return Boolean(PROPERTY_SUB_FILTERS[sub]?.priceField);
@@ -535,7 +563,7 @@ export function buildFilterQuery(
     if (jobs) return jobs;
   }
 
-  if (category === "vehicles" && ["cars", "motorcycle", "van", "truck", "boats", "parts_accessories"].includes(sub)) {
+  if (category === "vehicles" && sub !== "wanted") {
     const clauses = buildVehicleQuery(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};

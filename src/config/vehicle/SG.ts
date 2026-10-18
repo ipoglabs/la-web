@@ -24,5 +24,9 @@ export const SGVehicleConfig: VehicleFormConfig = {
   ],
   vanMakes: ["Toyota", "Nissan", "Hyundai", "Isuzu", "Mercedes-Benz", "Ford", "Volkswagen", "Maxus", "Mitsubishi", "Kia"],
   truckMakes: ["Isuzu", "Hino", "Mitsubishi Fuso", "Nissan UD", "Volvo", "Scania", "Mercedes-Benz", "MAN", "DAF", "Toyota"],
+  evMakes: [
+    "Tesla", "BYD", "Hyundai", "Kia", "MG", "BMW", "Mercedes-Benz", "Volvo", "Polestar",
+    "Nissan", "Audi", "Porsche", "Zero",
+  ],
   budgetPlaceholder: "e.g. 50000",
 };

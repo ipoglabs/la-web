@@ -14,5 +14,7 @@ export interface VehicleFormConfig {
   vanMakes: string[];
   /** Truck makes on the Truck post form ("Other" is added after these). */
   truckMakes: string[];
+  /** Electric car / bike / van makes on the Electric Vehicles post form ("Other" is added after these). */
+  evMakes: string[];
   budgetPlaceholder: string;
 }

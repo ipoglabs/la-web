@@ -28,5 +28,9 @@ export const GBVehicleConfig: VehicleFormConfig = {
     "Fiat", "Nissan", "Toyota", "Iveco", "MAN", "Maxus",
   ],
   truckMakes: ["DAF", "Scania", "Volvo", "Mercedes-Benz", "MAN", "Iveco", "Renault", "Isuzu", "Fuso", "Ford"],
+  evMakes: [
+    "Tesla", "BYD", "MG", "Kia", "Hyundai", "Volkswagen", "BMW", "Mercedes-Benz", "Audi",
+    "Polestar", "Nissan", "Renault", "Peugeot", "Vauxhall", "Volvo", "Zero", "Energica",
+  ],
   budgetPlaceholder: "e.g. 15000",
 };

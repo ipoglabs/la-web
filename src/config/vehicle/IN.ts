@@ -23,6 +23,10 @@ export const INVehicleConfig: VehicleFormConfig = {
   ],
   vanMakes: ["Maruti Suzuki", "Tata", "Mahindra", "Force", "Toyota", "Ashok Leyland", "Isuzu", "Kia", "Piaggio"],
   truckMakes: ["Tata", "Ashok Leyland", "Mahindra", "Eicher", "BharatBenz", "Volvo", "Scania", "Isuzu", "Force", "SML Isuzu"],
+  evMakes: [
+    "Tata", "MG", "Mahindra", "Hyundai", "BYD", "Kia", "Citroen", "BMW", "Mercedes-Benz",
+    "Ather", "Ola Electric", "TVS", "Bajaj", "Hero Electric", "Revolt", "Mahindra Last Mile",
+  ],
   budgetPlaceholder: "e.g. 1000000",
 };
 

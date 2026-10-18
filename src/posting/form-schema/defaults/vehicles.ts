@@ -28,7 +28,7 @@ const makeModel = (required: boolean): FormFieldDef[] => [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Reworked: Cars, Motorcycle, Van, Truck, Boats, Parts & Accessories ───────
+// ── Reworked: Cars, Motorcycle, Van, Truck, Boats, Parts & Accessories, EV ───
 // From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
 // an MOT, SG COE details, IN registering state instead of the plate. The
 // other subcategories still share makeModel / paperwork.
@@ -403,6 +403,63 @@ const partsSections: FormSection[] = [
   },
 ];
 
+// Bicycles have no year, registration or history to ask about.
+const notBicycle = { field: "vehicleType", notIn: ["bicycle"] };
+
+function evSections(country: string, c: VehicleFormConfig): FormSection[] {
+  const gb = country === "GB";
+  const india = country === "IN";
+  return [
+    basics,
+    {
+      title: "Vehicle",
+      fields: [
+        listedBy,
+        {
+          key: "vehicleType",
+          type: "select",
+          label: "Vehicle Type",
+          required: true,
+          options: pairs([
+            ["car", "Car"],
+            ["motorcycle", "Motorcycle / Scooter"],
+            ["van", "Van"],
+            // E-rickshaws are a large Indian EV market.
+            ...(india ? ([["three_wheeler", "Three-wheeler"]] as [string, string][]) : []),
+            ["bicycle", "Bicycle"],
+            ["other", "Other"],
+          ]),
+        },
+        { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
+        ...makeModelPicked(c.evMakes),
+        { key: "year", type: "number", label: "Year", required: true, width: "half", showWhen: notBicycle },
+        distance(country),
+        { key: "batteryCapacity", type: "number", label: "Battery Capacity", unit: "kWh", min: 0, max: 1000, width: "half" },
+        { key: "rangeKm", type: "number", label: "Range", unit: gb ? "miles" : "km", min: 0, max: 5000, width: "half" },
+        // The main wear figure for a used EV, as mileage is for a petrol car.
+        { key: "batteryHealth", type: "number", label: "Battery Health", unit: "%", min: 0, max: 100, width: "half" },
+        { key: "batteryWarrantyUntil", type: "date", label: "Battery Warranty Until", width: "half" },
+        { key: "motorPower", type: "number", label: "Motor Power", unit: "kW", min: 0, max: 2000, width: "half" },
+        // Which public chargers fit — replaces the old AC / DC / Both choice.
+        {
+          key: "chargingPort",
+          type: "select",
+          label: "Charging Port",
+          options: india
+            ? pairs([["type2", "Type 2"], ["ccs2", "CCS2"], ["bharat", "Bharat (AC / DC)"], ["other", "Other"]])
+            : pairs([["type2", "Type 2"], ["ccs2", "CCS2"], ["chademo", "CHAdeMO"], ["other", "Other"]]),
+        },
+        { key: "dcFastCharging", type: "select", label: "DC Fast Charging", options: YES_NO_TEXT },
+        { key: "chargerIncluded", type: "select", label: "Home Charger Included", options: YES_NO_TEXT },
+        { key: "color", type: "select", label: "Color", options: VEHICLE_COLORS },
+        { ...price, width: "half" },
+        negotiable,
+      ],
+    },
+    { title: "History", fields: historyFields(country).map((f) => ({ ...f, showWhen: notBicycle })) },
+  ];
+}
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -437,24 +494,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return partsSections;
 
     case "Electric Vehicles":
-      return [
-        basics,
-        {
-          title: "Vehicle",
-          fields: [
-            { key: "vehicleType", type: "select", label: "Vehicle Type", required: true, options: pairs([["car", "Car"], ["motorcycle", "Motorcycle / Scooter"], ["bicycle", "Bicycle"], ["other", "Other"]]) },
-            ...makeModel(true),
-            { key: "year", type: "number", label: "Year", width: "half" },
-            { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
-            { key: "batteryCapacity", type: "number", label: "Battery Capacity", unit: "kWh", min: 0, max: 1000, width: "half" },
-            { key: "rangeKm", type: "number", label: "Range", unit: "km", min: 0, max: 5000, width: "half" },
-            { key: "chargingType", type: "select", label: "Charging Type", options: pairs([["ac", "AC"], ["dc", "DC Fast"], ["both", "Both"]]) },
-            { key: "color", type: "text", label: "Color", width: "half" },
-            { key: "condition", type: "select", label: "Condition", options: vehicleCondition },
-            price,
-          ],
-        },
-      ];
+      return evSections(country, c);
 
     case "Wanted":
       return [

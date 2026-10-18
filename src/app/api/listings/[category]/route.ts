@@ -21,7 +21,7 @@ import { mapPostToListing, type LeanOwner } from "@/lib/mapPostToListing";
 import { publicPostFilter } from "@/lib/postVisibility";
 import { resolvePostSort } from "@/lib/postSort";
 import { parseFilterValues } from "@/lib/listing-filters";
-import { buildFilterQuery } from "@/lib/postFilterQuery";
+import { buildFilterQuery, carsAlsoSearchEv } from "@/lib/postFilterQuery";
 import { buildKeywordQuery } from "@/lib/postSearchQuery";
 import { getActiveListingCountsByOwner } from "@/lib/postActiveListingsCount";
 import { parseGeoParams, filterByRadius, sortByDistance, shouldSortByDistance } from "@/lib/geo";
@@ -133,6 +133,13 @@ export async function GET(
         (v): v is string | RegExp => Boolean(v),
       );
       baseQuery.subcategory = values.length > 1 ? { $in: values } : values[0];
+
+      // Cars › Electric: electric cars posted under Electric Vehicles count
+      // too (only cars — the filter query below keeps out EV bikes and vans).
+      if (carsAlsoSearchEv(category, sub, parseFilterValues(searchParams))) {
+        const evLabel = SUBCATEGORY_LABELS[category]?.electric_vehicles;
+        baseQuery.subcategory = { $in: [...values, "electric_vehicles", ...(evLabel ? [evLabel] : [])] };
+      }
     }
 
     // Filter sidebar values (see lib/listing-filters.ts's URL contract) →
