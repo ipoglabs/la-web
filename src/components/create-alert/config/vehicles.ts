@@ -3,7 +3,7 @@ import { conditionFull, fuelType } from "./shared";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// Filters shared by the reworked Cars, Motorcycle, Van and Truck forms. Option values
+// Filters shared by the reworked Cars, Motorcycle, Van, Truck and Boats forms. Option values
 // are what the post forms save (posting/form-schema/defaults/vehicles.ts),
 // matched in lib/postFilterQuery.ts. Each list covers every market —
 // lib/listing-filters.ts trims and relabels it per country.
@@ -458,19 +458,62 @@ export const vehicles: MainCategory = {
       id: "boats",
       label: "Boats",
       icon: "ship",
+      // Per market: Narrowboat and Mooring outside IN only where the form asks them.
       filters: [
-        conditionFull,
+        { ...listedBy, options: [...listedBy.options, { label: "Broker", value: "broker" }] },
         {
           id: "boat_type",
           label: "Boat Type",
           type: "toggle",
           options: [
-            { label: "Speedboat", value: "speedboat" },
-            { label: "Sailboat",  value: "sailboat"  },
-            { label: "Yacht",     value: "yacht"     },
-            { label: "Fishing",   value: "fishing"   },
-            { label: "Pontoon",   value: "pontoon"   },
-            { label: "Jet Ski",   value: "jetski"    },
+            { label: "Motor",            value: "motor"      },
+            { label: "Speedboat",        value: "speedboat"  },
+            { label: "Sail",             value: "sail"       },
+            { label: "Yacht",            value: "yacht"      },
+            { label: "Fishing",          value: "fishing"    },
+            { label: "RIB / Inflatable", value: "rib"        },
+            { label: "Houseboat",        value: "houseboat"  },
+            { label: "Narrowboat",       value: "narrowboat" },
+            { label: "Jet Ski",          value: "jetski"     },
+          ],
+        },
+        conditionNewUsed,
+        yearFrom,
+        {
+          // Values are foot ranges ("min-max", open-ended "min-").
+          id: "length_ft",
+          label: "Length",
+          type: "toggle",
+          options: [
+            { label: "Up to 20 ft", value: "0-20"  },
+            { label: "21–30 ft",    value: "21-30" },
+            { label: "31–40 ft",    value: "31-40" },
+            { label: "Over 40 ft",  value: "41-"   },
+          ],
+        },
+        {
+          id: "max_engine_hours",
+          label: "Engine Hours",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",             value: "any"  },
+            { label: "Up to 250 hrs",   value: "250"  },
+            { label: "Up to 500 hrs",   value: "500"  },
+            { label: "Up to 1,000 hrs", value: "1000" },
+            { label: "Up to 2,000 hrs", value: "2000" },
+          ],
+        },
+        {
+          id: "hull",
+          label: "Hull Material",
+          type: "toggle",
+          options: [
+            { label: "GRP / Fibreglass", value: "grp"        },
+            { label: "Aluminium",        value: "aluminium"  },
+            { label: "Steel",            value: "steel"      },
+            { label: "Wood",             value: "wood"       },
+            { label: "Inflatable",       value: "inflatable" },
           ],
         },
         {
@@ -478,10 +521,54 @@ export const vehicles: MainCategory = {
           label: "Engine",
           type: "toggle",
           options: [
-            { label: "Inboard",  value: "inboard"  },
-            { label: "Outboard", value: "outboard" },
-            { label: "Electric", value: "electric" },
-            { label: "Sail",     value: "sail"     },
+            { label: "Inboard",    value: "inboard"    },
+            { label: "Outboard",   value: "outboard"   },
+            { label: "Sterndrive", value: "sterndrive" },
+            { label: "Jet",        value: "jet"        },
+            { label: "None",       value: "none"       },
+          ],
+        },
+        {
+          id: "fuel_type",
+          label: "Fuel Type",
+          type: "toggle",
+          options: [
+            { label: "Petrol",   value: "petrol"   },
+            { label: "Diesel",   value: "diesel"   },
+            { label: "Electric", value: "electric", icon: "zap" },
+          ],
+        },
+        {
+          id: "berths_min",
+          label: "Berths",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any", value: "any" },
+            { label: "1+",  value: "1"   },
+            { label: "2+",  value: "2"   },
+            { label: "4+",  value: "4"   },
+            { label: "6+",  value: "6"   },
+          ],
+        },
+        {
+          id: "trailer",
+          label: "Trailer",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",              value: "any" },
+            { label: "Trailer included", value: "yes" },
+          ],
+        },
+        {
+          id: "mooring",
+          label: "Mooring",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",              value: "any" },
+            { label: "Mooring included", value: "yes" },
           ],
         },
       ],

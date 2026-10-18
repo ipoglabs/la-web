@@ -28,7 +28,7 @@ const makeModel = (required: boolean): FormFieldDef[] => [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Reworked per market: Cars, Motorcycle, Van, Truck ────────────────────────
+// ── Reworked per market: Cars, Motorcycle, Van, Truck, Boats ─────────────────
 // From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
 // an MOT, SG COE details, IN registering state instead of the plate. The
 // other subcategories still share makeModel / paperwork.
@@ -307,6 +307,57 @@ function truckSections(country: string, c: VehicleFormConfig): FormSection[] {
   ];
 }
 
+function boatsSections(country: string): FormSection[] {
+  const gb = country === "GB";
+  return [
+    basics,
+    {
+      title: "Boat",
+      fields: [
+        // Boats are often sold through brokers.
+        { key: "listedBy", type: "select", label: "Listed By", required: true, options: opts(["Owner", "Broker", "Dealer"]) },
+        {
+          key: "boatType",
+          type: "select",
+          label: "Boat Type",
+          required: true,
+          options: pairs([
+            ["motor", "Motor"],
+            ["speedboat", "Speedboat"],
+            ["sail", "Sail"],
+            ["yacht", "Yacht"],
+            ["fishing", "Fishing"],
+            ["rib", "RIB / Inflatable"],
+            ["houseboat", "Houseboat"],
+            // GB canal boats.
+            ...(gb ? ([["narrowboat", "Narrowboat"]] as [string, string][]) : []),
+            ["jetski", "Jet Ski"],
+            ["other", "Other"],
+          ]),
+        },
+        { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
+        ...makeModel(false),
+        { key: "year", type: "number", label: "Year", width: "half" },
+        { key: "lengthFt", type: "number", label: "Length", unit: "ft", min: 1, max: 1000, width: "half" },
+        { key: "hullMaterial", type: "select", label: "Hull Material", options: pairs([["grp", "GRP / Fibreglass"], ["aluminium", "Aluminium"], ["steel", "Steel"], ["wood", "Wood"], ["inflatable", "Inflatable"]]) },
+        { key: "engineType", type: "select", label: "Engine Type", options: pairs([["inboard", "Inboard"], ["outboard", "Outboard"], ["sterndrive", "Sterndrive"], ["jet", "Jet"], ["none", "None"]]) },
+        { key: "fuelType", type: "select", label: "Fuel Type", options: pairs([["petrol", "Petrol"], ["diesel", "Diesel"], ["electric", "Electric"], ["none", "None"]]) },
+        // A used boat's main wear figure, as mileage is for a car.
+        { key: "engineHours", type: "number", label: "Engine Hours", unit: "hrs", min: 0, max: 100_000, width: "half" },
+        { key: "enginePower", type: "number", label: "Engine Power", unit: "hp", min: 0, max: 10_000, width: "half" },
+        { key: "berths", type: "number", label: "Berths", min: 0, max: 50, width: "half" },
+        { key: "maxPassengers", type: "number", label: "Max Passengers", min: 1, max: 500, width: "half" },
+        { key: "trailerIncluded", type: "select", label: "Trailer Included", options: YES_NO_TEXT },
+        // A transferable mooring adds real value; GB and SG boats are often sold with one.
+        ...(country === "IN" ? [] : ([{ key: "mooringIncluded", type: "select", label: "Mooring Included", options: YES_NO_TEXT }] satisfies FormFieldDef[])),
+        { ...price, width: "half" },
+        negotiable,
+        ...(gb ? ([{ key: "vatPaid", type: "select", label: "VAT Paid", options: YES_NO_TEXT }] satisfies FormFieldDef[]) : []),
+      ],
+    },
+  ];
+}
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -335,21 +386,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return truckSections(country, c);
 
     case "Boats":
-      return [
-        basics,
-        {
-          title: "Boat",
-          fields: [
-            { key: "boatType", type: "select", label: "Boat Type", required: true, options: pairs([["motor", "Motor"], ["sail", "Sail"], ["yacht", "Yacht"], ["fishing", "Fishing"], ["jetski", "Jet Ski"], ["other", "Other"]]) },
-            ...makeModel(false),
-            { key: "year", type: "number", label: "Year", width: "half" },
-            { key: "lengthFt", type: "number", label: "Length", unit: "ft", min: 1, max: 1000, width: "half" },
-            { key: "engineType", type: "select", label: "Engine Type", options: pairs([["inboard", "Inboard"], ["outboard", "Outboard"], ["none", "None"]]) },
-            { key: "condition", type: "select", label: "Condition", options: vehicleCondition },
-            price,
-          ],
-        },
-      ];
+      return boatsSections(country);
 
     case "Parts & Accessories":
       return [
