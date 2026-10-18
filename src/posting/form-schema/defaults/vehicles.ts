@@ -28,7 +28,7 @@ const makeModel = (required: boolean): FormFieldDef[] => [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Reworked: Cars, Motorcycle, Van, Truck, Boats, Parts & Accessories, EV ───
+// ── Reworked per market: every Vehicles subcategory ──────────────────────────
 // From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
 // an MOT, SG COE details, IN registering state instead of the plate. The
 // other subcategories still share makeModel / paperwork.
@@ -93,13 +93,17 @@ const CAR_SEATS = [
   { value: "8", label: "8+" },
 ];
 
+/** Cars body types; GB says Saloon (stored as Sedan everywhere), MUV is Indian. */
+const carBodyTypes = (country: string) =>
+  opts(["SUV", "Sedan", "Hatchback", ...(country === "IN" ? ["MUV"] : []), "Coupe", "MPV", "Estate", "Convertible", "Pickup"]).map((o) =>
+    country === "GB" && o.value === "Sedan" ? { ...o, label: "Saloon" } : o,
+  );
+
 function carsSections(country: string, c: VehicleFormConfig): FormSection[] {
   const gb = country === "GB";
   const india = country === "IN";
 
-  const bodyType = opts(["SUV", "Sedan", "Hatchback", ...(india ? ["MUV"] : []), "Coupe", "MPV", "Estate", "Convertible", "Pickup"])
-    // GB says Saloon; stored as Sedan everywhere.
-    .map((o) => (gb && o.value === "Sedan" ? { ...o, label: "Saloon" } : o));
+  const bodyType = carBodyTypes(country);
 
   return [
     basics,
@@ -460,6 +464,68 @@ function evSections(country: string, c: VehicleFormConfig): FormSection[] {
   ];
 }
 
+// Wanted: which fields apply depends on what the buyer is looking for.
+const lookingFor = (values: string[]) => ({ field: "vehicleType", in: values });
+
+function wantedSections(country: string, c: VehicleFormConfig): FormSection[] {
+  const gb = country === "GB";
+  return [
+    basics,
+    {
+      title: "Looking For",
+      fields: [
+        {
+          key: "vehicleType",
+          type: "select",
+          label: "Vehicle Category",
+          required: true,
+          // Matches the selling subcategories.
+          options: pairs([
+            ["car", "Car"],
+            ["motorcycle", "Motorcycle"],
+            ["van", "Van"],
+            ["truck", "Truck"],
+            ["boat", "Boat"],
+            ["electric", "Electric Vehicle"],
+            ["parts", "Parts"],
+          ]),
+        },
+        { key: "partWanted", type: "text", label: "Part Wanted", placeholder: "Part name or number", showWhen: lookingFor(["parts"]) },
+        {
+          key: "make",
+          type: "select",
+          display: "dropdown",
+          label: "Preferred Make",
+          options: opts(["Any", ...c.carMakes, "Other"]),
+          width: "half",
+          showWhen: { field: "vehicleType", notIn: ["parts"] },
+        },
+        { key: "makeOther", type: "text", label: "Other Make", width: "half", showWhen: { field: "make", in: ["Other"] } },
+        { key: "model", type: "text", label: "Preferred Model", width: "half", showWhen: { field: "vehicleType", notIn: ["parts"] } },
+        // Its own key: saved as "year" it read as the vehicle's actual year in search.
+        { key: "minYear", type: "number", label: "Min Year", min: 1900, max: 2100, width: "half", showWhen: { field: "vehicleType", notIn: ["parts"] } },
+        {
+          key: "maxMileage",
+          type: "number",
+          label: "Max Mileage",
+          unit: gb ? "miles" : "km",
+          min: 0,
+          max: 5_000_000,
+          width: "half",
+          showWhen: lookingFor(["car", "motorcycle", "van", "truck", "electric"]),
+        },
+        { key: "maxBudget", type: "currency", label: "Max Budget", required: true, min: 1, width: "half" },
+        { key: "bodyType", type: "select", label: "Body Type", options: carBodyTypes(country), showWhen: lookingFor(["car"]) },
+        { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes, showWhen: lookingFor(["car", "motorcycle", "van", "truck"]) },
+        { key: "transmission", type: "select", label: "Transmission", options: transmission.slice(0, 2), showWhen: lookingFor(["car", "van", "truck"]) },
+        { key: "condition", type: "select", label: "Condition", options: pairs([["new", "New"], ["used", "Used"], ["any", "Any"]]) },
+        { key: "buyingFrom", type: "select", label: "Buying From", options: pairs([["owner", "Owner"], ["dealer", "Dealer"], ["any", "Any"]]) },
+        { key: "neededBy", type: "select", label: "Needed By", options: pairs([["asap", "As soon as possible"], ["month", "Within a month"], ["looking", "Just looking"]]) },
+      ],
+    },
+  ];
+}
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -497,21 +563,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return evSections(country, c);
 
     case "Wanted":
-      return [
-        basics,
-        {
-          title: "Looking For",
-          fields: [
-            { key: "vehicleType", type: "select", label: "Vehicle Category", required: true, options: pairs([["car", "Car"], ["motorcycle", "Motorcycle"], ["van", "Van"], ["truck", "Truck"], ["parts", "Parts"]]) },
-            { key: "make", type: "text", label: "Preferred Make", width: "half" },
-            { key: "model", type: "text", label: "Preferred Model", width: "half" },
-            { key: "year", type: "number", label: "Min Year", width: "half" },
-            { key: "maxBudget", type: "currency", label: "Max Budget", required: true, min: 1, width: "half" },
-            { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes },
-            { key: "transmission", type: "select", label: "Transmission", options: transmission.slice(0, 2) },
-          ],
-        },
-      ];
+      return wantedSections(country, c);
 
     default:
       return null;

@@ -1,5 +1,4 @@
 import type { FilterConfig, MainCategory } from "../types";
-import { conditionFull, fuelType } from "./shared";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -736,22 +735,45 @@ export const vehicles: MainCategory = {
       id: "wanted",
       label: "Wanted",
       icon: "search",
+      // Same in every market. Price compares the buyer's Max Budget; buyers
+      // happy with Any condition / seller show under New, Used, Owner, Dealer.
       filters: [
         {
           id: "vehicle_type",
           label: "Looking For",
           type: "toggle",
           options: [
-            { label: "Car",          value: "car"        },
-            { label: "Motorcycle",   value: "motorcycle" },
-            { label: "Van",          value: "van"        },
-            { label: "Truck",        value: "truck"      },
-            { label: "Boat",         value: "boat"       },
-            { label: "Parts & Acc.", value: "parts"      },
+            { label: "Car",              value: "car"        },
+            { label: "Motorcycle",       value: "motorcycle" },
+            { label: "Van",              value: "van"        },
+            { label: "Truck",            value: "truck"      },
+            { label: "Boat",             value: "boat"       },
+            { label: "Electric Vehicle", value: "electric"   },
+            { label: "Parts",            value: "parts"      },
           ],
         },
-        conditionFull,
-        fuelType,
+        conditionNewUsed,
+        {
+          id: "buying_from",
+          label: "Buying From",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",    value: "any"    },
+            { label: "Owner",  value: "owner"  },
+            { label: "Dealer", value: "dealer" },
+          ],
+        },
+        {
+          id: "needed_by",
+          label: "Needed By",
+          type: "toggle",
+          options: [
+            { label: "As soon as possible", value: "asap"    },
+            { label: "Within a month",      value: "month"   },
+            { label: "Just looking",        value: "looking" },
+          ],
+        },
       ],
     },
   ],

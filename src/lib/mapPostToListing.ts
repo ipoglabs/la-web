@@ -78,8 +78,8 @@ function formatSchemaValue(field: FormFieldDef, value: unknown): string | null {
     case "currency": {
       const n = Number(value);
       if (!Number.isFinite(n)) return String(value);
-      // A year reads "2021", not "2,021".
-      const shown = field.key === "year" ? String(n) : n.toLocaleString("en");
+      // A year (Year, Min Year, …) reads "2021", not "2,021".
+      const shown = /^year$|Year$/.test(field.key) ? String(n) : n.toLocaleString("en");
       return field.unit ? `${shown} ${field.unit}` : shown;
     }
     case "date": {

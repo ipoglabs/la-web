@@ -15,7 +15,7 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles (except Wanted) have full filter mappings. Other categories
+ * Property and Vehicles have full filter mappings. Other categories
  * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
  * toggles are still UI-only.
  */
@@ -337,6 +337,8 @@ const SUB_PRICE_FIELD: Record<string, string> = {
   "jobs/part_time": "hourlyRate",
   "jobs/freelance": "budgetAmount",
   "jobs/internship": "stipendAmount",
+  // A Wanted ad's price is what the buyer will pay at most.
+  "vehicles/wanted": "maxBudget",
 };
 
 /** A price range on `field`, also matching older seed posts that saved their pay as `salary` instead. */
@@ -370,7 +372,7 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
-// ── Vehicles (all but Wanted) ────────────────────────────────────────────────
+// ── Vehicles ─────────────────────────────────────────────────────────────────
 // Values are what the post forms save (posting/form-schema/defaults/
 // vehicles.ts, reworked 2026-10-18). Older posts typed some of them, so
 // text matches ignore case. Filters a sub doesn't offer never arrive.
@@ -409,8 +411,15 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
   const listedBy = [...new Set(picked("listed_by").map((v) => LISTED_BY[v]).filter(Boolean))];
   if (listedBy.length) clauses.push({ "attributes.listedBy": { $in: listedBy } });
 
+  // Wanted: a buyer happy with Any condition / seller matches either choice.
   const condition = first("condition");
-  if (condition) clauses.push({ condition: exactInsensitive(condition) });
+  if (condition) clauses.push({ condition: sub === "wanted" ? { $in: [condition, "any"] } : exactInsensitive(condition) });
+  const buyingFrom = first("buying_from");
+  if (buyingFrom) clauses.push({ "attributes.buyingFrom": { $in: [buyingFrom, "any"] } });
+  const lookingFor = picked("vehicle_type");
+  if (lookingFor.length) clauses.push({ "attributes.vehicleType": { $in: lookingFor } });
+  const neededBy = picked("needed_by");
+  if (neededBy.length) clauses.push({ "attributes.neededBy": { $in: neededBy } });
 
   const yearFrom = Number(first("year_from"));
   if (yearFrom) clauses.push({ year: { $gte: yearFrom } });
@@ -563,7 +572,7 @@ export function buildFilterQuery(
     if (jobs) return jobs;
   }
 
-  if (category === "vehicles" && sub !== "wanted") {
+  if (category === "vehicles") {
     const clauses = buildVehicleQuery(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};

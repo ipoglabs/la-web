@@ -395,7 +395,8 @@ export function resolveFilters(
   const priceFilter: RangeFilterConfig = {
     type: "range",
     id: "price",
-    label: cat === "jobs" ? jobsPriceLabel(sub, unit) : unit ? `Price ${unit}` : "Price",
+    // Vehicles › Wanted is priced on the buyer's Max Budget.
+    label: cat === "jobs" ? jobsPriceLabel(sub, unit) : cat === "vehicles" && sub === "wanted" ? "Max Budget" : unit ? `Price ${unit}` : "Price",
     steps: spec.steps,
     prefix: opts.currencySymbol ?? "£",
     unit,
