@@ -261,6 +261,8 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       const immediate = field.immediateOption !== undefined && value === field.immediateOption;
       const dateInput = (
         <DateInput
+          // Remount when "Immediately" toggles so half-typed digits are cleared
+          key={immediate ? "immediate" : "date"}
           id={field.key}
           label={field.label}
           value={typeof value === "string" && !immediate ? value : ""}
@@ -275,6 +277,7 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
           <div className="flex-1">{dateInput}</div>
           <ToggleButtonGroup
             singleSelect
+            className="sm:w-auto sm:shrink-0"
             value={immediate ? [field.immediateOption] : []}
             onChange={(v) => set(v[0] ?? "")}
           >

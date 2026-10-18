@@ -183,9 +183,14 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
     const [valid, setValid] = React.useState<boolean | null>(null); // null = incomplete
     const [touched, setTouched] = React.useState(false);
 
+    // What we last sent up via onChange ("" for an incomplete date). When the
+    // parent echoes it back as `value`, keep the user's partial typing instead
+    // of re-deriving (and wiping) the masked text.
+    const lastEmittedRef = React.useRef<string | undefined>(undefined);
+
     // sync controlled value changes from outside
     React.useEffect(() => {
-      if (controlled) {
+      if (controlled && value !== lastEmittedRef.current) {
         setMasked(isoToMasked(value));
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,9 +203,12 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
       const parsed = parseDigits(digits, inputFormat);
       if (parsed && isValidDate(parsed.d, parsed.m, parsed.y)) {
         setValid(true);
-        onChange?.(toISO(parsed.d, parsed.m, parsed.y));
+        const iso = toISO(parsed.d, parsed.m, parsed.y);
+        lastEmittedRef.current = iso;
+        onChange?.(iso);
       } else {
         setValid(digits.length > 0 ? false : null);
+        lastEmittedRef.current = "";
         onChange?.(null);
       }
     }, [inputFormat, separator, onChange]);
