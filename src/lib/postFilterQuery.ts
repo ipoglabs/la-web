@@ -15,9 +15,9 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property has full filter mappings. Other categories only get the price
- * range (see CATEGORY_PRICE_FIELD); their other filter toggles are still
- * UI-only.
+ * Property and Vehicles › Cars / Motorcycle have full filter mappings. Other categories
+ * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
+ * toggles are still UI-only.
  */
 
 function escapeRegex(value: string): string {
@@ -93,6 +93,7 @@ const LISTED_BY: Record<string, string> = {
   operator: "Operator",
   university: "University",
   manager: "Manager",
+  dealer: "Dealer",
 };
 
 // Holiday Rental: Minimum Stay is saved in nights ("1", "2", "3", "7", "30",
@@ -366,6 +367,87 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
+// ── Vehicles › Cars, Motorcycle ──────────────────────────────────────────────
+// Values are what the post forms save (posting/form-schema/defaults/
+// vehicles.ts, reworked 2026-10-18). Older posts typed some of them, so
+// text matches ignore case. Filters a sub doesn't offer never arrive.
+
+function exactInsensitive(value: string): RegExp {
+  return new RegExp(`^${escapeRegex(value)}$`, "i");
+}
+
+// Owners: IN saves "First Owner"…, GB "1"–"4+", SG "1"–"3+".
+const CAR_OWNERS: Record<string, string[]> = {
+  "1": ["First Owner", "1"],
+  "2": ["Second Owner", "2"],
+  "3plus": ["Third Owner or more", "3", "4+", "3+"],
+};
+
+/** Engine size buckets are "min-max" cc, open-ended as "min-". */
+function engineCcRange(value: string): Record<string, number> | null {
+  const match = /^(\d+)-(\d*)$/.exec(value);
+  if (!match) return null;
+  const range: Record<string, number> = { $gte: Number(match[1]) };
+  if (match[2]) range.$lte = Number(match[2]);
+  return range;
+}
+
+function buildVehicleQuery(fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses: Record<string, unknown>[] = [];
+  const picked = (id: string) => (fv[id] ?? []).filter((v) => v && v !== "any");
+  const first = (id: string) => picked(id)[0];
+
+  const listedBy = [...new Set(picked("listed_by").map((v) => LISTED_BY[v]).filter(Boolean))];
+  if (listedBy.length) clauses.push({ "attributes.listedBy": { $in: listedBy } });
+
+  const condition = first("condition");
+  if (condition) clauses.push({ condition: exactInsensitive(condition) });
+
+  const yearFrom = Number(first("year_from"));
+  if (yearFrom) clauses.push({ year: { $gte: yearFrom } });
+
+  // Mileage is saved in the market's unit (km, or miles in GB) and search is per market.
+  const maxMileage = Number(first("max_mileage"));
+  if (maxMileage) clauses.push({ kms: { $lte: maxMileage } });
+
+  for (const [id, field] of [["fuel_type", "fuelType"], ["body_type", "bodyType"], ["bike_type", "attributes.bikeType"], ["color", "color"]] as const) {
+    const values = picked(id);
+    if (values.length) clauses.push({ [field]: { $in: values.map(exactInsensitive) } });
+  }
+
+  // "auto" was the option value before the 2026-10-18 rework (saved alerts may still carry it).
+  const transmission = first("transmission");
+  if (transmission) clauses.push({ transmission: exactInsensitive(transmission === "auto" ? "automatic" : transmission) });
+
+  const owners = picked("owners").flatMap((v) => CAR_OWNERS[v] ?? []);
+  if (owners.length) clauses.push({ ownerType: { $in: owners } });
+
+  // Seats 8 means "8+".
+  const seats = picked("seats").map(Number).filter((n) => n > 0);
+  if (seats.length) {
+    const exact = seats.filter((n) => n < 8);
+    const or: Record<string, unknown>[] = [];
+    if (exact.length) or.push({ seatingCapacity: { $in: exact } });
+    if (seats.some((n) => n >= 8)) or.push({ seatingCapacity: { $gte: 8 } });
+    clauses.push(or.length === 1 ? or[0] : { $or: or });
+  }
+
+  const engine = picked("engine_cc").map(engineCcRange).filter((r): r is Record<string, number> => r !== null);
+  if (engine.length) clauses.push(engine.length === 1 ? { engineCapacity: engine[0] } : { $or: engine.map((r) => ({ engineCapacity: r })) });
+
+  if (first("ulez") === "yes") clauses.push({ "attributes.ulezCompliant": "Yes" });
+
+  // COE Expiry is saved as YYYY-MM-DD, so ISO strings compare in date order.
+  const coeYears = Number(first("coe_left"));
+  if (coeYears) {
+    const until = new Date();
+    until.setFullYear(until.getFullYear() + coeYears);
+    clauses.push({ "attributes.coeExpiry": { $gte: until.toISOString().slice(0, 10) } });
+  }
+
+  return clauses;
+}
+
 /** Whether a category / sub's search has a working price filter (the listings UI hides it otherwise). */
 export function hasPriceFilter(category: string, sub: string): boolean {
   if (category === "property") return Boolean(PROPERTY_SUB_FILTERS[sub]?.priceField);
@@ -391,6 +473,18 @@ export function buildFilterQuery(
     if (max) range.$lte = Number(max);
     const jobs = buildJobsQuery(sub, filterValues, min || max ? range : null);
     if (jobs) return jobs;
+  }
+
+  if (category === "vehicles" && (sub === "cars" || sub === "motorcycle")) {
+    const clauses = buildVehicleQuery(filterValues);
+    if (field && (min || max)) {
+      const range: Record<string, number> = {};
+      if (min) range.$gte = Number(min);
+      if (max) range.$lte = Number(max);
+      clauses.push({ [field]: range });
+    }
+    if (clauses.length === 0) return {};
+    return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
   if (!field || (!min && !max)) return {};

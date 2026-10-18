@@ -265,6 +265,76 @@ function jobsPriceLabel(sub: string, unit: string | undefined): string {
   return unit ? `${word} ${unit}` : word;
 }
 
+// ── Per-market options ───────────────────────────────────────────────────────
+
+type FilterTweak = { label?: string; drop?: string[]; relabel?: Record<string, string>; suffix?: string };
+type MarketTweaks = Record<string, FilterTweak | null>;
+
+// GB A1 is the learner category (125cc); A2 is set by power (35 kW), which
+// lands around 500cc. SG classes 2B / 2A / 2 are set by cc.
+const ENGINE_CC_BY_MARKET: Record<string, FilterTweak> = {
+  in: { drop: ["0-200", "126-500", "501-"] },
+  gb: {
+    label: "Licence Class",
+    drop: ["126-200", "201-400", "401-", "0-200"],
+    relabel: { "0-125": "A1 / learner (up to 125cc)", "126-500": "A2 (126–500cc)", "501-": "A (over 500cc)" },
+  },
+  sg: {
+    label: "Licence Class",
+    drop: ["0-125", "126-200", "126-500", "501-"],
+    relabel: { "0-200": "Class 2B (up to 200cc)", "201-400": "Class 2A (201–400cc)", "401-": "Class 2 (over 400cc)" },
+  },
+};
+
+const OWNERS_IN: FilterTweak = { relabel: { "1": "First Owner", "2": "Second Owner", "3plus": "Third or more" } };
+
+/**
+ * Cars and Motorcycle: the post forms differ by market (posting/form-schema/
+ * defaults/vehicles.ts), so the filters show only what that market's
+ * sellers can pick, in its words. A filter set to null is hidden there.
+ */
+const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
+  "vehicles/cars": {
+    in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null },
+    gb: {
+      fuel_type: { drop: ["cng"] },
+      transmission: { drop: ["amt"] },
+      body_type: { drop: ["muv"], relabel: { sedan: "Saloon" } },
+      max_mileage: { suffix: " miles" },
+      coe_left: null,
+    },
+    sg: { fuel_type: { drop: ["lpg"] }, transmission: { drop: ["amt"] }, body_type: { drop: ["muv"] }, max_mileage: { suffix: " km" }, ulez: null },
+  },
+  "vehicles/motorcycle": {
+    in: {
+      owners: OWNERS_IN,
+      transmission: { relabel: { manual: "Geared", automatic: "Gearless" } },
+      engine_cc: ENGINE_CC_BY_MARKET.in,
+      max_mileage: { suffix: " km" },
+      coe_left: null,
+    },
+    gb: { engine_cc: ENGINE_CC_BY_MARKET.gb, max_mileage: { suffix: " miles" }, coe_left: null },
+    sg: { engine_cc: ENGINE_CC_BY_MARKET.sg, max_mileage: { suffix: " km" } },
+  },
+};
+
+function forMarket(cat: string, sub: string, market: string, filters: FilterConfig[]): FilterConfig[] {
+  const tweaks = BY_MARKET[`${cat}/${sub}`]?.[market];
+  if (!tweaks) return filters;
+  return filters.flatMap((f) => {
+    if (!(f.id in tweaks)) return [f];
+    const tweak = tweaks[f.id];
+    if (!tweak) return [];
+    const options = f.options
+      .filter((o) => !tweak.drop?.includes(o.value))
+      .map((o) => {
+        const label = tweak.relabel?.[o.value] ?? o.label;
+        return { ...o, label: tweak.suffix && o.value !== "any" ? `${label}${tweak.suffix}` : label };
+      });
+    return [{ ...f, label: tweak.label ?? f.label, options }];
+  });
+}
+
 // ── Core resolver ─────────────────────────────────────────────────────────────
 
 /**
@@ -290,11 +360,13 @@ export function resolveFilters(
   const subCat = mainCat.subcategories.find((s) => s.id === sub);
   if (!subCat) return [];
 
+  const market = opts.country?.toLowerCase() ?? "";
+  const subFilters = forMarket(cat, sub, market, [...(subCat.filters as FilterConfig[])]);
+
   // Inject price range as the first filter — always present for every sub
   // No price to filter on (Free / Giveaway, Community, Property Wanted) → no price filter.
-  if (!hasPriceFilter(cat, sub)) return [...(subCat.filters as FilterConfig[])];
+  if (!hasPriceFilter(cat, sub)) return subFilters;
 
-  const market = opts.country?.toLowerCase() ?? "";
   const kind = cat === "property" ? propertyPriceKind(sub, opts.values ?? {}) : undefined;
   const marketSteps = kind
     ? PROPERTY_STEPS[market]?.[kind]
@@ -311,7 +383,7 @@ export function resolveFilters(
     country: opts.country,
   };
 
-  return [priceFilter, ...(subCat.filters as FilterConfig[])];
+  return [priceFilter, ...subFilters];
 }
 
 // ── URL serialisation ─────────────────────────────────────────────────────────
