@@ -60,13 +60,17 @@ export async function GET(
   }
 
   const subRaw = searchParams.get("sub");
-  if (subRaw && !isKnownSubcategory(category, subRaw)) {
+  // A real subcategory (lib/category-map.ts, from config/categories) or one
+  // the mock data knows. The mock list alone missed subcategories added later
+  // (Electric Vehicles, Business › Franchise, …), so their search was a 400.
+  const subKnown = (s: string) => Boolean(SUBCATEGORY_LABELS[category]?.[s]) || isKnownSubcategory(category, s);
+  if (subRaw && !subKnown(subRaw)) {
     return NextResponse.json(
       { error: "validation_error", message: `sub is invalid for category=${category}` },
       { status: 400 },
     );
   }
-  const sub = subRaw && isKnownSubcategory(category, subRaw) ? subRaw : null;
+  const sub = subRaw && subKnown(subRaw) ? subRaw : null;
 
   const stage = getAppStage();
   const source = getListingsDataSource(country, stage);
