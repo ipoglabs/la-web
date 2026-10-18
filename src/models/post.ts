@@ -6,6 +6,10 @@ import mongoose, {
   type HydratedDocument,
   type Model,
 } from "mongoose";
+// ownerId refs "User": registering that model here means every
+// `.populate("ownerId")` works, even in a route that never imports it
+// (MissingSchemaError otherwise, depending on what else the server loaded).
+import "./user";
 
 export interface IPost {
   name: string;
