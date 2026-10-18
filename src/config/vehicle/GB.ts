@@ -23,5 +23,9 @@ export const GBVehicleConfig: VehicleFormConfig = {
     "Honda", "Yamaha", "Kawasaki", "Suzuki", "BMW", "Triumph", "Ducati", "Harley-Davidson",
     "KTM", "Royal Enfield", "Aprilia", "Husqvarna", "Vespa", "Piaggio", "Lexmoto",
   ],
+  vanMakes: [
+    "Ford", "Volkswagen", "Mercedes-Benz", "Vauxhall", "Renault", "Peugeot", "Citroen",
+    "Fiat", "Nissan", "Toyota", "Iveco", "MAN", "Maxus",
+  ],
   budgetPlaceholder: "e.g. 15000",
 };

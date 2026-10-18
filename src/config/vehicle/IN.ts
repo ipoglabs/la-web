@@ -21,6 +21,7 @@ export const INVehicleConfig: VehicleFormConfig = {
     "Hero", "Honda", "Bajaj", "TVS", "Royal Enfield", "Yamaha", "Suzuki", "KTM",
     "Kawasaki", "Jawa", "Yezdi", "Harley-Davidson", "Triumph", "BMW", "Ather", "Ola Electric",
   ],
+  vanMakes: ["Maruti Suzuki", "Tata", "Mahindra", "Force", "Toyota", "Ashok Leyland", "Isuzu", "Kia", "Piaggio"],
   budgetPlaceholder: "e.g. 1000000",
 };
 

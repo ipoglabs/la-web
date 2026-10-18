@@ -3,7 +3,7 @@ import { conditionFull, fuelType } from "./shared";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// Filters shared by the reworked Cars and Motorcycle forms. Option values
+// Filters shared by the reworked Cars, Motorcycle and Van forms. Option values
 // are what the post forms save (posting/form-schema/defaults/vehicles.ts),
 // matched in lib/postFilterQuery.ts. Each list covers every market —
 // lib/listing-filters.ts trims and relabels it per country.
@@ -245,32 +245,101 @@ export const vehicles: MainCategory = {
       id: "van",
       label: "Van",
       icon: "truck",
+      // Per market: km / miles, AMT in IN, Wheelbase and Roof Height in GB, COE in SG.
       filters: [
-        conditionFull,
+        listedBy,
         {
           id: "van_type",
           label: "Van Type",
           type: "toggle",
           options: [
-            { label: "Cargo",        value: "cargo"        },
-            { label: "Passenger",    value: "passenger"    },
-            { label: "Minibus",      value: "minibus"      },
-            { label: "Refrigerated", value: "refrigerated" },
+            { label: "Panel Van",         value: "panel"        },
+            { label: "Minibus",           value: "minibus"      },
+            { label: "Luton / Box",       value: "luton"        },
+            { label: "Crew / Double Cab", value: "crew"         },
+            { label: "Pickup",            value: "pickup"       },
+            { label: "Refrigerated",      value: "refrigerated" },
+            { label: "Camper",            value: "camper"       },
           ],
         },
+        conditionNewUsed,
+        yearFrom,
+        maxMileage,
         {
-          id: "van_seats",
-          label: "Seats",
+          id: "payload_min",
+          label: "Payload",
           type: "toggle",
           singleSelect: true,
           options: [
-            { label: "Any",     value: "any" },
-            { label: "Up to 7", value: "s7"  },
-            { label: "8-12",    value: "s12" },
-            { label: "13-20",   value: "s20" },
-            { label: "21+",     value: "s21" },
+            { label: "Any",       value: "any"  },
+            { label: "500 kg+",   value: "500"  },
+            { label: "1,000 kg+", value: "1000" },
+            { label: "1,500 kg+", value: "1500" },
+            { label: "2,000 kg+", value: "2000" },
           ],
         },
+        {
+          id: "seats",
+          label: "Seats",
+          type: "toggle",
+          options: [
+            { label: "2",  value: "2" },
+            { label: "3",  value: "3" },
+            { label: "5",  value: "5" },
+            { label: "6",  value: "6" },
+            { label: "7",  value: "7" },
+            { label: "8",  value: "8" },
+            { label: "9+", value: "9" },
+          ],
+        },
+        {
+          id: "wheelbase",
+          label: "Wheelbase",
+          type: "toggle",
+          options: [
+            { label: "Short (SWB)",  value: "swb" },
+            { label: "Medium (MWB)", value: "mwb" },
+            { label: "Long (LWB)",   value: "lwb" },
+          ],
+        },
+        {
+          id: "roof_height",
+          label: "Roof Height",
+          type: "toggle",
+          options: [
+            { label: "Low",    value: "low"    },
+            { label: "Medium", value: "medium" },
+            { label: "High",   value: "high"   },
+          ],
+        },
+        {
+          id: "fuel_type",
+          label: "Fuel Type",
+          type: "toggle",
+          options: [
+            { label: "Petrol",   value: "petrol"   },
+            { label: "Diesel",   value: "diesel"   },
+            { label: "Hybrid",   value: "hybrid"   },
+            { label: "Electric", value: "electric", icon: "zap" },
+            { label: "CNG",      value: "cng"      },
+            { label: "LPG",      value: "lpg"      },
+          ],
+        },
+        {
+          id: "transmission",
+          label: "Transmission",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",       value: "any"       },
+            { label: "Manual",    value: "manual"    },
+            { label: "Automatic", value: "automatic" },
+            { label: "AMT",       value: "amt"       },
+          ],
+        },
+        owners,
+        color,
+        coeLeft,
       ],
     },
     {

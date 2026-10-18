@@ -15,7 +15,7 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles › Cars / Motorcycle have full filter mappings. Other categories
+ * Property and Vehicles › Cars / Motorcycle / Van have full filter mappings. Other categories
  * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
  * toggles are still UI-only.
  */
@@ -367,7 +367,7 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
-// ── Vehicles › Cars, Motorcycle ──────────────────────────────────────────────
+// ── Vehicles › Cars, Motorcycle, Van ─────────────────────────────────────────
 // Values are what the post forms save (posting/form-schema/defaults/
 // vehicles.ts, reworked 2026-10-18). Older posts typed some of them, so
 // text matches ignore case. Filters a sub doesn't offer never arrive.
@@ -392,7 +392,10 @@ function engineCcRange(value: string): Record<string, number> | null {
   return range;
 }
 
-function buildVehicleQuery(fv: Record<string, string[]>): Record<string, unknown>[] {
+// The top Seats option means "this many or more" (Cars 8+, Van 9+).
+const SEATS_PLUS: Record<string, number> = { cars: 8, van: 9 };
+
+function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
   const clauses: Record<string, unknown>[] = [];
   const picked = (id: string) => (fv[id] ?? []).filter((v) => v && v !== "any");
   const first = (id: string) => picked(id)[0];
@@ -410,7 +413,15 @@ function buildVehicleQuery(fv: Record<string, string[]>): Record<string, unknown
   const maxMileage = Number(first("max_mileage"));
   if (maxMileage) clauses.push({ kms: { $lte: maxMileage } });
 
-  for (const [id, field] of [["fuel_type", "fuelType"], ["body_type", "bodyType"], ["bike_type", "attributes.bikeType"], ["color", "color"]] as const) {
+  for (const [id, field] of [
+    ["fuel_type", "fuelType"],
+    ["body_type", "bodyType"],
+    ["bike_type", "attributes.bikeType"],
+    ["van_type", "attributes.vanType"],
+    ["wheelbase", "attributes.wheelbase"],
+    ["roof_height", "attributes.roofHeight"],
+    ["color", "color"],
+  ] as const) {
     const values = picked(id);
     if (values.length) clauses.push({ [field]: { $in: values.map(exactInsensitive) } });
   }
@@ -422,13 +433,16 @@ function buildVehicleQuery(fv: Record<string, string[]>): Record<string, unknown
   const owners = picked("owners").flatMap((v) => CAR_OWNERS[v] ?? []);
   if (owners.length) clauses.push({ ownerType: { $in: owners } });
 
-  // Seats 8 means "8+".
+  const payloadMin = Number(first("payload_min"));
+  if (payloadMin) clauses.push({ "attributes.payload": { $gte: payloadMin } });
+
   const seats = picked("seats").map(Number).filter((n) => n > 0);
   if (seats.length) {
-    const exact = seats.filter((n) => n < 8);
+    const plus = SEATS_PLUS[sub] ?? Infinity;
+    const exact = seats.filter((n) => n < plus);
     const or: Record<string, unknown>[] = [];
     if (exact.length) or.push({ seatingCapacity: { $in: exact } });
-    if (seats.some((n) => n >= 8)) or.push({ seatingCapacity: { $gte: 8 } });
+    if (seats.some((n) => n >= plus)) or.push({ seatingCapacity: { $gte: plus } });
     clauses.push(or.length === 1 ? or[0] : { $or: or });
   }
 
@@ -475,8 +489,8 @@ export function buildFilterQuery(
     if (jobs) return jobs;
   }
 
-  if (category === "vehicles" && (sub === "cars" || sub === "motorcycle")) {
-    const clauses = buildVehicleQuery(filterValues);
+  if (category === "vehicles" && (sub === "cars" || sub === "motorcycle" || sub === "van")) {
+    const clauses = buildVehicleQuery(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

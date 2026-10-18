@@ -289,7 +289,7 @@ const ENGINE_CC_BY_MARKET: Record<string, FilterTweak> = {
 const OWNERS_IN: FilterTweak = { relabel: { "1": "First Owner", "2": "Second Owner", "3plus": "Third or more" } };
 
 /**
- * Cars and Motorcycle: the post forms differ by market (posting/form-schema/
+ * Cars, Motorcycle and Van: the post forms differ by market (posting/form-schema/
  * defaults/vehicles.ts), so the filters show only what that market's
  * sellers can pick, in its words. A filter set to null is hidden there.
  */
@@ -315,6 +315,11 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     },
     gb: { engine_cc: ENGINE_CC_BY_MARKET.gb, max_mileage: { suffix: " miles" }, coe_left: null },
     sg: { engine_cc: ENGINE_CC_BY_MARKET.sg, max_mileage: { suffix: " km" } },
+  },
+  "vehicles/van": {
+    in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, wheelbase: null, roof_height: null, coe_left: null },
+    gb: { fuel_type: { drop: ["cng"] }, transmission: { drop: ["amt"] }, max_mileage: { suffix: " miles" }, coe_left: null },
+    sg: { fuel_type: { drop: ["lpg"] }, transmission: { drop: ["amt"] }, max_mileage: { suffix: " km" }, wheelbase: null, roof_height: null },
   },
 };
 

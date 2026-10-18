@@ -35,7 +35,7 @@ const paperwork: FormFieldDef[] = [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Reworked per market: Cars, Motorcycle ────────────────────────────────────
+// ── Reworked per market: Cars, Motorcycle, Van ───────────────────────────────
 // From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
 // an MOT, SG COE details, IN registering state instead of the plate. The
 // other subcategories still share makeModel / paperwork.
@@ -183,6 +183,60 @@ function motorcycleSections(country: string, c: VehicleFormConfig): FormSection[
   ];
 }
 
+// Saved as slugs; search filters on them (lib/postFilterQuery.ts).
+const VAN_TYPES = pairs([
+  ["panel", "Panel Van"],
+  ["minibus", "Minibus"],
+  ["luton", "Luton / Box"],
+  ["crew", "Crew / Double Cab"],
+  ["pickup", "Pickup"],
+  ["refrigerated", "Refrigerated"],
+  ["camper", "Camper"],
+]);
+// Saved as a number (9 = "9+").
+const VAN_SEATS = [
+  ...["2", "3", "5", "6", "7", "8"].map((v) => ({ value: v, label: v })),
+  { value: "9", label: "9+" },
+];
+
+function vanSections(country: string, c: VehicleFormConfig): FormSection[] {
+  const gb = country === "GB";
+  return [
+    basics,
+    {
+      title: "Vehicle",
+      fields: [
+        listedBy,
+        { key: "vanType", type: "select", label: "Van Type", required: true, options: VAN_TYPES },
+        { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
+        ...makeModelPicked(c.vanMakes),
+        { key: "year", type: "number", label: "Year", required: true, width: "half" },
+        distance(country),
+        { key: "payload", type: "number", label: "Payload", unit: "kg", min: 0, max: 50_000, width: "half" },
+        { key: "seatingCapacity", type: "select", label: "Seats", options: VAN_SEATS },
+        // Standard GB van sizes.
+        ...(gb
+          ? ([
+              { key: "wheelbase", type: "select", label: "Wheelbase", options: pairs([["swb", "Short (SWB)"], ["mwb", "Medium (MWB)"], ["lwb", "Long (LWB)"]]) },
+              { key: "roofHeight", type: "select", label: "Roof Height", options: pairs([["low", "Low"], ["medium", "Medium"], ["high", "High"]]) },
+            ] satisfies FormFieldDef[])
+          : []),
+        { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes },
+        // AMT (automated manual) is an Indian term.
+        { key: "transmission", type: "select", label: "Transmission", options: country === "IN" ? transmission : transmission.slice(0, 2) },
+        { key: "color", type: "select", label: "Color", options: VEHICLE_COLORS },
+        { ...price, width: "half" },
+        negotiable,
+        // GB trade vans are priced "+VAT", which adds 20%.
+        ...(gb
+          ? ([{ key: "priceIncludesVat", type: "select", label: "Price Includes VAT", required: true, options: pairs([["yes", "Yes"], ["no", "No (+VAT)"]]) }] satisfies FormFieldDef[])
+          : []),
+      ],
+    },
+    { title: "History", fields: historyFields(country) },
+  ];
+}
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -205,24 +259,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return motorcycleSections(country, c);
 
     case "Van":
-      return [
-        basics,
-        {
-          title: "Vehicle",
-          fields: [
-            ...makeModel(true),
-            { key: "year", type: "number", label: "Year", required: true, width: "half" },
-            { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
-            { key: "seatingCapacity", type: "number", label: "Seating Capacity", min: 1, width: "half" },
-            { key: "color", type: "text", label: "Color", width: "half" },
-            { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes },
-            { key: "transmission", type: "select", label: "Transmission", options: transmission },
-            { key: "condition", type: "select", label: "Condition", options: vehicleCondition },
-            price,
-          ],
-        },
-        { title: "History", fields: paperwork },
-      ];
+      return vanSections(country, c);
 
     case "Truck":
       return [
