@@ -274,7 +274,7 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       );
       control = field.immediateOption ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-          <div className="flex-1">{dateInput}</div>
+          <div className="sm:w-48">{dateInput}</div>
           <ToggleButtonGroup
             singleSelect
             className="sm:w-auto sm:shrink-0"
