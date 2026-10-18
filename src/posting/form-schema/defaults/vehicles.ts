@@ -28,7 +28,7 @@ const makeModel = (required: boolean): FormFieldDef[] => [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Reworked per market: Cars, Motorcycle, Van, Truck, Boats ─────────────────
+// ── Reworked: Cars, Motorcycle, Van, Truck, Boats, Parts & Accessories ───────
 // From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
 // an MOT, SG COE details, IN registering state instead of the plate. The
 // other subcategories still share makeModel / paperwork.
@@ -358,6 +358,51 @@ function boatsSections(country: string): FormSection[] {
   ];
 }
 
+// Older posts saved engine / electrical / interior / exterior / tyres /
+// others — those values are kept, under their wider labels.
+const PARTS_CATEGORIES = pairs([
+  ["engine", "Engine & Transmission"],
+  ["brakes", "Brakes & Suspension"],
+  ["electrical", "Electrical & Lighting"],
+  ["exterior", "Body & Exterior"],
+  ["interior", "Interior"],
+  ["tyres", "Wheels & Tyres"],
+  ["audio", "Audio & Electronics"],
+  ["accessories", "Accessories"],
+  ["tools", "Tools"],
+  ["others", "Other"],
+]);
+
+const partsSections: FormSection[] = [
+  basics,
+  {
+    title: "Part",
+    fields: [
+      // Breakers and parts shops are a big share of sellers.
+      { key: "listedBy", type: "select", label: "Listed By", required: true, options: opts(["Private", "Trade"]) },
+      {
+        key: "forVehicle",
+        type: "select",
+        label: "For Vehicle Type",
+        required: true,
+        options: pairs([["car", "Car"], ["motorcycle", "Motorcycle"], ["van", "Van"], ["truck", "Truck"], ["boat", "Boat"], ["universal", "Universal"]]),
+      },
+      { key: "partsCategory", type: "select", label: "Parts Category", required: true, options: PARTS_CATEGORIES },
+      { key: "tyreSize", type: "text", label: "Tyre Size", placeholder: "e.g. 205/55 R16", width: "half", showWhen: { field: "partsCategory", in: ["tyres"] } },
+      { key: "brand", type: "text", label: "Brand", width: "half" },
+      { key: "partNumber", type: "text", label: "Part Number", width: "half" },
+      { key: "partOrigin", type: "select", label: "Genuine or Aftermarket", options: pairs([["genuine", "Genuine (OEM)"], ["aftermarket", "Aftermarket"]]) },
+      { key: "condition", type: "select", label: "Condition", options: [...vehicleCondition, { value: "for_parts", label: "For Parts / Not Working" }] },
+      { key: "compatibility", type: "tags", label: "Compatible With", placeholder: "Type a make/model and press Enter" },
+      { key: "quantity", type: "number", label: "Quantity", min: 1, width: "half" },
+      // Same field as Marketplace; small parts are often posted.
+      { key: "dealMethod", type: "multiselect", label: "Deal Method", options: pairs([["meetup", "Meet-up / Collection"], ["delivery", "Delivery / Courier"]]) },
+      { ...price, width: "half" },
+      negotiable,
+    ],
+  },
+];
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -389,19 +434,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return boatsSections(country);
 
     case "Parts & Accessories":
-      return [
-        basics,
-        {
-          title: "Part",
-          fields: [
-            { key: "partsCategory", type: "select", label: "Parts Category", required: true, options: pairs([["engine", "Engine"], ["electrical", "Electrical"], ["interior", "Interior"], ["exterior", "Exterior"], ["tyres", "Tyres"], ["others", "Others"]]) },
-            { key: "brand", type: "text", label: "Brand", width: "half" },
-            { key: "condition", type: "select", label: "Condition", options: vehicleCondition },
-            { key: "compatibility", type: "tags", label: "Compatible With", placeholder: "Type a make/model and press Enter" },
-            price,
-          ],
-        },
-      ];
+      return partsSections;
 
     case "Electric Vehicles":
       return [

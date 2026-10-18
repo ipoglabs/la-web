@@ -15,7 +15,7 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles › Cars / Motorcycle / Van / Truck / Boats have full filter mappings. Other categories
+ * Property and Vehicles (except EV and Wanted) have full filter mappings. Other categories
  * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
  * toggles are still UI-only.
  */
@@ -95,6 +95,8 @@ const LISTED_BY: Record<string, string> = {
   manager: "Manager",
   dealer: "Dealer",
   broker: "Broker",
+  private: "Private",
+  trade: "Trade",
 };
 
 // Holiday Rental: Minimum Stay is saved in nights ("1", "2", "3", "7", "30",
@@ -368,7 +370,7 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
-// ── Vehicles › Cars, Motorcycle, Van, Truck, Boats ───────────────────────────
+// ── Vehicles › Cars, Motorcycle, Van, Truck, Boats, Parts & Accessories ──────
 // Values are what the post forms save (posting/form-schema/defaults/
 // vehicles.ts, reworked 2026-10-18). Older posts typed some of them, so
 // text matches ignore case. Filters a sub doesn't offer never arrive.
@@ -453,6 +455,15 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
   if (maxEngineHours) clauses.push({ "attributes.engineHours": { $lte: maxEngineHours } });
   const berthsMin = Number(first("berths_min"));
   if (berthsMin) clauses.push({ "attributes.berths": { $gte: berthsMin } });
+  // Parts: a vehicle type also finds Universal parts; "body" was the old Body & Exterior value.
+  const forVehicle = picked("for_vehicle");
+  if (forVehicle.length) clauses.push({ "attributes.forVehicle": { $in: [...forVehicle, "universal"] } });
+  const partCategory = picked("part_category").map((v) => (v === "body" ? "exterior" : v));
+  if (partCategory.length) clauses.push({ partsCategory: { $in: partCategory } });
+  const origin = first("origin");
+  if (origin) clauses.push({ "attributes.partOrigin": origin });
+  if (first("delivery") === "yes") clauses.push({ "attributes.dealMethod": "delivery" });
+
   if (first("trailer") === "yes") clauses.push({ "attributes.trailerIncluded": "Yes" });
   if (first("mooring") === "yes") clauses.push({ "attributes.mooringIncluded": "Yes" });
 
@@ -524,7 +535,7 @@ export function buildFilterQuery(
     if (jobs) return jobs;
   }
 
-  if (category === "vehicles" && ["cars", "motorcycle", "van", "truck", "boats"].includes(sub)) {
+  if (category === "vehicles" && ["cars", "motorcycle", "van", "truck", "boats", "parts_accessories"].includes(sub)) {
     const clauses = buildVehicleQuery(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};

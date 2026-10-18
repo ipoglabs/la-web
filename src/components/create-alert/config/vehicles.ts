@@ -3,7 +3,7 @@ import { conditionFull, fuelType } from "./shared";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// Filters shared by the reworked Cars, Motorcycle, Van, Truck and Boats forms. Option values
+// Filters shared by the reworked Vehicles forms. Option values
 // are what the post forms save (posting/form-schema/defaults/vehicles.ts),
 // matched in lib/postFilterQuery.ts. Each list covers every market —
 // lib/listing-filters.ts trims and relabels it per country.
@@ -577,7 +577,17 @@ export const vehicles: MainCategory = {
       id: "parts_accessories",
       label: "Parts & Accessories",
       icon: "settings",
+      // Same in every market. A vehicle type also finds Universal parts.
       filters: [
+        {
+          id: "listed_by",
+          label: "Listed by",
+          type: "toggle",
+          options: [
+            { label: "Private", value: "private" },
+            { label: "Trade",   value: "trade"   },
+          ],
+        },
         {
           id: "for_vehicle",
           label: "For Vehicle",
@@ -590,18 +600,54 @@ export const vehicles: MainCategory = {
             { label: "Boat",       value: "boat"       },
           ],
         },
-        conditionFull,
         {
           id: "part_category",
           label: "Category",
           type: "toggle",
           options: [
-            { label: "Engine & Drive",  value: "engine"      },
-            { label: "Body & Exterior", value: "body"        },
-            { label: "Interior",        value: "interior"    },
-            { label: "Tyres & Rims",    value: "tyres"       },
-            { label: "Electrical",      value: "electrical"  },
-            { label: "Accessories",     value: "accessories" },
+            { label: "Engine & Transmission", value: "engine"      },
+            { label: "Brakes & Suspension",   value: "brakes"      },
+            { label: "Electrical & Lighting", value: "electrical"  },
+            { label: "Body & Exterior",       value: "exterior"    },
+            { label: "Interior",              value: "interior"    },
+            { label: "Wheels & Tyres",        value: "tyres"       },
+            { label: "Audio & Electronics",   value: "audio"       },
+            { label: "Accessories",           value: "accessories" },
+            { label: "Tools",                 value: "tools"       },
+          ],
+        },
+        {
+          id: "condition",
+          label: "Condition",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",                     value: "any"         },
+            { label: "New",                     value: "new",         icon: "sparkles" },
+            { label: "Used",                    value: "used",        icon: "recycle"  },
+            { label: "Refurbished",             value: "refurbished" },
+            { label: "For Parts / Not Working", value: "for_parts"   },
+          ],
+        },
+        {
+          id: "origin",
+          label: "Genuine or Aftermarket",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",           value: "any"         },
+            { label: "Genuine (OEM)", value: "genuine"     },
+            { label: "Aftermarket",   value: "aftermarket" },
+          ],
+        },
+        {
+          id: "delivery",
+          label: "Delivery",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "Any",                value: "any" },
+            { label: "Delivery available", value: "yes" },
           ],
         },
       ],
