@@ -13,5 +13,10 @@ export const SGVehicleConfig: VehicleFormConfig = {
     { value: "electric", label: "Electric" },
     { value: "hybrid",   label: "Hybrid" },
   ],
+  carMakes: [
+    "Toyota", "Honda", "Mercedes-Benz", "BMW", "Mazda", "Hyundai", "Kia",
+    "Nissan", "Volkswagen", "Audi", "Lexus", "Mitsubishi", "Subaru", "Volvo",
+    "Tesla", "BYD", "MG", "Skoda", "Peugeot", "Porsche",
+  ],
   budgetPlaceholder: "e.g. 50000",
 };

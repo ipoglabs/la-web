@@ -1,6 +1,7 @@
 // Default "Vehicles" post-form schemas.
 
-import { getVehicleConfig } from "@/config/vehicle";
+import { getVehicleConfig, type VehicleFormConfig } from "@/config/vehicle";
+import { IN_REGISTRATION_STATES } from "@/config/vehicle/IN";
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, opts, pairs } from "./shared";
 
@@ -34,6 +35,91 @@ const paperwork: FormFieldDef[] = [
 
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
+// ── Cars ─────────────────────────────────────────────────────────────────────
+// Reworked per market (Vehicles › Cars review, 2026-10-18): GB mileage in
+// miles with MOT and ULEZ, SG COE details, IN registering state instead of
+// the plate. The other subcategories still share makeModel / paperwork.
+
+// Same stored "Yes" / "No" as Property's Negotiable.
+const YES_NO_TEXT = opts(["Yes", "No"]);
+const CAR_COLORS = opts(["White", "Black", "Silver", "Grey", "Blue", "Red", "Brown", "Green", "Other"]);
+// Saved as a number (8 = "8+").
+const CAR_SEATS = [
+  ...["2", "4", "5", "6", "7"].map((v) => ({ value: v, label: v })),
+  { value: "8", label: "8+" },
+];
+
+function carsSections(country: string, c: VehicleFormConfig): FormSection[] {
+  const gb = country === "GB";
+  const sg = country === "SG";
+  const india = country === "IN";
+
+  const bodyType = opts(["SUV", "Sedan", "Hatchback", ...(india ? ["MUV"] : []), "Coupe", "MPV", "Estate", "Convertible", "Pickup"])
+    // GB says Saloon; stored as Sedan everywhere.
+    .map((o) => (gb && o.value === "Sedan" ? { ...o, label: "Saloon" } : o));
+
+  const ownerType: FormFieldDef = gb
+    ? { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]) }
+    : sg
+      ? { key: "ownerType", type: "select", label: "No. of Owners", options: opts(["1", "2", "3+"]) }
+      : { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]) };
+
+  const serviceHistoryField: FormFieldDef = { key: "serviceHistory", type: "select", label: "Service History", options: serviceHistory };
+
+  const history: FormFieldDef[] = gb
+    ? [
+        ownerType,
+        { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
+        { key: "motExpiry", type: "date", label: "MOT Expiry", width: "half" },
+        { key: "ulezCompliant", type: "select", label: "ULEZ Compliant", options: YES_NO_TEXT },
+        serviceHistoryField,
+      ]
+    : sg
+      ? [
+          ownerType,
+          { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half" },
+          { key: "registrationDate", type: "date", label: "Registration Date", width: "half" },
+          { key: "depreciationPerYear", type: "currency", label: "Depreciation per Year", unit: "/ year", min: 0, width: "half" },
+          serviceHistoryField,
+        ]
+      : [
+          ownerType,
+          { key: "registrationState", type: "select", display: "dropdown", label: "Registration State (RTO)", options: opts(IN_REGISTRATION_STATES), width: "half" },
+          { key: "insuranceValidTill", type: "date", label: "Insurance Valid Till", width: "half" },
+          serviceHistoryField,
+        ];
+
+  return [
+    basics,
+    {
+      title: "Vehicle",
+      fields: [
+        { key: "listedBy", type: "select", label: "Listed By", required: true, options: opts(["Owner", "Dealer"]) },
+        { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
+        { key: "make", type: "select", display: "dropdown", label: "Make", required: true, options: opts([...c.carMakes, "Other"]), width: "half" },
+        { key: "makeOther", type: "text", label: "Other Make", required: true, width: "half", showWhen: { field: "make", in: ["Other"] } },
+        { key: "model", type: "text", label: "Model", required: true, width: "half" },
+        { key: "year", type: "number", label: "Year", required: true, width: "half" },
+        gb
+          ? { key: "kms", type: "number", label: "Mileage", unit: "miles", min: 0, width: "half" }
+          : { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
+        gb
+          ? { key: "engineCapacity", type: "number", label: "Engine Size", unit: "litres", min: 0.5, width: "half" }
+          : { key: "engineCapacity", type: "number", label: "Engine Size", unit: "cc", min: 50, width: "half" },
+        { key: "fuelType", type: "select", label: "Fuel Type", options: [...c.carFuelTypes, { value: "phev", label: "Plug-in Hybrid" }] },
+        // AMT (automated manual) is an Indian term.
+        { key: "transmission", type: "select", label: "Transmission", options: india ? transmission : transmission.slice(0, 2) },
+        { key: "bodyType", type: "select", label: "Body Type", options: bodyType },
+        { key: "color", type: "select", label: "Color", options: CAR_COLORS },
+        { key: "seatingCapacity", type: "select", label: "Seats", options: CAR_SEATS },
+        { ...price, width: "half" },
+        { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO_TEXT, defaultValue: "No", width: "half" },
+      ],
+    },
+    { title: "History", fields: history },
+  ];
+}
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -50,24 +136,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
 
   switch (subcategory) {
     case "Cars":
-      return [
-        basics,
-        {
-          title: "Vehicle",
-          fields: [
-            ...makeModel(true),
-            { key: "year", type: "number", label: "Year", required: true, width: "half" },
-            { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
-            { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes },
-            { key: "transmission", type: "select", label: "Transmission", options: transmission },
-            { key: "bodyType", type: "select", label: "Body Type", options: opts(["SUV", "Sedan", "Hatchback", "Coupe", "MPV", "Estate", "Convertible", "Pickup"]) },
-            { key: "color", type: "text", label: "Color", width: "half" },
-            { key: "seatingCapacity", type: "number", label: "Seats", min: 1, width: "half" },
-            price,
-          ],
-        },
-        { title: "History", fields: paperwork },
-      ];
+      return carsSections(country, c);
 
     case "Motorcycle":
       return [

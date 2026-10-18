@@ -6,7 +6,7 @@
 // so upload → preview → submit → edit work unchanged.
 
 import React from "react";
-import { LaInput, LaSkeleton, LaTagInput, LaTextarea } from "@/components/la";
+import { LaInput, LaSelect, LaSkeleton, LaTagInput, LaTextarea } from "@/components/la";
 import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { GoodToKnowEditor, type GoodToKnowPoint } from "@/components/good-to-know/GoodToKnow";
 import { DateInput } from "@/components/date-input";
@@ -132,7 +132,8 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
   }
 
   // Choice fields: the toggle group renders its own (accessible) title.
-  if (field.type === "select" || field.type === "multiselect") {
+  // A dropdown select is labelled like a text field (below).
+  if ((field.type === "select" && field.display !== "dropdown") || field.type === "multiselect") {
     const single = field.type === "select";
     // `!= null`, not truthiness: number chips save 0 ("Ground", "None").
     const selected = single
@@ -186,6 +187,30 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
             onChange={(html) => set(html)}
           />
         </div>
+      );
+      break;
+
+    // Long option lists (display: "dropdown"); short ones are chips above.
+    case "select":
+      control = (
+        <LaSelect
+          id={field.key}
+          name={field.key}
+          value={value == null ? "" : String(value)}
+          onChange={(e) => set(e.target.value)}
+          status={error ? "error" : "default"}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+        >
+          <option value="" disabled>
+            {field.placeholder ?? "Select…"}
+          </option>
+          {(field.options ?? []).map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </LaSelect>
       );
       break;
 

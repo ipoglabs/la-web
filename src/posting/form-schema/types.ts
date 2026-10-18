@@ -68,6 +68,9 @@ export interface FormFieldDef {
   format?: "adTitle" | "place";
   /** Tags / multiselect: most entries allowed (shows an "n/max" counter on tags). */
   maxItems?: number;
+  /** Select: "dropdown" shows a native dropdown instead of chips — for long
+   *  lists (car makes, states) that would be a wall of chips. Default chips. */
+  display?: "chips" | "dropdown";
   /** Grid width on md+ screens; always full width on mobile. */
   width?: "full" | "half" | "third";
   /** Date: also offer a chip that saves this text instead of a date (e.g. "Immediately"). */
