@@ -15,7 +15,7 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles › Cars / Motorcycle / Van have full filter mappings. Other categories
+ * Property and Vehicles › Cars / Motorcycle / Van / Truck have full filter mappings. Other categories
  * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
  * toggles are still UI-only.
  */
@@ -367,7 +367,7 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
   return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
-// ── Vehicles › Cars, Motorcycle, Van ─────────────────────────────────────────
+// ── Vehicles › Cars, Motorcycle, Van, Truck ──────────────────────────────────
 // Values are what the post forms save (posting/form-schema/defaults/
 // vehicles.ts, reworked 2026-10-18). Older posts typed some of them, so
 // text matches ignore case. Filters a sub doesn't offer never arrive.
@@ -383,14 +383,17 @@ const CAR_OWNERS: Record<string, string[]> = {
   "3plus": ["Third Owner or more", "3", "4+", "3+"],
 };
 
-/** Engine size buckets are "min-max" cc, open-ended as "min-". */
-function engineCcRange(value: string): Record<string, number> | null {
-  const match = /^(\d+)-(\d*)$/.exec(value);
+/** Range buckets (engine cc, truck tonnes) are "min-max", open-ended as "min-". */
+function bucketRange(value: string): Record<string, number> | null {
+  const match = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)?$/.exec(value);
   if (!match) return null;
   const range: Record<string, number> = { $gte: Number(match[1]) };
   if (match[2]) range.$lte = Number(match[2]);
   return range;
 }
+
+// GB Truck weight classes (posting/form-schema/defaults/vehicles.ts), saved as text.
+const GB_GVW_CLASSES = ["3.5", "7.5", "12", "18", "26", "32", "44"];
 
 // The top Seats option means "this many or more" (Cars 8+, Van 9+).
 const SEATS_PLUS: Record<string, number> = { cars: 8, van: 9 };
@@ -420,6 +423,11 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
     ["van_type", "attributes.vanType"],
     ["wheelbase", "attributes.wheelbase"],
     ["roof_height", "attributes.roofHeight"],
+    ["truck_type", "bodyType"],
+    ["wheels", "attributes.wheels"],
+    ["emission", "attributes.emissionStandard"],
+    ["cab_type", "attributes.cabType"],
+    ["permit", "attributes.permitType"],
     ["color", "color"],
   ] as const) {
     const values = picked(id);
@@ -435,6 +443,20 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
 
   const payloadMin = Number(first("payload_min"));
   if (payloadMin) clauses.push({ "attributes.payload": { $gte: payloadMin } });
+  const payloadTonnes = Number(first("payload_tonnes"));
+  if (payloadTonnes) clauses.push({ "attributes.payloadCapacity": { $gte: payloadTonnes } });
+
+  // Gross weight in tonnes: IN / SG type a number, GB picks a class saved as text ("7.5").
+  const gvw = picked("gvw").map(bucketRange).filter((r): r is Record<string, number> => r !== null);
+  if (gvw.length) {
+    const inRange = (t: number, r: Record<string, number>) => t >= r.$gte && (r.$lte === undefined || t <= r.$lte);
+    clauses.push({
+      $or: gvw.flatMap((r) => [
+        { "attributes.gvwr": r },
+        { "attributes.gvwr": { $in: GB_GVW_CLASSES.filter((t) => inRange(Number(t), r)) } },
+      ]),
+    });
+  }
 
   const seats = picked("seats").map(Number).filter((n) => n > 0);
   if (seats.length) {
@@ -446,7 +468,7 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
     clauses.push(or.length === 1 ? or[0] : { $or: or });
   }
 
-  const engine = picked("engine_cc").map(engineCcRange).filter((r): r is Record<string, number> => r !== null);
+  const engine = picked("engine_cc").map(bucketRange).filter((r): r is Record<string, number> => r !== null);
   if (engine.length) clauses.push(engine.length === 1 ? { engineCapacity: engine[0] } : { $or: engine.map((r) => ({ engineCapacity: r })) });
 
   if (first("ulez") === "yes") clauses.push({ "attributes.ulezCompliant": "Yes" });
@@ -489,7 +511,7 @@ export function buildFilterQuery(
     if (jobs) return jobs;
   }
 
-  if (category === "vehicles" && (sub === "cars" || sub === "motorcycle" || sub === "van")) {
+  if (category === "vehicles" && ["cars", "motorcycle", "van", "truck"].includes(sub)) {
     const clauses = buildVehicleQuery(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};

@@ -3,7 +3,7 @@ import { conditionFull, fuelType } from "./shared";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// Filters shared by the reworked Cars, Motorcycle and Van forms. Option values
+// Filters shared by the reworked Cars, Motorcycle, Van and Truck forms. Option values
 // are what the post forms save (posting/form-schema/defaults/vehicles.ts),
 // matched in lib/postFilterQuery.ts. Each list covers every market —
 // lib/listing-filters.ts trims and relabels it per country.
@@ -346,34 +346,112 @@ export const vehicles: MainCategory = {
       id: "truck",
       label: "Truck",
       icon: "truck",
+      // Per market: km / miles, wheels and permit in IN, BS (IN) or Euro
+      // emission standards, CNG outside GB, COE in SG.
       filters: [
-        conditionFull,
+        listedBy,
         {
           id: "truck_type",
-          label: "Truck Type",
+          label: "Body Type",
           type: "toggle",
           options: [
-            { label: "Pickup",  value: "pickup"  },
-            { label: "Light",   value: "light"   },
-            { label: "Medium",  value: "medium"  },
-            { label: "Heavy",   value: "heavy"   },
-            { label: "Flatbed", value: "flatbed" },
-            { label: "Tipper",  value: "tipper"  },
+            { label: "Tipper",          value: "tipper"          },
+            { label: "Box",             value: "box"             },
+            { label: "Flatbed",         value: "flatbed"         },
+            { label: "Curtainsider",    value: "curtainsider"    },
+            { label: "Dropside",        value: "dropside"        },
+            { label: "Refrigerated",    value: "refrigerated"    },
+            { label: "Tanker",          value: "tanker"          },
+            { label: "Tractor Unit",    value: "tractor"         },
+            { label: "Trailer",         value: "trailer"         },
+            { label: "Car Transporter", value: "car_transporter" },
+          ],
+        },
+        conditionNewUsed,
+        {
+          // Values are tonne ranges ("min-max", open-ended "min-").
+          id: "gvw",
+          label: "Gross Weight",
+          type: "toggle",
+          options: [
+            { label: "Up to 3.5t", value: "0-3.5"    },
+            { label: "3.5–7.5t",   value: "3.51-7.5" },
+            { label: "7.5–18t",    value: "7.51-18"  },
+            { label: "18–26t",     value: "18.01-26" },
+            { label: "Over 26t",   value: "26.01-"   },
           ],
         },
         {
-          id: "payload",
+          id: "payload_tonnes",
           label: "Payload",
           type: "toggle",
           singleSelect: true,
           options: [
-            { label: "Any",         value: "any"   },
-            { label: "< 1 tonne",   value: "sub1"  },
-            { label: "1-3 tonnes",  value: "1to3"  },
-            { label: "3-10 tonnes", value: "3to10" },
-            { label: "10+ tonnes",  value: "10up"  },
+            { label: "Any",        value: "any" },
+            { label: "1 tonne+",   value: "1"   },
+            { label: "3 tonnes+",  value: "3"   },
+            { label: "10 tonnes+", value: "10"  },
+            { label: "20 tonnes+", value: "20"  },
           ],
         },
+        {
+          id: "wheels",
+          label: "Wheels",
+          type: "toggle",
+          options: ["4", "6", "10", "12", "14", "16", "18", "22"].map((w) => ({ label: `${w} wheeler`, value: w })),
+        },
+        yearFrom,
+        // Trucks run far more than cars: higher mileage bands, same filter id.
+        {
+          ...maxMileage,
+          options: [
+            { label: "Any", value: "any" },
+            ...[100000, 250000, 500000, 750000].map((n) => ({ label: `Up to ${n.toLocaleString("en")}`, value: String(n) })),
+          ],
+        },
+        {
+          id: "fuel_type",
+          label: "Fuel Type",
+          type: "toggle",
+          options: [
+            { label: "Diesel",   value: "diesel"   },
+            { label: "CNG",      value: "cng"      },
+            { label: "LNG",      value: "lng"      },
+            { label: "Electric", value: "electric", icon: "zap" },
+          ],
+        },
+        {
+          id: "emission",
+          label: "Emission Standard",
+          type: "toggle",
+          options: [
+            { label: "BS IV",  value: "bs4"   },
+            { label: "BS VI",  value: "bs6"   },
+            { label: "Euro 4", value: "euro4" },
+            { label: "Euro 5", value: "euro5" },
+            { label: "Euro 6", value: "euro6" },
+          ],
+        },
+        {
+          id: "cab_type",
+          label: "Cab Type",
+          type: "toggle",
+          options: [
+            { label: "Day Cab",     value: "day"     },
+            { label: "Sleeper Cab", value: "sleeper" },
+          ],
+        },
+        {
+          id: "permit",
+          label: "Permit",
+          type: "toggle",
+          options: [
+            { label: "National", value: "national" },
+            { label: "State",    value: "state"    },
+          ],
+        },
+        owners,
+        coeLeft,
       ],
     },
     {

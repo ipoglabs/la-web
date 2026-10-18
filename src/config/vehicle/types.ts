@@ -12,5 +12,7 @@ export interface VehicleFormConfig {
   motorcycleMakes: string[];
   /** Van / minibus makes on the Van post form ("Other" is added after these). */
   vanMakes: string[];
+  /** Truck makes on the Truck post form ("Other" is added after these). */
+  truckMakes: string[];
   budgetPlaceholder: string;
 }

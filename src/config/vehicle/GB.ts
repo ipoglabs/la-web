@@ -27,5 +27,6 @@ export const GBVehicleConfig: VehicleFormConfig = {
     "Ford", "Volkswagen", "Mercedes-Benz", "Vauxhall", "Renault", "Peugeot", "Citroen",
     "Fiat", "Nissan", "Toyota", "Iveco", "MAN", "Maxus",
   ],
+  truckMakes: ["DAF", "Scania", "Volvo", "Mercedes-Benz", "MAN", "Iveco", "Renault", "Isuzu", "Fuso", "Ford"],
   budgetPlaceholder: "e.g. 15000",
 };

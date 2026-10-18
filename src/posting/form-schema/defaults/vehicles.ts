@@ -26,16 +26,9 @@ const makeModel = (required: boolean): FormFieldDef[] => [
   { key: "model", type: "text", label: "Model", required, width: "half" },
 ];
 
-const paperwork: FormFieldDef[] = [
-  { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]) },
-  { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
-  { key: "insuranceValidTill", type: "date", label: "Insurance Valid Till", width: "half" },
-  { key: "serviceHistory", type: "select", label: "Service History", options: serviceHistory },
-];
-
 const price: FormFieldDef = { key: "salePrice", type: "currency", label: "Price", required: true, min: 1 };
 
-// ── Reworked per market: Cars, Motorcycle, Van ───────────────────────────────
+// ── Reworked per market: Cars, Motorcycle, Van, Truck ────────────────────────
 // From the Vehicles post form reviews (2026-10-18): GB mileage in miles with
 // an MOT, SG COE details, IN registering state instead of the plate. The
 // other subcategories still share makeModel / paperwork.
@@ -65,13 +58,16 @@ const distance = (country: string): FormFieldDef =>
  * the registering state instead of the plate. `extra` goes before Service
  * History (Cars: ULEZ in GB, registration date and depreciation in SG).
  */
-function historyFields(country: string, extra: { GB?: FormFieldDef[]; SG?: FormFieldDef[] } = {}): FormFieldDef[] {
+function historyFields(
+  country: string,
+  extra: { GB?: FormFieldDef[]; SG?: FormFieldDef[]; motLabel?: string } = {},
+): FormFieldDef[] {
   const serviceHistoryField: FormFieldDef = { key: "serviceHistory", type: "select", label: "Service History", options: serviceHistory };
   if (country === "GB") {
     return [
       { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]) },
       { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
-      { key: "motExpiry", type: "date", label: "MOT Expiry", width: "half" },
+      { key: "motExpiry", type: "date", label: extra.motLabel ?? "MOT Expiry", width: "half" },
       ...(extra.GB ?? []),
       serviceHistoryField,
     ];
@@ -237,6 +233,80 @@ function vanSections(country: string, c: VehicleFormConfig): FormSection[] {
   ];
 }
 
+// Saved as slugs; search filters on them (lib/postFilterQuery.ts).
+const TRUCK_BODY_TYPES = pairs([
+  ["tipper", "Tipper"],
+  ["box", "Box"],
+  ["flatbed", "Flatbed"],
+  ["curtainsider", "Curtainsider"],
+  ["dropside", "Dropside"],
+  ["refrigerated", "Refrigerated"],
+  ["tanker", "Tanker"],
+  ["tractor", "Tractor Unit"],
+  ["trailer", "Trailer"],
+  ["car_transporter", "Car Transporter"],
+  ["other", "Other"],
+]);
+// GB trucks are sold and licensed by gross weight class (tonnes).
+const GB_GVW_CLASSES = ["3.5", "7.5", "12", "18", "26", "32", "44"];
+
+function truckSections(country: string, c: VehicleFormConfig): FormSection[] {
+  const gb = country === "GB";
+  const india = country === "IN";
+  return [
+    basics,
+    {
+      title: "Vehicle",
+      fields: [
+        listedBy,
+        { key: "condition", type: "select", label: "Condition", options: vehicleCondition.slice(0, 2) },
+        ...makeModelPicked(c.truckMakes),
+        { key: "year", type: "number", label: "Year", required: true, width: "half" },
+        distance(country),
+        { key: "bodyType", type: "select", label: "Body Type", options: TRUCK_BODY_TYPES },
+        // Indian buyers search by wheels ("10 wheeler"), not axle config.
+        ...(india
+          ? ([
+              { key: "wheels", type: "select", label: "Number of Wheels", required: true, options: opts(["4", "6", "10", "12", "14", "16", "18", "22"]) },
+            ] satisfies FormFieldDef[])
+          : []),
+        { key: "axleConfig", type: "select", label: "Axle Config", options: opts(["4x2", "6x2", "6x4", "8x2", "8x4"]) },
+        { key: "payloadCapacity", type: "number", label: "Payload", unit: "tonnes", min: 0, max: 100, width: "half" },
+        // Same `gvwr` key everywhere, in tonnes; GB picks its weight class.
+        gb
+          ? { key: "gvwr", type: "select", label: "Gross Vehicle Weight", options: GB_GVW_CLASSES.map((t) => ({ value: t, label: `${t}t` })) }
+          : { key: "gvwr", type: "number", label: "Gross Vehicle Weight", unit: "tonnes", min: 0, max: 100, width: "half" },
+        { key: "cabType", type: "select", label: "Cab Type", options: pairs([["day", "Day Cab"], ["sleeper", "Sleeper Cab"]]) },
+        {
+          key: "emissionStandard",
+          type: "select",
+          label: "Emission Standard",
+          options: india ? pairs([["bs4", "BS IV"], ["bs6", "BS VI"]]) : pairs([["euro4", "Euro 4"], ["euro5", "Euro 5"], ["euro6", "Euro 6"]]),
+        },
+        ...(india
+          ? ([{ key: "permitType", type: "select", label: "Permit Type", options: pairs([["national", "National"], ["state", "State"], ["none", "None"]]) }] satisfies FormFieldDef[])
+          : []),
+        // Petrol and hybrid trucks are rare; GB has almost no CNG trucks.
+        {
+          key: "fuelType",
+          type: "select",
+          label: "Fuel Type",
+          options: pairs([["diesel", "Diesel"], ...(gb ? [] : ([["cng", "CNG"]] as [string, string][])), ["lng", "LNG"], ["electric", "Electric"]]),
+        },
+        { key: "transmission", type: "select", label: "Transmission", options: transmission },
+        { ...price, width: "half" },
+        negotiable,
+        // GB trade trucks are priced "+VAT", which adds 20%.
+        ...(gb
+          ? ([{ key: "priceIncludesVat", type: "select", label: "Price Includes VAT", required: true, options: pairs([["yes", "Yes"], ["no", "No (+VAT)"]]) }] satisfies FormFieldDef[])
+          : []),
+      ],
+    },
+    // GB trucks have a yearly roadworthiness test instead of an MOT.
+    { title: "History", fields: historyFields(country, { motLabel: "Annual Test Expiry" }) },
+  ];
+}
+
 export const VEHICLES_SUBCATEGORIES = [
   "Cars",
   "Motorcycle",
@@ -262,26 +332,7 @@ export function vehiclesSections(subcategory: string, country: string): FormSect
       return vanSections(country, c);
 
     case "Truck":
-      return [
-        basics,
-        {
-          title: "Vehicle",
-          fields: [
-            ...makeModel(true),
-            { key: "year", type: "number", label: "Year", required: true, width: "half" },
-            { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
-            { key: "payloadCapacity", type: "number", label: "Payload", unit: "tons", min: 0, max: 500, width: "half" },
-            { key: "gvwr", type: "number", label: "GVWR", unit: "kg", min: 0, max: 1_000_000, width: "half" },
-            { key: "bodyType", type: "select", label: "Body Type", options: pairs([["tipper", "Tipper"], ["box", "Box"], ["flatbed", "Flatbed"], ["tanker", "Tanker"], ["trailer", "Trailer"]]) },
-            { key: "axleConfig", type: "select", label: "Axle Config", options: opts(["4x2", "6x2", "6x4", "8x2", "8x4"]) },
-            { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes },
-            { key: "transmission", type: "select", label: "Transmission", options: transmission },
-            { key: "condition", type: "select", label: "Condition", options: vehicleCondition },
-            price,
-          ],
-        },
-        { title: "History", fields: paperwork },
-      ];
+      return truckSections(country, c);
 
     case "Boats":
       return [

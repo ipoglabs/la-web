@@ -23,5 +23,6 @@ export const SGVehicleConfig: VehicleFormConfig = {
     "KTM", "Royal Enfield", "Aprilia", "Benelli", "Vespa", "Piaggio",
   ],
   vanMakes: ["Toyota", "Nissan", "Hyundai", "Isuzu", "Mercedes-Benz", "Ford", "Volkswagen", "Maxus", "Mitsubishi", "Kia"],
+  truckMakes: ["Isuzu", "Hino", "Mitsubishi Fuso", "Nissan UD", "Volvo", "Scania", "Mercedes-Benz", "MAN", "DAF", "Toyota"],
   budgetPlaceholder: "e.g. 50000",
 };
