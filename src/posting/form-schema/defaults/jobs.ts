@@ -4,7 +4,6 @@ import { getJobConfig } from "@/config/job";
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, opts, pairs, YES_NO } from "./shared";
 
-const SKILLS = opts(["JavaScript", "React", "Node.js", "TypeScript", "SQL", "Python", "Communication", "Leadership", "Sales", "Customer Service"]);
 const SHIFTS = opts(["Morning", "Afternoon", "Evening", "Night", "Rotational"]);
 
 const workMode: FormFieldDef = {
@@ -19,8 +18,7 @@ const workMode: FormFieldDef = {
 };
 
 const company: FormFieldDef = { key: "company", type: "text", label: "Company", required: true };
-const skills: FormFieldDef = { key: "skills", type: "multiselect", label: "Skills", options: SKILLS };
-/** Reworked forms let the poster type their own skills instead of the fixed tech list. */
+/** Posters type their own skills. */
 const skillTags: FormFieldDef = {
   key: "skills",
   type: "tags",
@@ -314,19 +312,55 @@ export function jobsSections(subcategory: string, country: string): FormSection[
         {
           title: "About You",
           fields: [
-            { key: "candidateName", type: "text", label: "Your Name", required: true },
+            // No name field: the ad already shows the poster's profile name
+            jobCategory,
+            // Values match the Wanted search's Looking For filter (lib/postFilterQuery.ts maps them)
             {
               key: "employmentType",
-              type: "select",
-              label: "Employment Type",
+              type: "multiselect",
+              label: "Open To",
               options: pairs([["full-time", "Full Time"], ["part-time", "Part Time"], ["internship", "Internship"], ["freelance", "Freelance"], ["temporary", "Temporary"], ["contract", "Contract"]]),
             },
-            { key: "experience", type: "text", label: "Experience", width: "half" },
+            experienceLevel(country),
+            // Several choices, so it's saved apart from the single-choice Work Mode
+            {
+              key: "preferredWorkMode",
+              type: "multiselect",
+              label: "Preferred Work Mode",
+              options: workMode.options,
+            },
             { key: "salary", type: "currency", label: "Expected Salary", min: 1, width: "half" },
             payPeriod(country, ["hour", "month", "year"]),
-            { key: "available_from", type: "date", label: "Available From", width: "half" },
-            skills,
-            { key: "preferred_locations", type: "tags", label: "Preferred Locations", placeholder: "Type a location and press Enter" },
+            { key: "available_from", type: "date", label: "Available From", immediateOption: "Immediately", width: "half" },
+            ...(country === "IN"
+              ? [{
+                  key: "education",
+                  type: "select",
+                  label: "Highest Education",
+                  options: opts(["10th Pass", "12th Pass", "Diploma / ITI", "Graduate", "Post Graduate"]),
+                } satisfies FormFieldDef]
+              : []),
+            ...(country === "GB"
+              ? [{ key: "rightToWork", type: "select", label: "Right to Work", options: pairs([["yes", "Yes"], ["sponsorship", "Need sponsorship"]]) } satisfies FormFieldDef]
+              : []),
+            ...(country === "SG"
+              ? [{
+                  key: "rightToWork",
+                  type: "select",
+                  label: "Right to Work",
+                  options: pairs([["citizen-pr", "Citizen / PR"], ["work-pass", "Have a work pass"], ["need-pass", "Need a work pass"]]),
+                } satisfies FormFieldDef]
+              : []),
+            skillTags,
+            { key: "languages", type: "tags", label: "Languages", placeholder: "Type a language and press Enter", maxItems: 5 },
+            {
+              key: "preferred_locations",
+              type: "tags",
+              label: "Preferred Locations",
+              placeholder: "Type a location and press Enter",
+              format: "place",
+              maxItems: 5,
+            },
           ],
         },
       ];

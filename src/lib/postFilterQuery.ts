@@ -356,6 +356,16 @@ const JOBS_FORM_FILTERS: Record<string, string[]> = {
   freelance: ["field", "experience", "work_arrangement"],
   internship: ["field", "work_arrangement"],
   temp_seasonal: ["field", "work_arrangement"],
+  wanted: ["job_type", "field", "experience", "work_arrangement"],
+};
+
+// Wanted's Looking For values → the Open To values its form saves.
+const WANTED_LOOKING_FOR: Record<string, string> = {
+  fulltime: "full-time",
+  parttime: "part-time",
+  freelance: "freelance",
+  intern: "internship",
+  temp: "temporary",
 };
 
 function buildJobsFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
@@ -368,7 +378,10 @@ function buildJobsFormClauses(sub: string, fv: Record<string, string[]>): Record
   const experience = picked("experience");
   if (experience.length) clauses.push({ experience: { $in: experience } });
   const workMode = picked("work_arrangement");
-  if (workMode.length) clauses.push({ workMode: { $in: workMode } });
+  // A Wanted seeker picks several work modes (Preferred Work Mode); job ads have one
+  if (workMode.length) clauses.push({ [sub === "wanted" ? "attributes.preferredWorkMode" : "workMode"]: { $in: workMode } });
+  const lookingFor = picked("job_type").map((v) => WANTED_LOOKING_FOR[v]).filter(Boolean);
+  if (lookingFor.length) clauses.push({ "attributes.employmentType": { $in: lookingFor } });
   return clauses;
 }
 
