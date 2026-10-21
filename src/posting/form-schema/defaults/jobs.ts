@@ -2,7 +2,7 @@
 
 import { getJobConfig } from "@/config/job";
 import type { FormFieldDef, FormSection } from "../types";
-import { basics, opts, pairs } from "./shared";
+import { basics, opts, pairs, YES_NO } from "./shared";
 
 const SKILLS = opts(["JavaScript", "React", "Node.js", "TypeScript", "SQL", "Python", "Communication", "Leadership", "Sales", "Customer Service"]);
 const SHIFTS = opts(["Morning", "Evening", "Night", "Weekend", "Rotational"]);
@@ -25,6 +25,56 @@ const dates: FormFieldDef[] = [
   { key: "startDate", type: "date", label: "Start Date", width: "half" },
   { key: "endDate", type: "date", label: "End Date", width: "half" },
 ];
+
+/** Values match the Jobs search's Field filter (components/create-alert/config/jobs.ts). */
+const jobCategory: FormFieldDef = {
+  key: "jobCategory",
+  type: "select",
+  label: "Job Category",
+  required: true,
+  display: "dropdown",
+  options: pairs([
+    ["it", "IT & Tech"],
+    ["finance", "Finance & Accounts"],
+    ["sales", "Sales & Marketing"],
+    ["engineering", "Engineering"],
+    ["healthcare", "Healthcare"],
+    ["education", "Education"],
+    ["admin", "Admin & Office"],
+    ["creative", "Creative & Design"],
+    ["hospitality", "Hospitality & Food"],
+    ["retail", "Retail"],
+    ["logistics", "Driving & Logistics"],
+    ["construction", "Construction & Trades"],
+    ["customer-service", "Customer Service"],
+    ["other", "Other"],
+  ]),
+};
+
+/** Values match the Jobs search's Experience Level filter; India says Fresher for entry level. */
+const experienceLevel = (country: string): FormFieldDef => ({
+  key: "experience",
+  type: "select",
+  label: "Experience Level",
+  options: pairs([
+    ["entry", country === "IN" ? "Fresher" : "Entry"],
+    ["mid", "Mid"],
+    ["senior", "Senior"],
+    ["lead", "Lead"],
+    ["manager", "Manager"],
+  ]),
+});
+
+const listedBy = (country: string): FormFieldDef => ({
+  key: "listedBy",
+  type: "select",
+  label: "Listed By",
+  required: true,
+  options: pairs([
+    ["Employer", "Employer"],
+    ["Agency", country === "IN" ? "Consultancy" : "Recruitment Agency"],
+  ]),
+});
 
 /**
  * How a salary is quoted, beside each salary field. New posts start on the
@@ -62,15 +112,38 @@ export function jobsSections(subcategory: string, country: string): FormSection[
         {
           title: "Job",
           fields: [
+            listedBy(country),
             company,
-            { key: "salary", type: "currency", label: "Salary", min: 1, width: "half" },
-            payPeriod(country, ["hour", "month", "year"]),
-            { key: "experience", type: "text", label: "Experience", placeholder: "e.g. 2-4 years", width: "half" },
+            jobCategory,
+            // Salary From stays `salary`, so search and the listing price keep reading it
+            { key: "salary", type: "currency", label: "Salary From", min: 1, width: "third" },
+            { key: "salaryMax", type: "currency", label: "Salary To", min: 1, gteField: "salary", width: "third" },
+            { ...payPeriod(country, ["hour", "month", "year"]), width: "third" },
+            experienceLevel(country),
             workMode,
-            skills,
+            { key: "openings", type: "number", label: "Openings", min: 1, max: 999, width: "half" },
+            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Immediately" },
+            ...(country === "IN"
+              ? [{
+                  key: "minEducation",
+                  type: "select",
+                  label: "Minimum Education",
+                  options: opts(["10th Pass", "12th Pass", "Diploma / ITI", "Graduate", "Post Graduate", "Any"]),
+                } satisfies FormFieldDef]
+              : []),
+            ...(country === "GB"
+              ? [{ key: "visaSponsorship", type: "select", label: "Visa Sponsorship", options: YES_NO } satisfies FormFieldDef]
+              : []),
+            {
+              key: "skills",
+              type: "tags",
+              label: "Skills",
+              placeholder: "Type a skill and press Enter",
+              maxItems: 10,
+            },
             { key: "benefits", type: "multiselect", label: "Benefits", options: opts(c.benefits) },
             { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
-            applyLink,
+            { ...applyLink, format: "url" },
           ],
         },
       ];

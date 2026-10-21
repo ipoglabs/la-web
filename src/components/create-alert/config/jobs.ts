@@ -1,5 +1,18 @@
-import type { MainCategory } from "../types";
-import { field, experience, workArrangement } from "./shared";
+import type { FilterConfig, MainCategory } from "../types";
+import { field as sharedField, experience, workArrangement } from "./shared";
+
+// The Jobs post forms' Job Category list (posting/form-schema/defaults/jobs.ts) — wider than Business's Field.
+const field: FilterConfig = {
+  ...sharedField,
+  options: [
+    ...sharedField.options,
+    { label: "Retail",          value: "retail"           },
+    { label: "Logistics",       value: "logistics"        },
+    { label: "Construction",    value: "construction"     },
+    { label: "Customer Service", value: "customer-service" },
+    { label: "Other",           value: "other"            },
+  ],
+};
 
 export const jobs: MainCategory = {
   id: "jobs",

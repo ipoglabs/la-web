@@ -58,7 +58,7 @@ const FieldSchema = new Schema<FormFieldDef>(
     gteField: String,
     lteField: String,
     maxLength: Number,
-    format: { type: String, enum: ["adTitle", "place"] },
+    format: { type: String, enum: ["adTitle", "place", "url"] },
     maxItems: Number,
     display: { type: String, enum: ["chips", "dropdown"] },
     width: { type: String, enum: ["full", "half", "third"] },

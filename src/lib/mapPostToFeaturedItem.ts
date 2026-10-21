@@ -68,7 +68,10 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
   if (post.salary != null) {
     // Jobs: Pay Period beside the salary (saved in attributes); older posts have none.
     const period = String(post.attributes?.salaryPeriod ?? "");
-    return { priceLabel: fmt(post.salary), priceSuffix: SALARY_PERIOD_SUFFIX[period] };
+    // Full Time asks Salary From – To; the To is saved in attributes.
+    const to = Number(post.attributes?.salaryMax);
+    const label = to > post.salary ? `${fmt(post.salary)} – ${fmt(to)}` : fmt(post.salary);
+    return { priceLabel: label, priceSuffix: SALARY_PERIOD_SUFFIX[period] };
   }
   if (post.hourlyRate != null) return { priceLabel: fmt(post.hourlyRate), priceSuffix: "/ hr" };
   if (post.price != null) return { priceLabel: fmt(post.price) };

@@ -22,6 +22,15 @@ function isEmpty(value: unknown) {
   return false;
 }
 
+function isWebLink(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === "https:" || url.protocol === "http:") && url.hostname.includes(".");
+  } catch {
+    return false;
+  }
+}
+
 const fmt = (n: number) => n.toLocaleString("en");
 
 function validateField(
@@ -50,6 +59,9 @@ function validateField(
     }
     if (field.format === "adTitle" && AD_TITLE_DISALLOWED.test(value)) {
       return `${field.label} can only contain letters, numbers, spaces and . , -`;
+    }
+    if (field.format === "url" && !isWebLink(value)) {
+      return `${field.label} must be a web link starting with https://`;
     }
   }
 

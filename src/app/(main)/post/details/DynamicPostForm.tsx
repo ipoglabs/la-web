@@ -321,7 +321,8 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
         <LaInput
           id={field.key}
           name={field.key}
-          type="text"
+          type={field.format === "url" ? "url" : "text"}
+          inputMode={field.format === "url" ? "url" : undefined}
           maxLength={field.type === "text" ? field.maxLength : undefined}
           value={typeof value === "string" ? value : value == null ? "" : String(value)}
           onChange={(e) =>

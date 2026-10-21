@@ -346,6 +346,32 @@ function rangeWithSalaryFallback(field: string, range: Record<string, number>): 
   return { $or: [{ [field]: range }, { [field]: { $exists: false }, salary: range }] };
 }
 
+/**
+ * Jobs filters each sub's form saves (posting/form-schema/defaults/jobs.ts).
+ * A filter a sub's form doesn't save yet is ignored, so it can't empty the results.
+ */
+const JOBS_FORM_FILTERS: Record<string, string[]> = {
+  full_time: ["field", "experience", "work_arrangement"],
+  part_time: ["work_arrangement"],
+  freelance: ["work_arrangement"],
+  internship: ["work_arrangement"],
+  temp_seasonal: ["work_arrangement"],
+};
+
+function buildJobsFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses: Record<string, unknown>[] = [];
+  const saved = JOBS_FORM_FILTERS[sub] ?? [];
+  const picked = (id: string) => (saved.includes(id) ? (fv[id] ?? []).filter((v) => v && v !== "any") : []);
+
+  const field = picked("field");
+  if (field.length) clauses.push({ "attributes.jobCategory": { $in: field } });
+  const experience = picked("experience");
+  if (experience.length) clauses.push({ experience: { $in: experience } });
+  const workMode = picked("work_arrangement");
+  if (workMode.length) clauses.push({ workMode: { $in: workMode } });
+  return clauses;
+}
+
 /** Jobs subs whose pay fields need more than a plain range. */
 function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record<string, number> | null): Record<string, unknown> | null {
   const clauses: Record<string, unknown>[] = [];
@@ -568,8 +594,17 @@ export function buildFilterQuery(
     const range: Record<string, number> = {};
     if (min) range.$gte = Number(min);
     if (max) range.$lte = Number(max);
-    const jobs = buildJobsQuery(sub, filterValues, min || max ? range : null);
-    if (jobs) return jobs;
+    const clauses = buildJobsFormClauses(sub, filterValues);
+    const pay =
+      buildJobsQuery(sub, filterValues, min || max ? range : null) ??
+      (!field || (!min && !max)
+        ? {}
+        : field === "salary"
+          ? monthlySalaryInRange(min ? Number(min) : undefined, max ? Number(max) : undefined)
+          : { [field]: range });
+    if (Object.keys(pay).length) clauses.push(pay);
+    if (clauses.length === 0) return {};
+    return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
   if (category === "vehicles") {
@@ -596,22 +631,26 @@ export function buildFilterQuery(
  * Salary filters compare pay per month. The seller picks a Pay Period
  * (`attributes.salaryPeriod`); hourly / daily pay assumes a full-time
  * 40-hour, 5-day week. Posts from before Pay Period existed count as monthly.
+ * A Salary From – To range (Full Time, `attributes.salaryMax`) matches when
+ * it overlaps the filter's range.
  */
 function monthlySalaryInRange(min: number | undefined, max: number | undefined): Record<string, unknown> {
   const weeksPerMonth = 52 / 12;
-  const monthly = {
+  const monthly = (pay: unknown) => ({
     $switch: {
       branches: [
-        { case: { $eq: ["$attributes.salaryPeriod", "hour"] }, then: { $multiply: ["$salary", 40 * weeksPerMonth] } },
-        { case: { $eq: ["$attributes.salaryPeriod", "day"] }, then: { $multiply: ["$salary", 5 * weeksPerMonth] } },
-        { case: { $eq: ["$attributes.salaryPeriod", "week"] }, then: { $multiply: ["$salary", weeksPerMonth] } },
-        { case: { $eq: ["$attributes.salaryPeriod", "year"] }, then: { $divide: ["$salary", 12] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "hour"] }, then: { $multiply: [pay, 40 * weeksPerMonth] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "day"] }, then: { $multiply: [pay, 5 * weeksPerMonth] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "week"] }, then: { $multiply: [pay, weeksPerMonth] } },
+        { case: { $eq: ["$attributes.salaryPeriod", "year"] }, then: { $divide: [pay, 12] } },
       ],
-      default: "$salary",
+      default: pay,
     },
-  };
-  const conditions: unknown[] = [{ $isNumber: monthly }];
-  if (min !== undefined) conditions.push({ $gte: [monthly, min] });
-  if (max !== undefined) conditions.push({ $lte: [monthly, max] });
+  });
+  const from = monthly("$salary");
+  const to = monthly({ $cond: [{ $isNumber: "$attributes.salaryMax" }, "$attributes.salaryMax", "$salary"] });
+  const conditions: unknown[] = [{ $isNumber: from }];
+  if (min !== undefined) conditions.push({ $gte: [to, min] });
+  if (max !== undefined) conditions.push({ $lte: [from, max] });
   return { $expr: { $and: conditions } };
 }

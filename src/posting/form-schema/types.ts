@@ -64,8 +64,9 @@ export interface FormFieldDef {
   /** Text rules: "adTitle" = letters, digits, spaces and . , - only
    *  (stripped while typing, rejected by the server).
    *  Tags rules: "place" = each tag is a place name — letters, digits,
-   *  spaces and . ' & - (e.g. "Stoke-on-Trent", "St. John's Wood"). */
-  format?: "adTitle" | "place";
+   *  spaces and . ' & - (e.g. "Stoke-on-Trent", "St. John's Wood").
+   *  Text rules: "url" = a web link starting with http:// or https://. */
+  format?: "adTitle" | "place" | "url";
   /** Tags / multiselect: most entries allowed (shows an "n/max" counter on tags). */
   maxItems?: number;
   /** Select: "dropdown" shows a native dropdown instead of chips — for long
