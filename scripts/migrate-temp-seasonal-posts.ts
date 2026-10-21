@@ -8,7 +8,8 @@
 //   in the seeds; small figures get that period, others are only reported.
 // - Working Hours became Hours per Week (a number): one plain number is
 //   copied across; anything else is only reported.
-// - Duration and Job Category are read from the title where it says them;
+// - Duration (weeks, months or a month range like "Nov–Jan") and Job
+//   Category are read from the title where it says them;
 //   anything else is only reported.
 
 import mongoose from "mongoose";
@@ -21,11 +22,23 @@ const CATEGORY_BY_WORD: [RegExp, string][] = [
   [/warehouse|picker|packer|driver|delivery/i, "logistics"],
 ];
 
-/** "4 Weeks" → "1m", "8–16 weeks" → "6m": the Duration bucket the longest figure falls in. */
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const MONTH = `(${MONTHS.join("|")})[a-z]*`;
+
+/** "Dec–Feb" → 3: months from one named month to another, both counted. */
+function monthSpan(title: string): number | null {
+  const range = new RegExp(`\\b${MONTH}\\s*[–-]\\s*${MONTH}\\b`, "i").exec(title);
+  if (!range) return null;
+  const from = MONTHS.indexOf(range[1].toLowerCase());
+  const to = MONTHS.indexOf(range[2].toLowerCase());
+  return ((to - from + 12) % 12) + 1;
+}
+
+/** "4 Weeks" → "1m", "8–16 weeks" → "6m", "Nov–Jan" → "3m": the Duration bucket the longest figure falls in. */
 function durationBucket(title: string): string | null {
   const weeks = /(\d+)(?:\s*[–-]\s*(\d+))?\s*weeks?/i.exec(title);
   const months = /(\d+)(?:\s*[–-]\s*(\d+))?\s*months?/i.exec(title);
-  const m = weeks ? Number(weeks[2] ?? weeks[1]) / (52 / 12) : months ? Number(months[2] ?? months[1]) : null;
+  const m = weeks ? Number(weeks[2] ?? weeks[1]) / (52 / 12) : months ? Number(months[2] ?? months[1]) : monthSpan(title);
   if (m == null) return null;
   if (m < 1) return "1m";
   if (m <= 3) return "3m";
