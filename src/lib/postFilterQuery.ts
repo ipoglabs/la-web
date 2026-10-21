@@ -354,7 +354,7 @@ const JOBS_FORM_FILTERS: Record<string, string[]> = {
   full_time: ["field", "experience", "work_arrangement"],
   part_time: ["field", "experience", "work_arrangement"],
   freelance: ["field", "experience", "work_arrangement"],
-  internship: ["work_arrangement"],
+  internship: ["field", "work_arrangement"],
   temp_seasonal: ["work_arrangement"],
 };
 

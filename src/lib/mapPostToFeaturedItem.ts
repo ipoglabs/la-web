@@ -78,6 +78,9 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
   if (post.budgetAmount != null) {
     return { priceLabel: fmt(post.budgetAmount), priceSuffix: post.budgetType === "hourly" ? "/ hr" : undefined };
   }
+  // Jobs › Internship: a monthly stipend, or none when unpaid.
+  if (post.stipendType === "unpaid") return { priceLabel: "Unpaid" };
+  if (post.stipendAmount != null) return { priceLabel: fmt(post.stipendAmount), priceSuffix: "/ mo" };
   if (post.price != null) return { priceLabel: fmt(post.price) };
   if (post.budget != null) return { priceLabel: fmt(post.budget) };
   return { priceLabel: "Price on request" };

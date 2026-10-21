@@ -229,8 +229,11 @@ export function jobsSections(subcategory: string, country: string): FormSection[
           title: "Internship",
           fields: [
             company,
+            jobCategory,
             workMode,
-            // A choice, not free text, so the Internship search's Duration filter can match it
+            { key: "hours", type: "select", label: "Hours", options: pairs([["full-time", "Full-time"], ["part-time", "Part-time"]]) },
+            // A choice, not free text, so the Internship search's Duration filter can match it.
+            // No End Date: Start Date + Duration give it.
             {
               key: "duration",
               type: "select",
@@ -238,11 +241,43 @@ export function jobsSections(subcategory: string, country: string): FormSection[
               options: pairs([["1", "1 month"], ["2", "2 months"], ["3", "3 months"], ["6", "6 months"], ["12", "12 months"]]),
               width: "half",
             },
-            ...dates,
-            { key: "stipendType", type: "select", label: "Stipend Type", options: pairs([["unpaid", "Unpaid"], ["stipend", "Stipend"], ["salary", "Salary"]]), width: "half" },
-            { key: "stipendAmount", type: "currency", label: "Stipend", min: 0, width: "half" },
-            skills,
-            applyLink,
+            { ...startDate, width: "half" },
+            // "Stipend" is Indian wording; elsewhere Paid saves as "stipend" too, so search reads one value
+            {
+              key: "stipendType",
+              type: "select",
+              label: "Stipend Type",
+              options: pairs([["unpaid", "Unpaid"], ["stipend", country === "IN" ? "Stipend" : "Paid"]]),
+              ...(country === "GB"
+                ? { hint: "Most UK interns count as workers and must be paid at least the National Minimum Wage." }
+                : {}),
+              width: "half",
+            },
+            // Search compares stipends per month
+            {
+              key: "stipendAmount",
+              type: "currency",
+              label: "Stipend (per month)",
+              min: 1,
+              showWhen: { field: "stipendType", notIn: ["unpaid"] },
+              width: "half",
+            },
+            {
+              key: "openTo",
+              type: "select",
+              label: "Open To",
+              options: pairs([["students", "Current students"], ["graduates", "Recent graduates"], ["both", "Both"]]),
+            },
+            {
+              key: "jobOffer",
+              type: "select",
+              label: country === "IN" ? "Pre-Placement Offer (PPO)" : "Job Offer Possible",
+              options: YES_NO,
+              width: "half",
+            },
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            skillTags,
+            { ...applyLink, format: "url" },
           ],
         },
       ];
