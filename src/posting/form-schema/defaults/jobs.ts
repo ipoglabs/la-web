@@ -5,7 +5,7 @@ import type { FormFieldDef, FormSection } from "../types";
 import { basics, opts, pairs, YES_NO } from "./shared";
 
 const SKILLS = opts(["JavaScript", "React", "Node.js", "TypeScript", "SQL", "Python", "Communication", "Leadership", "Sales", "Customer Service"]);
-const SHIFTS = opts(["Morning", "Evening", "Night", "Weekend", "Rotational"]);
+const SHIFTS = opts(["Morning", "Afternoon", "Evening", "Night", "Rotational"]);
 
 const workMode: FormFieldDef = {
   key: "workMode",
@@ -20,6 +20,15 @@ const workMode: FormFieldDef = {
 
 const company: FormFieldDef = { key: "company", type: "text", label: "Company", required: true };
 const skills: FormFieldDef = { key: "skills", type: "multiselect", label: "Skills", options: SKILLS };
+/** Reworked forms let the poster type their own skills instead of the fixed tech list. */
+const skillTags: FormFieldDef = {
+  key: "skills",
+  type: "tags",
+  label: "Skills",
+  placeholder: "Type a skill and press Enter",
+  maxItems: 10,
+};
+const startDate: FormFieldDef = { key: "startDate", type: "date", label: "Start Date", immediateOption: "Immediately" };
 const applyLink: FormFieldDef = { key: "applyLink", type: "text", label: "Apply Link", placeholder: "https://" };
 const dates: FormFieldDef[] = [
   { key: "startDate", type: "date", label: "Start Date", width: "half" },
@@ -122,7 +131,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
             experienceLevel(country),
             workMode,
             { key: "openings", type: "number", label: "Openings", min: 1, max: 999, width: "half" },
-            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Immediately" },
+            startDate,
             ...(country === "IN"
               ? [{
                   key: "minEducation",
@@ -134,13 +143,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
             ...(country === "GB"
               ? [{ key: "visaSponsorship", type: "select", label: "Visa Sponsorship", options: YES_NO } satisfies FormFieldDef]
               : []),
-            {
-              key: "skills",
-              type: "tags",
-              label: "Skills",
-              placeholder: "Type a skill and press Enter",
-              maxItems: 10,
-            },
+            skillTags,
             { key: "benefits", type: "multiselect", label: "Benefits", options: opts(c.benefits) },
             { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
             { ...applyLink, format: "url" },
@@ -154,14 +157,26 @@ export function jobsSections(subcategory: string, country: string): FormSection[
         {
           title: "Job",
           fields: [
+            listedBy(country),
             company,
-            { key: "hourlyRate", type: "currency", label: "Hourly Rate", min: 1, width: "half" },
-            { key: "workingHours", type: "text", label: "Working Hours", placeholder: "e.g. 20 hrs/week", width: "half" },
+            jobCategory,
+            // India quotes part-time pay mostly per month; search turns it into an hourly rate
+            ...(country === "IN"
+              ? [
+                  { key: "salary", type: "currency", label: "Pay", min: 1, width: "half" } satisfies FormFieldDef,
+                  payPeriod(country, ["hour", "day", "month"]),
+                ]
+              : [{ key: "hourlyRate", type: "currency", label: "Hourly Rate", min: 1, width: "half" } satisfies FormFieldDef]),
+            { key: "hoursPerWeek", type: "number", label: "Hours per Week", unit: "hrs", min: 1, max: 48, width: "half" },
+            experienceLevel(country),
             workMode,
+            { key: "workDays", type: "multiselect", label: "Days", options: opts(["Weekdays", "Weekends", "Flexible"]) },
             { key: "shifts", type: "multiselect", label: "Shifts", options: SHIFTS },
-            skills,
+            startDate,
+            { key: "studentFriendly", type: "select", label: "Student Friendly", options: YES_NO, width: "half" },
+            skillTags,
             { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
-            applyLink,
+            { ...applyLink, format: "url" },
           ],
         },
       ];

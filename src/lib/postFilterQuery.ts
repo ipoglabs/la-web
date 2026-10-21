@@ -352,7 +352,7 @@ function rangeWithSalaryFallback(field: string, range: Record<string, number>): 
  */
 const JOBS_FORM_FILTERS: Record<string, string[]> = {
   full_time: ["field", "experience", "work_arrangement"],
-  part_time: ["work_arrangement"],
+  part_time: ["field", "experience", "work_arrangement"],
   freelance: ["work_arrangement"],
   internship: ["work_arrangement"],
   temp_seasonal: ["work_arrangement"],
@@ -372,10 +372,39 @@ function buildJobsFormClauses(sub: string, fv: Record<string, string[]>): Record
   return clauses;
 }
 
+/**
+ * Part Time pay per hour. GB and SG ask an Hourly Rate; IN asks Pay with a
+ * Pay Period, turned hourly with the post's Hours per Week (20 when unset).
+ */
+function hourlyPayInRange(range: Record<string, number>): Record<string, unknown> {
+  const hoursPerWeek = { $ifNull: ["$attributes.hoursPerWeek", 20] };
+  const hourly = {
+    $cond: [
+      { $isNumber: "$hourlyRate" },
+      "$hourlyRate",
+      {
+        $switch: {
+          branches: [
+            { case: { $eq: ["$attributes.salaryPeriod", "day"] }, then: { $divide: ["$salary", { $divide: [hoursPerWeek, 5] }] } },
+            { case: { $eq: ["$attributes.salaryPeriod", "month"] }, then: { $divide: ["$salary", { $multiply: [hoursPerWeek, 52 / 12] }] } },
+          ],
+          default: "$salary",
+        },
+      },
+    ],
+  };
+  const conditions: unknown[] = [{ $isNumber: hourly }];
+  if (range.$gte !== undefined) conditions.push({ $gte: [hourly, range.$gte] });
+  if (range.$lte !== undefined) conditions.push({ $lte: [hourly, range.$lte] });
+  return { $expr: { $and: conditions } };
+}
+
 /** Jobs subs whose pay fields need more than a plain range. */
 function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record<string, number> | null): Record<string, unknown> | null {
   const clauses: Record<string, unknown>[] = [];
-  if (sub === "freelance") {
+  if (sub === "part_time") {
+    if (range) clauses.push(hourlyPayInRange(range));
+  } else if (sub === "freelance") {
     // Freelance budgets are fixed or hourly (Budget Type); the toggle keeps the range comparing like with like.
     const engagement = fv.engagement?.[0];
     if (engagement && engagement !== "any") clauses.push({ "attributes.engagement": engagement });
