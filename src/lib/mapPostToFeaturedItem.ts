@@ -74,6 +74,10 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     return { priceLabel: label, priceSuffix: SALARY_PERIOD_SUFFIX[period] };
   }
   if (post.hourlyRate != null) return { priceLabel: fmt(post.hourlyRate), priceSuffix: "/ hr" };
+  // Jobs › Freelance: a fixed or hourly budget.
+  if (post.budgetAmount != null) {
+    return { priceLabel: fmt(post.budgetAmount), priceSuffix: post.budgetType === "hourly" ? "/ hr" : undefined };
+  }
   if (post.price != null) return { priceLabel: fmt(post.price) };
   if (post.budget != null) return { priceLabel: fmt(post.budget) };
   return { priceLabel: "Price on request" };

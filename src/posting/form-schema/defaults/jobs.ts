@@ -187,26 +187,37 @@ export function jobsSections(subcategory: string, country: string): FormSection[
         {
           title: "Project",
           fields: [
-            company,
+            // Many gigs come from individuals, so the client's company is optional
             {
-              key: "projectType",
+              key: "listedBy",
               type: "select",
-              label: "Project Type",
-              options: pairs([["web-development", "Web Development"], ["design", "Design"], ["writing", "Writing"], ["marketing", "Marketing"], ["other", "Other"]]),
+              label: "Posted By",
+              required: true,
+              options: pairs([["Business", "Business"], ["Individual", "Individual"]]),
             },
+            { ...company, label: "Client / Company", required: false },
+            jobCategory,
             // Same choices as the Freelance search's Engagement filter
             {
               key: "engagement",
               type: "select",
               label: "Engagement",
-              options: pairs([["oneoff", "One-off"], ["ongoing", "Ongoing"], ["project", "Project"]]),
+              options: pairs([["oneoff", "One-off task"], ["project", "Fixed-term project"], ["ongoing", "Ongoing"]]),
             },
+            experienceLevel(country),
             workMode,
             { key: "budgetType", type: "select", label: "Budget Type", options: pairs([["fixed", "Fixed"], ["hourly", "Hourly"]]), width: "half" },
             { key: "budgetAmount", type: "currency", label: "Budget", min: 1, width: "half" },
-            { key: "contractDuration", type: "text", label: "Contract Duration", placeholder: "e.g. 3 months" },
-            skills,
-            applyLink,
+            {
+              key: "contractDuration",
+              type: "select",
+              label: "Contract Duration",
+              options: pairs([["under-1w", "Under 1 week"], ["1-4w", "1–4 weeks"], ["1-3m", "1–3 months"], ["3-6m", "3–6 months"], ["6m-plus", "6+ months"]]),
+            },
+            startDate,
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            skillTags,
+            { ...applyLink, format: "url" },
           ],
         },
       ];

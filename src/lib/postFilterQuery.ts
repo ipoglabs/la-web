@@ -353,7 +353,7 @@ function rangeWithSalaryFallback(field: string, range: Record<string, number>): 
 const JOBS_FORM_FILTERS: Record<string, string[]> = {
   full_time: ["field", "experience", "work_arrangement"],
   part_time: ["field", "experience", "work_arrangement"],
-  freelance: ["work_arrangement"],
+  freelance: ["field", "experience", "work_arrangement"],
   internship: ["work_arrangement"],
   temp_seasonal: ["work_arrangement"],
 };

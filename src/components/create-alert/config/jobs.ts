@@ -48,9 +48,9 @@ export const jobs: MainCategory = {
           singleSelect: true,
           options: [
             { label: "Any",     value: "any"     },
-            { label: "One-off", value: "oneoff"  },
-            { label: "Ongoing", value: "ongoing" },
-            { label: "Project", value: "project" },
+            { label: "One-off task",       value: "oneoff"  },
+            { label: "Fixed-term project", value: "project" },
+            { label: "Ongoing",            value: "ongoing" },
           ],
         },
         {
