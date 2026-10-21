@@ -355,7 +355,7 @@ const JOBS_FORM_FILTERS: Record<string, string[]> = {
   part_time: ["field", "experience", "work_arrangement"],
   freelance: ["field", "experience", "work_arrangement"],
   internship: ["field", "work_arrangement"],
-  temp_seasonal: ["work_arrangement"],
+  temp_seasonal: ["field", "work_arrangement"],
 };
 
 function buildJobsFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
@@ -420,6 +420,11 @@ function buildJobsQuery(sub: string, fv: Record<string, string[]>, range: Record
     const months = { "3m": ["1", "2", "3"], "6m": ["6"], "12m": ["12"] }[fv.duration?.[0] ?? ""];
     if (months) clauses.push({ duration: { $in: months } });
     if (range) clauses.push(rangeWithSalaryFallback("stipendAmount", range));
+  } else if (sub === "temp_seasonal") {
+    // Duration is saved as the filter's own bucket ("1m", "3m", "6m", "12m")
+    const duration = fv.duration?.[0];
+    if (duration && duration !== "any") clauses.push({ duration });
+    if (range) clauses.push(monthlySalaryInRange(range.$gte, range.$lte));
   } else {
     return null;
   }

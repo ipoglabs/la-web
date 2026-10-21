@@ -30,10 +30,6 @@ const skillTags: FormFieldDef = {
 };
 const startDate: FormFieldDef = { key: "startDate", type: "date", label: "Start Date", immediateOption: "Immediately" };
 const applyLink: FormFieldDef = { key: "applyLink", type: "text", label: "Apply Link", placeholder: "https://" };
-const dates: FormFieldDef[] = [
-  { key: "startDate", type: "date", label: "Start Date", width: "half" },
-  { key: "endDate", type: "date", label: "End Date", width: "half" },
-];
 
 /** Values match the Jobs search's Field filter (components/create-alert/config/jobs.ts). */
 const jobCategory: FormFieldDef = {
@@ -87,7 +83,7 @@ const listedBy = (country: string): FormFieldDef => ({
 
 /**
  * How a salary is quoted, beside each salary field. New posts start on the
- * market's usual period: GB pay is quoted per year, IN and SG per month.
+ * market's usual period (`usual`, else GB per year, IN and SG per month).
  * Search compares salaries per month (lib/postFilterQuery.ts).
  */
 const PAY_PERIOD_LABELS: Record<string, string> = {
@@ -97,8 +93,7 @@ const PAY_PERIOD_LABELS: Record<string, string> = {
   month: "Per month",
   year: "Per year",
 };
-const payPeriod = (country: string, periods: string[]): FormFieldDef => {
-  const usual = country === "GB" ? "year" : "month";
+const payPeriod = (country: string, periods: string[], usual = country === "GB" ? "year" : "month"): FormFieldDef => {
   return {
     key: "salaryPeriod",
     type: "select",
@@ -288,13 +283,27 @@ export function jobsSections(subcategory: string, country: string): FormSection[
         {
           title: "Job",
           fields: [
+            listedBy(country),
             company,
+            jobCategory,
             workMode,
-            ...dates,
-            { key: "workingHours", type: "text", label: "Working Hours", width: "half" },
+            // Same buckets as the Temporary / Seasonal search's Duration filter
+            {
+              key: "duration",
+              type: "select",
+              label: "Duration",
+              options: pairs([["1m", "Under 1 month"], ["3m", "1–3 months"], ["6m", "3–6 months"], ["12m", "6–12 months"]]),
+            },
+            { ...startDate, width: "half" },
+            { key: "endDate", type: "date", label: "End Date", width: "half" },
+            { key: "hoursPerWeek", type: "number", label: "Hours per Week", unit: "hrs", min: 1, max: 60, width: "half" },
+            { key: "openings", type: "number", label: "Openings", min: 1, max: 999, width: "half" },
+            // Temp pay is quoted per day in India, per hour in the UK and Singapore
             { key: "salary", type: "currency", label: "Pay", min: 1, width: "half" },
-            payPeriod(country, ["hour", "day", "week", "month"]),
-            skills,
+            payPeriod(country, ["hour", "day", "week", "month"], country === "IN" ? "day" : "hour"),
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            skillTags,
+            { ...applyLink, format: "url" },
           ],
         },
       ];
