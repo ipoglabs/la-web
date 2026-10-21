@@ -137,6 +137,7 @@ export const jobs: MainCategory = {
             { label: "Freelance",  value: "freelance" },
             { label: "Internship", value: "intern"    },
             { label: "Temporary",  value: "temp"      },
+            { label: "Contract",   value: "contract"  },
           ],
         },
         field,

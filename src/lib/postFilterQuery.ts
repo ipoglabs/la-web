@@ -366,6 +366,7 @@ const WANTED_LOOKING_FOR: Record<string, string> = {
   freelance: "freelance",
   intern: "internship",
   temp: "temporary",
+  contract: "contract",
 };
 
 function buildJobsFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
