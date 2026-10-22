@@ -344,6 +344,9 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { level: { relabel: { college: "University" } } },
     sg: { level: { relabel: { college: "Poly / University" } } },
   },
+  "services/food_dining": {
+    in: { service_type: { relabel: { meal_prep: "Tiffin / Meal Prep" } } },
+  },
 };
 
 function forMarket(cat: string, sub: string, market: string, filters: FilterConfig[]): FilterConfig[] {

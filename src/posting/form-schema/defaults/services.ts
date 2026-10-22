@@ -3,19 +3,10 @@
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, opts, pairs, YES_NO } from "./shared";
 
-const price = (label = "Price", required = true): FormFieldDef => ({
-  key: "price",
-  type: "currency",
-  label,
-  required,
-  min: required ? 1 : 0,
-  width: "half",
-});
 const availability: FormFieldDef = { key: "availability", type: "text", label: "Availability", placeholder: "e.g. Mon–Sat, 9am–6pm", width: "half" };
 const qualification: FormFieldDef = { key: "qualification", type: "text", label: "Qualification", width: "half" };
-const rateType = (entries: [string, string][]): FormFieldDef => ({ key: "rateType", type: "select", label: "Rate Type", options: pairs(entries) });
 
-// Reworked Services forms. Option values are what the Services search
+// Option values are what the Services search
 // filters match (components/create-alert/config/services.ts,
 // lib/postFilterQuery.ts). Price is `salePrice`, the field listing prices and
 // the price filter read.
@@ -79,6 +70,13 @@ const CURRICULA: Record<string, [string, string][]> = {
   IN: [["cbse", "CBSE"], ["icse", "ICSE"], ["state", "State Board"], ["ib", "IB"], ["igcse", "IGCSE"]],
   GB: [["aqa", "AQA"], ["edexcel", "Edexcel"], ["ocr", "OCR"], ["ib", "IB"]],
   SG: [["moe", "MOE"], ["ib", "IB"], ["igcse", "IGCSE"]],
+};
+
+/** Dietary options per market: Jain and Eggless matter in IN, allergens in GB and SG. */
+const DIETARY_OPTIONS: Record<string, [string, string][]> = {
+  IN: [["veg", "Vegetarian"], ["vegan", "Vegan"], ["nonveg", "Non-Vegetarian"], ["jain", "Jain"], ["eggless", "Eggless"], ["gluten_free", "Gluten-Free"]],
+  GB: [["veg", "Vegetarian"], ["vegan", "Vegan"], ["halal", "Halal"], ["gluten_free", "Gluten-Free"], ["dairy_free", "Dairy-Free"], ["nut_free", "Nut-Free"]],
+  SG: [["veg", "Vegetarian"], ["vegan", "Vegan"], ["halal", "Halal"], ["gluten_free", "Gluten-Free"], ["dairy_free", "Dairy-Free"], ["nut_free", "Nut-Free"]],
 };
 
 const BUSINESS_REG_LABEL: Record<string, string> = { IN: "GSTIN", GB: "Companies House No.", SG: "UEN" };
@@ -278,22 +276,50 @@ export function servicesSections(subcategory: string, country: string): FormSect
         },
       ];
 
-    case "Travel & Tourism":
+    case "Travel & Tourism": {
+      const tourPackage = { field: "serviceType", in: ["tour_package"] };
       return [
         basics,
         {
           title: "Travel",
           fields: [
-            { key: "serviceType", type: "select", label: "Service Type", options: pairs([["tour", "Tour"], ["package", "Package"], ["guide", "Guide"], ["transport", "Transport"], ["other", "Other"]]) },
+            {
+              key: "serviceType",
+              type: "select",
+              label: "Service Type",
+              required: true,
+              options: pairs([
+                ["tour_package", "Tour Package"],
+                ["tour_guide", "Tour Guide"],
+                ["travel_agent", "Travel Agent / Bookings"],
+                ["visa", "Visa Assistance"],
+                ["transfer", "Airport Transfer"],
+                ["car_hire", "Car / Coach Hire"],
+                ["planning", "Trip Planning"],
+                ["other", "Other"],
+              ]),
+            },
             { key: "destination", type: "text", label: "Destination", width: "half" },
-            { key: "durationText", type: "text", label: "Duration", placeholder: "e.g. 3 nights / 4 days", width: "half" },
-            { key: "packageDetails", type: "textarea", label: "Package Details" },
+            { key: "destinationType", type: "select", label: "Destination Type", options: pairs([["domestic", "Domestic"], ["international", "International"]]), width: "half" },
+            { key: "nights", type: "number", label: "Nights", min: 0, max: 90, width: "half", showWhen: tourPackage },
+            { key: "days", type: "number", label: "Days", min: 1, max: 90, gteField: "nights", width: "half", showWhen: tourPackage },
+            {
+              key: "inclusions",
+              type: "multiselect",
+              label: "Inclusions",
+              options: pairs([["flights", "Flights"], ["hotel", "Hotel"], ["meals", "Meals"], ["transfers", "Transfers"], ["sightseeing", "Sightseeing"], ["guide", "Guide"]]),
+              showWhen: tourPackage,
+            },
+            salePrice(),
+            priceUnit([["person", "Per person"], ["group", "Per group"], ["day", "Per day"], ["trip", "Per trip"]]),
+            ...(country === "GB" ? [{ key: "atolProtected", type: "select", label: "ATOL Protected", options: YES_NO, width: "half" } satisfies FormFieldDef] : []),
+            ...(country === "SG" ? [{ key: "stbLicenceNo", type: "text", label: "STB Licence No.", width: "half" } satisfies FormFieldDef] : []),
             { key: "agencyName", type: "text", label: "Agency Name", width: "half" },
-            price(),
-            availability,
+            { ...availability, label: "Travel Dates", placeholder: "e.g. Departures every Friday, Oct–Mar" },
           ],
         },
       ];
+    }
 
     case "Food & Dining":
       return [
@@ -305,36 +331,73 @@ export function servicesSections(subcategory: string, country: string): FormSect
               key: "serviceType",
               type: "select",
               label: "Service Type",
-              options: pairs([["home-cooked", "Home Cooked"], ["tiffin", "Tiffin"], ["catering", "Catering"], ["restaurant", "Restaurant"], ["cloud-kitchen", "Cloud Kitchen"]]),
+              required: true,
+              options: pairs([
+                ["home_cooked", "Home Cooked Meals"],
+                ["meal_prep", country === "IN" ? "Tiffin / Meal Subscription" : "Meal Prep"],
+                ["catering", "Catering"],
+                ["chef", "Personal Chef"],
+                ["baking", "Baking & Cakes"],
+                ["bartending", "Bartending"],
+                ["other", "Other"],
+              ]),
             },
-            { key: "cuisineType", type: "text", label: "Cuisine Type", width: "half" },
-            price(),
-            { key: "dietaryOptions", type: "multiselect", label: "Dietary Options", options: opts(["Vegetarian", "Vegan", "Non-Vegetarian", "Halal", "Jain", "Gluten-Free"]) },
-            { key: "deliveryAvailable", type: "select", label: "Delivery Available", options: YES_NO },
+            // A list, saved in attributes — Post.cuisineType is a single string.
+            { key: "cuisines", type: "tags", label: "Cuisine Type", placeholder: "Type a cuisine and press Enter", maxItems: 5 },
+            { key: "dietaryOptions", type: "multiselect", label: "Dietary Options", options: pairs(DIETARY_OPTIONS[country] ?? DIETARY_OPTIONS.IN) },
+            { key: "occasions", type: "multiselect", label: "Occasions", options: pairs([["daily", "Daily Meals"], ["wedding", "Wedding"], ["corporate", "Corporate"], ["birthday", "Birthday"], ["party", "Party"]]) },
+            { key: "deliveryOption", type: "select", label: "Delivery / Pickup", options: pairs([["delivery", "Delivery"], ["pickup", "Pickup"], ["both", "Both"]]) },
+            salePrice(),
+            priceUnit([["plate", "Per plate / person"], ["meal", "Per meal"], ["month", "Per month"], ["order", "Per order"]]),
+            { key: "minOrder", type: "number", label: "Minimum Order", unit: "guests", min: 1, max: 10000, width: "half" },
+            country === "GB"
+              ? { key: "hygieneRating", type: "select", label: "Food Hygiene Rating", options: opts(["0", "1", "2", "3", "4", "5"]), width: "half" }
+              : { key: "foodLicence", type: "text", label: country === "SG" ? "SFA Licence No." : "FSSAI Registration No.", width: "half" },
           ],
         },
       ];
 
-    case "Technology & Gadgets":
+    case "Technology & Gadgets": {
+      const repair = { field: "serviceType", in: ["phone_repair", "laptop_repair", "data"] };
       return [
         basics,
         {
           title: "Service",
           fields: [
+            providerListedBy([["individual", "Individual"], ["shop", "Shop / Company"]]),
             {
               key: "serviceType",
               type: "select",
               label: "Service Type",
               required: true,
-              options: pairs([["it-support", "IT Support"], ["software-development", "Software Development"], ["web-design", "Web Design"], ["networking", "Networking"], ["repair", "Repair"], ["consulting", "Consulting"], ["other", "Other"]]),
+              options: pairs([
+                ["phone_repair", "Phone Repair"],
+                ["laptop_repair", "Laptop / PC Repair"],
+                ["smart_home", "Smart Home & CCTV"],
+                ["networking", "Networking & Wi-Fi"],
+                ["data", "Data Recovery"],
+                ["it_support", "IT Support"],
+                ["software", "Software & Web Development"],
+                ["3d_print", "3D Printing"],
+                ["other", "Other"],
+              ]),
             },
-            { key: "skills", type: "tags", label: "Skills / Tools", placeholder: "Type a skill and press Enter" },
-            rateType([["hourly", "Hourly"], ["daily", "Daily"], ["monthly", "Monthly"], ["project", "Per Project"], ["negotiable", "Negotiable"]]),
-            price(),
+            { key: "brands", type: "tags", label: "Brands / Devices", placeholder: "e.g. Apple, Samsung, Dell", maxItems: 10 },
+            {
+              key: "serviceMode",
+              type: "multiselect",
+              label: "Service Mode",
+              options: pairs([["inperson", "Walk-in"], ["homevisit", "Doorstep"], ["online", "Remote"]]),
+            },
+            { key: "warranty", type: "select", label: "Warranty", options: pairs([["none", "None"], ["30d", "30 days"], ["90d", "90 days"], ["6m", "6 months+"]]), width: "half", showWhen: repair },
+            { key: "turnaround", type: "select", label: "Turnaround", options: pairs([["same_day", "Same day"], ["1_2_days", "1–2 days"], ["3_days", "3+ days"]]), width: "half", showWhen: repair },
+            salePrice(),
+            { ...priceUnit([["repair", "Per repair"], ["hour", "Hourly"], ["day", "Daily"], ["project", "Per project"]]), label: "Rate Type" },
             availability,
           ],
         },
       ];
+    }
 
     case "Creative Services":
       return [
@@ -342,16 +405,41 @@ export function servicesSections(subcategory: string, country: string): FormSect
         {
           title: "Service",
           fields: [
+            providerListedBy([["freelancer", "Freelancer"], ["studio", "Studio / Agency"]]),
             {
               key: "serviceType",
               type: "select",
               label: "Service Type",
               required: true,
-              options: pairs([["graphic-design", "Graphic Design"], ["photography", "Photography"], ["videography", "Videography"], ["writing", "Writing"], ["music-audio", "Music & Audio"], ["web-design", "Web Design"], ["other", "Other"]]),
+              options: pairs([
+                ["photography", "Photography"],
+                ["videography", "Videography"],
+                ["video_editing", "Video Editing"],
+                ["graphic_design", "Graphic Design"],
+                ["copywriting", "Copywriting"],
+                ["social_media", "Social Media"],
+                ["music_audio", "Music & Audio"],
+                ["web_design", "Web Design"],
+                ["other", "Other"],
+              ]),
             },
+            {
+              key: "occasions",
+              type: "multiselect",
+              label: "Occasions",
+              options: pairs([["wedding", "Wedding"], ["events", "Events"], ["portrait", "Portrait"], ["product", "Product"], ["real_estate", "Real Estate"], ["corporate", "Corporate"]]),
+              showWhen: { field: "serviceType", in: ["photography", "videography"] },
+            },
+            {
+              key: "serviceMode",
+              type: "multiselect",
+              label: "Service Mode",
+              options: pairs([["homevisit", "On location"], ["inperson", "Studio"], ["online", "Remote"]]),
+            },
+            { key: "portfolioUrl", type: "text", label: "Portfolio Link", placeholder: "https://", format: "url" },
             { key: "skills", type: "tags", label: "Skills / Tools", placeholder: "Type a skill and press Enter" },
-            rateType([["hourly", "Hourly"], ["per-project", "Per Project"], ["per-day", "Per Day"]]),
-            price(),
+            salePrice(),
+            { ...priceUnit([["hour", "Hourly"], ["day", "Per day"], ["project", "Per project"], ["event", "Per event"]]), label: "Rate Type" },
             availability,
           ],
         },
@@ -363,8 +451,27 @@ export function servicesSections(subcategory: string, country: string): FormSect
         {
           title: "Service",
           fields: [
-            { key: "serviceType", type: "select", label: "Service Type", options: pairs([["repair", "Repair"], ["consultancy", "Consultancy"], ["misc", "Miscellaneous"], ["other", "Other"]]) },
-            price(),
+            providerListedBy([["individual", "Individual"], ["company", "Company"]]),
+            {
+              key: "serviceType",
+              type: "select",
+              label: "Service Type",
+              options: pairs([
+                ["moving", "Moving & Packing"],
+                ["event_mgmt", "Event Planning"],
+                ["laundry", "Laundry & Dry Cleaning"],
+                ["tailoring", "Tailoring & Alterations"],
+                ["driver", "Driver Hire"],
+                ["courier", "Courier & Errands"],
+                ["pet_care", "Pet Care"],
+                ["repair", "Repair"],
+                ["other", "Other"],
+              ]),
+            },
+            howServiceMode(),
+            salePrice(),
+            priceUnit([["hour", "Per hour"], ["job", "Per job"], ["item", "Per item"], ["from", "Starting from"]]),
+            yearsOfExperience,
             availability,
           ],
         },
@@ -376,9 +483,35 @@ export function servicesSections(subcategory: string, country: string): FormSect
         {
           title: "Service Needed",
           fields: [
-            { key: "serviceType", type: "text", label: "Service Needed", required: true },
+            {
+              key: "serviceCategory",
+              type: "select",
+              label: "Looking For",
+              required: true,
+              options: pairs([
+                ["home", "Home Services"],
+                ["business", "Business Services"],
+                ["health", "Health & Fitness"],
+                ["tutoring", "Tutoring"],
+                ["education", "Education & Learning"],
+                ["travel", "Travel & Tourism"],
+                ["food", "Food & Dining"],
+                ["tech", "Technology & Gadgets"],
+                ["creative", "Creative Services"],
+                ["other", "Other"],
+              ]),
+            },
+            { key: "serviceType", type: "text", label: "What do you need?", placeholder: "e.g. Fix a leaking tap" },
+            {
+              key: "serviceMode",
+              type: "multiselect",
+              label: "Service Mode",
+              options: pairs([["inperson", "At provider's place"], ["homevisit", "Home visit"], ["online", "Online"]]),
+            },
+            // Budget stays `budgetAmount`; the price filter reads it (SUB_PRICE_FIELD in lib/postFilterQuery.ts).
             { key: "budgetAmount", type: "currency", label: "Budget", min: 0, width: "half" },
-            { key: "urgency", type: "select", label: "Urgency", options: pairs([["immediate", "Immediate"], ["within-a-week", "Within a Week"], ["flexible", "Flexible"]]) },
+            { ...priceUnit([["hour", "Per hour"], ["visit", "Per visit"], ["total", "Total"]]), label: "Budget Per" },
+            { key: "neededBy", type: "date", label: "Needed By", immediateOption: "Immediately", width: "half" },
           ],
         },
       ];

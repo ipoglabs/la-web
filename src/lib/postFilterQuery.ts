@@ -340,6 +340,7 @@ const SUB_PRICE_FIELD: Record<string, string> = {
   "jobs/internship": "stipendAmount",
   // A Wanted ad's price is what the buyer will pay at most.
   "vehicles/wanted": "maxBudget",
+  "services/wanted": "budgetAmount",
 };
 
 /** A price range on `field`, also matching older seed posts that saved their pay as `salary` instead. */
@@ -386,6 +387,12 @@ const SERVICES_FORM_FILTERS: Record<string, Record<string, string | { path: stri
     service_mode: "attributes.serviceMode",
   },
   education_learning: { category: "attributes.courseCategory", format: "attributes.courseFormat", service_mode: "attributes.serviceMode" },
+  travel_tourism: { service_type: "serviceType", destination_type: "attributes.destinationType" },
+  food_dining: { service_type: "serviceType", for_event: "attributes.occasions" },
+  tech_gadgets: { service_type: "serviceType", service_mode: "attributes.serviceMode" },
+  creative_services: { creative_type: "serviceType", service_mode: "attributes.serviceMode" },
+  other_services: { service_type: "serviceType", service_mode: "attributes.serviceMode" },
+  wanted: { service_category: "attributes.serviceCategory", service_mode: "attributes.serviceMode" },
 };
 
 function buildServicesFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {

@@ -16,6 +16,17 @@
 //   Tutor Type, DBS Checked (GB), Free Trial Lesson, Years of Experience
 // - Education & Learning (2026-10-22): Category, Course Name, Format,
 //   Service Mode, Age Group, Duration, Start Date, Price Per, Certificate
+// - Travel & Tourism (2026-10-22): Service Type, Destination, Destination Type,
+//   Nights / Days, Inclusions, Price Per, ATOL Protected (GB)
+// - Technology & Gadgets (2026-10-22): Service Type, Listed By, Brands / Devices,
+//   Service Mode, Warranty / Turnaround (repairs), Rate Type
+// - Other Services (2026-10-22): Service Type, Listed By, Service Mode, Price Per
+// - Wanted (2026-10-22): Looking For, Service Mode, Budget Per, Needed By, and
+//   Budget (budgetAmount, now what the price filter reads) from the seed's price
+// - Food & Dining (2026-10-22): Service Type, Cuisine Type, Dietary Options,
+//   Occasions, Delivery / Pickup, Price Per, Minimum Order, Food Hygiene Rating (GB).
+//   Also moves the one real pre-DB-form post ("Home cook", subcategory
+//   "Food & Dining", no country) to food_dining in IN so Services search shows it.
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
@@ -27,6 +38,9 @@ interface SeedDetails {
   subject?: string;
   duration?: string;
   startDate?: string;
+  destination?: string;
+  dietaryOptions?: string[];
+  budgetAmount?: number;
   attributes: Record<string, unknown>;
 }
 
@@ -152,6 +166,121 @@ const DETAILS: Record<string, SeedDetails> = {
     subject: "O-Level Science",
     attributes: { courseCategory: "exam", courseFormat: "class", serviceMode: ["inperson"], ageGroup: ["teens"], priceUnit: "month" },
   },
+  // ── Travel & Tourism
+  // "4N/5D Goa Holiday Package — Hotel + Sightseeing Included", ₹15,000 / package, breakfast + airport transfers
+  "svc-in-travel-01": {
+    serviceType: "tour_package",
+    destination: "Goa",
+    attributes: { destinationType: "domestic", nights: 4, days: 5, inclusions: ["hotel", "meals", "transfers", "sightseeing"], priceUnit: "trip" },
+  },
+  // "3N/4D Kerala Backwaters Tour — Houseboat Stay Included", ₹22,000 / package
+  "svc-in-travel-02": {
+    serviceType: "tour_package",
+    destination: "Kerala",
+    attributes: { destinationType: "domestic", nights: 3, days: 4, inclusions: ["hotel", "transfers"], priceUnit: "trip" },
+  },
+  // "Bespoke Holiday Planning — Europe & Far East Specialists", from £100 / person, ATOL protected
+  "svc-travel-01": { serviceType: "planning", destination: "Europe & Far East", attributes: { destinationType: "international", priceUnit: "person", atolProtected: "yes" } },
+  // "Executive Airport Transfers — Heathrow, Gatwick, Stansted & City", £55 / trip
+  "svc-travel-02": { serviceType: "transfer", destination: "London airports", attributes: { destinationType: "domestic", priceUnit: "trip" } },
+  // "Guided Walking Tours of London — Hidden History, Street Art & More", £18 / person, Blue Badge guide
+  "svc-travel-03": { serviceType: "tour_guide", destination: "London", attributes: { destinationType: "domestic", priceUnit: "person" } },
+  // "4D3N Bali Getaway — Hotel + Sightseeing Included", S$680 / package, breakfast + airport transfers
+  "svc-sg-travel-01": {
+    serviceType: "tour_package",
+    destination: "Bali",
+    attributes: { destinationType: "international", nights: 3, days: 4, inclusions: ["hotel", "meals", "transfers", "sightseeing"], priceUnit: "trip" },
+  },
+  // "3D2N Bangkok Shopping & Food Tour", S$520 / package, hotel + transfers + guided tour
+  "svc-sg-travel-02": {
+    serviceType: "tour_package",
+    destination: "Bangkok",
+    attributes: { destinationType: "international", nights: 2, days: 3, inclusions: ["hotel", "transfers", "guide"], priceUnit: "trip" },
+  },
+  // ── Food & Dining
+  // "Daily Home-Cooked Tiffin — North Indian Veg, Monthly Plan", ₹3,500 / mo, delivered daily
+  "svc-in-food-01": {
+    serviceType: "meal_prep",
+    dietaryOptions: ["veg"],
+    attributes: { cuisines: ["North Indian"], occasions: ["daily"], deliveryOption: "delivery", priceUnit: "month" },
+  },
+  // "Home Catering for Small Events — Veg & Non-Veg Menus", ₹250 / plate, min 20 plates
+  "svc-in-food-02": {
+    serviceType: "catering",
+    dietaryOptions: ["veg", "nonveg"],
+    attributes: { occasions: ["birthday", "party"], priceUnit: "plate", minOrder: 20 },
+  },
+  // "Private Chef for Dinner Parties — Fine Dining at Home", £300 / event, 4 to 30 guests
+  "svc-food-01": { serviceType: "chef", attributes: { occasions: ["party", "birthday"], priceUnit: "order", minOrder: 4 } },
+  // "Authentic South Asian Home-Cooked Meals — Weekly Tiffin, Wembley", £8 / meal, halal, free delivery, hygiene 5/5
+  "svc-food-02": {
+    serviceType: "home_cooked",
+    dietaryOptions: ["halal", "veg"],
+    attributes: { cuisines: ["South Asian"], occasions: ["daily"], deliveryOption: "delivery", priceUnit: "meal", hygieneRating: "5" },
+  },
+  // "Full-Service Event Catering — Weddings, Corporates & Private Parties", £45 / head, 30 guests minimum
+  "svc-food-03": { serviceType: "catering", attributes: { occasions: ["wedding", "corporate", "party"], priceUnit: "plate", minOrder: 30 } },
+  // "Daily Home-Cooked Peranakan Meals — Monthly Plan", S$280 / mo, delivered daily
+  "svc-sg-food-01": { serviceType: "meal_prep", attributes: { cuisines: ["Peranakan"], occasions: ["daily"], deliveryOption: "delivery", priceUnit: "month" } },
+  // "Home Catering for Small Events — Peranakan & Local Menus", S$18 / pax, min 20 pax
+  "svc-sg-food-02": {
+    serviceType: "catering",
+    attributes: { cuisines: ["Peranakan", "Singaporean"], occasions: ["birthday", "party"], priceUnit: "plate", minOrder: 20 },
+  },
+  // ── Technology & Gadgets
+  // "Laptop & Mobile Repair — Doorstep Service, Noida", ₹399 / visit, same day, 30-day warranty
+  "svc-in-tech-01": {
+    serviceType: "laptop_repair",
+    attributes: { listedBy: "shop", serviceMode: ["homevisit"], warranty: "30d", turnaround: "same_day", priceUnit: "repair" },
+  },
+  // "Smart Home Setup — WiFi Cameras, Smart Lights, Alexa", ₹1,200 / job
+  "svc-in-tech-02": { serviceType: "smart_home", attributes: { listedBy: "shop", brands: ["Alexa", "Google Home"], serviceMode: ["homevisit"], priceUnit: "project" } },
+  // "Phone, Tablet & Laptop Repair — Same-Day London, No Fix No Fee", £35 / repair, walk-in, 90-day parts warranty
+  "svc-tech-01": {
+    serviceType: "phone_repair",
+    attributes: { listedBy: "shop", brands: ["Apple", "Samsung", "Huawei", "Dell", "HP"], serviceMode: ["inperson"], warranty: "90d", turnaround: "same_day", priceUnit: "repair" },
+  },
+  // "Remote IT Support & Setup — Home & Small Business, Same Day", £75 / hr, remote + on-site London
+  "svc-tech-02": { serviceType: "it_support", attributes: { listedBy: "individual", serviceMode: ["online", "homevisit"], priceUnit: "hour" } },
+  // "Smart Home & Home Automation — Alexa, Hive, Ring & CCTV Install", £150 / job
+  "svc-tech-03": {
+    serviceType: "smart_home",
+    attributes: { listedBy: "individual", brands: ["Alexa", "Google Home", "Hive", "Ring"], serviceMode: ["homevisit"], priceUnit: "project" },
+  },
+  // "Laptop & Mobile Repair — Doorstep Service, Singapore", S$60 / visit, 30-day warranty
+  "svc-sg-tech-01": { serviceType: "laptop_repair", attributes: { listedBy: "shop", serviceMode: ["homevisit"], warranty: "30d", priceUnit: "repair" } },
+  // "Smart Home Setup — WiFi Cameras, Smart Lights, Google Home", S$180 / job
+  "svc-sg-tech-02": { serviceType: "smart_home", attributes: { listedBy: "shop", brands: ["Google Home", "Alexa"], serviceMode: ["homevisit"], priceUnit: "project" } },
+  // ── Other Services (painting and cleaning have no type of their own here, so Other)
+  // "Home Painting Service — Interior & Exterior, Delhi NCR", ₹15 / sq.ft
+  "svc-in-other-01": { serviceType: "other", attributes: { listedBy: "company", serviceMode: ["homevisit"], priceUnit: "from" } },
+  // "Carpentry & Furniture Repair — Home Visits", ₹500 / hr
+  "svc-in-other-02": { serviceType: "repair", attributes: { listedBy: "individual", serviceMode: ["homevisit"], priceUnit: "hour" } },
+  // "Professional Home Cleaning — Weekly, Fortnightly, or One-Off", £18 / hr
+  "svc-other-01": { serviceType: "other", attributes: { listedBy: "company", serviceMode: ["homevisit"], priceUnit: "hour" } },
+  // "Collection & Delivery Ironing Service — Same-Week, West London", £2 / item
+  "svc-other-02": { serviceType: "laundry", attributes: { listedBy: "company", serviceMode: ["homevisit"], priceUnit: "item" } },
+  // "Mobile Dog Grooming Van — No-Stress Salon at Your Door, East London", £45 / session
+  "svc-other-03": { serviceType: "pet_care", attributes: { listedBy: "individual", serviceMode: ["homevisit"], priceUnit: "job" } },
+  // "Home Painting Service — Interior & Exterior, Singapore", S$3 / sq.ft
+  "svc-sg-other-01": { serviceType: "other", attributes: { listedBy: "company", serviceMode: ["homevisit"], priceUnit: "from" } },
+  // "Carpentry & Furniture Repair — Home Visits", S$60 / hr
+  "svc-sg-other-02": { serviceType: "repair", attributes: { listedBy: "individual", serviceMode: ["homevisit"], priceUnit: "hour" } },
+  // ── Wanted
+  // "WANTED: Reliable Plumber — Bathroom Leak Repair", budget ₹800 / job, this week
+  "svc-in-want-01": { budgetAmount: 800, attributes: { serviceCategory: "home", serviceMode: ["homevisit"], priceUnit: "visit", neededBy: "Immediately" } },
+  // "WANTED: Weekend Maths Tutor for Class 8 Student", budget ₹400 / hr
+  "svc-in-want-02": { budgetAmount: 400, attributes: { serviceCategory: "tutoring", serviceMode: ["homevisit"], priceUnit: "hour" } },
+  // "SEEKING: Local Garden Landscaper — Small Urban Garden, ASAP", budget £2,000
+  "svc-want-01": { budgetAmount: 2000, attributes: { serviceCategory: "home", serviceMode: ["homevisit"], priceUnit: "total", neededBy: "Immediately" } },
+  // "SEEKING: Reliable Dog Walker — 5 Days/Week, Dalston Area", £15 / hr
+  "svc-want-02": { budgetAmount: 15, attributes: { serviceCategory: "other", serviceMode: ["homevisit"], priceUnit: "hour" } },
+  // "SEEKING: Mobile Bridal Hair & Makeup — Wedding July 2026, Windsor", budget £500 (the wedding date has passed)
+  "svc-want-03": { budgetAmount: 500, attributes: { serviceCategory: "other", serviceMode: ["homevisit"], priceUnit: "total" } },
+  // "WANTED: Reliable Plumber — Kitchen Sink Repair", budget S$80 / job, this week
+  "svc-sg-want-01": { budgetAmount: 80, attributes: { serviceCategory: "home", serviceMode: ["homevisit"], priceUnit: "visit", neededBy: "Immediately" } },
+  // "WANTED: Weekend Maths Tutor for Secondary 2 Student", budget S$50 / hr
+  "svc-sg-want-02": { budgetAmount: 50, attributes: { serviceCategory: "tutoring", serviceMode: ["homevisit"], priceUnit: "hour" } },
 };
 
 async function run() {
@@ -159,7 +288,7 @@ async function run() {
   await dbConnect();
 
   const posts = await Post.find({ category: { $in: ["services", "Services"] }, adsId: { $in: Object.keys(DETAILS) } })
-    .select({ _id: 1, adsId: 1, country: 1, serviceType: 1, experience: 1, subject: 1, duration: 1, startDate: 1, attributes: 1 })
+    .select({ _id: 1, adsId: 1, country: 1, serviceType: 1, experience: 1, subject: 1, duration: 1, startDate: 1, destination: 1, dietaryOptions: 1, budgetAmount: 1, attributes: 1 })
     .lean();
   const found = new Set(posts.map((p) => p.adsId));
   for (const id of Object.keys(DETAILS)) if (!found.has(id)) console.log(`${id}: no post`);
@@ -173,12 +302,30 @@ async function run() {
     if (details.subject && !post.subject) $set.subject = details.subject;
     if (details.duration && !post.duration) $set.duration = details.duration;
     if (details.startDate && !post.startDate) $set.startDate = details.startDate;
+    if (details.destination && !post.destination) $set.destination = details.destination;
+    if (details.dietaryOptions && !post.dietaryOptions?.length) $set.dietaryOptions = details.dietaryOptions;
+    if (details.budgetAmount != null && post.budgetAmount == null) $set.budgetAmount = details.budgetAmount;
     for (const [key, value] of Object.entries(details.attributes)) {
       if (post.attributes?.[key] == null) $set[`attributes.${key}`] = value;
     }
 
     if (!Object.keys($set).length) continue;
     console.log(`${id} (${post.country}): ${dryRun ? "would set" : "set"} ${JSON.stringify($set)}`);
+    if (!dryRun) await Post.updateOne({ _id: post._id }, { $set });
+  }
+
+  // "Home cook": cuisineType and deliveryAvailable carry over to the new Cuisine
+  // Type and Delivery / Pickup fields.
+  const homeCooks = await Post.find({ category: { $in: ["services", "Services"] }, subcategory: "Food & Dining", name: "Home cook" })
+    .select({ _id: 1, country: 1, cuisineType: 1, deliveryAvailable: 1, serviceType: 1, attributes: 1 })
+    .lean();
+  for (const post of homeCooks) {
+    const $set: Record<string, unknown> = { subcategory: "food_dining" };
+    if (!post.country) $set.country = "in";
+    if (!post.serviceType) $set.serviceType = "home_cooked";
+    if (post.cuisineType && post.attributes?.cuisines == null) $set["attributes.cuisines"] = [post.cuisineType];
+    if (post.deliveryAvailable === "yes" && post.attributes?.deliveryOption == null) $set["attributes.deliveryOption"] = "delivery";
+    console.log(`Home cook ${post._id}: ${dryRun ? "would set" : "set"} ${JSON.stringify($set)}`);
     if (!dryRun) await Post.updateOne({ _id: post._id }, { $set });
   }
 }

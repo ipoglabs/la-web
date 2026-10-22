@@ -65,6 +65,15 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   package: "/ package",
   class: "/ class",
   course: "/ course",
+  person: "/ person",
+  group: "/ group",
+  trip: "/ trip",
+  plate: "/ plate",
+  meal: "/ meal",
+  order: "/ order",
+  repair: "/ repair",
+  event: "/ event",
+  item: "/ item",
 };
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
@@ -93,9 +102,10 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     return { priceLabel: label, priceSuffix: SALARY_PERIOD_SUFFIX[period] };
   }
   if (post.hourlyRate != null) return { priceLabel: fmt(post.hourlyRate), priceSuffix: "/ hr" };
-  // Jobs › Freelance: a fixed or hourly budget.
+  // Jobs › Freelance: a fixed or hourly budget. Services › Wanted: Budget Per.
   if (post.budgetAmount != null) {
-    return { priceLabel: fmt(post.budgetAmount), priceSuffix: post.budgetType === "hourly" ? "/ hr" : undefined };
+    const suffix = post.budgetType === "hourly" ? "/ hr" : PRICE_UNIT_SUFFIX[String(post.attributes?.priceUnit ?? "")];
+    return { priceLabel: fmt(post.budgetAmount), priceSuffix: suffix };
   }
   // Jobs › Internship: a monthly stipend, or none when unpaid.
   if (post.stipendType === "unpaid") return { priceLabel: "Unpaid" };
