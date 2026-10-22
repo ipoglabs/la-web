@@ -289,8 +289,8 @@ const ENGINE_CC_BY_MARKET: Record<string, FilterTweak> = {
 const OWNERS_IN: FilterTweak = { relabel: { "1": "First Owner", "2": "Second Owner", "3plus": "Third or more" } };
 
 /**
- * Vehicles: the post forms differ by market (posting/form-schema/
- * defaults/vehicles.ts), so the filters show only what that market's
+ * Vehicles and Services: the post forms differ by market (posting/form-schema/
+ * defaults/vehicles.ts, services.ts), so the filters show only what that market's
  * sellers can pick, in its words. A filter set to null is hidden there.
  */
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
@@ -334,6 +334,11 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   "vehicles/boats": {
     in: { boat_type: { drop: ["narrowboat"] }, mooring: null },
     sg: { boat_type: { drop: ["narrowboat"] } },
+  },
+  "services/home_services": {
+    in: { service_type: { drop: ["heating"] } },
+    gb: { service_type: { drop: ["ac"] } },
+    sg: { service_type: { drop: ["heating"] } },
   },
 };
 

@@ -29,7 +29,7 @@ type SectionsBuilder = (subcategory: string, country: string) => FormSection[] |
 const BUILDERS: Record<string, SectionsBuilder> = {
   Vehicles: vehiclesSections,
   Jobs: jobsSections,
-  Services: (sub) => servicesSections(sub),
+  Services: servicesSections,
   Pets: (sub) => petsSections(sub),
   Business: (sub) => businessSections(sub),
   Community: (sub) => communitySections(sub),

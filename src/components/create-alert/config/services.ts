@@ -1,6 +1,10 @@
 import type { MainCategory } from "../types";
 import { serviceMode } from "./shared";
 
+// Reworked subs' option values are what their post forms save
+// (posting/form-schema/defaults/services.ts), matched in lib/postFilterQuery.ts.
+// Each list covers every market — lib/listing-filters.ts trims it per country.
+
 export const services: MainCategory = {
   id: "services",
   label: "Services",
@@ -19,15 +23,19 @@ export const services: MainCategory = {
           label: "Service",
           type: "toggle",
           options: [
-            { label: "Cleaning",     value: "cleaning"    },
-            { label: "Plumbing",     value: "plumbing"    },
-            { label: "Electrical",   value: "electrical"  },
-            { label: "Painting",     value: "painting"    },
-            { label: "Renovation",   value: "renovation"  },
-            { label: "Pest Control", value: "pest"        },
-            { label: "AC Service",   value: "ac"          },
-            { label: "Landscaping",  value: "landscaping" },
-            { label: "Handyman",     value: "handyman"    },
+            { label: "Cleaning",                value: "cleaning"    },
+            { label: "Plumbing",                value: "plumbing"    },
+            { label: "Electrical",              value: "electrical"  },
+            { label: "Carpentry",               value: "carpentry"   },
+            { label: "Painting",                value: "painting"    },
+            { label: "Renovation",              value: "renovation"  },
+            { label: "Pest Control",            value: "pest"        },
+            { label: "AC Service",              value: "ac"          },
+            { label: "Heating & Boiler",        value: "heating"     },
+            { label: "Appliance Repair",        value: "appliance"   },
+            { label: "Gardening / Landscaping", value: "landscaping" },
+            { label: "Handyman",                value: "handyman"    },
+            { label: "Other",                   value: "other"       },
           ],
         },
         {
@@ -37,9 +45,10 @@ export const services: MainCategory = {
           singleSelect: true,
           options: [
             { label: "Any",      value: "any"     },
-            { label: "One-time", value: "once"    },
-            { label: "Weekly",   value: "weekly"  },
-            { label: "Monthly",  value: "monthly" },
+            { label: "One-time",    value: "once"        },
+            { label: "Weekly",      value: "weekly"      },
+            { label: "Fortnightly", value: "fortnightly" },
+            { label: "Monthly",     value: "monthly"     },
           ],
         },
         {

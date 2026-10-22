@@ -53,6 +53,14 @@ const SALARY_PERIOD_SUFFIX: Record<string, string> = {
   year: "/ yr",
 };
 
+/** Price suffix per Services Price Per value (posting/form-schema/defaults/services.ts); "from" is a prefix instead. */
+const PRICE_UNIT_SUFFIX: Record<string, string> = {
+  visit: "/ visit",
+  hour: "/ hr",
+  day: "/ day",
+  job: "/ job",
+};
+
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
@@ -61,7 +69,12 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     const period = String(post.attributes?.rentPeriod ?? "month");
     return { priceLabel: fmt(post.rentPrice), priceSuffix: RENT_PERIOD_SUFFIX[period] ?? "/ mo" };
   }
-  if (post.salePrice != null) return { priceLabel: fmt(post.salePrice) };
+  if (post.salePrice != null) {
+    // Services ask what the price covers (Price Per, saved in attributes).
+    const unit = String(post.attributes?.priceUnit ?? "");
+    if (unit === "from") return { priceLabel: `From ${fmt(post.salePrice)}` };
+    return { priceLabel: fmt(post.salePrice), priceSuffix: PRICE_UNIT_SUFFIX[unit] };
+  }
   if (post.rent != null) return { priceLabel: fmt(post.rent), priceSuffix: "/ mo" };
   if (post.rateNightly != null) return { priceLabel: fmt(post.rateNightly), priceSuffix: "/ night" };
   if (post.rateMonthly != null) return { priceLabel: fmt(post.rateMonthly), priceSuffix: "/ mo" };

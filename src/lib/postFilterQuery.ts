@@ -15,9 +15,10 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles have full filter mappings. Other categories
- * only get the price range (see CATEGORY_PRICE_FIELD); their other filter
- * toggles are still UI-only.
+ * Property and Vehicles have full filter mappings; Jobs and Services map
+ * the filters of each reworked sub's form. Other categories only get the
+ * price range (see CATEGORY_PRICE_FIELD); their other filter toggles are
+ * still UI-only.
  */
 
 function escapeRegex(value: string): string {
@@ -359,6 +360,21 @@ const JOBS_FORM_FILTERS: Record<string, string[]> = {
   wanted: ["job_type", "field", "experience", "work_arrangement"],
 };
 
+/**
+ * Services filters each reworked sub's form saves (posting/form-schema/defaults/services.ts),
+ * filter id → the post path it matches. Subs not listed here only filter on price.
+ */
+const SERVICES_FORM_FILTERS: Record<string, Record<string, string>> = {
+  home_services: { service_type: "serviceType", frequency: "attributes.frequency", provider: "attributes.listedBy" },
+};
+
+function buildServicesFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  return Object.entries(SERVICES_FORM_FILTERS[sub] ?? {}).flatMap(([id, path]) => {
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+    return picked.length ? [{ [path]: { $in: picked } }] : [];
+  });
+}
+
 // Wanted's Looking For values → the Open To values its form saves.
 const WANTED_LOOKING_FOR: Record<string, string> = {
   fulltime: "full-time",
@@ -657,6 +673,18 @@ export function buildFilterQuery(
 
   if (category === "vehicles") {
     const clauses = buildVehicleQuery(sub, filterValues);
+    if (field && (min || max)) {
+      const range: Record<string, number> = {};
+      if (min) range.$gte = Number(min);
+      if (max) range.$lte = Number(max);
+      clauses.push({ [field]: range });
+    }
+    if (clauses.length === 0) return {};
+    return clauses.length === 1 ? clauses[0] : { $and: clauses };
+  }
+
+  if (category === "services") {
+    const clauses = buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

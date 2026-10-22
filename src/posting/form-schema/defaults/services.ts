@@ -17,6 +17,43 @@ const qualification: FormFieldDef = { key: "qualification", type: "text", label:
 const mode: FormFieldDef = { key: "mode", type: "select", label: "Mode", options: pairs([["online", "Online"], ["offline", "In Person"], ["both", "Both"]]) };
 const rateType = (entries: [string, string][]): FormFieldDef => ({ key: "rateType", type: "select", label: "Rate Type", options: pairs(entries) });
 
+// Reworked Services forms. Option values are what the Services search
+// filters match (components/create-alert/config/services.ts,
+// lib/postFilterQuery.ts). Price is `salePrice`, the field listing prices and
+// the price filter read.
+const salePrice = (label = "Price", required = true): FormFieldDef => ({
+  key: "salePrice",
+  type: "currency",
+  label,
+  required,
+  min: required ? 1 : 0,
+  width: "half",
+});
+const priceUnit = (entries: [string, string][]): FormFieldDef => ({ key: "priceUnit", type: "select", label: "Price Per", options: pairs(entries), width: "half" });
+const yearsOfExperience: FormFieldDef = {
+  key: "experience",
+  type: "select",
+  label: "Years of Experience",
+  options: pairs([["0-1", "Under 1 year"], ["1-3", "1–3 years"], ["3-5", "3–5 years"], ["5-10", "5–10 years"], ["10+", "10+ years"]]),
+};
+const providerListedBy = (entries: [string, string][]): FormFieldDef => ({ key: "listedBy", type: "select", label: "Listed By", required: true, options: pairs(entries) });
+
+/** Home Services types. AC Service in IN and SG, Heating & Boiler in GB. */
+const homeServiceTypes = (country: string): [string, string][] => [
+  ["cleaning", "Cleaning"],
+  ["plumbing", "Plumbing"],
+  ["electrical", "Electrical"],
+  ["carpentry", "Carpentry"],
+  ["painting", "Painting"],
+  ["renovation", "Renovation"],
+  ["pest", "Pest Control"],
+  country === "GB" ? ["heating", "Heating & Boiler"] : ["ac", "AC Service"],
+  ["appliance", "Appliance Repair"],
+  ["landscaping", "Gardening / Landscaping"],
+  ["handyman", "Handyman"],
+  ["other", "Other"],
+];
+
 export const SERVICES_SUBCATEGORIES = [
   "Home Services",
   "Business Services",
@@ -31,7 +68,7 @@ export const SERVICES_SUBCATEGORIES = [
   "Wanted",
 ];
 
-export function servicesSections(subcategory: string): FormSection[] | null {
+export function servicesSections(subcategory: string, country: string): FormSection[] | null {
   switch (subcategory) {
     case "Home Services":
       return [
@@ -39,15 +76,22 @@ export function servicesSections(subcategory: string): FormSection[] | null {
         {
           title: "Service",
           fields: [
+            providerListedBy([["individual", "Individual"], ["company", "Company"]]),
+            { key: "serviceType", type: "select", label: "Service Type", required: true, options: pairs(homeServiceTypes(country)) },
+            salePrice("Service Charge"),
+            priceUnit([["visit", "Per visit"], ["hour", "Per hour"], ["day", "Per day"], ["job", "Per job"], ["from", "Starting from"]]),
             {
-              key: "serviceType",
-              type: "select",
-              label: "Service Type",
-              required: true,
-              options: pairs([["cleaning", "Cleaning"], ["plumbing", "Plumbing"], ["electrical", "Electrical"], ["carpentry", "Carpentry"], ["pest-control", "Pest Control"], ["gardening", "Gardening"], ["painting", "Painting"], ["others", "Others"]]),
+              key: "frequency",
+              type: "multiselect",
+              label: "Frequency",
+              options: pairs([["once", "One-time"], ["weekly", "Weekly"], ["fortnightly", "Fortnightly"], ["monthly", "Monthly"]]),
             },
-            price("Service Charge"),
-            experience,
+            { key: "emergency", type: "select", label: "Same-day / Emergency", options: YES_NO, width: "half" },
+            { key: "insured", type: "select", label: "Insured", options: YES_NO, width: "half" },
+            ...(country === "GB"
+              ? [{ key: "registrationNo", type: "text", label: "Gas Safe / NICEIC No.", placeholder: "e.g. Gas Safe 123456", width: "half" } satisfies FormFieldDef]
+              : []),
+            yearsOfExperience,
             availability,
           ],
         },
