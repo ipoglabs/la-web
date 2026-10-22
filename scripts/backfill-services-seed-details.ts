@@ -14,6 +14,8 @@
 //   Price Per, Free Trial
 // - Tutoring (2026-10-22): Subjects, Level, Curriculum, Service Mode, Price Per,
 //   Tutor Type, DBS Checked (GB), Free Trial Lesson, Years of Experience
+// - Education & Learning (2026-10-22): Category, Course Name, Format,
+//   Service Mode, Age Group, Duration, Start Date, Price Per, Certificate
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
@@ -22,6 +24,9 @@ import Post from "../src/models/post";
 interface SeedDetails {
   serviceType?: string;
   experience?: string;
+  subject?: string;
+  duration?: string;
+  startDate?: string;
   attributes: Record<string, unknown>;
 }
 
@@ -107,6 +112,46 @@ const DETAILS: Record<string, SeedDetails> = {
   },
   // "English & Composition Tutor — Primary & Secondary", S$50 / hr, home visit or online
   "svc-sg-tutor-02": { attributes: { subjects: ["english"], levels: ["primary", "o_level"], serviceMode: ["homevisit", "online"], priceUnit: "hour" } },
+  // ── Education & Learning
+  // "JEE Main & Advanced Coaching — Structured Yearly Batch", ₹45,000 / yr, 12 months
+  "svc-in-edu-01": {
+    subject: "JEE Main & Advanced",
+    duration: "12 months",
+    attributes: { courseCategory: "exam", courseFormat: "course", serviceMode: ["inperson"], ageGroup: ["teens"], priceUnit: "course" },
+  },
+  // "NEET Biology & Chemistry Coaching — Weekend Batch", ₹50,000 / yr, weekends only
+  "svc-in-edu-02": {
+    subject: "NEET Biology & Chemistry",
+    attributes: { courseCategory: "exam", courseFormat: "course", serviceMode: ["inperson"], ageGroup: ["teens"], priceUnit: "course" },
+  },
+  // "AWS Cloud Practitioner & Solutions Architect — Bootcamp", £199 / course, 12 weeks, live online
+  "svc-edu-01": {
+    subject: "AWS Cloud Practitioner & Solutions Architect",
+    duration: "12 weeks",
+    attributes: { courseCategory: "tech", courseFormat: "course", serviceMode: ["online"], ageGroup: ["adults"], priceUnit: "course" },
+  },
+  // "PRINCE2 Foundation Training — 2-Day Intensive, Central London", £595 / course, exam voucher included
+  "svc-edu-02": {
+    subject: "PRINCE2 Foundation",
+    duration: "2 days",
+    attributes: { courseCategory: "business", courseFormat: "course", serviceMode: ["inperson"], ageGroup: ["adults"], priceUnit: "course", certificate: "yes" },
+  },
+  // "IELTS & English Language Coaching — Guaranteed Band Improvement", £40 / hr, online or Central London
+  "svc-edu-03": {
+    subject: "IELTS & English",
+    attributes: { courseCategory: "languages", courseFormat: "onetoone", serviceMode: ["online", "inperson"], ageGroup: ["adults"], priceUnit: "class" },
+  },
+  // "PSLE Preparation Programme — Small-Group Classes", S$400 / mo, ongoing
+  "svc-sg-edu-01": {
+    subject: "PSLE Preparation",
+    startDate: "Ongoing",
+    attributes: { courseCategory: "exam", courseFormat: "class", serviceMode: ["inperson"], ageGroup: ["kids"], priceUnit: "month" },
+  },
+  // "O-Level Science Coaching — Weekend Batch", S$450 / mo, weekends only
+  "svc-sg-edu-02": {
+    subject: "O-Level Science",
+    attributes: { courseCategory: "exam", courseFormat: "class", serviceMode: ["inperson"], ageGroup: ["teens"], priceUnit: "month" },
+  },
 };
 
 async function run() {
@@ -114,7 +159,7 @@ async function run() {
   await dbConnect();
 
   const posts = await Post.find({ category: { $in: ["services", "Services"] }, adsId: { $in: Object.keys(DETAILS) } })
-    .select({ _id: 1, adsId: 1, country: 1, serviceType: 1, experience: 1, attributes: 1 })
+    .select({ _id: 1, adsId: 1, country: 1, serviceType: 1, experience: 1, subject: 1, duration: 1, startDate: 1, attributes: 1 })
     .lean();
   const found = new Set(posts.map((p) => p.adsId));
   for (const id of Object.keys(DETAILS)) if (!found.has(id)) console.log(`${id}: no post`);
@@ -125,6 +170,9 @@ async function run() {
     const $set: Record<string, unknown> = {};
     if (details.serviceType && !post.serviceType) $set.serviceType = details.serviceType;
     if (details.experience && !post.experience) $set.experience = details.experience;
+    if (details.subject && !post.subject) $set.subject = details.subject;
+    if (details.duration && !post.duration) $set.duration = details.duration;
+    if (details.startDate && !post.startDate) $set.startDate = details.startDate;
     for (const [key, value] of Object.entries(details.attributes)) {
       if (post.attributes?.[key] == null) $set[`attributes.${key}`] = value;
     }

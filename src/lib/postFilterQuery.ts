@@ -385,6 +385,7 @@ const SERVICES_FORM_FILTERS: Record<string, Record<string, string | { path: stri
     level: { path: "attributes.levels", values: TUTORING_LEVELS },
     service_mode: "attributes.serviceMode",
   },
+  education_learning: { category: "attributes.courseCategory", format: "attributes.courseFormat", service_mode: "attributes.serviceMode" },
 };
 
 function buildServicesFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {

@@ -168,10 +168,13 @@ export const services: MainCategory = {
             { label: "Languages",       value: "languages" },
             { label: "Music",           value: "music"     },
             { label: "Arts & Crafts",   value: "arts"      },
+            { label: "Dance",           value: "dance"     },
             { label: "Tech & Coding",   value: "tech"      },
             { label: "Cooking",         value: "cooking"   },
             { label: "Business Skills", value: "business"  },
             { label: "Personal Dev",    value: "personal"  },
+            { label: "Exam Coaching",   value: "exam"      },
+            { label: "Other",           value: "other"     },
           ],
         },
         {

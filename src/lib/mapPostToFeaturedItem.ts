@@ -63,6 +63,8 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   project: "/ project",
   session: "/ session",
   package: "/ package",
+  class: "/ class",
+  course: "/ course",
 };
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {

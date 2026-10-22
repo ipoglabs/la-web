@@ -12,9 +12,7 @@ const price = (label = "Price", required = true): FormFieldDef => ({
   width: "half",
 });
 const availability: FormFieldDef = { key: "availability", type: "text", label: "Availability", placeholder: "e.g. Mon–Sat, 9am–6pm", width: "half" };
-const experience: FormFieldDef = { key: "experience", type: "text", label: "Experience", placeholder: "e.g. 5 years", width: "half" };
 const qualification: FormFieldDef = { key: "qualification", type: "text", label: "Qualification", width: "half" };
-const mode: FormFieldDef = { key: "mode", type: "select", label: "Mode", options: pairs([["online", "Online"], ["offline", "In Person"], ["both", "Both"]]) };
 const rateType = (entries: [string, string][]): FormFieldDef => ({ key: "rateType", type: "select", label: "Rate Type", options: pairs(entries) });
 
 // Reworked Services forms. Option values are what the Services search
@@ -244,18 +242,37 @@ export function servicesSections(subcategory: string, country: string): FormSect
         basics,
         {
           title: "Course",
+          // Course Name, Duration and Start Date are Post paths (subject,
+          // duration, startDate); the rest are saved in attributes.
           fields: [
             {
-              key: "educationType",
+              key: "courseCategory",
               type: "select",
-              label: "Education Type",
-              options: pairs([["tutoring", "Tutoring"], ["coaching", "Coaching"], ["online", "Online Course"], ["school", "School"], ["language", "Language"], ["professional", "Professional"]]),
+              label: "Category",
+              required: true,
+              options: pairs([
+                ["languages", "Languages"],
+                ["music", "Music"],
+                ["arts", "Arts & Crafts"],
+                ["dance", "Dance"],
+                ["tech", "Tech & Coding"],
+                ["cooking", "Cooking"],
+                ["business", "Business Skills"],
+                ["personal", "Personal Development"],
+                ["exam", "Exam Coaching"],
+                ["other", "Other"],
+              ]),
             },
-            { key: "subject", type: "text", label: "Subject / Course", width: "half" },
+            { key: "subject", type: "text", label: "Course Name", required: true, placeholder: "e.g. IELTS Preparation, Beginner Guitar", width: "half" },
+            { key: "courseFormat", type: "select", label: "Format", required: true, options: pairs([["class", "Class"], ["workshop", "Workshop"], ["course", "Course"], ["onetoone", "One-to-one"]]) },
+            howServiceMode(),
+            { key: "ageGroup", type: "multiselect", label: "Age Group", options: pairs([["kids", "Kids"], ["teens", "Teens"], ["adults", "Adults"], ["all", "All ages"]]) },
+            { key: "duration", type: "text", label: "Duration", placeholder: "e.g. 8 weeks, 2 days", width: "half" },
+            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Ongoing", width: "half" },
+            salePrice("Fees"),
+            priceUnit([["class", "Per class"], ["month", "Per month"], ["course", "Full course"]]),
+            { key: "certificate", type: "select", label: "Certificate", options: YES_NO, width: "half" },
             qualification,
-            mode,
-            experience,
-            price("Fees"),
             availability,
           ],
         },
