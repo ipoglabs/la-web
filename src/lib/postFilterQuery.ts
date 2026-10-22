@@ -367,6 +367,7 @@ const JOBS_FORM_FILTERS: Record<string, string[]> = {
 const SERVICES_FORM_FILTERS: Record<string, Record<string, string>> = {
   home_services: { service_type: "serviceType", frequency: "attributes.frequency", provider: "attributes.listedBy" },
   business_services: { service_type: "serviceType", provider: "attributes.listedBy" },
+  health_fitness: { service_type: "serviceType", service_mode: "attributes.serviceMode" },
 };
 
 function buildServicesFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {

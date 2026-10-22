@@ -62,6 +62,14 @@ const onlineOrInPerson: FormFieldDef = {
   options: pairs([["online", "Online"], ["inperson", "In-person"]]),
 };
 
+/** Service Mode matching the How filter (components/create-alert/config/shared.ts serviceMode). */
+const howServiceMode = (homeVisitLabel = "Home visit"): FormFieldDef => ({
+  key: "serviceMode",
+  type: "multiselect",
+  label: "Service Mode",
+  options: pairs([["inperson", "At my place"], ["homevisit", homeVisitLabel], ["online", "Online"]]),
+});
+
 const BUSINESS_REG_LABEL: Record<string, string> = { IN: "GSTIN", GB: "Companies House No.", SG: "UEN" };
 
 export const SERVICES_SUBCATEGORIES = [
@@ -151,12 +159,31 @@ export function servicesSections(subcategory: string, country: string): FormSect
         {
           title: "Service",
           fields: [
-            { key: "providerName", type: "text", label: "Provider Name", required: true, width: "half" },
+            providerListedBy([["individual", "Individual"], ["studio", "Studio / Clinic"]]),
+            {
+              key: "serviceType",
+              type: "select",
+              label: "Service Type",
+              required: true,
+              options: pairs([
+                ["pt", "Personal Training"],
+                ["yoga", "Yoga / Pilates"],
+                ["massage", "Massage"],
+                ["spa", "Spa"],
+                ["nutrition", "Nutrition"],
+                ["physio", "Physiotherapy"],
+                ["mental_health", "Mental Health"],
+                ["meditation", "Meditation"],
+                ["other", "Other"],
+              ]),
+            },
+            howServiceMode(),
+            salePrice("Consultation Fee"),
+            priceUnit([["session", "Per session"], ["month", "Per month"], ["package", "Per package"]]),
+            { key: "sessionLength", type: "select", label: "Session Length", options: pairs([["30", "30 min"], ["45", "45 min"], ["60", "60 min"], ["90", "90 min"]]), width: "half" },
+            { key: "freeTrial", type: "select", label: "Free Trial", options: YES_NO, width: "half" },
             qualification,
-            { key: "serviceType", type: "text", label: "Service Type", placeholder: "e.g. Physiotherapy, Personal Training" },
-            { key: "consultationMode", type: "select", label: "Consultation Mode", options: pairs([["online", "Online"], ["in-person", "In Person"], ["both", "Both"]]) },
-            price("Consultation Fee"),
-            experience,
+            yearsOfExperience,
             availability,
           ],
         },

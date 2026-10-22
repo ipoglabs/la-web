@@ -116,6 +116,7 @@ export const services: MainCategory = {
             { label: "Mental Health",     value: "mental_health" },
             { label: "Physiotherapy",     value: "physio"        },
             { label: "Meditation",        value: "meditation"    },
+            { label: "Other",             value: "other"         },
           ],
         },
         serviceMode,

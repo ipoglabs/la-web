@@ -10,6 +10,8 @@
 //   Same-day / Emergency, Insured, Gas Safe / NICEIC No. (GB), Years of Experience
 // - Business Services (2026-10-22): Service Type, Listed By, Price Per,
 //   Service Mode, Years of Experience
+// - Health & Fitness (2026-10-22): Service Type, Listed By, Service Mode,
+//   Price Per, Free Trial
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
@@ -60,6 +62,22 @@ const DETAILS: Record<string, SeedDetails> = {
   "svc-sg-biz-01": { serviceType: "accounting", attributes: { listedBy: "company", priceUnit: "month" } },
   // "Private Limited Company Incorporation — ACRA End-to-End", S$600 / job
   "svc-sg-biz-02": { serviceType: "company_registration", attributes: { listedBy: "company", priceUnit: "fixed" } },
+
+  // ── Health & Fitness
+  // "Certified Personal Trainer — Home & Gym Sessions", ₹800 / session
+  "svc-in-health-01": { serviceType: "pt", attributes: { listedBy: "individual", serviceMode: ["homevisit", "inperson"], priceUnit: "session" } },
+  // "Home Yoga Instructor — Beginners to Advanced", ₹500 / session
+  "svc-in-health-02": { serviceType: "yoga", attributes: { listedBy: "individual", serviceMode: ["homevisit"], priceUnit: "session" } },
+  // "Personal Trainer — 1-to-1 & Online Coaching", £50 / session, free 30-min consultation
+  "svc-hf-01": { serviceType: "pt", attributes: { listedBy: "individual", serviceMode: ["inperson", "online"], priceUnit: "session", freeTrial: "yes" } },
+  // "Morning Yoga & Pilates Studio", £15 / session, first class free
+  "svc-hf-02": { serviceType: "yoga", attributes: { listedBy: "studio", serviceMode: ["inperson"], priceUnit: "session", freeTrial: "yes" } },
+  // "Online Nutrition Coaching & Meal Planning", £85 / mo, free 20-min consult
+  "svc-hf-03": { serviceType: "nutrition", attributes: { listedBy: "individual", serviceMode: ["online"], priceUnit: "month", freeTrial: "yes" } },
+  // "Certified Personal Trainer — Home & Gym Sessions", S$70 / session
+  "svc-sg-health-01": { serviceType: "pt", attributes: { listedBy: "individual", serviceMode: ["homevisit", "inperson"], priceUnit: "session" } },
+  // "Home Yoga Instructor — Beginners to Advanced", S$60 / session
+  "svc-sg-health-02": { serviceType: "yoga", attributes: { listedBy: "individual", serviceMode: ["homevisit"], priceUnit: "session" } },
 };
 
 async function run() {
