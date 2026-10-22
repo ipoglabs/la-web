@@ -54,6 +54,16 @@ const homeServiceTypes = (country: string): [string, string][] => [
   ["other", "Other"],
 ];
 
+/** Service Mode for subs the How filter doesn't cover; values match its "inperson" / "online". */
+const onlineOrInPerson: FormFieldDef = {
+  key: "serviceMode",
+  type: "multiselect",
+  label: "Service Mode",
+  options: pairs([["online", "Online"], ["inperson", "In-person"]]),
+};
+
+const BUSINESS_REG_LABEL: Record<string, string> = { IN: "GSTIN", GB: "Companies House No.", SG: "UEN" };
+
 export const SERVICES_SUBCATEGORIES = [
   "Home Services",
   "Business Services",
@@ -103,9 +113,33 @@ export function servicesSections(subcategory: string, country: string): FormSect
         {
           title: "Service",
           fields: [
-            { key: "serviceType", type: "text", label: "Service Type", placeholder: "e.g. Accounting, Legal, Marketing" },
-            price("Price (per hour / session)", false),
-            experience,
+            providerListedBy([["freelancer", "Freelancer"], ["agency", "Agency"], ["company", "Company"]]),
+            {
+              key: "serviceType",
+              type: "select",
+              label: "Service Type",
+              required: true,
+              options: pairs([
+                ["accounting", "Accounting & Tax"],
+                ["legal", "Legal"],
+                ["marketing", "Marketing"],
+                ["it_support", "IT Support"],
+                ["hr_payroll", "HR & Payroll"],
+                ["company_registration", "Company Registration"],
+                ["admin", "Virtual Assistant / Admin"],
+                ["logistics", "Logistics"],
+                ["security", "Security"],
+                ["consulting", "Consulting"],
+                ["printing", "Printing"],
+                ["other", "Other"],
+              ]),
+            },
+            // Many firms quote per job, so Price stays optional.
+            salePrice("Price", false),
+            priceUnit([["hour", "Per hour"], ["month", "Per month (retainer)"], ["project", "Per project"], ["fixed", "Fixed fee"]]),
+            onlineOrInPerson,
+            { key: "businessRegNo", type: "text", label: BUSINESS_REG_LABEL[country] ?? "Business Registration No.", width: "half" },
+            yearsOfExperience,
             availability,
           ],
         },

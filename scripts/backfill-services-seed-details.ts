@@ -1,13 +1,15 @@
-// scripts/backfill-home-services-seed-details.ts
-// Run with: npx tsx --env-file=.env.local scripts/backfill-home-services-seed-details.ts [--dry-run]
+// scripts/backfill-services-seed-details.ts
+// Run with: npx tsx --env-file=.env.local scripts/backfill-services-seed-details.ts [--dry-run]
 //
-// One-off (2026-10-22): the 7 Services › Home Services seed posts were copied
-// from the mock catalog (lib/mock) with only a title and a price, so the
-// reworked Home Services search filters (Service, Frequency, Provider) had
-// nothing to match. This fills, from each post's mock listing (same id as the
-// post's adsId), only what's empty: Service Type, Listed By, Price Per,
-// Frequency, Same-day / Emergency, Insured, Gas Safe / NICEIC No. (GB) and
-// Years of Experience.
+// One-off per reworked Services sub: the Services seed posts were copied from
+// the mock catalog (lib/mock) with only a title and a price, so the reworked
+// Services search filters had nothing to match. This fills, from each post's
+// mock listing (same id as the post's adsId), only what's empty, so it is safe
+// to re-run as more subs are added.
+// - Home Services (2026-10-22): Service Type, Listed By, Price Per, Frequency,
+//   Same-day / Emergency, Insured, Gas Safe / NICEIC No. (GB), Years of Experience
+// - Business Services (2026-10-22): Service Type, Listed By, Price Per,
+//   Service Mode, Years of Experience
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
@@ -19,8 +21,9 @@ interface SeedDetails {
   attributes: Record<string, unknown>;
 }
 
-// Values are the Home Services form's (posting/form-schema/defaults/services.ts).
+// Values are the Services forms' (posting/form-schema/defaults/services.ts).
 const DETAILS: Record<string, SeedDetails> = {
+  // ── Home Services
   // "Certified Electrician — Same-Day Callouts, Bengaluru", ₹299 / visit
   "svc-in-home-01": { serviceType: "electrical", attributes: { listedBy: "company", priceUnit: "visit", frequency: ["once"], emergency: "yes" } },
   // "Deep Home Cleaning — 2BHK/3BHK, Trained Staff", ₹1,499 / job
@@ -41,6 +44,22 @@ const DETAILS: Record<string, SeedDetails> = {
   "svc-sg-home-01": { serviceType: "electrical", attributes: { listedBy: "company", priceUnit: "visit", frequency: ["once"], emergency: "yes" } },
   // "Deep Home Cleaning — HDB/Condo, Trained Staff", S$120 / job
   "svc-sg-home-02": { serviceType: "cleaning", attributes: { listedBy: "company", priceUnit: "job", frequency: ["once"] } },
+
+  // ── Business Services
+  // "GST Filing & Accounting — Monthly Retainer for SMEs", ₹5,000 / mo, pan-India remote
+  "svc-in-biz-01": { serviceType: "accounting", attributes: { listedBy: "company", priceUnit: "month", serviceMode: ["online"] } },
+  // "Private Limited Company Registration — End-to-End", ₹12,000 / job
+  "svc-in-biz-02": { serviceType: "company_registration", attributes: { listedBy: "company", priceUnit: "fixed" } },
+  // "Small Business Accountancy & Tax Returns — Cloud-Based", £150 / mo, UK-wide remote
+  "svc-biz-01": { serviceType: "accounting", attributes: { listedBy: "company", priceUnit: "month", serviceMode: ["online"] } },
+  // "SEO & Google Ads Management", £500 / mo, UK-wide remote
+  "svc-biz-02": { serviceType: "marketing", attributes: { listedBy: "agency", priceUnit: "month", serviceMode: ["online"] } },
+  // "Virtual PA & Executive Assistant", £25 / hr, remote, 10 years PA/EA
+  "svc-biz-03": { serviceType: "admin", experience: "10+", attributes: { listedBy: "company", priceUnit: "hour", serviceMode: ["online"] } },
+  // "GST Filing & Accounting — Monthly Retainer for SMEs", S$300 / mo
+  "svc-sg-biz-01": { serviceType: "accounting", attributes: { listedBy: "company", priceUnit: "month" } },
+  // "Private Limited Company Incorporation — ACRA End-to-End", S$600 / job
+  "svc-sg-biz-02": { serviceType: "company_registration", attributes: { listedBy: "company", priceUnit: "fixed" } },
 };
 
 async function run() {
