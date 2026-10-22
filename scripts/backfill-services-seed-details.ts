@@ -12,13 +12,15 @@
 //   Service Mode, Years of Experience
 // - Health & Fitness (2026-10-22): Service Type, Listed By, Service Mode,
 //   Price Per, Free Trial
+// - Tutoring (2026-10-22): Subjects, Level, Curriculum, Service Mode, Price Per,
+//   Tutor Type, DBS Checked (GB), Free Trial Lesson, Years of Experience
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
 import Post from "../src/models/post";
 
 interface SeedDetails {
-  serviceType: string;
+  serviceType?: string;
   experience?: string;
   attributes: Record<string, unknown>;
 }
@@ -78,6 +80,33 @@ const DETAILS: Record<string, SeedDetails> = {
   "svc-sg-health-01": { serviceType: "pt", attributes: { listedBy: "individual", serviceMode: ["homevisit", "inperson"], priceUnit: "session" } },
   // "Home Yoga Instructor — Beginners to Advanced", S$60 / session
   "svc-sg-health-02": { serviceType: "yoga", attributes: { listedBy: "individual", serviceMode: ["homevisit"], priceUnit: "session" } },
+
+  // ── Tutoring
+  // "Physics & Chemistry Tutor — CBSE/ICSE Class 9-12", ₹600 / hr, 10 years, home visit or online
+  "svc-in-tutor-01": {
+    experience: "10+",
+    attributes: { subjects: ["science"], levels: ["secondary", "higher-secondary"], curriculum: ["cbse", "icse"], serviceMode: ["homevisit", "online"], priceUnit: "hour" },
+  },
+  // "Spoken English & Grammar Tutor — All Ages", ₹450 / hr, home visit or online
+  "svc-in-tutor-02": { attributes: { subjects: ["english"], levels: ["primary", "secondary", "adult"], serviceMode: ["homevisit", "online"], priceUnit: "hour" } },
+  // "GCSE & A-Level Maths Tutor — 10 Yrs Exp", £35 / hr, North London / Online, free taster, Enhanced DBS
+  "svc-tutor-01": {
+    experience: "10+",
+    attributes: { subjects: ["maths"], levels: ["gcse", "a_level"], serviceMode: ["homevisit", "online"], priceUnit: "hour", freeTrial: "yes", dbsChecked: "yes" },
+  },
+  // "French & Spanish Language Tutor — All Levels, Exam Prep", £30 / hr, online, beginner to A-Level
+  "svc-tutor-02": { attributes: { subjects: ["languages"], levels: ["gcse", "a_level", "adult"], serviceMode: ["online"], priceUnit: "hour" } },
+  // "11+ & Common Entrance Exam Prep", £45 / hr, SW London / Online, Enhanced DBS
+  "svc-tutor-03": {
+    attributes: { subjects: ["maths", "english", "other"], otherSubject: "11+ / Common Entrance", levels: ["primary"], serviceMode: ["homevisit", "online"], priceUnit: "hour", dbsChecked: "yes" },
+  },
+  // "Maths & Science Tutor — PSLE & O-Level, MOE-Trained", S$60 / hr, 8 years, home visit or online
+  "svc-sg-tutor-01": {
+    experience: "5-10",
+    attributes: { subjects: ["maths", "science"], levels: ["primary", "o_level"], curriculum: ["moe"], tutorType: "teacher", serviceMode: ["homevisit", "online"], priceUnit: "hour" },
+  },
+  // "English & Composition Tutor — Primary & Secondary", S$50 / hr, home visit or online
+  "svc-sg-tutor-02": { attributes: { subjects: ["english"], levels: ["primary", "o_level"], serviceMode: ["homevisit", "online"], priceUnit: "hour" } },
 };
 
 async function run() {
@@ -94,7 +123,7 @@ async function run() {
     const id = post.adsId!;
     const details = DETAILS[id];
     const $set: Record<string, unknown> = {};
-    if (!post.serviceType) $set.serviceType = details.serviceType;
+    if (details.serviceType && !post.serviceType) $set.serviceType = details.serviceType;
     if (details.experience && !post.experience) $set.experience = details.experience;
     for (const [key, value] of Object.entries(details.attributes)) {
       if (post.attributes?.[key] == null) $set[`attributes.${key}`] = value;

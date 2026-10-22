@@ -340,6 +340,10 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { service_type: { drop: ["ac"] } },
     sg: { service_type: { drop: ["heating"] } },
   },
+  "services/tutoring": {
+    gb: { level: { relabel: { college: "University" } } },
+    sg: { level: { relabel: { college: "Poly / University" } } },
+  },
 };
 
 function forMarket(cat: string, sub: string, market: string, filters: FilterConfig[]): FilterConfig[] {

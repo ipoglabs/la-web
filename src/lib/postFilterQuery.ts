@@ -361,18 +361,36 @@ const JOBS_FORM_FILTERS: Record<string, string[]> = {
 };
 
 /**
- * Services filters each reworked sub's form saves (posting/form-schema/defaults/services.ts),
- * filter id → the post path it matches. Subs not listed here only filter on price.
+ * Tutoring Level filter → the market-specific levels its form saves
+ * (posting/form-schema/defaults/services.ts TUTORING_LEVELS).
  */
-const SERVICES_FORM_FILTERS: Record<string, Record<string, string>> = {
+const TUTORING_LEVELS: Record<string, string[]> = {
+  primary: ["primary"],
+  secondary: ["middle", "secondary", "higher-secondary", "competitive", "ks3", "gcse", "a_level", "o_level", "ib"],
+  college: ["college", "university"],
+  adult: ["adult"],
+};
+
+/**
+ * Services filters each reworked sub's form saves (posting/form-schema/defaults/services.ts):
+ * filter id → the post path it matches, plus a value map where filter and form values differ.
+ * Subs not listed here only filter on price.
+ */
+const SERVICES_FORM_FILTERS: Record<string, Record<string, string | { path: string; values: Record<string, string[]> }>> = {
   home_services: { service_type: "serviceType", frequency: "attributes.frequency", provider: "attributes.listedBy" },
   business_services: { service_type: "serviceType", provider: "attributes.listedBy" },
   health_fitness: { service_type: "serviceType", service_mode: "attributes.serviceMode" },
+  tutoring: {
+    subject: "attributes.subjects",
+    level: { path: "attributes.levels", values: TUTORING_LEVELS },
+    service_mode: "attributes.serviceMode",
+  },
 };
 
 function buildServicesFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
-  return Object.entries(SERVICES_FORM_FILTERS[sub] ?? {}).flatMap(([id, path]) => {
-    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+  return Object.entries(SERVICES_FORM_FILTERS[sub] ?? {}).flatMap(([id, target]) => {
+    const { path, values } = typeof target === "string" ? { path: target, values: null } : target;
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any").flatMap((v) => (values ? values[v] ?? [] : [v]));
     return picked.length ? [{ [path]: { $in: picked } }] : [];
   });
 }

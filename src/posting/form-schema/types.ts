@@ -97,9 +97,10 @@ export function isFieldVisible(field: FormFieldDef, data: Record<string, unknown
   const rule = field.showWhen;
   if (!rule) return true;
   const raw = data[rule.field];
-  const value = raw == null ? "" : String(raw);
-  if (rule.in && !rule.in.includes(value)) return false;
-  if (rule.notIn && rule.notIn.includes(value)) return false;
+  // A multiselect matches when any of its picks does (e.g. Other Subject while Other is one of several subjects).
+  const values = Array.isArray(raw) ? raw.map(String) : [raw == null ? "" : String(raw)];
+  if (rule.in && !values.some((v) => rule.in!.includes(v))) return false;
+  if (rule.notIn && values.some((v) => rule.notIn!.includes(v))) return false;
   return true;
 }
 

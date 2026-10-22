@@ -70,6 +70,19 @@ const howServiceMode = (homeVisitLabel = "Home visit"): FormFieldDef => ({
   options: pairs([["inperson", "At my place"], ["homevisit", homeVisitLabel], ["online", "Online"]]),
 });
 
+/** Tutoring levels in each market's words. Search groups them under the Level filter's
+ *  Primary / Secondary / College / Adult (TUTORING_LEVELS in lib/postFilterQuery.ts). */
+const TUTORING_LEVELS: Record<string, [string, string][]> = {
+  IN: [["primary", "Primary"], ["middle", "Middle School"], ["secondary", "Secondary (10th)"], ["higher-secondary", "Higher Secondary (12th)"], ["college", "College"], ["competitive", "Competitive Exams"], ["adult", "Adult"]],
+  GB: [["primary", "Primary"], ["ks3", "KS3"], ["gcse", "GCSE"], ["a_level", "A-Level"], ["university", "University"], ["adult", "Adult"]],
+  SG: [["primary", "Primary (PSLE)"], ["o_level", "Secondary (O-Level)"], ["a_level", "JC (A-Level)"], ["ib", "IB"], ["university", "Poly / University"], ["adult", "Adult"]],
+};
+const CURRICULA: Record<string, [string, string][]> = {
+  IN: [["cbse", "CBSE"], ["icse", "ICSE"], ["state", "State Board"], ["ib", "IB"], ["igcse", "IGCSE"]],
+  GB: [["aqa", "AQA"], ["edexcel", "Edexcel"], ["ocr", "OCR"], ["ib", "IB"]],
+  SG: [["moe", "MOE"], ["ib", "IB"], ["igcse", "IGCSE"]],
+};
+
 const BUSINESS_REG_LABEL: Record<string, string> = { IN: "GSTIN", GB: "Companies House No.", SG: "UEN" };
 
 export const SERVICES_SUBCATEGORIES = [
@@ -194,18 +207,33 @@ export function servicesSections(subcategory: string, country: string): FormSect
         basics,
         {
           title: "Tutoring",
+          // Subjects / Levels are lists, saved in attributes — Post.subject and
+          // Post.level are single strings.
           fields: [
-            { key: "subject", type: "text", label: "Subject", required: true },
             {
-              key: "level",
-              type: "select",
-              label: "Level",
-              options: pairs([["primary", "Primary"], ["secondary", "Secondary"], ["higher-secondary", "Higher Secondary"], ["college", "College"], ["competitive", "Competitive Exams"]]),
+              key: "subjects",
+              type: "multiselect",
+              label: "Subjects",
+              required: true,
+              options: pairs([["maths", "Maths"], ["science", "Science"], ["english", "English"], ["languages", "Languages"], ["music", "Music"], ["coding", "Coding"], ["other", "Other"]]),
             },
-            mode,
+            { key: "otherSubject", type: "text", label: "Other Subject", placeholder: "e.g. Economics, 11+ prep", showWhen: { field: "subjects", in: ["other"] } },
+            { key: "levels", type: "multiselect", label: "Level", options: pairs(TUTORING_LEVELS[country] ?? TUTORING_LEVELS.IN) },
+            { key: "curriculum", type: "multiselect", label: country === "GB" ? "Exam Board" : "Curriculum / Board", options: pairs(CURRICULA[country] ?? CURRICULA.IN) },
+            { key: "lessonFormat", type: "multiselect", label: "Lesson Format", options: pairs([["one_to_one", "One-to-one"], ["group", "Small group"]]) },
+            howServiceMode("Student's home"),
+            {
+              key: "tutorType",
+              type: "select",
+              label: "Tutor Type",
+              options: pairs([["part_time", "Part-time tutor"], ["full_time", "Full-time tutor"], ["teacher", "Current / former school teacher"]]),
+            },
             qualification,
-            experience,
-            price("Fee"),
+            yearsOfExperience,
+            salePrice("Fee"),
+            priceUnit([["hour", "Per hour"], ["session", "Per session"], ["month", "Per month"]]),
+            ...(country === "GB" ? [{ key: "dbsChecked", type: "select", label: "DBS Checked", options: YES_NO, width: "half" } satisfies FormFieldDef] : []),
+            { key: "freeTrial", type: "select", label: "Free Trial Lesson", options: YES_NO, width: "half" },
             availability,
           ],
         },
