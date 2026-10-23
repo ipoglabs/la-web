@@ -30,7 +30,7 @@ const BUILDERS: Record<string, SectionsBuilder> = {
   Vehicles: vehiclesSections,
   Jobs: jobsSections,
   Services: servicesSections,
-  Pets: (sub) => petsSections(sub),
+  Pets: petsSections,
   Business: (sub) => businessSections(sub),
   Community: (sub) => communitySections(sub),
   "Special Offers": specialOffersSections,

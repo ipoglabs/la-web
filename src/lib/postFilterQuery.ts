@@ -15,8 +15,8 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles have full filter mappings; Jobs and Services map
- * the filters of each reworked sub's form. Other categories only get the
+ * Property and Vehicles have full filter mappings; Jobs, Services and Pets
+ * map the filters of each reworked sub's form. Other categories only get the
  * price range (see CATEGORY_PRICE_FIELD); their other filter toggles are
  * still UI-only.
  */
@@ -341,7 +341,10 @@ const SUB_PRICE_FIELD: Record<string, string> = {
   // A Wanted ad's price is what the buyer will pay at most.
   "vehicles/wanted": "maxBudget",
   "services/wanted": "budgetAmount",
+  "pets/wanted": "budget",
 };
+// Subs with no price to filter on (a Lost & Found reward isn't a search criterion).
+const SUB_NO_PRICE = new Set(["pets/lost_found"]);
 
 /** A price range on `field`, also matching older seed posts that saved their pay as `salary` instead. */
 function rangeWithSalaryFallback(field: string, range: Record<string, number>): Record<string, unknown> {
@@ -400,6 +403,28 @@ function buildServicesFormClauses(sub: string, fv: Record<string, string[]>): Re
     const { path, values } = typeof target === "string" ? { path: target, values: null } : target;
     const picked = (fv[id] ?? []).filter((v) => v && v !== "any").flatMap((v) => (values ? values[v] ?? [] : [v]));
     return picked.length ? [{ [path]: { $in: picked } }] : [];
+  });
+}
+
+/**
+ * Pets filters each sub's form saves (posting/form-schema/defaults/pets.ts):
+ * filter id → the post path it matches. A Wanted ad open to any breed type
+ * matches a Pure or Mixed pick too (`alsoAny`).
+ */
+const PETS_FORM_FILTERS: Record<string, Record<string, string | { path: string; alsoAny: true }>> = {
+  for_sale: { animal_type: "petType", pet_age: "attributes.ageGroup", breed_type: "attributes.breedType", pet_gender: "gender" },
+  adoption: { animal_type: "petType", pet_age: "attributes.ageGroup", vaccinated: "vaccination", pet_gender: "gender" },
+  service: { service_type: "serviceType", for_animal: "attributes.forAnimals", service_mode: "attributes.serviceMode" },
+  accessories: { for_animal: "attributes.forAnimals", condition: "condition", acc_category: "attributes.accessoryCategory" },
+  lost_found: { lf_status: "reportType", animal_type: "petType", pet_size: "size" },
+  wanted: { pet_intent: "attributes.lookingTo", animal_type: "wantedPetType", breed_type: { path: "attributes.breedType", alsoAny: true } },
+};
+
+function buildPetsFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  return Object.entries(PETS_FORM_FILTERS[sub] ?? {}).flatMap(([id, target]) => {
+    const { path, alsoAny } = typeof target === "string" ? { path: target, alsoAny: false } : target;
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+    return picked.length ? [{ [path]: { $in: alsoAny ? [...picked, "any"] : picked } }] : [];
   });
 }
 
@@ -666,6 +691,7 @@ export function carsAlsoSearchEv(category: string, sub: string, filterValues: Re
 /** Whether a category / sub's search has a working price filter (the listings UI hides it otherwise). */
 export function hasPriceFilter(category: string, sub: string): boolean {
   if (category === "property") return Boolean(PROPERTY_SUB_FILTERS[sub]?.priceField);
+  if (SUB_NO_PRICE.has(`${category}/${sub}`)) return false;
   return CATEGORY_PRICE_FIELD[category] !== null;
 }
 
@@ -676,9 +702,10 @@ export function buildFilterQuery(
 ): Record<string, unknown> {
   if (category === "property") return buildPropertyQuery(sub, filterValues);
 
-  const field =
-    SUB_PRICE_FIELD[`${category}/${sub}`] ??
-    (CATEGORY_PRICE_FIELD[category] === undefined ? "salePrice" : CATEGORY_PRICE_FIELD[category]);
+  const field = SUB_NO_PRICE.has(`${category}/${sub}`)
+    ? null
+    : SUB_PRICE_FIELD[`${category}/${sub}`] ??
+      (CATEGORY_PRICE_FIELD[category] === undefined ? "salePrice" : CATEGORY_PRICE_FIELD[category]);
   const min = filterValues.price_min?.[0];
   const max = filterValues.price_max?.[0];
 
@@ -711,8 +738,8 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (category === "services") {
-    const clauses = buildServicesFormClauses(sub, filterValues);
+  if (category === "services" || category === "pets") {
+    const clauses = category === "pets" ? buildPetsFormClauses(sub, filterValues) : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

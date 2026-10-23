@@ -53,7 +53,7 @@ const SALARY_PERIOD_SUFFIX: Record<string, string> = {
   year: "/ yr",
 };
 
-/** Price suffix per Services Price Per value (posting/form-schema/defaults/services.ts); "from" is a prefix instead. */
+/** Price suffix per Services / Pet Care Price Per value (posting/form-schema/defaults/services.ts, pets.ts); "from" is a prefix instead. */
 const PRICE_UNIT_SUFFIX: Record<string, string> = {
   visit: "/ visit",
   hour: "/ hr",
@@ -74,11 +74,21 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   repair: "/ repair",
   event: "/ event",
   item: "/ item",
+  night: "/ night",
+  walk: "/ walk",
 };
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
+  // Pets › Lost & Found: a reward instead of a price (saved in attributes).
+  if (post.category === "pets" && post.subcategory === "lost_found") {
+    const reward = Number(post.attributes?.reward);
+    if (reward > 0) return { priceLabel: `Reward ${fmt(reward)}` };
+    return { priceLabel: post.reportType === "found" ? "Found" : "Lost" };
+  }
+  // Pets › Adoption: no fee means free to a good home.
+  if (post.category === "pets" && post.subcategory === "adoption" && post.salePrice === 0) return { priceLabel: "Free" };
   if (post.rentPrice != null) {
     // Some forms ask how the rent is quoted (Rent Period, saved in attributes).
     const period = String(post.attributes?.rentPeriod ?? "month");
