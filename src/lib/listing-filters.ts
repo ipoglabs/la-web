@@ -380,6 +380,12 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { language: { drop: ["hindi", "malay", "tamil", "korean"], relabel: { english: "English (ESOL)" } } },
     sg: { language: { drop: ["hindi", "spanish", "german", "arabic", "bsl"] } },
   },
+  "free_giveaway/clothing_free": { gb: { clothing_type: { relabel: { traditional: "Occasion Wear" } } } },
+  "free_giveaway/food_free": {
+    gb: { dietary: { drop: ["jain", "eggless"] } },
+    sg: { dietary: { drop: ["jain", "eggless"] } },
+  },
+  "free_giveaway/kids_items": { gb: { item_type: { relabel: { gear: "Pushchairs & Gear" } } } },
   // "Outstation" is Indian English; GB and SG say long distance.
   "community/rideshare_carpool": {
     gb: { route_type: { relabel: { outstation: "Long Distance" } } },

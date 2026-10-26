@@ -109,6 +109,8 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     }
     if (post.salePrice === 0) return { priceLabel: "Free" };
   }
+  // Free & Giveaway: nothing is priced.
+  if (post.category === "free_giveaway") return { priceLabel: "Free" };
   // Education: a school ad or open day with no fees is free.
   if (post.category === "education" && !(Number(post.salePrice ?? post.price) > 0)) return { priceLabel: "Free" };
   if (post.category === "community") {

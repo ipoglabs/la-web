@@ -159,21 +159,6 @@ const foodDining: Builder = (sub) => {
   }
 };
 
-const freeGiveaway: Builder = (sub) => {
-  const known = ["Furniture", "Clothing", "Electronics", "Food", "Kids Items", "General"];
-  if (!known.includes(sub)) return null;
-  const pickup: FormFieldDef = { key: "availability", type: "text", label: "Pickup Availability", placeholder: "e.g. Weekday evenings" };
-  return [
-    basics,
-    {
-      title: "Item",
-      fields: sub === "Food"
-        ? [{ key: "deadline", type: "date", label: "Best Before", required: true, width: "half" }, pickup]
-        : [condition(), pickup],
-    },
-  ];
-};
-
 const healthBeauty: Builder = (sub) => {
   switch (sub) {
     case "Fitness Classes & Training":
@@ -313,7 +298,6 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Electronics & Tech": electronics,
   "Fashion & Clothing": fashion,
   "Food & Dining": foodDining,
-  "Free & Giveaway": freeGiveaway,
   "Health & Beauty": healthBeauty,
   "Home & Furniture": homeFurniture,
   "Musical Instruments": musical,

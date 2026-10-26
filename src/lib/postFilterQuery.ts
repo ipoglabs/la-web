@@ -325,7 +325,7 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
 }
 
 // Outside Property, a post's price is its `salePrice` (Jobs: `salary`).
-// Free / Giveaway posts have no price to filter on.
+// Free & Giveaway posts have no price to filter on.
 const CATEGORY_PRICE_FIELD: Record<string, string | null> = {
   jobs: "salary",
   free_giveaway: null,
@@ -649,6 +649,30 @@ function buildEducationFormClauses(sub: string, fv: Record<string, string[]>): R
   return clauses;
 }
 
+/**
+ * Free & Giveaway filters each sub's form saves (posting/form-schema/defaults/free-giveaway.ts):
+ * filter id → the post path it matches.
+ */
+const FREE_FORM_FILTERS: Record<string, Record<string, string>> = {
+  furniture_free: { item_type: "attributes.itemType", condition: "condition" },
+  clothing_free: { gender: "gender", clothing_type: "attributes.clothingType", condition: "condition" },
+  electronics_free: { item_type: "attributes.itemType", working_status: "attributes.workingStatus" },
+  food_free: { food_type: "attributes.foodType", dietary: "attributes.dietary" },
+  kids_items: { item_type: "attributes.itemType", age_group: "attributes.ageGroup", condition: "condition" },
+  general_free: { item_category: "attributes.itemCategory", condition: "condition" },
+};
+
+function buildFreeFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses: Record<string, unknown>[] = Object.entries(FREE_FORM_FILTERS[sub] ?? {}).flatMap(([id, path]) => {
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+    return picked.length ? [{ [path]: { $in: picked } }] : [];
+  });
+  // Gone once its Best Before / Must Go By date has passed (saved as YYYY-MM-DD).
+  const today = new Date().toISOString().slice(0, 10);
+  clauses.push({ $or: [{ deadline: { $gte: today } }, { deadline: { $in: [null, ""] } }] });
+  return clauses;
+}
+
 // Wanted's Looking For values → the Open To values its form saves.
 const WANTED_LOOKING_FOR: Record<string, string> = {
   fulltime: "full-time",
@@ -959,7 +983,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -969,7 +993,9 @@ export function buildFilterQuery(
             ? buildCommunityFormClauses(sub, filterValues)
             : category === "education"
               ? buildEducationFormClauses(sub, filterValues)
-              : buildServicesFormClauses(sub, filterValues);
+              : category === "free_giveaway"
+                ? buildFreeFormClauses(sub, filterValues)
+                : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);
