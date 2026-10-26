@@ -100,6 +100,11 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     // Franchise: the investment a franchisee needs (saved in attributes).
     const investment = Number(post.attributes?.investmentRequired);
     if (post.subcategory === "franchise" && investment > 0) return { priceLabel: `Investment ${fmt(investment)}` };
+    // Partnership: an ask with no Investment Amount that offers equity.
+    const offering = post.attributes?.offering;
+    if (post.subcategory === "partnership" && post.budgetAmount == null && Array.isArray(offering) && offering.includes("equity")) {
+      return { priceLabel: "Equity deal" };
+    }
     if (post.salePrice === 0) return { priceLabel: "Free" };
   }
   if (post.rentPrice != null) {
