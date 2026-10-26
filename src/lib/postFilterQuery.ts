@@ -673,6 +673,28 @@ function buildFreeFormClauses(sub: string, fv: Record<string, string[]>): Record
   return clauses;
 }
 
+/**
+ * Home & Furniture filters each sub's form saves (posting/form-schema/defaults/home-furniture.ts):
+ * filter id → the post path it matches. Every sub saves its Type as `itemType`.
+ */
+const HOME_FORM_FILTERS: Record<string, Record<string, string>> = {
+  sofas_seating: { type: "attributes.itemType", seats: "attributes.seats", upholstery: "attributes.upholstery", condition: "condition" },
+  beds_bedroom: { item_type: "attributes.itemType", bed_size: "attributes.bedSize", condition: "condition" },
+  tables_dining: { type: "attributes.itemType", seats: "attributes.seats", condition: "condition" },
+  kitchen_appliances: { type: "attributes.itemType", condition: "condition" },
+  storage_shelving: { type: "attributes.itemType", condition: "condition" },
+  home_decor: { type: "attributes.itemType", condition: "condition" },
+  garden_outdoor: { type: "attributes.itemType", power_source: "attributes.powerSource", condition: "condition" },
+  diy_tools: { type: "attributes.itemType", power_source: "attributes.powerSource", condition: "condition" },
+};
+
+function buildHomeFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  return Object.entries(HOME_FORM_FILTERS[sub] ?? {}).flatMap(([id, path]) => {
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+    return picked.length ? [{ [path]: { $in: picked } }] : [];
+  });
+}
+
 // Wanted's Looking For values → the Open To values its form saves.
 const WANTED_LOOKING_FOR: Record<string, string> = {
   fulltime: "full-time",
@@ -983,7 +1005,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -995,7 +1017,9 @@ export function buildFilterQuery(
               ? buildEducationFormClauses(sub, filterValues)
               : category === "free_giveaway"
                 ? buildFreeFormClauses(sub, filterValues)
-                : buildServicesFormClauses(sub, filterValues);
+                : category === "home_furniture"
+                  ? buildHomeFormClauses(sub, filterValues)
+                  : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

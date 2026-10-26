@@ -380,6 +380,13 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { language: { drop: ["hindi", "malay", "tamil", "korean"], relabel: { english: "English (ESOL)" } } },
     sg: { language: { drop: ["hindi", "spanish", "german", "arabic", "bsl"] } },
   },
+  // Each market's bed sizes (posting/form-schema/defaults/home-furniture.ts BED_SIZES).
+  "home_furniture/beds_bedroom": {
+    in: { bed_size: { drop: ["super_single", "small_double", "super_king"] } },
+    gb: { bed_size: { drop: ["super_single", "queen"] } },
+    sg: { bed_size: { drop: ["small_double", "double", "super_king"] } },
+  },
+  "home_furniture/kitchen_appliances": { gb: { type: { drop: ["purifier"] } } },
   "free_giveaway/clothing_free": { gb: { clothing_type: { relabel: { traditional: "Occasion Wear" } } } },
   "free_giveaway/food_free": {
     gb: { dietary: { drop: ["jain", "eggless"] } },

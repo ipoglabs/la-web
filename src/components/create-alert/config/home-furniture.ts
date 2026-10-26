@@ -1,9 +1,49 @@
-import type { MainCategory } from "../types";
+import type { FilterConfig, FilterOption, MainCategory } from "../types";
+
+// Option values are what the Home & Furniture forms save
+// (posting/form-schema/defaults/home-furniture.ts). Market-specific options
+// (Bed Size, Water Purifier) carry every market's here and are trimmed per
+// market in lib/listing-filters.ts.
+
+/** The item Condition scale the marketplace forms save. */
+const condition: FilterConfig = {
+  id: "condition",
+  label: "Condition",
+  type: "toggle",
+  options: [
+    { label: "Brand New",    value: "new"          },
+    { label: "Like New",     value: "like-new"     },
+    { label: "Lightly Used", value: "lightly-used" },
+    { label: "Well Used",    value: "used"         },
+    { label: "Heavily Used", value: "heavily-used" },
+  ],
+};
+
+const type = (options: FilterOption[], id = "type", label = "Type"): FilterConfig => ({ id, label, type: "toggle", options });
+
+const seats = (values: string[]): FilterConfig => ({
+  id: "seats",
+  label: "Seats",
+  type: "toggle",
+  options: values.map((v) => ({ label: v.replace("plus", "+"), value: v })),
+});
+
+const powerSource = (corded: string): FilterConfig => ({
+  id: "power_source",
+  label: "Power Source",
+  type: "toggle",
+  options: [
+    { label: "Petrol",             value: "petrol"   },
+    { label: corded,               value: "corded"   },
+    { label: "Cordless (Battery)", value: "cordless" },
+    { label: "Manual",             value: "manual"   },
+  ],
+});
 
 export const homeFurniture: MainCategory = {
   id: "home_furniture",
   label: "Home & Furniture",
-  description: "Sofas, appliances, garden gear, décor, and DIY tools.",
+  description: "Sofas, appliances, garden gear, decor, and DIY tools.",
   icon: "sofa",
   iconBg: "bg-stone-100",
   iconColor: "text-stone-600",
@@ -13,31 +53,30 @@ export const homeFurniture: MainCategory = {
       label: "Sofas & Seating",
       icon: "armchair",
       filters: [
+        type([
+          { label: "Sofa",                value: "sofa"      },
+          { label: "Corner Sofa",         value: "corner"    },
+          { label: "Sofa Bed",            value: "sofa_bed"  },
+          { label: "Armchair",            value: "armchair"  },
+          { label: "Recliner",            value: "recliner"  },
+          { label: "Footstool & Ottoman", value: "footstool" },
+          { label: "Bench",               value: "bench"     },
+          { label: "Other",               value: "other"     },
+        ]),
+        seats(["1", "2", "3", "4", "5plus"]),
         {
-          id: "type",
-          label: "Type",
+          id: "upholstery",
+          label: "Upholstery",
           type: "toggle",
           options: [
-            { label: "Sofa",       value: "sofa"       },
-            { label: "Armchair",   value: "armchair"   },
-            { label: "Ottoman",    value: "ottoman"    },
-            { label: "Sofa Bed",   value: "sofa_bed"   },
-            { label: "Bench",      value: "bench"      },
+            { label: "Fabric",       value: "fabric"       },
+            { label: "Leather",      value: "leather"      },
+            { label: "Faux Leather", value: "faux_leather" },
+            { label: "Velvet",       value: "velvet"       },
+            { label: "Other",        value: "other"        },
           ],
         },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        condition,
       ],
     },
     {
@@ -45,42 +84,35 @@ export const homeFurniture: MainCategory = {
       label: "Beds & Bedroom",
       icon: "bed",
       filters: [
+        type(
+          [
+            { label: "Bed Frame",         value: "bed_frame"    },
+            { label: "Mattress",          value: "mattress"     },
+            { label: "Bed with Mattress", value: "bed_mattress" },
+            { label: "Wardrobe",          value: "wardrobe"     },
+            { label: "Chest of Drawers",  value: "drawers"      },
+            { label: "Bedside Table",     value: "bedside"      },
+            { label: "Dressing Table",    value: "dressing"     },
+            { label: "Other",             value: "other"        },
+          ],
+          "item_type",
+          "Item Type",
+        ),
         {
           id: "bed_size",
           label: "Bed Size",
           type: "toggle",
           options: [
-            { label: "Single",     value: "single"     },
-            { label: "Double",     value: "double"     },
-            { label: "King",       value: "king"       },
-            { label: "Super King", value: "super_king" },
+            { label: "Single",       value: "single"       },
+            { label: "Super Single", value: "super_single" },
+            { label: "Small Double", value: "small_double" },
+            { label: "Double",       value: "double"       },
+            { label: "Queen",        value: "queen"        },
+            { label: "King",         value: "king"         },
+            { label: "Super King",   value: "super_king"   },
           ],
         },
-        {
-          id: "item_type",
-          label: "Item Type",
-          type: "toggle",
-          options: [
-            { label: "Bed Frame",   value: "bed_frame"   },
-            { label: "Mattress",    value: "mattress"    },
-            { label: "Wardrobe",    value: "wardrobe"    },
-            { label: "Chest / Drawers", value: "drawers" },
-            { label: "Bedside Table", value: "bedside"   },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        condition,
       ],
     },
     {
@@ -88,32 +120,18 @@ export const homeFurniture: MainCategory = {
       label: "Tables, Desks & Dining",
       icon: "table",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Dining Table", value: "dining"  },
-            { label: "Desk",         value: "desk"    },
-            { label: "Coffee Table", value: "coffee"  },
-            { label: "Side Table",   value: "side"    },
-            { label: "Dining Chair", value: "chair"   },
-            { label: "Office Chair", value: "office_chair" },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([
+          { label: "Dining Table",                value: "dining"       },
+          { label: "Dining Set (Table + Chairs)", value: "dining_set"   },
+          { label: "Desk",                        value: "desk"         },
+          { label: "Coffee Table",                value: "coffee"       },
+          { label: "Side Table",                  value: "side"         },
+          { label: "Dining Chairs",               value: "chairs"       },
+          { label: "Office Chair",                value: "office_chair" },
+          { label: "Other",                       value: "other"        },
+        ]),
+        seats(["2", "4", "6", "8plus"]),
+        condition,
       ],
     },
     {
@@ -121,33 +139,21 @@ export const homeFurniture: MainCategory = {
       label: "Kitchen & Appliances",
       icon: "microwave",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Fridge / Freezer",     value: "fridge"      },
-            { label: "Washing Machine",       value: "washing"     },
-            { label: "Dishwasher",            value: "dishwasher"  },
-            { label: "Microwave / Oven",      value: "microwave"   },
-            { label: "Hob / Cooker",          value: "cooker"      },
-            { label: "Vacuum / Air Purifier", value: "vacuum"      },
-            { label: "Small Appliances",      value: "small"       },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([
+          { label: "Fridge & Freezer",         value: "fridge"     },
+          { label: "Washing Machine",          value: "washing"    },
+          { label: "Tumble Dryer",             value: "dryer"      },
+          { label: "Dishwasher",               value: "dishwasher" },
+          { label: "Microwave & Oven",         value: "microwave"  },
+          { label: "Hob & Cooker",             value: "cooker"     },
+          { label: "Air Conditioner",          value: "ac"         },
+          { label: "Water Purifier",           value: "purifier"   },
+          { label: "Vacuum & Air Purifier",    value: "vacuum"     },
+          { label: "Small Kitchen Appliances", value: "small"      },
+          { label: "Cookware & Kitchenware",   value: "cookware"   },
+          { label: "Other",                    value: "other"      },
+        ]),
+        condition,
       ],
     },
     {
@@ -155,66 +161,38 @@ export const homeFurniture: MainCategory = {
       label: "Storage & Shelving",
       icon: "archive",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Bookcase / Shelf", value: "shelf"     },
-            { label: "Cabinet",          value: "cabinet"   },
-            { label: "Storage Box",      value: "box"       },
-            { label: "Rack",             value: "rack"      },
-            { label: "Cubby / Cube Unit",value: "cube"      },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([
+          { label: "Bookcase & Shelving",     value: "bookcase" },
+          { label: "Cube Unit",               value: "cube"     },
+          { label: "Cabinet & Sideboard",     value: "cabinet"  },
+          { label: "TV Unit",                 value: "tv"       },
+          { label: "Shoe Rack",               value: "shoe"     },
+          { label: "Rack & Utility Shelving", value: "rack"     },
+          { label: "Storage Boxes",           value: "box"      },
+          { label: "Other",                   value: "other"    },
+        ]),
+        condition,
       ],
     },
     {
       id: "home_decor",
-      label: "Home Décor & Accessories",
+      label: "Home Decor & Accessories",
       icon: "sparkles",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Rugs & Carpets",    value: "rugs"      },
-            { label: "Curtains & Blinds", value: "curtains"  },
-            { label: "Wall Art",          value: "art"       },
-            { label: "Mirrors",           value: "mirrors"   },
-            { label: "Cushions & Throws", value: "cushions"  },
-            { label: "Lighting",          value: "lighting"  },
-            { label: "Plants & Pots",     value: "plants"    },
-            { label: "Other",             value: "other"     },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([
+          { label: "Rugs & Carpets",       value: "rugs"     },
+          { label: "Curtains & Blinds",    value: "curtains" },
+          { label: "Wall Art & Prints",    value: "art"      },
+          { label: "Mirrors",              value: "mirrors"  },
+          { label: "Cushions & Throws",    value: "cushions" },
+          { label: "Lamps & Lighting",     value: "lighting" },
+          { label: "Vases & Ornaments",    value: "vases"    },
+          { label: "Clocks",               value: "clocks"   },
+          { label: "Indoor Plants & Pots", value: "plants"   },
+          { label: "Festive & Seasonal",   value: "festive"  },
+          { label: "Other",                value: "other"    },
+        ]),
+        condition,
       ],
     },
     {
@@ -222,32 +200,19 @@ export const homeFurniture: MainCategory = {
       label: "Garden & Outdoor",
       icon: "tree",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Garden Furniture", value: "furniture" },
-            { label: "BBQ & Grills",     value: "bbq"       },
-            { label: "Gardening Tools",  value: "tools"     },
-            { label: "Plants & Seeds",   value: "plants"    },
-            { label: "Pots & Planters",  value: "pots"      },
-            { label: "Decking / Fencing",value: "decking"   },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([
+          { label: "Garden Furniture",         value: "furniture" },
+          { label: "BBQ & Grills",             value: "bbq"       },
+          { label: "Lawnmowers & Power Tools", value: "power"     },
+          { label: "Hand Tools",               value: "hand"      },
+          { label: "Plants & Seeds",           value: "plants"    },
+          { label: "Pots & Planters",          value: "pots"      },
+          { label: "Sheds & Storage",          value: "sheds"     },
+          { label: "Decking & Fencing",        value: "decking"   },
+          { label: "Other",                    value: "other"     },
+        ]),
+        powerSource("Corded Electric"),
+        condition,
       ],
     },
     {
@@ -255,33 +220,20 @@ export const homeFurniture: MainCategory = {
       label: "DIY, Tools & Hardware",
       icon: "wrench",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Power Tools",  value: "power"    },
-            { label: "Hand Tools",   value: "hand"     },
-            { label: "Plumbing",     value: "plumbing" },
-            { label: "Electrical",   value: "electric" },
-            { label: "Flooring",     value: "flooring" },
-            { label: "Paint",        value: "paint"    },
-            { label: "Other",        value: "other"    },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([
+          { label: "Power Tools",           value: "power"     },
+          { label: "Hand Tools",            value: "hand"      },
+          { label: "Measuring & Levelling", value: "measuring" },
+          { label: "Ladders & Access",      value: "ladders"   },
+          { label: "Plumbing",              value: "plumbing"  },
+          { label: "Electrical",            value: "electric"  },
+          { label: "Flooring & Tiles",      value: "flooring"  },
+          { label: "Paint & Decorating",    value: "paint"     },
+          { label: "Building Materials",    value: "materials" },
+          { label: "Other",                 value: "other"     },
+        ]),
+        powerSource("Corded"),
+        condition,
       ],
     },
   ],

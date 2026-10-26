@@ -174,13 +174,6 @@ const healthBeauty: Builder = (sub) => {
   }
 };
 
-const homeFurniture: Builder = (sub) => {
-  const known = ["Sofas & Seating", "Beds & Bedroom", "Tables, Desks & Dining", "Kitchen & Appliances", "Storage & Shelving", "Home Decor & Accessories", "Garden & Outdoor", "DIY, Tools & Hardware"];
-  if (!known.includes(sub)) return null;
-  const appliance = ["Kitchen & Appliances", "DIY, Tools & Hardware"].includes(sub);
-  return item("Item", [condition(), brand, material, { key: "dimensions", type: "text", label: "Dimensions", placeholder: "e.g. 180 x 90 x 75 cm", width: "half" }, ...(appliance ? [warranty] : [])]);
-};
-
 const musical: Builder = (sub) => {
   const known = ["Guitars & Bass", "Keyboards & Piano", "Drums & Percussion", "DJ & Audio Gear", "Wind, Brass & Strings", "Accessories"];
   return known.includes(sub) ? item("Instrument", [brand, model, condition([["vintage", "Vintage"]])]) : null;
@@ -299,7 +292,6 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Fashion & Clothing": fashion,
   "Food & Dining": foodDining,
   "Health & Beauty": healthBeauty,
-  "Home & Furniture": homeFurniture,
   "Musical Instruments": musical,
   "Sports & Outdoors": sports,
   "Tickets & Vouchers": tickets,
