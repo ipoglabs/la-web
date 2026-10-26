@@ -33,7 +33,6 @@ const price = (label = "Price", required = true): FormFieldDef => ({
 const negotiable: FormFieldDef = { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, width: "half" };
 const brand: FormFieldDef = { key: "brand", type: "text", label: "Brand", width: "half" };
 const model: FormFieldDef = { key: "model", type: "text", label: "Model", width: "half" };
-const material: FormFieldDef = { key: "material", type: "text", label: "Material", width: "half" };
 const color: FormFieldDef = { key: "color", type: "text", label: "Color", width: "half" };
 const size: FormFieldDef = { key: "size", type: "text", label: "Size", width: "half" };
 const warranty: FormFieldDef = {
@@ -116,15 +115,6 @@ const electronics: Builder = (sub) => {
     Gaming: [{ key: "platform", type: "select", label: "Platform", options: opts(["PlayStation", "Xbox", "Nintendo", "PC", "Other"]) }],
   };
   return item("Item", [brand, model, ...(specs[sub] ?? []), condition([["for-parts", "For Parts / Not Working"]]), warranty]);
-};
-
-const fashion: Builder = (sub) => {
-  const known = ["Men's Clothing", "Women's Clothing", "Traditional & Ethnic Wear", "Shoes & Footwear", "Bags & Accessories", "Jewellery & Watches", "Designer & Luxury", "Vintage & Preloved"];
-  if (!known.includes(sub)) return null;
-  const sized = !["Bags & Accessories", "Jewellery & Watches"].includes(sub);
-  const gendered = !["Men's Clothing", "Women's Clothing"].includes(sub);
-  const forWhom: FormFieldDef = { key: "gender", type: "select", label: "For", options: pairs([["male", "Men"], ["female", "Women"], ["unisex", "Unisex"]]) };
-  return item("Item", [condition(), brand, ...(sized ? [size] : []), color, material, ...(gendered ? [forWhom] : [])]);
 };
 
 const foodDining: Builder = (sub) => {
@@ -289,7 +279,6 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Baby & Kids": babyKids,
   "Books, Media & Collectibles": booksMedia,
   "Electronics & Tech": electronics,
-  "Fashion & Clothing": fashion,
   "Food & Dining": foodDining,
   "Health & Beauty": healthBeauty,
   "Musical Instruments": musical,

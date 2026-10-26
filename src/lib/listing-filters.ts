@@ -298,6 +298,11 @@ const OWNERS_IN: FilterTweak ={ relabel: { "1": "First Owner", "2": "Second Owne
  * sellers can pick, in its words. Business shows money bands in the market's
  * own scale. A filter set to null is hidden there.
  */
+// Shoe sizes: UK 3–13 (UK, India; India labels them "UK / India") and EU 35–46 (Singapore).
+const UK_SHOE_SIZES = Array.from({ length: 11 }, (_, i) => `uk_${i + 3}`);
+const EU_SHOE_SIZES = Array.from({ length: 12 }, (_, i) => `eu_${i + 35}`);
+const UK_INDIA_SHOE_SIZES = Object.fromEntries(UK_SHOE_SIZES.map((v) => [v, `UK / India ${v.slice(3)}`]));
+
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   "vehicles/cars": {
     in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null },
@@ -387,6 +392,17 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     sg: { bed_size: { drop: ["small_double", "double", "super_king"] } },
   },
   "home_furniture/kitchen_appliances": { gb: { type: { drop: ["purifier"] } } },
+  // Each market's traditional wear and shoe sizes (posting/form-schema/defaults/fashion.ts).
+  "fashion_clothing/ethnic_traditional": {
+    in: { type: { drop: ["abaya", "african", "kebaya", "baju", "cheongsam"] } },
+    gb: { type: { drop: ["kebaya", "baju", "cheongsam"] } },
+    sg: { type: { drop: ["lehenga", "sherwani", "abaya", "african"] } },
+  },
+  "fashion_clothing/shoes_footwear": {
+    in: { shoe_size: { drop: ["uk_13", ...EU_SHOE_SIZES], relabel: UK_INDIA_SHOE_SIZES } },
+    gb: { shoe_size: { drop: EU_SHOE_SIZES } },
+    sg: { shoe_size: { drop: UK_SHOE_SIZES } },
+  },
   "free_giveaway/clothing_free": { gb: { clothing_type: { relabel: { traditional: "Occasion Wear" } } } },
   "free_giveaway/food_free": {
     gb: { dietary: { drop: ["jain", "eggless"] } },

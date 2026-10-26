@@ -688,8 +688,24 @@ const HOME_FORM_FILTERS: Record<string, Record<string, string>> = {
   diy_tools: { type: "attributes.itemType", power_source: "attributes.powerSource", condition: "condition" },
 };
 
-function buildHomeFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
-  return Object.entries(HOME_FORM_FILTERS[sub] ?? {}).flatMap(([id, path]) => {
+/**
+ * Fashion & Clothing filters each sub's form saves (posting/form-schema/defaults/fashion.ts):
+ * filter id → the post path it matches. Every sub saves its Type as `itemType`.
+ */
+const FASHION_FORM_FILTERS: Record<string, Record<string, string>> = {
+  mens_clothing: { type: "attributes.itemType", size: "size", condition: "condition" },
+  womens_clothing: { type: "attributes.itemType", size: "size", condition: "condition" },
+  ethnic_traditional: { type: "attributes.itemType", gender: "gender", occasion: "attributes.occasion", condition: "condition" },
+  shoes_footwear: { gender: "gender", type: "attributes.itemType", shoe_size: "attributes.shoeSize", condition: "condition" },
+  bags_accessories: { type: "attributes.itemType", material: "attributes.material", condition: "condition" },
+  jewellery_watches: { type: "attributes.itemType", metal: "attributes.metal", condition: "condition" },
+  designer_luxury: { brand_tier: "attributes.brand", category: "attributes.itemType", authenticity: "attributes.authenticity", condition: "condition" },
+  vintage_secondhand: { decade: "attributes.era", type: "attributes.itemType", condition: "condition" },
+};
+
+/** Clauses for a sub whose filters each match one post path. */
+function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
+  return Object.entries(filters ?? {}).flatMap(([id, path]) => {
     const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
     return picked.length ? [{ [path]: { $in: picked } }] : [];
   });
@@ -1005,7 +1021,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1018,8 +1034,10 @@ export function buildFilterQuery(
               : category === "free_giveaway"
                 ? buildFreeFormClauses(sub, filterValues)
                 : category === "home_furniture"
-                  ? buildHomeFormClauses(sub, filterValues)
-                  : buildServicesFormClauses(sub, filterValues);
+                  ? buildPathFormClauses(HOME_FORM_FILTERS[sub], filterValues)
+                  : category === "fashion_clothing"
+                    ? buildPathFormClauses(FASHION_FORM_FILTERS[sub], filterValues)
+                    : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

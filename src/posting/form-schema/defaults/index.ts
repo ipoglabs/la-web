@@ -20,6 +20,7 @@ import { communitySections } from "./community";
 import { educationSections } from "./education";
 import { freeGiveawaySections } from "./free-giveaway";
 import { homeFurnitureSections } from "./home-furniture";
+import { fashionSections } from "./fashion";
 import { specialOffersSections } from "./specialOffers";
 import { MARKETPLACE_BUILDERS } from "./marketplace";
 import { applyLimits, COUNTRIES } from "./shared";
@@ -39,6 +40,7 @@ const BUILDERS: Record<string, SectionsBuilder> = {
   Education: educationSections,
   "Free & Giveaway": freeGiveawaySections,
   "Home & Furniture": homeFurnitureSections,
+  "Fashion & Clothing": fashionSections,
   "Special Offers": specialOffersSections,
   ...Object.fromEntries(
     Object.entries(MARKETPLACE_BUILDERS).map(([cat, build]) => [cat, (sub: string) => build(sub)] as const),
