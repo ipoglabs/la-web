@@ -363,6 +363,23 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { investment_level: { drop: INVESTMENT_BANDS_IN } },
     sg: { investment_level: { drop: INVESTMENT_BANDS_IN } },
   },
+  // Education lists in each market's own levels, boards and languages
+  // (posting/form-schema/defaults/education.ts).
+  "education/study_materials": {
+    in: { level: { drop: ["gcse", "o_level", "a_level", "professional"] } },
+    gb: { level: { drop: ["secondary", "higher-secondary", "competitive", "o_level"] } },
+    sg: { level: { drop: ["secondary", "higher-secondary", "competitive", "gcse"], relabel: { primary: "Primary (PSLE)" } } },
+  },
+  "education/schools_colleges": {
+    in: { institution_type: { relabel: { sixth: "Higher Secondary" } }, curriculum: { drop: ["moe", "national", "independent"] } },
+    gb: { curriculum: { drop: ["cbse", "icse", "state", "moe", "igcse"] } },
+    sg: { institution_type: { relabel: { sixth: "Junior College" } }, curriculum: { drop: ["cbse", "icse", "state", "national", "independent"] } },
+  },
+  "education/language_classes": {
+    in: { language: { drop: ["malay", "tamil", "korean", "arabic", "bsl"] } },
+    gb: { language: { drop: ["hindi", "malay", "tamil", "korean"], relabel: { english: "English (ESOL)" } } },
+    sg: { language: { drop: ["hindi", "spanish", "german", "arabic", "bsl"] } },
+  },
   // "Outstation" is Indian English; GB and SG say long distance.
   "community/rideshare_carpool": {
     gb: { route_type: { relabel: { outstation: "Long Distance" } } },

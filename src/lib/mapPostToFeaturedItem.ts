@@ -53,7 +53,7 @@ const SALARY_PERIOD_SUFFIX: Record<string, string> = {
   year: "/ yr",
 };
 
-/** Price suffix per Services / Pet Care / Business / Community Price Per value (posting/form-schema/defaults/services.ts, pets.ts, business.ts, community.ts); "from" is a prefix instead. */
+/** Price suffix per Services / Pet Care / Business / Community / Education Price Per value (posting/form-schema/defaults/services.ts, pets.ts, business.ts, community.ts, education.ts); "from" is a prefix instead. */
 const PRICE_UNIT_SUFFIX: Record<string, string> = {
   visit: "/ visit",
   hour: "/ hr",
@@ -81,6 +81,7 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   programme: "/ programme",
   filing: "/ filing",
   term: "/ term",
+  year: "/ yr",
 };
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
@@ -108,6 +109,8 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     }
     if (post.salePrice === 0) return { priceLabel: "Free" };
   }
+  // Education: a school ad or open day with no fees is free.
+  if (post.category === "education" && !(Number(post.salePrice ?? post.price) > 0)) return { priceLabel: "Free" };
   if (post.category === "community") {
     const fee = Number(post.salePrice ?? 0);
     switch (post.subcategory) {

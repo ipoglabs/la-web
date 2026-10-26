@@ -52,7 +52,7 @@ const onlineOrInPerson: FormFieldDef = {
 };
 
 /** Service Mode matching the How filter (components/create-alert/config/shared.ts serviceMode). */
-const howServiceMode = (homeVisitLabel = "Home visit"): FormFieldDef => ({
+export const howServiceMode = (homeVisitLabel = "Home visit"): FormFieldDef => ({
   key: "serviceMode",
   type: "multiselect",
   label: "Service Mode",
@@ -61,12 +61,22 @@ const howServiceMode = (homeVisitLabel = "Home visit"): FormFieldDef => ({
 
 /** Tutoring levels in each market's words. Search groups them under the Level filter's
  *  Primary / Secondary / College / Adult (TUTORING_LEVELS in lib/postFilterQuery.ts). */
-const TUTORING_LEVELS: Record<string, [string, string][]> = {
+export const TUTORING_LEVELS: Record<string, [string, string][]> = {
   IN: [["primary", "Primary"], ["middle", "Middle School"], ["secondary", "Secondary (10th)"], ["higher-secondary", "Higher Secondary (12th)"], ["college", "College"], ["competitive", "Competitive Exams"], ["adult", "Adult"]],
   GB: [["primary", "Primary"], ["ks3", "KS3"], ["gcse", "GCSE"], ["a_level", "A-Level"], ["university", "University"], ["adult", "Adult"]],
   SG: [["primary", "Primary (PSLE)"], ["o_level", "Secondary (O-Level)"], ["a_level", "JC (A-Level)"], ["ib", "IB"], ["university", "Poly / University"], ["adult", "Adult"]],
 };
-const CURRICULA: Record<string, [string, string][]> = {
+/** Tutoring subjects, matching the Subject filter (shared with Education › Tutors & Coaching). */
+export const TUTORING_SUBJECTS: [string, string][] = [
+  ["maths", "Maths"],
+  ["science", "Science"],
+  ["english", "English"],
+  ["languages", "Languages"],
+  ["music", "Music"],
+  ["coding", "Coding"],
+  ["other", "Other"],
+];
+export const CURRICULA: Record<string, [string, string][]> = {
   IN: [["cbse", "CBSE"], ["icse", "ICSE"], ["state", "State Board"], ["ib", "IB"], ["igcse", "IGCSE"]],
   GB: [["aqa", "AQA"], ["edexcel", "Edexcel"], ["ocr", "OCR"], ["ib", "IB"]],
   SG: [["moe", "MOE"], ["ib", "IB"], ["igcse", "IGCSE"]],
@@ -211,7 +221,7 @@ export function servicesSections(subcategory: string, country: string): FormSect
               type: "multiselect",
               label: "Subjects",
               required: true,
-              options: pairs([["maths", "Maths"], ["science", "Science"], ["english", "English"], ["languages", "Languages"], ["music", "Music"], ["coding", "Coding"], ["other", "Other"]]),
+              options: pairs(TUTORING_SUBJECTS),
             },
             { key: "otherSubject", type: "text", label: "Other Subject", placeholder: "e.g. Economics, 11+ prep", showWhen: { field: "subjects", in: ["other"] } },
             { key: "levels", type: "multiselect", label: "Level", options: pairs(TUTORING_LEVELS[country] ?? TUTORING_LEVELS.IN) },

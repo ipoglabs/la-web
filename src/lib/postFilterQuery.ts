@@ -16,7 +16,7 @@
  * what a seller typed and the filter's canonical option value.
  *
  * Property and Vehicles have full filter mappings; Jobs, Services, Pets,
- * Business and Community map the filters of each reworked sub's form. Other categories only get the
+ * Business, Community and Education map the filters of each reworked sub's form. Other categories only get the
  * price range (see CATEGORY_PRICE_FIELD); their other filter toggles are
  * still UI-only.
  */
@@ -613,6 +613,42 @@ function buildCommunityFormClauses(sub: string, fv: Record<string, string[]>): R
   return clauses;
 }
 
+/**
+ * Education filters each sub's form saves (posting/form-schema/defaults/education.ts):
+ * filter id → the post path it matches, plus a value map where filter and form
+ * values differ. Tutors & Coaching matches Services › Tutoring's fields.
+ */
+const EDUCATION_FORM_FILTERS: Record<string, Record<string, string | { path: string; values: Record<string, string[]> }>> = {
+  tutors: {
+    subject: "attributes.subjects",
+    level: { path: "attributes.levels", values: TUTORING_LEVELS },
+    service_mode: "attributes.serviceMode",
+  },
+  online_courses: {
+    category: "attributes.courseCategory",
+    course_format: "attributes.deliveryFormat",
+    duration: "duration",
+    certificate: "attributes.certificate",
+  },
+  study_materials: { material_type: "attributes.materialType", level: "level", condition: "condition" },
+  schools_colleges: { ad_type: "attributes.adType", institution_type: "attributes.institutionType", curriculum: "attributes.curriculum" },
+  language_classes: { language: "attributes.language", level: "level", format: "mode", exam_prep: "attributes.examPrep" },
+};
+
+function buildEducationFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses: Record<string, unknown>[] = Object.entries(EDUCATION_FORM_FILTERS[sub] ?? {}).flatMap(([id, target]) => {
+    const { path, values } = typeof target === "string" ? { path: target, values: null } : target;
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any").flatMap((v) => (values ? values[v] ?? [] : [v]));
+    return picked.length ? [{ [path]: { $in: picked } }] : [];
+  });
+  // An open day that has passed drops out of search (Event Date, saved as YYYY-MM-DD).
+  if (sub === "schools_colleges") {
+    const today = new Date().toISOString().slice(0, 10);
+    clauses.push({ $or: [{ "attributes.adType": { $ne: "openday" } }, { startDate: { $gte: today } }] });
+  }
+  return clauses;
+}
+
 // Wanted's Looking For values → the Open To values its form saves.
 const WANTED_LOOKING_FOR: Record<string, string> = {
   fulltime: "full-time",
@@ -923,7 +959,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (category === "services" || category === "pets" || category === "business" || category === "community") {
+  if (["services", "pets", "business", "community", "education"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -931,7 +967,9 @@ export function buildFilterQuery(
           ? buildBusinessFormClauses(sub, filterValues)
           : category === "community"
             ? buildCommunityFormClauses(sub, filterValues)
-            : buildServicesFormClauses(sub, filterValues);
+            : category === "education"
+              ? buildEducationFormClauses(sub, filterValues)
+              : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

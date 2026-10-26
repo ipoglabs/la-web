@@ -52,7 +52,6 @@ const condition = (extra: [string, string][] = []): FormFieldDef => ({
 const availability: FormFieldDef = { key: "availability", type: "text", label: "Availability", placeholder: "e.g. Mon–Sat, 9am–6pm", width: "half" };
 const providerName: FormFieldDef = { key: "providerName", type: "text", label: "Business / Provider Name", width: "half" };
 const qualification: FormFieldDef = { key: "qualification", type: "text", label: "Qualification", width: "half" };
-const mode: FormFieldDef = { key: "mode", type: "select", label: "Mode", options: pairs([["online", "Online"], ["offline", "In Person"], ["both", "Both"]]) };
 const ageGroup: FormFieldDef = { key: "ageGroup", type: "text", label: "Age Group", placeholder: "e.g. 3-5 years", width: "half" };
 
 const dealMethod: FormFieldDef = {
@@ -103,22 +102,6 @@ const booksMedia: Builder = (sub) => {
     "Collectibles & Memorabilia": [{ key: "era", type: "text", label: "Year / Era", placeholder: "e.g. 1960s", width: "half" }],
   };
   return extra[sub] ? item("Item", [condition([["collectible", "Collectible"]]), ...extra[sub]]) : null;
-};
-
-const education: Builder = (sub) => {
-  switch (sub) {
-    case "Tutors & Coaching":
-    case "Language Classes":
-      return service([{ key: "subject", type: "text", label: sub === "Language Classes" ? "Language" : "Subject", required: true, width: "half" }, { key: "level", type: "text", label: "Level", width: "half" }, qualification, mode], "Fee");
-    case "Online Courses":
-      return service([{ key: "subject", type: "text", label: "Course Topic", required: true, width: "half" }, { key: "durationText", type: "text", label: "Duration", width: "half" }, qualification], "Fee");
-    case "Schools & Colleges":
-      return service([{ key: "educationType", type: "select", label: "Type", options: pairs([["school", "School"], ["college", "College"], ["university", "University"], ["vocational", "Vocational"], ["other", "Other"]]) }, { key: "qualification", type: "text", label: "Board / Affiliation", width: "half" }], "Fees");
-    case "Study Materials":
-      return item("Item", [condition(), { key: "subject", type: "text", label: "Subject / Exam", width: "half" }]);
-    default:
-      return null;
-  }
 };
 
 const electronics: Builder = (sub) => {
@@ -327,7 +310,6 @@ const travel: Builder = (sub) => {
 export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Baby & Kids": babyKids,
   "Books, Media & Collectibles": booksMedia,
-  Education: education,
   "Electronics & Tech": electronics,
   "Fashion & Clothing": fashion,
   "Food & Dining": foodDining,
