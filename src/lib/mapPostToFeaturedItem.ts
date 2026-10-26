@@ -53,7 +53,7 @@ const SALARY_PERIOD_SUFFIX: Record<string, string> = {
   year: "/ yr",
 };
 
-/** Price suffix per Services / Pet Care Price Per value (posting/form-schema/defaults/services.ts, pets.ts); "from" is a prefix instead. */
+/** Price suffix per Services / Pet Care / Business Price Per value (posting/form-schema/defaults/services.ts, pets.ts, business.ts); "from" is a prefix instead. */
 const PRICE_UNIT_SUFFIX: Record<string, string> = {
   visit: "/ visit",
   hour: "/ hr",
@@ -76,6 +76,10 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   item: "/ item",
   night: "/ night",
   walk: "/ walk",
+  week: "/ week",
+  unit: "/ unit",
+  programme: "/ programme",
+  filing: "/ filing",
 };
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
@@ -89,6 +93,15 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
   }
   // Pets › Adoption: no fee means free to a good home.
   if (post.category === "pets" && post.subcategory === "adoption" && post.salePrice === 0) return { priceLabel: "Free" };
+  if (post.category === "business") {
+    const unit = String(post.attributes?.priceUnit ?? "");
+    if (unit === "quote") return { priceLabel: "Price on request" };
+    if (unit === "equity") return { priceLabel: "Equity only" };
+    // Franchise: the investment a franchisee needs (saved in attributes).
+    const investment = Number(post.attributes?.investmentRequired);
+    if (post.subcategory === "franchise" && investment > 0) return { priceLabel: `Investment ${fmt(investment)}` };
+    if (post.salePrice === 0) return { priceLabel: "Free" };
+  }
   if (post.rentPrice != null) {
     // Some forms ask how the rent is quoted (Rent Period, saved in attributes).
     const period = String(post.attributes?.rentPeriod ?? "month");

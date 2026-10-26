@@ -286,12 +286,16 @@ const ENGINE_CC_BY_MARKET: Record<string, FilterTweak> = {
   },
 };
 
-const OWNERS_IN: FilterTweak = { relabel: { "1": "First Owner", "2": "Second Owner", "3plus": "Third or more" } };
+const REVENUE_BANDS_IN = ["in_sub25l", "in_1cr", "in_5cr", "in_5crup"];
+const INVESTMENT_BANDS_IN = ["in_sub10l", "in_50l", "in_1cr", "in_1crup"];
+
+const OWNERS_IN: FilterTweak ={ relabel: { "1": "First Owner", "2": "Second Owner", "3plus": "Third or more" } };
 
 /**
  * Vehicles and Services: the post forms differ by market (posting/form-schema/
  * defaults/vehicles.ts, services.ts), so the filters show only what that market's
- * sellers can pick, in its words. A filter set to null is hidden there.
+ * sellers can pick, in its words. Business shows money bands in the market's
+ * own scale. A filter set to null is hidden there.
  */
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   "vehicles/cars": {
@@ -346,6 +350,17 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   },
   "services/food_dining": {
     in: { service_type: { relabel: { meal_prep: "Tiffin / Meal Prep" } } },
+  },
+  // Business money bands: IN in Lakh / Crore, GB and SG in thousands.
+  "business/biz_for_sale": {
+    in: { annual_revenue: { drop: ["sub100", "500k", "1m", "1mup"] } },
+    gb: { annual_revenue: { drop: REVENUE_BANDS_IN } },
+    sg: { annual_revenue: { drop: REVENUE_BANDS_IN } },
+  },
+  "business/franchise": {
+    in: { investment_level: { drop: ["sub50", "200k", "500k", "500kup"] } },
+    gb: { investment_level: { drop: INVESTMENT_BANDS_IN } },
+    sg: { investment_level: { drop: INVESTMENT_BANDS_IN } },
   },
 };
 

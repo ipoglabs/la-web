@@ -1,5 +1,27 @@
 import type { MainCategory } from "../types";
+import type { FilterConfig } from "../types";
 import { field, workArrangement, conditionFull, experience, serviceMode } from "./shared";
+
+// Values are what the Business post forms save (posting/form-schema/defaults/
+// business.ts); lib/postFilterQuery.ts BUSINESS_FORM_FILTERS maps each filter.
+// Money bands come in each market's scale (IN in Lakh / Crore) —
+// lib/listing-filters.ts shows only that market's bands.
+
+const industry: FilterConfig = {
+  id: "industry",
+  label: "Industry",
+  type: "toggle",
+  options: [
+    { label: "Tech",          value: "tech"          },
+    { label: "F&B",           value: "fnb"           },
+    { label: "Retail",        value: "retail"        },
+    { label: "Services",      value: "services"      },
+    { label: "Manufacturing", value: "manufacturing" },
+    { label: "Healthcare",    value: "healthcare"    },
+    { label: "Education",     value: "education"     },
+    { label: "Other",         value: "other"         },
+  ],
+};
 
 export const business: MainCategory = {
   id: "business",
@@ -51,6 +73,10 @@ export const business: MainCategory = {
             { label: "100k – 500k", value: "500k"   },
             { label: "500k – 1M",   value: "1m"     },
             { label: "1M+",         value: "1mup"   },
+            { label: "< 25 Lakh",        value: "in_sub25l" },
+            { label: "25 Lakh – 1 Crore", value: "in_1cr"    },
+            { label: "1 – 5 Crore",      value: "in_5cr"    },
+            { label: "5 Crore+",         value: "in_5crup"  },
           ],
         },
         {
@@ -155,19 +181,31 @@ export const business: MainCategory = {
       label: "Partnership Opportunities",
       icon: "handshake",
       filters: [
-        field,
         {
-          id: "engagement",
-          label: "Engagement",
+          id: "looking_for",
+          label: "Looking For",
           type: "toggle",
-          singleSelect: true,
           options: [
-            { label: "One-off",  value: "oneoff"  },
-            { label: "Project",  value: "project" },
-            { label: "Ongoing",  value: "ongoing" },
+            { label: "Co-founder",       value: "cofounder" },
+            { label: "Investor",         value: "investor"  },
+            { label: "Business Partner", value: "partner"   },
+            { label: "Joint Venture",    value: "jv"        },
+            { label: "Other",            value: "other"     },
           ],
         },
-        workArrangement,
+        industry,
+        {
+          id: "stage",
+          label: "Stage",
+          type: "toggle",
+          options: [
+            { label: "Idea",          value: "idea"        },
+            { label: "MVP",           value: "mvp"         },
+            { label: "Early Revenue", value: "early"       },
+            { label: "Growth",        value: "growth"      },
+            { label: "Established",   value: "established" },
+          ],
+        },
       ],
     },
     {
@@ -183,7 +221,6 @@ export const business: MainCategory = {
           options: [
             { label: "For Sale", value: "sale"   },
             { label: "For Rent", value: "rent"   },
-            { label: "Wanted",   value: "wanted" },
           ],
         },
         {
@@ -201,7 +238,14 @@ export const business: MainCategory = {
             { label: "Other",         value: "other"        },
           ],
         },
-        conditionFull,
+        {
+          ...conditionFull,
+          options: [
+            ...conditionFull.options.filter((o) => o.value !== "for_parts"),
+            { label: "Refurbished", value: "refurbished" },
+            ...conditionFull.options.filter((o) => o.value === "for_parts"),
+          ],
+        },
       ],
     },
     {
@@ -224,20 +268,7 @@ export const business: MainCategory = {
             { label: "Tech Support", value: "tech"        },
           ],
         },
-        {
-          id: "industry",
-          label: "Industry",
-          type: "toggle",
-          options: [
-            { label: "Tech",       value: "tech"       },
-            { label: "F&B",        value: "fnb"        },
-            { label: "Retail",     value: "retail"     },
-            { label: "Services",   value: "services"   },
-            { label: "Healthcare", value: "healthcare" },
-            { label: "Education",  value: "education"  },
-            { label: "Other",      value: "other"      },
-          ],
-        },
+        industry,
         {
           id: "startup_stage",
           label: "Stage",
@@ -279,6 +310,7 @@ export const business: MainCategory = {
             { label: "1-3 days",    value: "3d"  },
             { label: "1-4 weeks",   value: "4w"  },
             { label: "1-3 months",  value: "3m"  },
+            { label: "3+ months",   value: "3mup" },
           ],
         },
       ],
@@ -313,6 +345,10 @@ export const business: MainCategory = {
             { label: "50k – 200k",  value: "200k"   },
             { label: "200k – 500k", value: "500k"   },
             { label: "500k+",       value: "500kup" },
+            { label: "< 10 Lakh",          value: "in_sub10l" },
+            { label: "10 – 50 Lakh",       value: "in_50l"    },
+            { label: "50 Lakh – 1 Crore",  value: "in_1cr"    },
+            { label: "1 Crore+",           value: "in_1crup"  },
           ],
         },
         {
@@ -343,6 +379,7 @@ export const business: MainCategory = {
             { label: "Trade Show",  value: "tradeshow"   },
             { label: "Workshop",    value: "workshop"    },
             { label: "Webinar",     value: "webinar", icon: "laptop" },
+            { label: "Other",       value: "other"       },
           ],
         },
         {
@@ -390,14 +427,29 @@ export const business: MainCategory = {
       id: "misc",
       label: "Miscellaneous",
       icon: "more-horizontal",
-      filters: [field],
+      filters: [],
     },
     {
       id: "wanted",
       label: "Wanted",
       icon: "search",
       filters: [
-        field,
+        {
+          id: "looking_for",
+          label: "Looking For",
+          type: "toggle",
+          options: [
+            { label: "Business to buy",   value: "business"  },
+            { label: "Business to lease", value: "lease"     },
+            { label: "Equipment",         value: "equipment" },
+            { label: "Service provider",  value: "provider"  },
+            { label: "Partner / Investor", value: "partner"  },
+            { label: "Franchise",         value: "franchise" },
+            { label: "Premises",          value: "premises"  },
+            { label: "Other",             value: "other"     },
+          ],
+        },
+        industry,
         {
           id: "urgency",
           label: "Urgency",
@@ -407,6 +459,7 @@ export const business: MainCategory = {
             { label: "Any",       value: "any"      },
             { label: "Immediate", value: "immediate" },
             { label: "This week", value: "week"      },
+            { label: "Within a month", value: "month" },
             { label: "Flexible",  value: "flexible"  },
           ],
         },

@@ -15,8 +15,8 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles have full filter mappings; Jobs, Services and Pets
- * map the filters of each reworked sub's form. Other categories only get the
+ * Property and Vehicles have full filter mappings; Jobs, Services, Pets and
+ * Business map the filters of each reworked sub's form. Other categories only get the
  * price range (see CATEGORY_PRICE_FIELD); their other filter toggles are
  * still UI-only.
  */
@@ -342,6 +342,9 @@ const SUB_PRICE_FIELD: Record<string, string> = {
   "vehicles/wanted": "maxBudget",
   "services/wanted": "budgetAmount",
   "pets/wanted": "budget",
+  "business/partnership": "budgetAmount",
+  "business/wanted": "budgetAmount",
+  "business/franchise": "attributes.investmentRequired",
 };
 // Subs with no price to filter on (a Lost & Found reward isn't a search criterion).
 const SUB_NO_PRICE = new Set(["pets/lost_found"]);
@@ -426,6 +429,92 @@ function buildPetsFormClauses(sub: string, fv: Record<string, string[]>): Record
     const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
     return picked.length ? [{ [path]: { $in: alsoAny ? [...picked, "any"] : picked } }] : [];
   });
+}
+
+/** A money band per filter option — GB / SG in thousands, IN in Lakh / Crore (1 Lakh = 100,000). */
+const LAKH = 100_000;
+const CRORE = 10_000_000;
+const ANNUAL_REVENUE: Record<string, unknown> = {
+  pre: 0,
+  sub100: { $gt: 0, $lt: 100_000 },
+  "500k": { $gte: 100_000, $lt: 500_000 },
+  "1m": { $gte: 500_000, $lt: 1_000_000 },
+  "1mup": { $gte: 1_000_000 },
+  in_sub25l: { $gt: 0, $lt: 25 * LAKH },
+  in_1cr: { $gte: 25 * LAKH, $lt: CRORE },
+  in_5cr: { $gte: CRORE, $lt: 5 * CRORE },
+  in_5crup: { $gte: 5 * CRORE },
+};
+const FRANCHISE_INVESTMENT: Record<string, unknown> = {
+  sub50: { $lt: 50_000 },
+  "200k": { $gte: 50_000, $lt: 200_000 },
+  "500k": { $gte: 200_000, $lt: 500_000 },
+  "500kup": { $gte: 500_000 },
+  in_sub10l: { $lt: 10 * LAKH },
+  in_50l: { $gte: 10 * LAKH, $lt: 50 * LAKH },
+  in_1cr: { $gte: 50 * LAKH, $lt: CRORE },
+  in_1crup: { $gte: CRORE },
+};
+const STAFF_SIZE: Record<string, unknown> = {
+  solo: 0,
+  "1to5": { $gte: 1, $lte: 5 },
+  "6to20": { $gte: 6, $lte: 20 },
+  "21to50": { $gte: 21, $lte: 50 },
+  "50up": { $gt: 50 },
+};
+
+type BusinessTarget = string | { path: string; alsoAny: true } | { path: string; bands: Record<string, unknown> };
+
+/**
+ * Business filters each sub's form saves (posting/form-schema/defaults/business.ts):
+ * filter id → the post path it matches. Startup Support's "All industries"
+ * matches every Industry pick (`alsoAny`); money and staff filters match a band.
+ */
+const BUSINESS_FORM_FILTERS: Record<string, Record<string, BusinessTarget>> = {
+  biz_for_sale: {
+    biz_action: "attributes.listingType",
+    biz_type: "attributes.businessType",
+    annual_revenue: { path: "attributes.annualTurnover", bands: ANNUAL_REVENUE },
+    staff_size: { path: "attributes.staffCount", bands: STAFF_SIZE },
+  },
+  b2b_service: { service_type: "serviceType", provider: "attributes.listedBy", engagement: "attributes.engagement" },
+  b2c_service: { service_type: "serviceType", service_mode: "attributes.serviceMode", provider: "attributes.listedBy" },
+  freelance_contractors: { field: "attributes.workField", experience: "experience", work_arrangement: "attributes.workArrangement" },
+  partnership: { looking_for: "attributes.lookingFor", industry: "attributes.industry", stage: "attributes.stage" },
+  equipment_supplies: { equip_action: "attributes.listingType", equip_category: "attributes.itemCategory", condition: "condition" },
+  startup_support: {
+    support_type: "serviceType",
+    industry: { path: "attributes.industries", alsoAny: true },
+    startup_stage: "attributes.stages",
+  },
+  training: { field: "attributes.workField", training_mode: "mode", duration: "duration" },
+  franchise: {
+    franchise_category: "attributes.franchiseCategory",
+    investment_level: { path: "attributes.investmentRequired", bands: FRANCHISE_INVESTMENT },
+    franchise_type: "attributes.franchiseType",
+  },
+  business_events: { event_type: "attributes.eventType", event_mode: "mode" },
+  financial_services: { service_type: "serviceType", provider: "attributes.listedBy" },
+  wanted: { looking_for: "attributes.lookingFor", industry: "attributes.industry", urgency: "urgency" },
+};
+
+function buildBusinessFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = Object.entries(BUSINESS_FORM_FILTERS[sub] ?? {}).flatMap(([id, target]) => {
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+    if (!picked.length) return [];
+    if (typeof target === "string") return [{ [target]: { $in: picked } }];
+    if ("bands" in target) {
+      const ranges = picked.filter((v) => v in target.bands).map((v) => ({ [target.path]: target.bands[v] }));
+      return ranges.length ? [ranges.length === 1 ? ranges[0] : { $or: ranges }] : [];
+    }
+    return [{ [target.path]: { $in: [...picked, "all"] } }];
+  });
+  // An event that has ended drops out of search (End Date, else Start Date; saved as YYYY-MM-DD).
+  if (sub === "business_events") {
+    const today = new Date().toISOString().slice(0, 10);
+    clauses.push({ $or: [{ endDate: { $gte: today } }, { endDate: { $in: [null, ""] }, startDate: { $gte: today } }] });
+  }
+  return clauses;
 }
 
 // Wanted's Looking For values → the Open To values its form saves.
@@ -738,8 +827,13 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (category === "services" || category === "pets") {
-    const clauses = category === "pets" ? buildPetsFormClauses(sub, filterValues) : buildServicesFormClauses(sub, filterValues);
+  if (category === "services" || category === "pets" || category === "business") {
+    const clauses =
+      category === "pets"
+        ? buildPetsFormClauses(sub, filterValues)
+        : category === "business"
+          ? buildBusinessFormClauses(sub, filterValues)
+          : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);
