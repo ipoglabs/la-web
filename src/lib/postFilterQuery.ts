@@ -15,8 +15,8 @@
  * rather than exact equality, to bridge casing/wording differences between
  * what a seller typed and the filter's canonical option value.
  *
- * Property and Vehicles have full filter mappings; Jobs, Services, Pets and
- * Business map the filters of each reworked sub's form. Other categories only get the
+ * Property and Vehicles have full filter mappings; Jobs, Services, Pets,
+ * Business and Community map the filters of each reworked sub's form. Other categories only get the
  * price range (see CATEGORY_PRICE_FIELD); their other filter toggles are
  * still UI-only.
  */
@@ -325,11 +325,10 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
 }
 
 // Outside Property, a post's price is its `salePrice` (Jobs: `salary`).
-// Free / Giveaway and Community posts have no price to filter on.
+// Free / Giveaway posts have no price to filter on.
 const CATEGORY_PRICE_FIELD: Record<string, string | null> = {
   jobs: "salary",
   free_giveaway: null,
-  community: null,
 };
 // Subs priced on another field than their category. Part Time jobs ask an
 // hourly rate; part-time hours vary too much to turn it into a monthly figure,
@@ -345,9 +344,17 @@ const SUB_PRICE_FIELD: Record<string, string> = {
   "business/partnership": "budgetAmount",
   "business/wanted": "budgetAmount",
   "business/franchise": "attributes.investmentRequired",
+  "community/wanted": "budgetAmount",
 };
-// Subs with no price to filter on (a Lost & Found reward isn't a search criterion).
-const SUB_NO_PRICE = new Set(["pets/lost_found"]);
+// Subs with no price to filter on (a Lost & Found reward isn't a search criterion;
+// volunteering, notices and general posts are never paid).
+const SUB_NO_PRICE = new Set([
+  "pets/lost_found",
+  "community/lost_found",
+  "community/volunteering",
+  "community/announcement",
+  "community/general_others",
+]);
 
 /** A price range on `field`, also matching older seed posts that saved their pay as `salary` instead. */
 function rangeWithSalaryFallback(field: string, range: Record<string, number>): Record<string, unknown> {
@@ -514,6 +521,95 @@ function buildBusinessFormClauses(sub: string, fv: Record<string, string[]>): Re
     const today = new Date().toISOString().slice(0, 10);
     clauses.push({ $or: [{ endDate: { $gte: today } }, { endDate: { $in: [null, ""] }, startDate: { $gte: today } }] });
   }
+  return clauses;
+}
+
+/** Seats filter: a ride with at least that many seats. */
+const SEATS_AT_LEAST: Record<string, unknown> = { "1": { $gte: 1 }, "2": { $gte: 2 }, "3": { $gte: 3 }, "4plus": { $gte: 4 } };
+
+type CommunityTarget =
+  | string
+  | { path: string; bands: Record<string, unknown> }
+  /** Several paths, any of which may hold the value (Announcement's Urgency vs Emergency's alert level). */
+  | { paths: string[] }
+  /** Free / Paid on the fee: blank or 0 is free. */
+  | { cost: string }
+  /** A multiselect where the `none` option means nothing was picked. */
+  | { path: string; noneValue: string };
+
+/**
+ * Community filters each sub's form saves (posting/form-schema/defaults/community.ts):
+ * filter id → the post path it matches.
+ */
+const COMMUNITY_FORM_FILTERS: Record<string, Record<string, CommunityTarget>> = {
+  lost_found: { lf_status: "reportType", item_category: "attributes.itemCategory" },
+  events: {
+    event_type: "attributes.eventType",
+    event_cost: { cost: "salePrice" },
+    event_format: "mode",
+    age_suitability: "attributes.suitableFor",
+  },
+  classes: { subject: "subject", class_mode: "mode" },
+  volunteering: {
+    cause: "attributes.cause",
+    commitment: "attributes.commitment",
+    skills_needed: { path: "attributes.skillsNeeded", noneValue: "none" },
+    vol_format: "mode",
+  },
+  courses: { subject: "subject", qualification: "qualification", duration: "duration", course_format: "mode" },
+  announcement: {
+    ann_type: "attributes.annType",
+    ann_from: "attributes.postedBy",
+    urgency: { paths: ["urgency", "attributes.alertLevel"] },
+  },
+  child_family: {
+    activity_type: "attributes.activityType",
+    age_group: "attributes.ageGroup",
+    activity_cost: { cost: "salePrice" },
+    activity_format: "mode",
+  },
+  general_others: { gen_category: "attributes.topic", gen_action: "attributes.postType" },
+  rideshare_carpool: {
+    route_type: "attributes.routeType",
+    seats: { path: "attributes.seatsAvailable", bands: SEATS_AT_LEAST },
+    ride_offer: "attributes.rideType",
+  },
+  wanted: { looking_for: "attributes.lookingFor", urgency: "urgency" },
+};
+
+function buildCommunityFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = Object.entries(COMMUNITY_FORM_FILTERS[sub] ?? {}).flatMap(([id, target]) => {
+    const picked = (fv[id] ?? []).filter((v) => v && v !== "any");
+    if (!picked.length) return [];
+    if (typeof target === "string") return [{ [target]: { $in: picked } }];
+    if ("cost" in target) {
+      // Both Free and Paid picked is no filter at all.
+      if (picked.includes("free") === picked.includes("paid")) return [];
+      return [picked.includes("free") ? { [target.cost]: { $not: { $gt: 0 } } } : { [target.cost]: { $gt: 0 } }];
+    }
+    if ("paths" in target) return [{ $or: target.paths.map((path) => ({ [path]: { $in: picked } })) }];
+    if ("bands" in target) {
+      const ranges = picked.filter((v) => v in target.bands).map((v) => ({ [target.path]: target.bands[v] }));
+      return ranges.length ? [ranges.length === 1 ? ranges[0] : { $or: ranges }] : [];
+    }
+    const values = picked.filter((v) => v !== target.noneValue);
+    const either: Record<string, unknown>[] = values.length ? [{ [target.path]: { $in: values } }] : [];
+    if (picked.includes(target.noneValue)) either.push({ [target.path]: { $in: [null, []] } });
+    return [either.length === 1 ? either[0] : { $or: either }];
+  });
+  // Events and notices that are over drop out of search (dates saved as YYYY-MM-DD).
+  const today = new Date().toISOString().slice(0, 10);
+  if (sub === "events") {
+    // A weekly or monthly event keeps running; a one-off ends on its End Date, else its Event Date.
+    clauses.push({
+      $or: [
+        { "attributes.frequency": { $in: ["weekly", "monthly"] } },
+        { endDate: { $gte: today } },
+        { endDate: { $in: [null, ""] }, startDate: { $gte: today } },
+      ],
+    });
+  }
+  if (sub === "announcement") clauses.push({ $or: [{ endDate: { $gte: today } }, { endDate: { $in: [null, ""] } }] });
   return clauses;
 }
 
@@ -827,13 +923,15 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (category === "services" || category === "pets" || category === "business") {
+  if (category === "services" || category === "pets" || category === "business" || category === "community") {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
         : category === "business"
           ? buildBusinessFormClauses(sub, filterValues)
-          : buildServicesFormClauses(sub, filterValues);
+          : category === "community"
+            ? buildCommunityFormClauses(sub, filterValues)
+            : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

@@ -53,7 +53,7 @@ const SALARY_PERIOD_SUFFIX: Record<string, string> = {
   year: "/ yr",
 };
 
-/** Price suffix per Services / Pet Care / Business Price Per value (posting/form-schema/defaults/services.ts, pets.ts, business.ts); "from" is a prefix instead. */
+/** Price suffix per Services / Pet Care / Business / Community Price Per value (posting/form-schema/defaults/services.ts, pets.ts, business.ts, community.ts); "from" is a prefix instead. */
 const PRICE_UNIT_SUFFIX: Record<string, string> = {
   visit: "/ visit",
   hour: "/ hr",
@@ -80,6 +80,7 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   unit: "/ unit",
   programme: "/ programme",
   filing: "/ filing",
+  term: "/ term",
 };
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
@@ -106,6 +107,32 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
       return { priceLabel: "Equity deal" };
     }
     if (post.salePrice === 0) return { priceLabel: "Free" };
+  }
+  if (post.category === "community") {
+    const fee = Number(post.salePrice ?? 0);
+    switch (post.subcategory) {
+      // A reward instead of a price (saved in attributes), as in Pets › Lost & Found.
+      case "lost_found": {
+        const reward = Number(post.attributes?.reward);
+        if (reward > 0) return { priceLabel: `Reward ${fmt(reward)}` };
+        return { priceLabel: post.reportType === "found" ? "Found" : "Lost" };
+      }
+      case "volunteering":
+        return { priceLabel: "Volunteer" };
+      case "announcement":
+        return { priceLabel: "Notice" };
+      case "general_others":
+        return { priceLabel: "Free" };
+      case "wanted":
+        return post.budgetAmount ? { priceLabel: fmt(post.budgetAmount) } : { priceLabel: "Wanted" };
+      case "rideshare_carpool":
+        // No cost given means riders split the running costs.
+        if (fee > 0) return { priceLabel: fmt(fee), priceSuffix: "/ seat" };
+        return { priceLabel: post.salePrice === 0 ? "Free ride" : "Split costs" };
+      // Events, classes, courses and family activities: no fee means free.
+      default:
+        if (!(fee > 0)) return { priceLabel: "Free" };
+    }
   }
   if (post.rentPrice != null) {
     // Some forms ask how the rent is quoted (Rent Period, saved in attributes).

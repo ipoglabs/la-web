@@ -32,7 +32,7 @@ const BUILDERS: Record<string, SectionsBuilder> = {
   Services: servicesSections,
   Pets: petsSections,
   Business: businessSections,
-  Community: (sub) => communitySections(sub),
+  Community: communitySections,
   "Special Offers": specialOffersSections,
   ...Object.fromEntries(
     Object.entries(MARKETPLACE_BUILDERS).map(([cat, build]) => [cat, (sub: string) => build(sub)] as const),

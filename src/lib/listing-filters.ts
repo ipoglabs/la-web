@@ -175,6 +175,7 @@ const CATEGORY_TIER: Record<string, CategoryPriceTier> = {
   tickets_vouchers: "small",
   health_beauty: "small",
   special_offers: "small",
+  community: "small",
   // everything else ("goods"): electronics, furniture, fashion, sports, music, baby, pets, services, education, travel, business
 };
 /** Subs priced unlike their category. */
@@ -362,6 +363,11 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { investment_level: { drop: INVESTMENT_BANDS_IN } },
     sg: { investment_level: { drop: INVESTMENT_BANDS_IN } },
   },
+  // "Outstation" is Indian English; GB and SG say long distance.
+  "community/rideshare_carpool": {
+    gb: { route_type: { relabel: { outstation: "Long Distance" } } },
+    sg: { route_type: { relabel: { outstation: "Long Distance" } } },
+  },
 };
 
 function forMarket(cat: string, sub: string, market: string, filters: FilterConfig[]): FilterConfig[] {
@@ -410,7 +416,7 @@ export function resolveFilters(
   const subFilters = forMarket(cat, sub, market, [...(subCat.filters as FilterConfig[])]);
 
   // Inject price range as the first filter — always present for every sub
-  // No price to filter on (Free / Giveaway, Community, Property Wanted) → no price filter.
+  // No price to filter on (Free / Giveaway, most Community subs, Property Wanted) → no price filter.
   if (!hasPriceFilter(cat, sub)) return subFilters;
 
   const kind = cat === "property" ? propertyPriceKind(sub, opts.values ?? {}) : undefined;
