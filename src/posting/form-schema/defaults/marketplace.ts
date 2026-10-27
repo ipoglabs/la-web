@@ -76,22 +76,6 @@ const service = (fields: FormFieldDef[], priceLabel = "Price"): FormSection[] =>
 // ── Categories ───────────────────────────────────────────────────────────────
 type Builder = (subcategory: string) => FormSection[] | null;
 
-const babyKids: Builder = (sub) => {
-  switch (sub) {
-    case "Toys & Games":
-    case "Baby Gear & Equipment":
-    case "School Supplies & Books":
-      return item("Item", [condition(), brand, ageGroup]);
-    case "Baby & Kids Clothing":
-      return item("Item", [condition(), brand, size, ageGroup, { key: "gender", type: "select", label: "For", options: pairs([["boy", "Boy"], ["girl", "Girl"], ["unisex", "Unisex"]]) }]);
-    case "Childcare & Nurseries":
-    case "Kids Classes & Activities":
-      return service([ageGroup, qualification], "Fee");
-    default:
-      return null;
-  }
-};
-
 const booksMedia: Builder = (sub) => {
   const extra: Record<string, FormFieldDef[]> = {
     "Books & Comics": [{ key: "authorArtist", type: "text", label: "Author", width: "half" }, { key: "genre", type: "text", label: "Genre", width: "half" }],
@@ -179,7 +163,6 @@ const tickets: Builder = (sub) => {
 };
 
 export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
-  "Baby & Kids": babyKids,
   "Books, Media & Collectibles": booksMedia,
   "Electronics & Tech": electronics,
   "Musical Instruments": musical,

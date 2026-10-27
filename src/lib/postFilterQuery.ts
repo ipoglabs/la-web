@@ -800,6 +800,27 @@ function buildTravelClauses(sub: string, fv: Record<string, string[]>): Record<s
   return clauses;
 }
 
+/**
+ * Baby & Kids filters each sub's form saves (posting/form-schema/defaults/baby-kids.ts):
+ * filter id → the post path it matches. Mode is handled in buildBabyClauses.
+ */
+const BABY_FORM_FILTERS: Record<string, Record<string, string>> = {
+  toys_games: { type: "attributes.itemType", age_group: "attributes.ageGroup", condition: "condition", delivery: "attributes.dealMethod" },
+  baby_gear: { item_type: "attributes.itemType", condition: "condition", delivery: "attributes.dealMethod" },
+  kids_clothing: { type: "attributes.itemType", age_group: "attributes.ageGroup", gender: "gender", condition: "condition", delivery: "attributes.dealMethod" },
+  childcare: { care_type: "attributes.careType", age_group: "attributes.ages", hours: "attributes.hours", first_aid: "attributes.firstAid" },
+  school_supplies: { type: "attributes.itemType", age_group: "attributes.ageGroup", condition: "condition", delivery: "attributes.dealMethod" },
+  kids_activities: { activity_type: "attributes.activityType", age_group: "attributes.ages", free_trial: "attributes.freeTrial" },
+};
+
+function buildBabyClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = buildPathFormClauses(BABY_FORM_FILTERS[sub], fv);
+  // A class run both ways matches In-person and Online.
+  const mode = fv.mode?.[0];
+  if (mode && sub === "kids_activities") clauses.push({ consultationMode: { $in: [mode, "both"] } });
+  return clauses;
+}
+
 /** Clauses for a sub whose filters each match one post path. */
 function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
   return Object.entries(filters ?? {}).flatMap(([id, path]) => {
@@ -1118,7 +1139,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining", "travel_stays"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining", "travel_stays", "baby_kids"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1142,7 +1163,9 @@ export function buildFilterQuery(
                           ? buildPathFormClauses(FOOD_FORM_FILTERS[sub], filterValues)
                           : category === "travel_stays"
                             ? buildTravelClauses(sub, filterValues)
-                            : buildServicesFormClauses(sub, filterValues);
+                            : category === "baby_kids"
+                              ? buildBabyClauses(sub, filterValues)
+                              : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

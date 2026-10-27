@@ -1,4 +1,29 @@
-import type { MainCategory } from "../types";
+import type { FilterConfig, FilterOption, MainCategory } from "../types";
+
+// Option values are the Baby & Kids forms' (posting/form-schema/defaults/baby-kids.ts):
+// each sub's Type is `itemType` (Childcare: `careType`; Classes: `activityType`).
+// Age matches the one band a thing suits, or any of the `ages` a service takes
+// (lib/postFilterQuery.ts BABY_FORM_FILTERS, buildBabyClauses).
+
+const opts = (entries: [string, string][]): FilterOption[] => entries.map(([value, label]) => ({ label, value }));
+
+const AGE_BANDS: [string, string][] = [["0_2", "0–2 yrs"], ["3_5", "3–5 yrs"], ["6_9", "6–9 yrs"], ["10plus", "10+ yrs"]];
+const ageGroup: FilterConfig = { id: "age_group", label: "Age", type: "toggle", options: opts(AGE_BANDS) };
+
+const condition: FilterConfig = {
+  id: "condition",
+  label: "Condition",
+  type: "toggle",
+  options: opts([["new", "Brand New"], ["like-new", "Like New"], ["lightly-used", "Lightly Used"], ["used", "Well Used"], ["heavily-used", "Heavily Used"]]),
+};
+
+const delivery: FilterConfig = {
+  id: "delivery",
+  label: "Delivery",
+  type: "toggle",
+  singleSelect: true,
+  options: opts([["delivery", "Delivery available"]]),
+};
 
 export const babyKids: MainCategory = {
   id: "baby_kids",
@@ -14,27 +39,14 @@ export const babyKids: MainCategory = {
       icon: "puzzle",
       filters: [
         {
-          id: "age_group",
-          label: "Age Group",
+          id: "type",
+          label: "Type",
           type: "toggle",
-          options: [
-            { label: "0–2 yrs",  value: "0_2"   },
-            { label: "3–5 yrs",  value: "3_5"   },
-            { label: "6–9 yrs",  value: "6_9"   },
-            { label: "10+ yrs",  value: "10plus" },
-          ],
+          options: opts([["building", "Building & LEGO"], ["dolls_figures", "Dolls & Figures"], ["educational", "Educational"], ["board_games", "Board Games & Puzzles"], ["outdoor", "Outdoor & Ride-on"], ["baby_toddler", "Baby & Toddler"], ["electronic", "Electronic & Video"], ["soft", "Soft Toys"], ["other", "Other"]]),
         },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",  value: "any"  },
-            { label: "New",  value: "new"  },
-            { label: "Used", value: "used" },
-          ],
-        },
+        ageGroup,
+        condition,
+        delivery,
       ],
     },
     {
@@ -46,26 +58,10 @@ export const babyKids: MainCategory = {
           id: "item_type",
           label: "Type",
           type: "toggle",
-          options: [
-            { label: "Pram / Stroller", value: "pram"       },
-            { label: "Car Seat",        value: "car_seat"   },
-            { label: "Cot / Crib",      value: "cot"        },
-            { label: "High Chair",      value: "high_chair" },
-            { label: "Baby Monitor",    value: "monitor"    },
-            { label: "Other",           value: "other"      },
-          ],
+          options: opts([["pram", "Pram / Stroller"], ["car_seat", "Car Seat"], ["cot", "Cot / Crib / Moses Basket"], ["high_chair", "High Chair"], ["monitor", "Baby Monitor"], ["carrier", "Baby Carrier"], ["bath_changing", "Bath & Changing"], ["feeding", "Feeding & Bottles"], ["safety", "Safety Gates & Proofing"], ["play", "Bouncers & Play"], ["other", "Other"]]),
         },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",  value: "any"  },
-            { label: "New",  value: "new"  },
-            { label: "Used", value: "used" },
-          ],
-        },
+        condition,
+        delivery,
       ],
     },
     {
@@ -74,38 +70,25 @@ export const babyKids: MainCategory = {
       icon: "shirt",
       filters: [
         {
-          id: "age_group",
-          label: "Age Group",
+          id: "type",
+          label: "Type",
           type: "toggle",
-          options: [
-            { label: "0–12 months", value: "infant"  },
-            { label: "1–3 yrs",     value: "toddler" },
-            { label: "4–7 yrs",     value: "young"   },
-            { label: "8–14 yrs",    value: "older"   },
-          ],
+          options: opts([["bundle", "Bundle"], ["tops", "Tops & T-shirts"], ["bottoms", "Trousers & Shorts"], ["dresses", "Dresses & Skirts"], ["outerwear", "Coats & Jackets"], ["sleepwear", "Sleepwear"], ["traditional", "Traditional & Festive"], ["shoes", "Shoes"], ["other", "Other"]]),
+        },
+        {
+          id: "age_group",
+          label: "Age",
+          type: "toggle",
+          options: opts([["infant", "0–12 months"], ["toddler", "1–3 yrs"], ["young", "4–7 yrs"], ["older", "8–14 yrs"]]),
         },
         {
           id: "gender",
-          label: "Gender",
+          label: "For",
           type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Boy",    value: "boy"    },
-            { label: "Girl",   value: "girl"   },
-            { label: "Unisex", value: "unisex" },
-          ],
+          options: opts([["boy", "Boy"], ["girl", "Girl"], ["unisex", "Unisex"]]),
         },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",  value: "any"  },
-            { label: "New",  value: "new"  },
-            { label: "Used", value: "used" },
-          ],
-        },
+        condition,
+        delivery,
       ],
     },
     {
@@ -117,13 +100,21 @@ export const babyKids: MainCategory = {
           id: "care_type",
           label: "Care Type",
           type: "toggle",
-          options: [
-            { label: "Nursery",        value: "nursery"    },
-            { label: "Childminder",    value: "childminder"},
-            { label: "Nanny / Au Pair",value: "nanny"      },
-            { label: "After School",   value: "afterschool"},
-            { label: "Holiday Care",   value: "holiday"    },
-          ],
+          options: opts([["nursery", "Nursery / Daycare"], ["childminder", "Childminder"], ["nanny", "Nanny / Au Pair"], ["babysitting", "Babysitting"], ["afterschool", "After School"], ["holiday", "Holiday Care"]]),
+        },
+        ageGroup,
+        {
+          id: "hours",
+          label: "Hours",
+          type: "toggle",
+          options: opts([["fullday", "Full Day"], ["halfday", "Half Day"], ["evenings", "Evenings"], ["weekends", "Weekends"], ["overnight", "Overnight"]]),
+        },
+        {
+          id: "first_aid",
+          label: "First Aid",
+          type: "toggle",
+          singleSelect: true,
+          options: opts([["yes", "Paediatric first aid"]]),
         },
       ],
     },
@@ -133,16 +124,14 @@ export const babyKids: MainCategory = {
       icon: "book-open",
       filters: [
         {
-          id: "condition",
-          label: "Condition",
+          id: "type",
+          label: "Type",
           type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",  value: "any"  },
-            { label: "New",  value: "new"  },
-            { label: "Used", value: "used" },
-          ],
+          options: opts([["uniform", "School Uniform"], ["bags", "Bags & Lunchboxes"], ["stationery", "Stationery"], ["books", "Books & Textbooks"], ["other", "Other"]]),
         },
+        ageGroup,
+        condition,
+        delivery,
       ],
     },
     {
@@ -154,14 +143,22 @@ export const babyKids: MainCategory = {
           id: "activity_type",
           label: "Activity",
           type: "toggle",
-          options: [
-            { label: "Sports",   value: "sports"   },
-            { label: "Arts",     value: "arts"     },
-            { label: "Music",    value: "music"    },
-            { label: "Dance",    value: "dance"    },
-            { label: "Coding",   value: "coding"   },
-            { label: "Other",    value: "other"    },
-          ],
+          options: opts([["sports", "Sports"], ["swimming", "Swimming"], ["arts", "Arts & Crafts"], ["music", "Music"], ["dance", "Dance"], ["coding", "Coding & STEM"], ["academic", "Tuition & Academic"], ["camps", "Holiday Camps"], ["other", "Other"]]),
+        },
+        ageGroup,
+        {
+          id: "mode",
+          label: "Mode",
+          type: "toggle",
+          singleSelect: true,
+          options: opts([["inperson", "In-person"], ["online", "Online"]]),
+        },
+        {
+          id: "free_trial",
+          label: "Free Trial",
+          type: "toggle",
+          singleSelect: true,
+          options: opts([["yes", "Free trial class"]]),
         },
       ],
     },
