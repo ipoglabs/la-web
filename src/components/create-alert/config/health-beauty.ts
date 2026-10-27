@@ -1,4 +1,27 @@
-import type { MainCategory } from "../types";
+import type { FilterConfig, FilterOption, MainCategory } from "../types";
+
+// Option values are the Health & Beauty forms' (posting/form-schema/defaults/health-beauty.ts):
+// each sub's Type is `itemType` (Salons & Spas: the `services` list), Mode is
+// `consultationMode` (lib/postFilterQuery.ts HEALTH_FORM_FILTERS).
+
+const opts = (entries: [string, string][]): FilterOption[] => entries.map(([value, label]) => ({ label, value }));
+
+/** In-person / Online — a "Both" service shows under either. */
+const mode: FilterConfig = {
+  id: "mode",
+  label: "Mode",
+  type: "toggle",
+  singleSelect: true,
+  options: opts([["inperson", "In-person"], ["online", "Online"]]),
+};
+
+const homeVisits: FilterConfig = {
+  id: "home_visits",
+  label: "Home Visits",
+  type: "toggle",
+  singleSelect: true,
+  options: opts([["yes", "Comes to you"]]),
+};
 
 export const healthBeauty: MainCategory = {
   id: "health_beauty",
@@ -17,15 +40,9 @@ export const healthBeauty: MainCategory = {
           id: "type",
           label: "Type",
           type: "toggle",
-          options: [
-            { label: "Gym",       value: "gym"       },
-            { label: "Yoga",      value: "yoga"      },
-            { label: "Pilates",   value: "pilates"   },
-            { label: "CrossFit",  value: "crossfit"  },
-            { label: "Personal Trainer", value: "pt" },
-            { label: "Other",     value: "other"     },
-          ],
+          options: opts([["gym", "Gym"], ["yoga", "Yoga"], ["pilates", "Pilates"], ["crossfit", "CrossFit"], ["pt", "Personal Trainer"], ["group", "Group Classes"], ["martial_arts", "Martial Arts"], ["dance", "Dance Fitness"], ["other", "Other"]]),
         },
+        mode,
       ],
     },
     {
@@ -37,14 +54,9 @@ export const healthBeauty: MainCategory = {
           id: "service",
           label: "Service",
           type: "toggle",
-          options: [
-            { label: "Hair",     value: "hair"     },
-            { label: "Nails",    value: "nails"    },
-            { label: "Massage",  value: "massage"  },
-            { label: "Skincare", value: "skincare" },
-            { label: "Other",    value: "other"    },
-          ],
+          options: opts([["hair", "Hair"], ["nails", "Nails"], ["lashes_brows", "Lashes & Brows"], ["waxing", "Waxing & Threading"], ["makeup", "Makeup"], ["skincare", "Facials & Skincare"], ["massage", "Massage"], ["spa", "Spa Packages"], ["other", "Other"]]),
         },
+        homeVisits,
       ],
     },
     {
@@ -56,14 +68,10 @@ export const healthBeauty: MainCategory = {
           id: "type",
           label: "Type",
           type: "toggle",
-          options: [
-            { label: "Doctor",      value: "doctor"      },
-            { label: "Dentist",     value: "dentist"     },
-            { label: "Physio",      value: "physio"      },
-            { label: "Counselling", value: "counselling" },
-            { label: "Other",       value: "other"       },
-          ],
+          options: opts([["doctor", "GP / Doctor"], ["dentist", "Dentist"], ["physio", "Physiotherapy"], ["health_check", "Health Checks"], ["eye", "Eye Care"], ["specialist", "Specialist"], ["other", "Other"]]),
         },
+        mode,
+        homeVisits,
       ],
     },
     {
@@ -72,15 +80,16 @@ export const healthBeauty: MainCategory = {
       icon: "shopping-bag",
       filters: [
         {
+          id: "type",
+          label: "Type",
+          type: "toggle",
+          options: opts([["skincare", "Skincare"], ["makeup", "Makeup"], ["fragrance", "Fragrance"], ["haircare", "Haircare"], ["hair_tools", "Hair Tools & Devices"], ["bath_body", "Bath & Body"], ["nails", "Nails"], ["mens", "Men's Grooming"], ["other", "Other"]]),
+        },
+        {
           id: "condition",
           label: "Condition",
           type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",  value: "any"  },
-            { label: "New",  value: "new"  },
-            { label: "Used", value: "used" },
-          ],
+          options: opts([["new", "New, Sealed"], ["like-new", "Opened, Unused"], ["lightly-used", "Lightly Used"], ["used", "Well Used"]]),
         },
       ],
     },
@@ -93,27 +102,9 @@ export const healthBeauty: MainCategory = {
           id: "wellness_type",
           label: "Type",
           type: "toggle",
-          options: [
-            { label: "Supplements",   value: "supplements" },
-            { label: "Vitamins",      value: "vitamins"    },
-            { label: "Protein",       value: "protein"     },
-            { label: "Weight Loss",   value: "weight_loss" },
-            { label: "Herbal / CBD",  value: "herbal"      },
-            { label: "Meal Plans",    value: "meal_plans"  },
-            { label: "Other",         value: "other"       },
-          ],
+          options: opts([["meditation", "Meditation & Mindfulness"], ["nutrition", "Nutrition & Diet"], ["massage", "Massage Therapy"], ["ayurveda", "Ayurveda & Traditional"], ["acupuncture", "Acupuncture"], ["retreat", "Retreats"], ["other", "Other"]]),
         },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",  value: "any"  },
-            { label: "New",  value: "new"  },
-            { label: "Used", value: "used" },
-          ],
-        },
+        mode,
       ],
     },
     {
@@ -125,25 +116,9 @@ export const healthBeauty: MainCategory = {
           id: "mh_type",
           label: "Type",
           type: "toggle",
-          options: [
-            { label: "Counselling",    value: "counselling"  },
-            { label: "Therapy",        value: "therapy"      },
-            { label: "Life Coaching",  value: "coaching"     },
-            { label: "Support Group",  value: "support_group" },
-            { label: "Online Session", value: "online"       },
-          ],
+          options: opts([["counselling", "Counselling"], ["therapy", "Psychotherapy"], ["coaching", "Life Coaching"], ["support_group", "Support Group"], ["other", "Other"]]),
         },
-        {
-          id: "mh_format",
-          label: "Format",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "In-person", value: "inperson" },
-            { label: "Online",    value: "online"   },
-            { label: "Hybrid",    value: "hybrid"   },
-          ],
-        },
+        mode,
       ],
     },
   ],

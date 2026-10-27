@@ -737,6 +737,27 @@ function buildSpecialOffersClauses(sub: string, fv: Record<string, string[]>): R
   return clauses;
 }
 
+/**
+ * Health & Beauty filters each sub's form saves (posting/form-schema/defaults/health-beauty.ts):
+ * filter id → the post path it matches. Mode is handled in buildHealthFormClauses.
+ */
+const HEALTH_FORM_FILTERS: Record<string, Record<string, string>> = {
+  gyms_fitness: { type: "attributes.itemType" },
+  salons_spas: { service: "attributes.services", home_visits: "attributes.homeVisits" },
+  medical: { type: "attributes.itemType", home_visits: "attributes.homeVisits" },
+  beauty_products: { type: "attributes.itemType", condition: "condition" },
+  wellness: { wellness_type: "attributes.itemType" },
+  mental_health: { mh_type: "attributes.itemType" },
+};
+
+function buildHealthFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = buildPathFormClauses(HEALTH_FORM_FILTERS[sub], fv);
+  // A service given both ways matches In-person and Online.
+  const mode = fv.mode?.[0];
+  if (mode) clauses.push({ consultationMode: { $in: [mode, "both"] } });
+  return clauses;
+}
+
 /** Clauses for a sub whose filters each match one post path. */
 function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
   return Object.entries(filters ?? {}).flatMap(([id, path]) => {
@@ -1055,7 +1076,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1073,7 +1094,9 @@ export function buildFilterQuery(
                     ? buildPathFormClauses(FASHION_FORM_FILTERS[sub], filterValues)
                     : category === "special_offers"
                       ? buildSpecialOffersClauses(sub, filterValues)
-                      : buildServicesFormClauses(sub, filterValues);
+                      : category === "health_beauty"
+                        ? buildHealthFormClauses(sub, filterValues)
+                        : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

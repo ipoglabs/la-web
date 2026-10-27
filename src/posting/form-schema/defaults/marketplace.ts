@@ -149,21 +149,6 @@ const foodDining: Builder = (sub) => {
   }
 };
 
-const healthBeauty: Builder = (sub) => {
-  switch (sub) {
-    case "Fitness Classes & Training":
-    case "Salons & Spas":
-    case "Medical & Therapy":
-    case "Wellness & Nutrition":
-    case "Mental Health & Counselling":
-      return service([qualification, { key: "consultationMode", type: "select", label: "Mode", options: pairs([["online", "Online"], ["in-person", "In Person"], ["both", "Both"]]) }]);
-    case "Beauty Products":
-      return item("Product", [brand, { key: "productType", type: "text", label: "Product Type", placeholder: "e.g. Skincare, Fragrance", width: "half" }, condition()]);
-    default:
-      return null;
-  }
-};
-
 const musical: Builder = (sub) => {
   const known = ["Guitars & Bass", "Keyboards & Piano", "Drums & Percussion", "DJ & Audio Gear", "Wind, Brass & Strings", "Accessories"];
   return known.includes(sub) ? item("Instrument", [brand, model, condition([["vintage", "Vintage"]])]) : null;
@@ -280,7 +265,6 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Books, Media & Collectibles": booksMedia,
   "Electronics & Tech": electronics,
   "Food & Dining": foodDining,
-  "Health & Beauty": healthBeauty,
   "Musical Instruments": musical,
   "Sports & Outdoors": sports,
   "Tickets & Vouchers": tickets,
