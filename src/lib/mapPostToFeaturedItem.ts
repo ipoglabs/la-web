@@ -85,6 +85,7 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   kg: "/ kg",
   box: "/ box",
   dozen: "/ dozen",
+  application: "/ application",
 };
 
 /** Special Offers' Deal Type labels for a card with no % off or price (posting/form-schema/defaults/specialOffers.ts). */
@@ -140,8 +141,8 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     if (Number(post.salePrice) > 0) return { priceLabel: fmt(Number(post.salePrice)), priceSuffix };
     return { priceLabel: OFFER_DEAL_LABEL[String(post.attributes?.dealType ?? "")] ?? "Offer", priceSuffix };
   }
-  // Health & Beauty and Food & Dining › Catering: a service priced per job.
-  if ((post.category === "health_beauty" || post.category === "food_dining") && post.attributes?.priceUnit === "quote") return { priceLabel: "Price on request" };
+  // Health & Beauty, Food & Dining › Catering, Travel Services: a service priced per job.
+  if (["health_beauty", "food_dining", "travel_stays"].includes(String(post.category)) && post.attributes?.priceUnit === "quote") return { priceLabel: "Price on request" };
   // Free & Giveaway: nothing is priced.
   if (post.category === "free_giveaway") return { priceLabel: "Free" };
   // Education: a school ad or open day with no fees is free.

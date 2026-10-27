@@ -178,56 +178,6 @@ const tickets: Builder = (sub) => {
   }
 };
 
-const travel: Builder = (sub) => {
-  switch (sub) {
-    case "Holiday Rentals":
-    case "Hotels & Guesthouses":
-      return [
-        basics,
-        {
-          title: "Stay",
-          fields: [
-            providerName,
-            { key: "guests", type: "number", label: "Max Guests", min: 1, max: 100, width: "half" },
-            { key: "rateNightly", type: "currency", label: "Price per Night", required: true, min: 1, width: "half" },
-            { key: "amenities", type: "multiselect", label: "Amenities", options: opts(["Wi-Fi", "Air Conditioning", "Parking", "Breakfast", "Pool", "Kitchen", "Pet Friendly"]) },
-          ],
-        },
-      ];
-    case "Tour Packages":
-    case "Staycations & Day Trips":
-      return [
-        basics,
-        {
-          title: "Package",
-          fields: [
-            { key: "destination", type: "text", label: "Destination", required: true, width: "half" },
-            { key: "durationText", type: "text", label: "Duration", placeholder: "e.g. 3 nights / 4 days", width: "half" },
-            { key: "packageDetails", type: "textarea", label: "Inclusions" },
-            { key: "agencyName", type: "text", label: "Agency Name", width: "half" },
-            price("Price per Person"),
-          ],
-        },
-      ];
-    case "Travel Services":
-      return [
-        basics,
-        {
-          title: "Service",
-          fields: [
-            { key: "serviceType", type: "select", label: "Service Type", options: pairs([["visa", "Visa"], ["tickets", "Ticket Booking"], ["transport", "Transport / Cab"], ["guide", "Guide"], ["insurance", "Travel Insurance"], ["other", "Other"]]) },
-            { key: "agencyName", type: "text", label: "Agency Name", width: "half" },
-            price("Price", false),
-          ],
-        },
-      ];
-    case "Travel Accessories":
-      return item("Item", [condition(), brand]);
-    default:
-      return null;
-  }
-};
-
 export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Baby & Kids": babyKids,
   "Books, Media & Collectibles": booksMedia,
@@ -235,5 +185,4 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Musical Instruments": musical,
   "Sports & Outdoors": sports,
   "Tickets & Vouchers": tickets,
-  "Travel & Stays": travel,
 };

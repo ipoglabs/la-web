@@ -773,6 +773,33 @@ const FOOD_FORM_FILTERS: Record<string, Record<string, string>> = {
   baked_goods: { type: "attributes.itemType", dietary: "dietaryOptions", custom_orders: "attributes.customOrders", delivery: "attributes.dealMethod" },
 };
 
+/**
+ * Travel & Stays filters each sub's form saves (posting/form-schema/defaults/travel-stays.ts):
+ * filter id → the post path it matches. Bedrooms, Must Have and Includes are
+ * handled in buildTravelClauses.
+ */
+const TRAVEL_FORM_FILTERS: Record<string, Record<string, string>> = {
+  holiday_rentals: { property_type: "attributes.stayType", duration: "attributes.stayLengths" },
+  hotels_guesthouses: { type: "attributes.itemType", star_rating: "attributes.starRating", free_cancellation: "attributes.freeCancellation" },
+  tour_packages: { tour_type: "attributes.tourType", destination: "attributes.tripScope" },
+  staycations: { type: "attributes.itemType", activity: "attributes.setting", pets: "amenities" },
+  travel_services: { service_type: "serviceType" },
+  travel_accessories: { type: "attributes.itemType", condition: "condition", cabin_size: "attributes.cabinSize", delivery: "attributes.dealMethod" },
+};
+
+function buildTravelClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = buildPathFormClauses(TRAVEL_FORM_FILTERS[sub], fv);
+  // Bedrooms: "2" = at least 2.
+  const beds = Number(fv.bedrooms?.[0]);
+  if (sub === "holiday_rentals" && beds > 0) clauses.push({ "attributes.bedrooms": { $gte: beds } });
+  // Must Have and Includes: a stay or tour with every option picked.
+  const must = (fv.amenities ?? []).filter(Boolean);
+  if (must.length && (sub === "holiday_rentals" || sub === "hotels_guesthouses")) clauses.push({ amenities: { $all: must } });
+  const includes = (fv.includes ?? []).filter(Boolean);
+  if (includes.length && sub === "tour_packages") clauses.push({ "attributes.inclusions": { $all: includes } });
+  return clauses;
+}
+
 /** Clauses for a sub whose filters each match one post path. */
 function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
   return Object.entries(filters ?? {}).flatMap(([id, path]) => {
@@ -1091,7 +1118,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining", "travel_stays"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1113,7 +1140,9 @@ export function buildFilterQuery(
                         ? buildHealthFormClauses(sub, filterValues)
                         : category === "food_dining"
                           ? buildPathFormClauses(FOOD_FORM_FILTERS[sub], filterValues)
-                          : buildServicesFormClauses(sub, filterValues);
+                          : category === "travel_stays"
+                            ? buildTravelClauses(sub, filterValues)
+                            : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);
