@@ -25,6 +25,7 @@
 import { ALERT_CONFIG } from "@/components/create-alert/config";
 import type { FilterConfig } from "@/components/create-alert/types";
 import { hasPriceFilter } from "@/lib/postFilterQuery";
+import { CUISINES, DELIVERY_APPS, DIETARY } from "@/posting/form-schema/defaults/food-dining";
 import { LANGUAGES } from "@/posting/form-schema/defaults/health-beauty";
 
 // Re-export so callers only import from this file
@@ -304,13 +305,23 @@ const UK_SHOE_SIZES = Array.from({ length: 11 }, (_, i) => `uk_${i + 3}`);
 const EU_SHOE_SIZES = Array.from({ length: 12 }, (_, i) => `eu_${i + 35}`);
 const UK_INDIA_SHOE_SIZES = Object.fromEntries(UK_SHOE_SIZES.map((v) => [v, `UK / India ${v.slice(3)}`]));
 
-// Health & Beauty languages: each market drops the others' (the form's own lists).
-const ALL_LANGUAGES = [...new Set(Object.values(LANGUAGES).flat().map(([value]) => value))];
-const languagesFor = (country: string): MarketTweaks => {
-  const own = LANGUAGES[country].map(([value]) => value);
-  return { language: { drop: ALL_LANGUAGES.filter((v) => !own.includes(v)) } };
+/**
+ * A filter listing every market's options, narrowed to each market's own list
+ * (as the form gives it), in that market's words.
+ */
+const fromFormLists = (lists: Record<string, [string, string][]>) => {
+  const all = [...new Set(Object.values(lists).flat().map(([value]) => value))];
+  const forCountry = (country: string): FilterTweak => {
+    const own = new Map(lists[country]);
+    return { drop: all.filter((v) => !own.has(v)), relabel: Object.fromEntries(own) };
+  };
+  return { in: forCountry("IN"), gb: forCountry("GB"), sg: forCountry("SG") };
 };
-const HEALTH_LANGUAGES = { in: languagesFor("IN"), gb: languagesFor("GB"), sg: languagesFor("SG") };
+const byMarket = (tweaks: Record<string, ReturnType<typeof fromFormLists>>): Record<string, MarketTweaks> =>
+  Object.fromEntries(["in", "gb", "sg"].map((m) => [m, Object.fromEntries(Object.entries(tweaks).map(([id, t]) => [id, t[m as "in"]]))]));
+
+const HEALTH_LANGUAGES = byMarket({ language: fromFormLists(LANGUAGES) });
+const FOOD_CUISINE_DIETARY = byMarket({ cuisine: fromFormLists(CUISINES), dietary: fromFormLists(DIETARY) });
 
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   "vehicles/cars": {
@@ -421,6 +432,13 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   // Each market's languages (posting/form-schema/defaults/health-beauty.ts LANGUAGES).
   "health_beauty/medical": HEALTH_LANGUAGES,
   "health_beauty/mental_health": HEALTH_LANGUAGES,
+  // Each market's cuisines, dietary options and delivery apps (posting/form-schema/defaults/food-dining.ts).
+  "food_dining/home_cooked": FOOD_CUISINE_DIETARY,
+  "food_dining/catering": FOOD_CUISINE_DIETARY,
+  "food_dining/tiffin_services": FOOD_CUISINE_DIETARY,
+  "food_dining/restaurant_deals": FOOD_CUISINE_DIETARY,
+  "food_dining/cloud_kitchens": byMarket({ cuisine: fromFormLists(CUISINES), dietary: fromFormLists(DIETARY), delivery_app: fromFormLists(DELIVERY_APPS) }),
+  "food_dining/baked_goods": FOOD_CUISINE_DIETARY,
   "free_giveaway/clothing_free": { gb: { clothing_type: { relabel: { traditional: "Occasion Wear" } } } },
   "free_giveaway/food_free": {
     gb: { dietary: { drop: ["jain", "eggless"] } },

@@ -760,6 +760,19 @@ function buildHealthFormClauses(sub: string, fv: Record<string, string[]>): Reco
   return clauses;
 }
 
+/**
+ * Food & Dining filters each sub's form saves (posting/form-schema/defaults/food-dining.ts):
+ * filter id → the post path it matches.
+ */
+const FOOD_FORM_FILTERS: Record<string, Record<string, string>> = {
+  home_cooked: { cuisine: "attributes.cuisines", dietary: "dietaryOptions", meal_type: "attributes.mealType", delivery: "attributes.dealMethod" },
+  catering: { event_type: "attributes.eventTypes", service_style: "attributes.serviceStyle", cuisine: "attributes.cuisines", dietary: "dietaryOptions" },
+  tiffin_services: { dietary: "dietaryOptions", plan: "attributes.plans", meal_type: "attributes.mealType", cuisine: "attributes.cuisines" },
+  restaurant_deals: { cuisine: "attributes.cuisines", deal_type: "attributes.dealType", meal_type: "attributes.mealType" },
+  cloud_kitchens: { cuisine: "attributes.cuisines", dietary: "dietaryOptions", delivery_app: "attributes.deliveryApps" },
+  baked_goods: { type: "attributes.itemType", dietary: "dietaryOptions", custom_orders: "attributes.customOrders", delivery: "attributes.dealMethod" },
+};
+
 /** Clauses for a sub whose filters each match one post path. */
 function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
   return Object.entries(filters ?? {}).flatMap(([id, path]) => {
@@ -1078,7 +1091,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1098,7 +1111,9 @@ export function buildFilterQuery(
                       ? buildSpecialOffersClauses(sub, filterValues)
                       : category === "health_beauty"
                         ? buildHealthFormClauses(sub, filterValues)
-                        : buildServicesFormClauses(sub, filterValues);
+                        : category === "food_dining"
+                          ? buildPathFormClauses(FOOD_FORM_FILTERS[sub], filterValues)
+                          : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

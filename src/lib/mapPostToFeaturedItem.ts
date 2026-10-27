@@ -82,6 +82,9 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   filing: "/ filing",
   term: "/ term",
   year: "/ yr",
+  kg: "/ kg",
+  box: "/ box",
+  dozen: "/ dozen",
 };
 
 /** Special Offers' Deal Type labels for a card with no % off or price (posting/form-schema/defaults/specialOffers.ts). */
@@ -126,9 +129,10 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     }
     if (post.salePrice === 0) return { priceLabel: "Free" };
   }
-  // Special Offers: the deal itself — "20% off", the offer price, or the kind of
-  // deal — and, for an offer that hasn't started, when it starts.
-  if (post.category === "special_offers") {
+  // Special Offers and Food & Dining › Restaurant Deals: the deal itself — "20%
+  // off", the offer price, or the kind of deal — and, for an offer that hasn't
+  // started, when it starts.
+  if (post.category === "special_offers" || (post.category === "food_dining" && post.subcategory === "restaurant_deals")) {
     const starts = new Date(String(post.attributes?.offerStarts ?? ""));
     const priceSuffix = starts.getTime() > Date.now() ? `starts ${starts.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : undefined;
     const pct = Number(post.attributes?.discountPct);
@@ -136,8 +140,8 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     if (Number(post.salePrice) > 0) return { priceLabel: fmt(Number(post.salePrice)), priceSuffix };
     return { priceLabel: OFFER_DEAL_LABEL[String(post.attributes?.dealType ?? "")] ?? "Offer", priceSuffix };
   }
-  // Health & Beauty: a service priced per job.
-  if (post.category === "health_beauty" && post.attributes?.priceUnit === "quote") return { priceLabel: "Price on request" };
+  // Health & Beauty and Food & Dining › Catering: a service priced per job.
+  if ((post.category === "health_beauty" || post.category === "food_dining") && post.attributes?.priceUnit === "quote") return { priceLabel: "Price on request" };
   // Free & Giveaway: nothing is priced.
   if (post.category === "free_giveaway") return { priceLabel: "Free" };
   // Education: a school ad or open day with no fees is free.

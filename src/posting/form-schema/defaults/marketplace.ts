@@ -117,38 +117,6 @@ const electronics: Builder = (sub) => {
   return item("Item", [brand, model, ...(specs[sub] ?? []), condition([["for-parts", "For Parts / Not Working"]]), warranty]);
 };
 
-const foodDining: Builder = (sub) => {
-  const food: FormFieldDef[] = [
-    { key: "cuisineType", type: "text", label: "Cuisine", width: "half" },
-    { key: "dietaryOptions", type: "multiselect", label: "Dietary Options", options: opts(["Vegetarian", "Vegan", "Non-Vegetarian", "Halal", "Jain", "Gluten-Free"]) },
-    { key: "deliveryAvailable", type: "select", label: "Delivery Available", options: YES_NO },
-  ];
-  switch (sub) {
-    case "Home Cooked Meals":
-    case "Catering Services":
-    case "Tiffin Services":
-    case "Cloud Kitchens":
-    case "Baked Goods & Desserts":
-      return service(food);
-    case "Restaurant Deals":
-      return [
-        basics,
-        {
-          title: "Deal",
-          fields: [
-            providerName,
-            ...food.slice(0, 1),
-            { key: "discount", type: "text", label: "Discount / Deal", placeholder: "e.g. 20% off", width: "half" },
-            { key: "deadline", type: "date", label: "Valid Until", width: "half" },
-            price("Deal Price", false),
-          ],
-        },
-      ];
-    default:
-      return null;
-  }
-};
-
 const musical: Builder = (sub) => {
   const known = ["Guitars & Bass", "Keyboards & Piano", "Drums & Percussion", "DJ & Audio Gear", "Wind, Brass & Strings", "Accessories"];
   return known.includes(sub) ? item("Instrument", [brand, model, condition([["vintage", "Vintage"]])]) : null;
@@ -264,7 +232,6 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Baby & Kids": babyKids,
   "Books, Media & Collectibles": booksMedia,
   "Electronics & Tech": electronics,
-  "Food & Dining": foodDining,
   "Musical Instruments": musical,
   "Sports & Outdoors": sports,
   "Tickets & Vouchers": tickets,
