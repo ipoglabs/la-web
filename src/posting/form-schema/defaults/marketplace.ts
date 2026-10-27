@@ -34,7 +34,6 @@ const negotiable: FormFieldDef = { key: "negotiable", type: "select", label: "Ne
 const brand: FormFieldDef = { key: "brand", type: "text", label: "Brand", width: "half" };
 const model: FormFieldDef = { key: "model", type: "text", label: "Model", width: "half" };
 const color: FormFieldDef = { key: "color", type: "text", label: "Color", width: "half" };
-const size: FormFieldDef = { key: "size", type: "text", label: "Size", width: "half" };
 const warranty: FormFieldDef = {
   key: "warranty",
   type: "select",
@@ -48,9 +47,7 @@ const condition = (extra: [string, string][] = []): FormFieldDef => ({
   required: true,
   options: pairs([...CONDITION_SCALE, ...extra]),
 });
-const availability: FormFieldDef = { key: "availability", type: "text", label: "Availability", placeholder: "e.g. Mon–Sat, 9am–6pm", width: "half" };
 const providerName: FormFieldDef = { key: "providerName", type: "text", label: "Business / Provider Name", width: "half" };
-const qualification: FormFieldDef = { key: "qualification", type: "text", label: "Qualification", width: "half" };
 const ageGroup: FormFieldDef = { key: "ageGroup", type: "text", label: "Age Group", placeholder: "e.g. 3-5 years", width: "half" };
 
 const dealMethod: FormFieldDef = {
@@ -65,12 +62,6 @@ const item = (title: string, fields: FormFieldDef[]): FormSection[] => [
   basics,
   { title, fields },
   { title: "Price & Delivery", fields: [price(), negotiable, dealMethod] },
-];
-
-/** A service someone offers. */
-const service = (fields: FormFieldDef[], priceLabel = "Price"): FormSection[] => [
-  basics,
-  { title: "Service", fields: [providerName, ...fields, availability, price(priceLabel)] },
 ];
 
 // ── Categories ───────────────────────────────────────────────────────────────
@@ -104,22 +95,6 @@ const electronics: Builder = (sub) => {
 const musical: Builder = (sub) => {
   const known = ["Guitars & Bass", "Keyboards & Piano", "Drums & Percussion", "DJ & Audio Gear", "Wind, Brass & Strings", "Accessories"];
   return known.includes(sub) ? item("Instrument", [brand, model, condition([["vintage", "Vintage"]])]) : null;
-};
-
-const sports: Builder = (sub) => {
-  switch (sub) {
-    case "Fitness Equipment":
-    case "Team Sports":
-    case "Outdoor & Adventure":
-    case "Water Sports":
-      return item("Item", [condition(), brand, { key: "productType", type: "text", label: "Type", placeholder: "e.g. Treadmill, Cricket Bat", width: "half" }]);
-    case "Sportswear & Footwear":
-      return item("Item", [condition(), brand, size]);
-    case "Fitness Classes & Coaching":
-      return service([qualification, { key: "subject", type: "text", label: "Sport / Activity", width: "half" }, { key: "level", type: "text", label: "Level", width: "half" }], "Fee");
-    default:
-      return null;
-  }
 };
 
 const tickets: Builder = (sub) => {
@@ -166,6 +141,5 @@ export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Books, Media & Collectibles": booksMedia,
   "Electronics & Tech": electronics,
   "Musical Instruments": musical,
-  "Sports & Outdoors": sports,
   "Tickets & Vouchers": tickets,
 };
