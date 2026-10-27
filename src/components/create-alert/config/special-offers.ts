@@ -1,9 +1,9 @@
 import type { FilterOption, MainCategory } from "../types";
-import { discount, dealType, redemption } from "./shared";
+import { discount, dealType, offerFor, redemption } from "./shared";
 
 // Option values are the Special Offers forms' (posting/form-schema/defaults/specialOffers.ts):
-// each sub's first filter is its Type (`itemType`); Deal Type, Redeem At and
-// Min Discount are asked on every offer (lib/postFilterQuery.ts SPECIAL_OFFERS_FORM_FILTERS).
+// each sub's first filter is its Type (`itemType`); Deal Type, Redeem At,
+// Who Can Use It and Min Discount are asked on every offer (lib/postFilterQuery.ts SPECIAL_OFFERS_FORM_FILTERS).
 
 const opts = (entries: [string, string][]): FilterOption[] => entries.map(([value, label]) => ({ label, value }));
 
@@ -28,6 +28,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -43,6 +44,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -59,6 +61,7 @@ export const specialOffers: MainCategory = {
         dealType,
         redemption,
         discount,
+        offerFor,
       ],
     },
     {
@@ -81,6 +84,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -97,6 +101,7 @@ export const specialOffers: MainCategory = {
         dealType,
         redemption,
         discount,
+        offerFor,
       ],
     },
     {
@@ -113,6 +118,7 @@ export const specialOffers: MainCategory = {
         dealType,
         redemption,
         discount,
+        offerFor,
       ],
     },
     {
@@ -135,6 +141,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -157,6 +164,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -179,6 +187,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -195,6 +204,7 @@ export const specialOffers: MainCategory = {
         dealType,
         redemption,
         discount,
+        offerFor,
       ],
     },
     {
@@ -216,6 +226,7 @@ export const specialOffers: MainCategory = {
         },
         dealType,
         discount,
+        offerFor,
       ],
     },
     {
@@ -232,6 +243,7 @@ export const specialOffers: MainCategory = {
         dealType,
         redemption,
         discount,
+        offerFor,
       ],
     },
   ],

@@ -7,7 +7,8 @@
 // `redemption` and the percentage off as `discountPct` (the Min Discount
 // filter). The offer price is `salePrice`, the field listing prices and the
 // price filter read; an offer with no price (cashback, free trial) leaves it
-// empty.
+// empty. Who can use it is `offerFor`; when an upcoming offer starts is
+// `offerStarts` (the card shows it until then).
 
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, pairs } from "./shared";
@@ -42,6 +43,13 @@ export const DEAL_TYPES: [string, string][] = [
   ["instalments", "0% Instalments"],
 ];
 
+/** Who can use an offer — the Who Can Use It filter's values. */
+export const OFFER_FOR: [string, string][] = [
+  ["all", "Everyone"],
+  ["new", "New customers only"],
+  ["members", "Members only"],
+];
+
 /** The deal itself — the same block on every offer. */
 const offerSection: FormSection = {
   title: "Offer",
@@ -50,8 +58,11 @@ const offerSection: FormSection = {
     { key: "discountPct", type: "number", label: "Discount", unit: "% off", min: 1, max: 100, width: "half", hint: "Leave empty if the deal isn't a percentage off." },
     { key: "salePrice", type: "currency", label: "Offer Price", min: 0, width: "half", hint: "What the buyer pays, if the offer has a price." },
     { key: "originalPrice", type: "currency", label: "Was", min: 0, width: "half" },
+    { key: "minSpend", type: "currency", label: "Minimum Spend", min: 0, width: "half", hint: "Leave empty if there is none." },
     select("redemption", "Redeem At", [["instore", "In-store"], ["online", "Online"], ["both", "Both"]], { required: true }),
+    select("offerFor", "Who Can Use It", OFFER_FOR, { required: true }),
     { key: "couponCode", type: "text", label: "Coupon Code", width: "half" },
+    { key: "offerStarts", type: "date", label: "Starts On", width: "half", hint: "Only for an offer that hasn't started yet." },
     { key: "deadline", type: "date", label: "Valid Until", required: true, width: "half" },
     { key: "website", type: "text", label: "Website / Booking Link", placeholder: "https://", format: "url" },
     { key: "terms", type: "textarea", label: "Terms & Conditions" },

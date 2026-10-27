@@ -25,6 +25,7 @@
 import { ALERT_CONFIG } from "@/components/create-alert/config";
 import type { FilterConfig } from "@/components/create-alert/types";
 import { hasPriceFilter } from "@/lib/postFilterQuery";
+import { LANGUAGES } from "@/posting/form-schema/defaults/health-beauty";
 
 // Re-export so callers only import from this file
 export type { FilterConfig };
@@ -303,6 +304,14 @@ const UK_SHOE_SIZES = Array.from({ length: 11 }, (_, i) => `uk_${i + 3}`);
 const EU_SHOE_SIZES = Array.from({ length: 12 }, (_, i) => `eu_${i + 35}`);
 const UK_INDIA_SHOE_SIZES = Object.fromEntries(UK_SHOE_SIZES.map((v) => [v, `UK / India ${v.slice(3)}`]));
 
+// Health & Beauty languages: each market drops the others' (the form's own lists).
+const ALL_LANGUAGES = [...new Set(Object.values(LANGUAGES).flat().map(([value]) => value))];
+const languagesFor = (country: string): MarketTweaks => {
+  const own = LANGUAGES[country].map(([value]) => value);
+  return { language: { drop: ALL_LANGUAGES.filter((v) => !own.includes(v)) } };
+};
+const HEALTH_LANGUAGES = { in: languagesFor("IN"), gb: languagesFor("GB"), sg: languagesFor("SG") };
+
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   "vehicles/cars": {
     in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null },
@@ -409,6 +418,9 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { occasion: { drop: ["national"] } },
     sg: { occasion: { drop: ["blackfriday", "easter"], relabel: { eid: "Hari Raya", diwali: "Deepavali", summer: "Great Singapore Sale" } } },
   },
+  // Each market's languages (posting/form-schema/defaults/health-beauty.ts LANGUAGES).
+  "health_beauty/medical": HEALTH_LANGUAGES,
+  "health_beauty/mental_health": HEALTH_LANGUAGES,
   "free_giveaway/clothing_free": { gb: { clothing_type: { relabel: { traditional: "Occasion Wear" } } } },
   "free_giveaway/food_free": {
     gb: { dietary: { drop: ["jain", "eggless"] } },

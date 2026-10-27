@@ -174,6 +174,18 @@ export const dealType: FilterConfig = {
   ],
 };
 
+export const offerFor: FilterConfig = {
+  id: "offer_for",
+  label: "Who Can Use It",
+  type: "toggle",
+  singleSelect: true,
+  options: [
+    { label: "Everyone",           value: "all"     },
+    { label: "New customers only", value: "new"     },
+    { label: "Members only",       value: "members" },
+  ],
+};
+
 export const redemption: FilterConfig = {
   id: "redemption",
   label: "Redeem At",

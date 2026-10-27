@@ -5,7 +5,10 @@
 // HEALTH_FORM_FILTERS). Each sub's Type is `itemType` (Salons & Spas offer
 // several services, so theirs is the `services` list); how a service is
 // given is `consultationMode` (in-person / online / both). The price is
-// `salePrice`, the field listing prices and the price filter read.
+// `salePrice`, the field listing prices and the price filter read; a service
+// priced per job picks "Price on request" and leaves it empty. Who a service
+// is for is `suitableFor`, a free first session `freeTrial`, and the languages
+// a practitioner speaks `languages` (each market's own list).
 
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, pairs, YES_NO } from "./shared";
@@ -26,6 +29,16 @@ const qualification = text("qualification", "Qualifications / Registration", "e.
 const availability = text("availability", "Availability", "e.g. Mon–Sat, 9am–6pm");
 const mode = select("consultationMode", "Mode", [["inperson", "In-person"], ["online", "Online"], ["both", "Both"]], { required: true });
 const homeVisits: FormFieldDef = { key: "homeVisits", type: "select", label: "Home Visits", options: YES_NO, width: "half" };
+const freeTrial: FormFieldDef = { key: "freeTrial", type: "select", label: "Free Trial / First Session", options: YES_NO, width: "half" };
+const suitableFor = select("suitableFor", "Suitable For", [["all", "Everyone"], ["women", "Women only"], ["men", "Men only"]]);
+
+/** Languages practitioners speak in each market — the Language filter's values. */
+export const LANGUAGES: Record<string, [string, string][]> = {
+  IN: [["english", "English"], ["hindi", "Hindi"], ["tamil", "Tamil"], ["telugu", "Telugu"], ["kannada", "Kannada"], ["malayalam", "Malayalam"], ["bengali", "Bengali"], ["marathi", "Marathi"], ["gujarati", "Gujarati"], ["other", "Other"]],
+  GB: [["english", "English"], ["polish", "Polish"], ["urdu", "Urdu"], ["punjabi", "Punjabi"], ["hindi", "Hindi"], ["bengali", "Bengali"], ["arabic", "Arabic"], ["other", "Other"]],
+  SG: [["english", "English"], ["mandarin", "Mandarin"], ["malay", "Malay"], ["tamil", "Tamil"], ["cantonese", "Cantonese"], ["hokkien", "Hokkien"], ["other", "Other"]],
+};
+const languages = (country: string): FormFieldDef => ({ key: "languages", type: "multiselect", label: "Languages Spoken", options: pairs(LANGUAGES[country] ?? LANGUAGES.GB) });
 
 /** A service someone offers: what it is, how it's given, its price and what the price covers. */
 const service = (fields: FormFieldDef[], units: [string, string][]): FormSection[] => [
@@ -34,8 +47,9 @@ const service = (fields: FormFieldDef[], units: [string, string][]): FormSection
   {
     title: "Price",
     fields: [
-      { key: "salePrice", type: "currency", label: "Price", required: true, min: 0, width: "half" },
-      select("priceUnit", "Price Per", [...units, ["from", "Starting from"]]),
+      { key: "salePrice", type: "currency", label: "Price", min: 0, width: "half", hint: "Leave empty for Price on request." },
+      select("priceUnit", "Price Per", [...units, ["from", "Starting from"], ["quote", "Price on request"]]),
+      freeTrial,
     ],
   },
 ];
@@ -48,18 +62,19 @@ const PRODUCT_CONDITION: [string, string][] = [
   ["used", "Well Used"],
 ];
 
-export function healthBeautySections(subcategory: string): FormSection[] | null {
+export function healthBeautySections(subcategory: string, country: string): FormSection[] | null {
   switch (subcategory) {
     case "Fitness Classes & Training":
       return service(
-        [itemType([["gym", "Gym"], ["yoga", "Yoga"], ["pilates", "Pilates"], ["crossfit", "CrossFit"], ["pt", "Personal Trainer"], ["group", "Group Classes"], ["martial_arts", "Martial Arts"], ["dance", "Dance Fitness"], ["other", "Other"]])],
+        [itemType([["gym", "Gym"], ["yoga", "Yoga"], ["pilates", "Pilates"], ["crossfit", "CrossFit"], ["pt", "Personal Trainer"], ["group", "Group Classes"], ["martial_arts", "Martial Arts"], ["dance", "Dance Fitness"], ["other", "Other"]]), suitableFor],
         [["month", "Per month"], ["class", "Per class"], ["session", "Per session"], ["package", "Per package"]],
       );
 
     case "Salons & Spas":
       return service(
         [
-          { key: "services", type: "multiselect", label: "Services", required: true, options: pairs([["hair", "Hair"], ["nails", "Nails"], ["lashes_brows", "Lashes & Brows"], ["waxing", "Waxing & Threading"], ["makeup", "Makeup"], ["skincare", "Facials & Skincare"], ["massage", "Massage"], ["spa", "Spa Packages"], ["other", "Other"]]) },
+          { key: "services", type: "multiselect", label: "Services", required: true, options: pairs([["hair", "Hair"], ["nails", "Nails"], ["lashes_brows", "Lashes & Brows"], ["waxing", "Waxing & Threading"], ["makeup", "Makeup"], ["skincare", "Facials & Skincare"], ["massage", "Massage"], ["spa", "Spa Packages"], ["bridal", "Bridal & Mehndi"], ["tattoo", "Tattoo & Piercing"], ["other", "Other"]]) },
+          suitableFor,
           homeVisits,
         ],
         [["session", "Per session"], ["hour", "Per hour"], ["package", "Per package"]],
@@ -67,19 +82,19 @@ export function healthBeautySections(subcategory: string): FormSection[] | null 
 
     case "Medical & Therapy":
       return service(
-        [itemType([["doctor", "GP / Doctor"], ["dentist", "Dentist"], ["physio", "Physiotherapy"], ["health_check", "Health Checks"], ["eye", "Eye Care"], ["specialist", "Specialist"], ["other", "Other"]]), homeVisits],
+        [itemType([["doctor", "GP / Doctor"], ["dentist", "Dentist"], ["physio", "Physiotherapy"], ["health_check", "Health Checks"], ["eye", "Eye Care"], ["podiatry", "Podiatry / Chiropody"], ["specialist", "Specialist"], ["other", "Other"]]), homeVisits, languages(country)],
         [["visit", "Per visit"], ["session", "Per session"], ["package", "Per package"]],
       );
 
     case "Wellness & Nutrition":
       return service(
-        [itemType([["meditation", "Meditation & Mindfulness"], ["nutrition", "Nutrition & Diet"], ["massage", "Massage Therapy"], ["ayurveda", "Ayurveda & Traditional"], ["acupuncture", "Acupuncture"], ["retreat", "Retreats"], ["other", "Other"]])],
+        [itemType([["meditation", "Meditation & Mindfulness"], ["nutrition", "Nutrition & Diet"], ["massage", "Massage Therapy"], ["ayurveda", "Ayurveda & Traditional"], ["acupuncture", "Acupuncture"], ["reiki", "Reiki & Energy Healing"], ["retreat", "Retreats"], ["other", "Other"]]), suitableFor],
         [["session", "Per session"], ["class", "Per class"], ["package", "Per package"], ["person", "Per person"]],
       );
 
     case "Mental Health & Counselling":
       return service(
-        [itemType([["counselling", "Counselling"], ["therapy", "Psychotherapy"], ["coaching", "Life Coaching"], ["support_group", "Support Group"], ["other", "Other"]])],
+        [itemType([["counselling", "Counselling"], ["therapy", "Psychotherapy"], ["coaching", "Life Coaching"], ["support_group", "Support Group"], ["other", "Other"]]), languages(country)],
         [["session", "Per session"], ["hour", "Per hour"], ["package", "Per package"]],
       );
 

@@ -706,7 +706,7 @@ const FASHION_FORM_FILTERS: Record<string, Record<string, string>> = {
 /**
  * Special Offers filters each sub's form saves (posting/form-schema/defaults/specialOffers.ts):
  * filter id → the post path it matches. Every sub saves what the offer is for as
- * `itemType`; Deal Type, Redeem At and Min Discount are handled in
+ * `itemType`; Deal Type, Redeem At, Who Can Use It and Min Discount are handled in
  * buildSpecialOffersClauses.
  */
 const SPECIAL_OFFERS_FORM_FILTERS: Record<string, Record<string, string>> = {
@@ -734,6 +734,8 @@ function buildSpecialOffersClauses(sub: string, fv: Record<string, string[]>): R
   // Min Discount: "10" = at least 10% off; "Any deal" adds nothing.
   const pct = Number(fv.discount?.[0]);
   if (pct > 0) clauses.push({ "attributes.discountPct": { $gte: pct } });
+  const offerFor = fv.offer_for?.[0];
+  if (offerFor && offerFor !== "any") clauses.push({ "attributes.offerFor": offerFor });
   return clauses;
 }
 
@@ -742,12 +744,12 @@ function buildSpecialOffersClauses(sub: string, fv: Record<string, string[]>): R
  * filter id → the post path it matches. Mode is handled in buildHealthFormClauses.
  */
 const HEALTH_FORM_FILTERS: Record<string, Record<string, string>> = {
-  gyms_fitness: { type: "attributes.itemType" },
-  salons_spas: { service: "attributes.services", home_visits: "attributes.homeVisits" },
-  medical: { type: "attributes.itemType", home_visits: "attributes.homeVisits" },
-  beauty_products: { type: "attributes.itemType", condition: "condition" },
-  wellness: { wellness_type: "attributes.itemType" },
-  mental_health: { mh_type: "attributes.itemType" },
+  gyms_fitness: { type: "attributes.itemType", suitable_for: "attributes.suitableFor", free_trial: "attributes.freeTrial" },
+  salons_spas: { service: "attributes.services", suitable_for: "attributes.suitableFor", home_visits: "attributes.homeVisits", free_trial: "attributes.freeTrial" },
+  medical: { type: "attributes.itemType", home_visits: "attributes.homeVisits", language: "attributes.languages", free_trial: "attributes.freeTrial" },
+  beauty_products: { type: "attributes.itemType", condition: "condition", delivery: "attributes.dealMethod" },
+  wellness: { wellness_type: "attributes.itemType", suitable_for: "attributes.suitableFor", free_trial: "attributes.freeTrial" },
+  mental_health: { mh_type: "attributes.itemType", language: "attributes.languages", free_trial: "attributes.freeTrial" },
 };
 
 function buildHealthFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {

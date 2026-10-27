@@ -12,6 +12,10 @@
 //
 // Offers dated June/July 2026 have their dates moved to December 2026.
 
+//
+// Re-run the same day for the added Who Can Use It (every seed) and Minimum
+// Spend (seeds whose deal needs one).
+
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
 import Post from "../src/models/post";
@@ -136,6 +140,16 @@ function isEmpty(value: unknown): boolean {
   return value == null || value === "" || (Array.isArray(value) && value.length === 0);
 }
 
+// Who Can Use It: every seed is open to everyone except these, whose text
+// says new customers only. Minimum Spend: seeds whose deal needs one.
+const NEW_CUSTOMERS_ONLY = new Set(["offers-in-food-01", "offers-sg-food-01", "offers-in-health-02", "offers-sg-health-02", "offer-bank-02"]);
+const MIN_SPEND: Record<string, number> = {
+  "offers-in-food-02": 199,
+  "offers-sg-food-02": 15,
+  "offers-in-electronics-02": 20000,
+  "offers-sg-electronics-02": 800,
+};
+
 async function run() {
   const dryRun = process.argv.includes("--dry-run");
   await dbConnect();
@@ -154,7 +168,8 @@ async function run() {
       // Seed deadlines may be stale dates; Valid Until is always rewritten.
       if (key === "deadline" ? String(doc.deadline ?? "").slice(0, 10) !== value : isEmpty(doc[key])) $set[key] = value;
     }
-    for (const [key, value] of Object.entries(details.attributes ?? {})) {
+    const offer = { offerFor: NEW_CUSTOMERS_ONLY.has(id) ? "new" : "all", ...(MIN_SPEND[id] ? { minSpend: MIN_SPEND[id] } : {}) };
+    for (const [key, value] of Object.entries({ ...offer, ...details.attributes })) {
       if (isEmpty(post.attributes?.[key])) $set[`attributes.${key}`] = value;
     }
     if (details.dropPrice && doc.salePrice != null) $unset.salePrice = "";

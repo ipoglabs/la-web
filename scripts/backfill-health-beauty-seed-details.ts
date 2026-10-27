@@ -5,7 +5,8 @@
 // description and a price, so the reworked search filters had nothing to
 // match. This fills, from each ad's own text, what the reworked forms ask:
 // Type (Services for salons), Mode, Price Per, provider and qualifications for
-// services; Type, Condition, Brand and Receipt for beauty products. Detail
+// services, plus Suitable For and Languages Spoken; Type, Condition, Brand and
+// Receipt for beauty products. Detail
 // fields are only filled where empty, so it is safe to re-run.
 //
 // Most Singapore seeds were word-for-word copies of India's; they get a local
@@ -111,6 +112,11 @@ const DETAILS: Record<string, SeedDetails> = {
   },
 };
 
+// Suitable For (Fitness, Salons, Wellness): every seed is open to everyone.
+// Languages Spoken (Medical): the clinic's market's common ones.
+const SUITABLE_FOR_SUBS = new Set(["gyms_fitness", "salons_spas", "wellness"]);
+const MEDICAL_LANGUAGES: Record<string, string[]> = { in: ["english", "hindi"], gb: ["english"], sg: ["english", "mandarin"] };
+
 function isEmpty(value: unknown): boolean {
   return value == null || value === "" || (Array.isArray(value) && value.length === 0);
 }
@@ -131,7 +137,11 @@ async function run() {
     for (const [key, value] of Object.entries(details.fields ?? {})) {
       if (isEmpty(doc[key])) $set[key] = value;
     }
-    for (const [key, value] of Object.entries(details.attributes ?? {})) {
+    const bySub = {
+      ...(SUITABLE_FOR_SUBS.has(String(post.subcategory)) ? { suitableFor: "all" } : {}),
+      ...(post.subcategory === "medical" ? { languages: MEDICAL_LANGUAGES[String(post.country)] } : {}),
+    };
+    for (const [key, value] of Object.entries({ ...bySub, ...details.attributes })) {
       if (isEmpty(post.attributes?.[key])) $set[`attributes.${key}`] = value;
     }
     for (const key of ["name", "description"] as const) {
