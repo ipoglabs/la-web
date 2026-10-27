@@ -84,6 +84,23 @@ const PRICE_UNIT_SUFFIX: Record<string, string> = {
   year: "/ yr",
 };
 
+/** Special Offers' Deal Type labels for a card with no % off or price (posting/form-schema/defaults/specialOffers.ts). */
+const OFFER_DEAL_LABEL: Record<string, string> = {
+  pct_off: "% off",
+  flat_off: "Money off",
+  bogo: "Buy 1 Get 1",
+  bundle: "Bundle deal",
+  flash: "Flash sale",
+  cashback: "Cashback",
+  voucher: "Voucher",
+  free_gift: "Free gift",
+  free_trial: "Free trial",
+  free_delivery: "Free delivery",
+  special_rate: "Special rate",
+  tradein: "Trade-in bonus",
+  instalments: "0% instalments",
+};
+
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
@@ -108,6 +125,13 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
       return { priceLabel: "Equity deal" };
     }
     if (post.salePrice === 0) return { priceLabel: "Free" };
+  }
+  // Special Offers: the deal itself — "20% off", the offer price, or the kind of deal.
+  if (post.category === "special_offers") {
+    const pct = Number(post.attributes?.discountPct);
+    if (pct > 0) return { priceLabel: `${pct}% off` };
+    if (Number(post.salePrice) > 0) return { priceLabel: fmt(Number(post.salePrice)) };
+    return { priceLabel: OFFER_DEAL_LABEL[String(post.attributes?.dealType ?? "")] ?? "Offer" };
   }
   // Free & Giveaway: nothing is priced.
   if (post.category === "free_giveaway") return { priceLabel: "Free" };

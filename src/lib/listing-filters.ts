@@ -403,6 +403,12 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     gb: { shoe_size: { drop: EU_SHOE_SIZES } },
     sg: { shoe_size: { drop: UK_SHOE_SIZES } },
   },
+  // Each market's own occasions (posting/form-schema/defaults/specialOffers.ts).
+  "special_offers/holiday_seasonal": {
+    in: { occasion: { drop: ["cny", "blackfriday", "easter"], relabel: { national: "Independence Day" } } },
+    gb: { occasion: { drop: ["national"] } },
+    sg: { occasion: { drop: ["blackfriday", "easter"], relabel: { eid: "Hari Raya", diwali: "Deepavali", summer: "Great Singapore Sale" } } },
+  },
   "free_giveaway/clothing_free": { gb: { clothing_type: { relabel: { traditional: "Occasion Wear" } } } },
   "free_giveaway/food_free": {
     gb: { dietary: { drop: ["jain", "eggless"] } },

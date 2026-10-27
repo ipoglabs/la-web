@@ -1,28 +1,71 @@
 // Default "Special Offers" post-form schemas.
-// Every offer shares the price / discount / validity block; each subcategory
-// adds the handful of fields specific to it.
+//
+// Option values are what the Special Offers search filters match
+// (components/create-alert/config/special-offers.ts, lib/postFilterQuery.ts
+// SPECIAL_OFFERS_FORM_FILTERS). Every sub saves what the offer is for as
+// `itemType`, the kind of deal as `dealType`, where it is redeemed as
+// `redemption` and the percentage off as `discountPct` (the Min Discount
+// filter). The offer price is `salePrice`, the field listing prices and the
+// price filter read; an offer with no price (cashback, free trial) leaves it
+// empty.
 
-import { getVehicleConfig } from "@/config/vehicle";
 import type { FormFieldDef, FormSection } from "../types";
-import { basics, opts, pairs } from "./shared";
+import { basics, pairs } from "./shared";
 
-const offerTerms = (extra: FormFieldDef[] = []): FormSection => ({
+const select = (key: string, label: string, entries: [string, string][], extra: Partial<FormFieldDef> = {}): FormFieldDef => ({
+  key,
+  type: "select",
+  label,
+  options: pairs(entries),
+  width: "half",
+  ...extra,
+});
+const multi = (key: string, label: string, entries: [string, string][]): FormFieldDef => ({ key, type: "multiselect", label, options: pairs(entries) });
+const text = (key: string, label: string, placeholder?: string): FormFieldDef => ({ key, type: "text", label, placeholder, width: "half" });
+const itemType = (label: string, entries: [string, string][]): FormFieldDef => select("itemType", label, entries, { required: true, width: "full" });
+const provider = (label = "Business Name"): FormFieldDef => text("providerName", label);
+
+/** Kinds of deal — the Deal Type filter's values. */
+export const DEAL_TYPES: [string, string][] = [
+  ["pct_off", "% Off"],
+  ["flat_off", "Flat Amount Off"],
+  ["bogo", "Buy 1 Get 1"],
+  ["bundle", "Bundle"],
+  ["flash", "Flash Sale"],
+  ["cashback", "Cashback"],
+  ["voucher", "Voucher / Coupon"],
+  ["free_gift", "Free Gift"],
+  ["free_trial", "Free Trial"],
+  ["free_delivery", "Free Delivery"],
+  ["special_rate", "Special Rate"],
+  ["tradein", "Trade-in / Exchange"],
+  ["instalments", "0% Instalments"],
+];
+
+/** The deal itself — the same block on every offer. */
+const offerSection: FormSection = {
   title: "Offer",
   fields: [
-    { key: "price", type: "currency", label: "Offer Price", min: 0, width: "half" },
-    { key: "discount", type: "text", label: "Discount / Deal", placeholder: "e.g. 20% off", width: "half" },
+    select("dealType", "Deal Type", DEAL_TYPES, { required: true, width: "full", display: "dropdown" }),
+    { key: "discountPct", type: "number", label: "Discount", unit: "% off", min: 1, max: 100, width: "half", hint: "Leave empty if the deal isn't a percentage off." },
+    { key: "salePrice", type: "currency", label: "Offer Price", min: 0, width: "half", hint: "What the buyer pays, if the offer has a price." },
+    { key: "originalPrice", type: "currency", label: "Was", min: 0, width: "half" },
+    select("redemption", "Redeem At", [["instore", "In-store"], ["online", "Online"], ["both", "Both"]], { required: true }),
     { key: "couponCode", type: "text", label: "Coupon Code", width: "half" },
-    { key: "deadline", type: "date", label: "Valid Until", width: "half" },
-    ...extra,
-    { key: "website", type: "text", label: "Website / Booking Link", placeholder: "https://" },
+    { key: "deadline", type: "date", label: "Valid Until", required: true, width: "half" },
+    { key: "website", type: "text", label: "Website / Booking Link", placeholder: "https://", format: "url" },
     { key: "terms", type: "textarea", label: "Terms & Conditions" },
   ],
-});
+};
 
-const provider = (label = "Provider / Business Name"): FormFieldDef => ({ key: "providerName", type: "text", label, width: "half" });
-const condition: FormFieldDef = { key: "condition", type: "select", label: "Condition", options: pairs([["new", "New"], ["used", "Used"], ["refurbished", "Refurbished"]]) };
-const delivery: FormFieldDef = { key: "deliveryOption", type: "select", label: "Delivery Option", options: pairs([["pickup", "Pickup"], ["delivery", "Delivery"], ["both", "Both"]]) };
-const mode: FormFieldDef = { key: "mode", type: "select", label: "Mode", options: pairs([["online", "Online"], ["offline", "In Person"], ["hybrid", "Hybrid"]]) };
+const IN_PERSON_ONLINE_HYBRID: [string, string][] = [["inperson", "In-person"], ["online", "Online"], ["hybrid", "Hybrid"]];
+
+/** Occasions each market celebrates, in its own words. */
+const OCCASIONS: Record<string, [string, string][]> = {
+  IN: [["diwali", "Diwali"], ["eid", "Eid"], ["christmas", "Christmas"], ["newyear", "New Year"], ["national", "Independence Day"], ["valentines", "Valentine's"], ["backtoschool", "Back to School"], ["summer", "Summer Sale"], ["midyear", "Mid-Year Sale"], ["yearend", "Year-End Sale"], ["other", "Other"]],
+  GB: [["christmas", "Christmas"], ["newyear", "New Year"], ["blackfriday", "Black Friday"], ["easter", "Easter"], ["eid", "Eid"], ["diwali", "Diwali"], ["cny", "Chinese New Year"], ["valentines", "Valentine's"], ["backtoschool", "Back to School"], ["summer", "Summer Sale"], ["midyear", "Mid-Year Sale"], ["yearend", "Year-End Sale"], ["other", "Other"]],
+  SG: [["cny", "Chinese New Year"], ["eid", "Hari Raya"], ["diwali", "Deepavali"], ["christmas", "Christmas"], ["newyear", "New Year"], ["national", "National Day"], ["valentines", "Valentine's"], ["backtoschool", "Back to School"], ["summer", "Great Singapore Sale"], ["midyear", "Mid-Year Sale"], ["yearend", "Year-End Sale"], ["other", "Other"]],
+};
 
 export const SPECIAL_OFFERS_SUBCATEGORIES = [
   "Banking & Finance",
@@ -40,250 +83,111 @@ export const SPECIAL_OFFERS_SUBCATEGORIES = [
 ];
 
 export function specialOffersSections(subcategory: string, country: string): FormSection[] | null {
+  const offer = (title: string, fields: FormFieldDef[]): FormSection[] => [basics, { title, fields }, offerSection];
+
   switch (subcategory) {
     case "Banking & Finance":
-      return [
-        basics,
-        {
-          title: "Deal",
-          fields: [
-            {
-              key: "dealType",
-              type: "select",
-              label: "Deal Type",
-              required: true,
-              options: pairs([["loan", "Loan"], ["credit-card", "Credit Card"], ["investment", "Investment"], ["insurance", "Insurance"], ["savings", "Savings"], ["other", "Other"]]),
-            },
-            provider("Bank / Financial Institution"),
-            { key: "interestRate", type: "text", label: "Interest Rate / Returns", width: "half" },
-            { key: "tenure", type: "text", label: "Tenure", width: "half" },
-            { key: "minBudget", type: "currency", label: "Minimum Amount", min: 0, width: "half" },
-            { key: "maxBudget", type: "currency", label: "Maximum Amount", min: 0, gteField: "minBudget", width: "half" },
-            { key: "eligibility", type: "textarea", label: "Eligibility Criteria" },
-            { key: "documents", type: "textarea", label: "Required Documents" },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Product", [
+        itemType("Product", [["credit_card", "Credit Card"], ["loan", "Loan"], ["insurance", "Insurance"], ["savings", "Savings Account"], ["investment", "Investment"], ["current_account", "Current / Business Account"], ["other", "Other"]]),
+        provider("Bank / Financial Institution"),
+        text("interestRate", "Interest Rate / Returns", "e.g. 5.2% AER"),
+        text("tenure", "Tenure", "e.g. 24 months"),
+        { key: "minBudget", type: "currency", label: "Minimum Amount", min: 0, width: "half" },
+        { key: "maxBudget", type: "currency", label: "Maximum Amount", min: 0, gteField: "minBudget", width: "half" },
+        { key: "eligibility", type: "textarea", label: "Eligibility Criteria" },
+        { key: "documents", type: "textarea", label: "Required Documents" },
+      ]);
 
     case "Travel & Tourism":
-      return [
-        basics,
-        {
-          title: "Trip",
-          fields: [
-            {
-              key: "tourType",
-              type: "select",
-              label: "Tour Type",
-              options: pairs([["domestic", "Domestic"], ["international", "International"], ["adventure", "Adventure"], ["cruise", "Cruise"], ["honeymoon", "Honeymoon"], ["other", "Other"]]),
-            },
-            { key: "destination", type: "text", label: "Destination", width: "half" },
-            { key: "durationText", type: "text", label: "Duration", placeholder: "e.g. 5 nights", width: "half" },
-            { key: "startDate", type: "date", label: "Start Date", width: "half" },
-            { key: "endDate", type: "date", label: "End Date", width: "half" },
-            { key: "accommodation", type: "select", label: "Accommodation", options: pairs([["hotel", "Hotel"], ["resort", "Resort"], ["hostel", "Hostel"], ["camp", "Camp"], ["other", "Other"]]) },
-            { key: "transport", type: "select", label: "Transport", options: pairs([["flight", "Flight"], ["train", "Train"], ["bus", "Bus"], ["cruise", "Cruise"], ["own", "Own Transport"]]) },
-            { key: "packageDetails", type: "textarea", label: "Itinerary / Inclusions" },
-            provider("Agency Name"),
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Trip", [
+        itemType("Type", [["flights", "Flights"], ["hotels", "Hotels"], ["packages", "Holiday Packages"], ["activities", "Activities & Tours"], ["car_rental", "Car Rental"], ["cruise", "Cruise"], ["other", "Other"]]),
+        text("destination", "Destination"),
+        text("durationText", "Duration", "e.g. 5 nights"),
+        { key: "startDate", type: "date", label: "Travel From", width: "half" },
+        { key: "endDate", type: "date", label: "Travel To", width: "half" },
+        { key: "packageDetails", type: "textarea", label: "What's Included" },
+        provider("Agency / Airline / Hotel"),
+      ]);
 
     case "Retail & Shopping":
-      return [
-        basics,
-        {
-          title: "Product",
-          fields: [
-            { key: "brand", type: "text", label: "Brand", width: "half" },
-            { key: "model", type: "text", label: "Model", width: "half" },
-            { key: "size", type: "text", label: "Size / Dimensions", width: "half" },
-            { key: "color", type: "text", label: "Color", width: "half" },
-            condition,
-            delivery,
-            { key: "returnPolicy", type: "text", label: "Return Policy" },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Shop", [
+        itemType("Category", [["fashion", "Fashion"], ["electronics", "Electronics"], ["home", "Home & Living"], ["beauty", "Beauty"], ["sports", "Sports"], ["kids", "Kids"], ["groceries", "Groceries"], ["other", "Other"]]),
+        provider("Store / Brand"),
+        text("returnPolicy", "Return Policy"),
+      ]);
 
     case "Food & Dining":
-      return [
-        basics,
-        {
-          title: "Venue",
-          fields: [
-            {
-              key: "foodCategory",
-              type: "select",
-              label: "Category",
-              options: pairs([["restaurant", "Restaurant"], ["cafe", "Cafe"], ["delivery", "Delivery"], ["catering", "Catering"], ["streetfood", "Street Food"], ["other", "Other"]]),
-            },
-            provider("Restaurant / Business Name"),
-            { key: "cuisineType", type: "text", label: "Cuisine Type", width: "half" },
-            { key: "openingHours", type: "text", label: "Opening Hours", width: "half" },
-            { key: "deliveryAvailable", type: "select", label: "Delivery", options: pairs([["yes", "Yes"], ["no", "No"], ["thirdparty", "Via Delivery Apps"]]) },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Venue", [
+        itemType("Cuisine", [["local", "Local"], ["asian", "Asian"], ["western", "Western"], ["fusion", "Fusion"], ["fast_food", "Fast Food"], ["cafe", "Café"], ["buffet", "Buffet"], ["other", "Other"]]),
+        multi("mealType", "Available For", [["dinein", "Dine-in"], ["takeaway", "Takeaway"], ["delivery", "Delivery"]]),
+        provider("Restaurant / Business Name"),
+        text("openingHours", "Opening Hours", "e.g. Mon–Fri 12pm–3pm"),
+      ]);
 
     case "Electronics & Gadgets":
-      return [
-        basics,
-        {
-          title: "Product",
-          fields: [
-            {
-              key: "productType",
-              type: "select",
-              label: "Product Type",
-              options: pairs([["mobile", "Mobile"], ["laptop", "Laptop"], ["tv", "TV"], ["camera", "Camera"], ["audio", "Audio"], ["accessories", "Accessories"], ["other", "Other"]]),
-            },
-            { key: "brand", type: "text", label: "Brand", width: "half" },
-            { key: "model", type: "text", label: "Model", width: "half" },
-            condition,
-            { key: "warranty", type: "text", label: "Warranty", width: "half" },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Product", [
+        itemType("Product", [["phone", "Phone"], ["laptop", "Laptop"], ["tv", "TV"], ["camera", "Camera"], ["gaming", "Gaming"], ["smart_home", "Smart Home"], ["audio", "Audio"], ["wearable", "Wearable"], ["other", "Other"]]),
+        provider("Store / Brand"),
+        text("brand", "Brand"),
+        select("condition", "Condition", [["new", "New"], ["refurbished", "Refurbished"], ["used", "Used"]]),
+        text("warranty", "Warranty", "e.g. 1 year"),
+      ]);
 
     case "Health & Wellness":
-      return [
-        basics,
-        {
-          title: "Service",
-          fields: [
-            {
-              key: "serviceType",
-              type: "select",
-              label: "Category",
-              options: pairs([["fitness", "Fitness"], ["nutrition", "Nutrition"], ["mental-health", "Mental Health"], ["wellness-products", "Wellness Products"], ["therapy", "Therapy"], ["other", "Other"]]),
-            },
-            provider("Provider Name"),
-            { key: "qualification", type: "text", label: "Certifications", width: "half" },
-            { key: "consultationMode", type: "select", label: "Mode", options: pairs([["online", "Online"], ["in-person", "In Person"], ["both", "Both"]]) },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Service", [
+        itemType("Type", [["gym", "Gym"], ["classes", "Yoga & Fitness Classes"], ["spa", "Spa & Massage"], ["salon", "Salon"], ["dental", "Dental"], ["optical", "Optical"], ["pharmacy", "Pharmacy"], ["medical", "Medical"], ["mental_health", "Mental Health"], ["other", "Other"]]),
+        provider("Provider Name"),
+        select("consultationMode", "Mode", [["in-person", "In Person"], ["online", "Online"], ["both", "Both"]]),
+        text("qualification", "Certifications"),
+      ]);
 
     case "Education & Learning":
-      return [
-        basics,
-        {
-          title: "Course",
-          fields: [
-            {
-              key: "educationType",
-              type: "select",
-              label: "Education Category",
-              options: pairs([["school", "School"], ["college", "College"], ["vocational", "Vocational"], ["online-course", "Online Course"], ["other", "Other"]]),
-            },
-            provider("Institution / Provider"),
-            { key: "durationText", type: "text", label: "Duration", width: "half" },
-            mode,
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Course", [
+        itemType("Category", [["languages", "Languages"], ["tech", "Tech & Coding"], ["arts", "Arts & Music"], ["professional", "Professional"], ["school", "School Subjects"], ["kids", "Kids Programs"], ["online", "Online Courses"], ["test_prep", "Test Prep"], ["other", "Other"]]),
+        select("mode", "Format", IN_PERSON_ONLINE_HYBRID),
+        provider("Institution / Provider"),
+        text("durationText", "Duration", "e.g. 1 day, 12 months"),
+      ]);
 
     case "Holiday & Seasonal Offers":
-      return [
-        basics,
-        {
-          title: "Offer",
-          fields: [
-            {
-              key: "offerCategory",
-              type: "select",
-              label: "Category",
-              options: pairs([["holiday-packages", "Holiday Packages"], ["seasonal-sale", "Seasonal Sale"], ["special-offers", "Special Offers"], ["other", "Other"]]),
-            },
-            provider(),
-            { key: "startDate", type: "date", label: "Starts", width: "half" },
-            { key: "endDate", type: "date", label: "Ends", width: "half" },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Occasion", [
+        select("occasion", "Occasion", OCCASIONS[country] ?? OCCASIONS.IN, { required: true }),
+        select("itemType", "Category", [["shopping", "Shopping"], ["home", "Home & Garden"], ["travel", "Travel"], ["dining", "Dining"], ["entertainment", "Entertainment"], ["gifts", "Gifts"], ["other", "Other"]], { required: true }),
+        provider(),
+        { key: "startDate", type: "date", label: "Sale Starts", width: "half" },
+      ]);
 
     case "Entertainment":
-      return [
-        basics,
-        {
-          title: "Event",
-          fields: [
-            { key: "eventType", type: "select", label: "Event Type", options: pairs([["concert", "Concert"], ["movie", "Movie"], ["theater", "Theatre"], ["festival", "Festival"], ["other", "Other"]]) },
-            provider("Organiser"),
-            { key: "startDate", type: "date", label: "Event Date", width: "half" },
-            { key: "workingHours", type: "text", label: "Timings", placeholder: "e.g. 7pm – 10pm", width: "half" },
-            { key: "ageRestriction", type: "select", label: "Age Restriction", options: pairs([["all", "All Ages"], ["13+", "13+"], ["18+", "18+"], ["21+", "21+"]]) },
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Event", [
+        itemType("Type", [["movies", "Movies"], ["concerts", "Concerts"], ["theatre", "Theatre & Shows"], ["theme_parks", "Theme Parks"], ["sports", "Sports Events"], ["gaming", "Gaming"], ["museum", "Museums & Attractions"], ["escape_room", "Escape Room"], ["streaming", "Streaming"], ["other", "Other"]]),
+        select("mode", "Format", [["inperson", "In-person"], ["online", "Online"]]),
+        provider("Organiser / Venue"),
+        { key: "startDate", type: "date", label: "Event Date", width: "half" },
+        text("workingHours", "Timings", "e.g. 7pm – 10pm"),
+        select("ageRestriction", "Age Restriction", [["all", "All Ages"], ["13+", "13+"], ["18+", "18+"], ["21+", "21+"]]),
+      ]);
 
     case "Home & Living":
-      return [
-        basics,
-        {
-          title: "Product",
-          fields: [
-            {
-              key: "productType",
-              type: "select",
-              label: "Category",
-              options: pairs([["furniture", "Furniture"], ["home-decor", "Home Decor"], ["appliances", "Appliances"], ["kitchenware", "Kitchenware"], ["other", "Other"]]),
-            },
-            { key: "brand", type: "text", label: "Brand", width: "half" },
-            { key: "material", type: "text", label: "Material", width: "half" },
-            { key: "dimensions", type: "text", label: "Dimensions", width: "half" },
-            { key: "warranty", type: "text", label: "Warranty", width: "half" },
-            condition,
-            delivery,
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Product", [
+        itemType("Category", [["furniture", "Furniture"], ["appliances", "Appliances"], ["decor", "Decor"], ["bedding", "Bedding"], ["kitchenware", "Kitchenware"], ["gardening", "Gardening"], ["smart_home", "Smart Home"], ["renovation", "Renovation"], ["cleaning", "Cleaning"], ["other", "Other"]]),
+        provider("Store / Brand"),
+        text("warranty", "Warranty"),
+      ]);
 
-    case "Automotive": {
-      const c = getVehicleConfig(country);
-      return [
-        basics,
-        {
-          title: "Vehicle",
-          fields: [
-            { key: "vehicleType", type: "select", label: "Vehicle Type", options: pairs([["car", "Car"], ["motorcycle", "Motorcycle"], ["truck", "Truck"], ["van", "Van"]]) },
-            { key: "make", type: "text", label: "Make", width: "half" },
-            { key: "model", type: "text", label: "Model", width: "half" },
-            { key: "year", type: "number", label: "Year", width: "half" },
-            { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" },
-            { key: "condition", type: "select", label: "Condition", options: opts(["New", "Used", "Certified Pre-Owned"]) },
-            { key: "fuelType", type: "select", label: "Fuel Type", options: c.carFuelTypes },
-          ],
-        },
-        offerTerms(),
-      ];
-    }
+    case "Automotive":
+      return offer("Service", [
+        itemType("Service", [["workshop", "Workshop & Servicing"], ["wash", "Car Wash & Detailing"], ["tyre", "Tyres & Rims"], ["insurance", "Insurance"], ["accessories", "Accessories"], ["ev_charging", "EV Charging"], ["vehicle", "Vehicle Purchase"], ["other", "Other"]]),
+        multi("forVehicle", "For Vehicle", [["car", "Car"], ["motorcycle", "Motorcycle"], ["van", "Van"], ["truck", "Truck"]]),
+        provider("Garage / Dealer"),
+        { ...text("make", "Make"), showWhen: { field: "itemType", in: ["vehicle"] } },
+        { ...text("model", "Model"), showWhen: { field: "itemType", in: ["vehicle"] } },
+      ]);
 
     case "Miscellaneous":
-      return [
-        basics,
-        {
-          title: "Item",
-          fields: [
-            { key: "brand", type: "text", label: "Brand", width: "half" },
-            { key: "model", type: "text", label: "Model", width: "half" },
-            condition,
-            delivery,
-          ],
-        },
-        offerTerms(),
-      ];
+      return offer("Offer Details", [
+        itemType("Category", [["pet_care", "Pet Care"], ["printing", "Printing"], ["photography", "Photography"], ["gifts", "Gifts"], ["subscription", "Subscriptions"], ["other", "Other"]]),
+        provider(),
+      ]);
 
     default:
       return null;

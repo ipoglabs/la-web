@@ -84,7 +84,9 @@ export async function generateMetadata({ params }: ListingDetailPageProps): Prom
 
 /** JSON-LD Product schema — helps Google surface price/availability in results. */
 function ListingJsonLd({ listing, market, cat }: { listing: Listing; market: CountryCode | null; cat: string }) {
-  const numericPrice = Number(listing.priceLabel.replace(/[^0-9.]/g, ""));
+  // Special Offers labels like "20% off" or "Buy 1 Get 1" aren't a price.
+  const notAPrice = cat === "special_offers" && /[%a-z]/i.test(listing.priceLabel);
+  const numericPrice = notAPrice ? NaN : Number(listing.priceLabel.replace(/[^0-9.]/g, ""));
   const currency = COUNTRY_CONFIGS[market ?? "in"].currency;
 
   const jsonLd = {

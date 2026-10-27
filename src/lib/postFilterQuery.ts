@@ -703,6 +703,40 @@ const FASHION_FORM_FILTERS: Record<string, Record<string, string>> = {
   vintage_secondhand: { decade: "attributes.era", type: "attributes.itemType", condition: "condition" },
 };
 
+/**
+ * Special Offers filters each sub's form saves (posting/form-schema/defaults/specialOffers.ts):
+ * filter id → the post path it matches. Every sub saves what the offer is for as
+ * `itemType`; Deal Type, Redeem At and Min Discount are handled in
+ * buildSpecialOffersClauses.
+ */
+const SPECIAL_OFFERS_FORM_FILTERS: Record<string, Record<string, string>> = {
+  banking_finance: { bf_category: "attributes.itemType" },
+  travel_tourism: { travel_category: "attributes.itemType" },
+  retail_shopping: { shop_category: "attributes.itemType" },
+  food_dining: { cuisine: "attributes.itemType", meal_type: "attributes.mealType" },
+  electronics_gadgets: { elec_category: "attributes.itemType" },
+  health_wellness: { hw_type: "attributes.itemType" },
+  education_learning: { edu_category: "attributes.itemType", edu_format: "mode" },
+  holiday_seasonal: { occasion: "attributes.occasion", seasonal_category: "attributes.itemType" },
+  entertainment: { ent_type: "attributes.itemType", ent_format: "mode" },
+  home_living: { home_category: "attributes.itemType" },
+  automotive: { auto_type: "attributes.itemType", for_vehicle: "attributes.forVehicle" },
+  misc_offers: { misc_offer_category: "attributes.itemType" },
+};
+
+function buildSpecialOffersClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = buildPathFormClauses(SPECIAL_OFFERS_FORM_FILTERS[sub], fv);
+  const deals = (fv.deal_type ?? []).filter(Boolean);
+  if (deals.length) clauses.push({ "attributes.dealType": { $in: deals } });
+  // An offer redeemable both ways matches In-store and Online.
+  const at = fv.redemption?.[0];
+  if (at && at !== "any") clauses.push({ "attributes.redemption": { $in: at === "both" ? ["both"] : [at, "both"] } });
+  // Min Discount: "10" = at least 10% off; "Any deal" adds nothing.
+  const pct = Number(fv.discount?.[0]);
+  if (pct > 0) clauses.push({ "attributes.discountPct": { $gte: pct } });
+  return clauses;
+}
+
 /** Clauses for a sub whose filters each match one post path. */
 function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
   return Object.entries(filters ?? {}).flatMap(([id, path]) => {
@@ -1021,7 +1055,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1037,7 +1071,9 @@ export function buildFilterQuery(
                   ? buildPathFormClauses(HOME_FORM_FILTERS[sub], filterValues)
                   : category === "fashion_clothing"
                     ? buildPathFormClauses(FASHION_FORM_FILTERS[sub], filterValues)
-                    : buildServicesFormClauses(sub, filterValues);
+                    : category === "special_offers"
+                      ? buildSpecialOffersClauses(sub, filterValues)
+                      : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);
