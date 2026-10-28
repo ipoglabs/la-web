@@ -4,10 +4,11 @@
 // (components/create-alert/config/free-giveaway.ts, lib/postFilterQuery.ts
 // FREE_FORM_FILTERS). Nothing here has a price; cards show "Free". Best Before
 // (Food) and Must Go By (the rest) share the `deadline` key: the ad drops out
-// of search once that date has passed.
+// of search once that date has passed. Every sub asks how the item is handed
+// over (`collectionMethod`, the Collection filter), as Olio and Trash Nothing do.
 
 import type { FormFieldDef, FormSection } from "../types";
-import { basics, pairs } from "./shared";
+import { basics, pairs, YES_NO } from "./shared";
 
 /** The graded condition scale the marketplace categories share. */
 const CONDITION_SCALE: [string, string][] = [
@@ -31,6 +32,25 @@ const mustGoBy: FormFieldDef = { key: "deadline", type: "date", label: "Must Go 
 /** "Collection" is the UK word; India and Singapore say pickup. */
 const pickup = (country: string): FormFieldDef =>
   text("availability", country === "GB" ? "Collection Times" : "Pickup Times", "e.g. Weekday evenings");
+const collectionMethod: FormFieldDef = {
+  key: "collectionMethod",
+  type: "select",
+  label: "Collection Method",
+  required: true,
+  options: pairs([["arrange", "Arrange a time"], ["left_out", "Left out, help yourself"], ["deliver", "Can drop off nearby"]]),
+  width: "half",
+};
+/** UK charities and reuse shops won't take a sofa or mattress without its
+ *  permanent fire label (Furniture and Furnishings (Fire Safety) Regulations 1988). */
+const fireLabel: FormFieldDef = {
+  key: "fireLabel",
+  type: "select",
+  label: "Fire Safety Label Attached",
+  options: YES_NO,
+  hint: "The permanent label sewn under the cushions or on the base.",
+  width: "half",
+  showWhen: { field: "itemType", in: ["seating", "bed"] },
+};
 
 /** Strollers in India and Singapore, pushchairs in the UK. */
 const GEAR_LABEL: Record<string, string> = { IN: "Strollers & Gear", GB: "Pushchairs & Gear", SG: "Strollers & Gear" };
@@ -49,7 +69,9 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         condition(),
         text("dimensions", "Dimensions", "e.g. 200 × 90 cm"),
         text("collectionAccess", "Collection Access", "e.g. 2nd floor, no lift"),
+        ...(country === "GB" ? [fireLabel] : []),
         mustGoBy,
+        collectionMethod,
         pickup(country),
       ]);
 
@@ -69,6 +91,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         select("lotType", "Single or Bundle", [["single", "Single item"], ["bundle", "Bundle"]], { width: "half" }),
         condition(),
         mustGoBy,
+        collectionMethod,
         pickup(country),
       ]);
 
@@ -89,6 +112,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         text("brand", "Brand", "e.g. Sony, Dell"),
         text("included", "What's Included", "e.g. Remote, charger, cables"),
         mustGoBy,
+        collectionMethod,
         pickup(country),
       ]);
 
@@ -102,7 +126,8 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         text("allergens", "Allergens", "e.g. Contains nuts, dairy, eggs"),
         text("amount", "Amount", "e.g. 12 eggs, 3 portions"),
         { key: "deadline", type: "date", label: "Best Before", required: true, hint: "For cooked food, the day it must be eaten by.", width: "half" },
-        select("collectionMethod", "Collection Method", [["arrange", "Arrange a time"], ["left_out", "Left out, help yourself"]], { width: "half" }),
+        select("keepIn", "Keep In", [["room", "Cupboard (room temp)"], ["fridge", "Fridge"], ["freezer", "Freezer"]], { width: "half" }),
+        collectionMethod,
         pickup(country),
       ]);
 
@@ -119,6 +144,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         { key: "ageGroup", type: "multiselect", label: "Age Group", options: pairs([["0_2", "0–2 yrs"], ["3_5", "3–5 yrs"], ["6_12", "6–12 yrs"], ["12plus", "12+ yrs"]]) },
         condition(),
         mustGoBy,
+        collectionMethod,
         pickup(country),
       ]);
 
@@ -137,6 +163,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         { ...condition(false), width: "half" },
         text("amount", "Amount", "e.g. 25 boxes, 10 bags"),
         mustGoBy,
+        collectionMethod,
         pickup(country),
       ]);
 

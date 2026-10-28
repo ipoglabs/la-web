@@ -16,6 +16,9 @@
 // The Singapore seeds were word-for-word copies of India's; they get local
 // details in their text. The GB soil ad moved over from Community
 // (comm-gen-01) repeats free-gen-02, so it is marked deleted.
+//
+// Re-run 2026-10-28 for the added Collection Method (every seed), Keep In
+// (Food) and Fire Safety Label (UK sofas and beds).
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
@@ -41,7 +44,11 @@ const DETAILS: Record<string, SeedDetails> = {
   "free-in-furniture-01": { fields: { condition: "used", availability: "Weekends, 10am–6pm" }, attributes: { itemType: "table", dimensions: "120 × 75 cm" } },
   "free-in-furniture-02": { fields: { condition: "lightly-used", availability: "Weekday evenings" }, attributes: { itemType: "storage", dimensions: "180 × 80 cm" } },
   "free-furn-01": { fields: { condition: "like-new", availability: "Evenings after 6pm" }, attributes: { itemType: "storage", dimensions: "147 × 147 cm", collectionAccess: "Ground floor" } },
-  "free-furn-02": { fields: { condition: "heavily-used", availability: "Saturday mornings" }, attributes: { itemType: "seating", collectionAccess: "1st floor, no lift. Needs two people" } },
+  "free-furn-02": {
+    fields: { condition: "heavily-used", availability: "Saturday mornings" },
+    attributes: { itemType: "seating", collectionAccess: "1st floor, no lift. Needs two people", fireLabel: "yes" },
+    text: [["needs reupholstering.", "needs reupholstering. Fire safety label still attached under the cushions."]],
+  },
   "free-furn-03": { fields: { condition: "used", deadline: "2026-12-15", availability: "Any day before the move" }, attributes: { itemType: "table" } },
   "free-sg-furniture-01": {
     fields: { condition: "used", availability: "Weekends, 10am–6pm" },
@@ -109,7 +116,11 @@ const DETAILS: Record<string, SeedDetails> = {
   },
 
   // ── Kids Items ──
-  "free-in-kids-01": { fields: { condition: "lightly-used", availability: "Weekends" }, attributes: { itemType: "toys", ageGroup: ["3_5", "6_12"] } },
+  "free-in-kids-01": {
+    fields: { condition: "lightly-used", availability: "Weekends" },
+    attributes: { itemType: "toys", ageGroup: ["3_5", "6_12"] },
+    text: [["all in good condition.", "all in good condition. Can drop off within 3 km."]],
+  },
   "free-in-kids-02": { fields: { condition: "used", availability: "Weekday evenings" }, attributes: { itemType: "gear", ageGroup: ["0_2", "3_5"] } },
   "free-kids-01": { fields: { condition: "lightly-used", availability: "Evenings after 6pm" }, attributes: { itemType: "nursery", ageGroup: ["0_2", "3_5"] } },
   "free-kids-02": { fields: { condition: "used", availability: "Weekends" }, attributes: { itemType: "gear", ageGroup: ["0_2", "3_5"] } },
@@ -145,6 +156,19 @@ const DETAILS: Record<string, SeedDetails> = {
   "comm-gen-01": { set: { status: "deleted" } },
 };
 
+// Collection Method: arranged pickup unless the ad says otherwise (Food seeds
+// already have theirs). Keep In: how each Food seed should be stored.
+const COLLECTION: Record<string, string> = { "free-gen-02": "left_out", "free-in-kids-01": "deliver" };
+const KEEP_IN: Record<string, string> = {
+  "free-in-food-01": "fridge",
+  "free-in-food-02": "room",
+  "free-food-01": "room",
+  "free-food-02": "room",
+  "free-food-03": "fridge",
+  "free-sg-food-01": "fridge",
+  "free-sg-food-02": "room",
+};
+
 function isEmpty(value: unknown): boolean {
   return value == null || value === "" || (Array.isArray(value) && value.length === 0);
 }
@@ -165,7 +189,9 @@ async function run() {
     for (const [key, value] of Object.entries(details.fields ?? {})) {
       if (isEmpty(doc[key])) $set[key] = value;
     }
-    for (const [key, value] of Object.entries(details.attributes ?? {})) {
+    const handover = { collectionMethod: COLLECTION[id] ?? "arrange", ...(KEEP_IN[id] ? { keepIn: KEEP_IN[id] } : {}) };
+    const attributes = details.set?.status === "deleted" ? {} : { ...handover, ...details.attributes };
+    for (const [key, value] of Object.entries(attributes)) {
       if (isEmpty(post.attributes?.[key])) $set[`attributes.${key}`] = value;
     }
     for (const [key, value] of Object.entries(details.set ?? {})) {

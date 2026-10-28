@@ -18,6 +18,18 @@ const condition: FilterConfig = {
   ],
 };
 
+/** How the item is handed over (every sub's `collectionMethod`). */
+const collection: FilterConfig = {
+  id: "collection",
+  label: "Collection",
+  type: "toggle",
+  options: [
+    { label: "Arrange a time",          value: "arrange"  },
+    { label: "Left out, help yourself", value: "left_out" },
+    { label: "Can drop off nearby",     value: "deliver"  },
+  ],
+};
+
 export const freeGiveaway: MainCategory = {
   id: "free_giveaway",
   label: "Free & Giveaway",
@@ -45,6 +57,7 @@ export const freeGiveaway: MainCategory = {
           ],
         },
         condition,
+        collection,
       ],
     },
     {
@@ -78,6 +91,7 @@ export const freeGiveaway: MainCategory = {
           ],
         },
         condition,
+        collection,
       ],
     },
     {
@@ -110,6 +124,7 @@ export const freeGiveaway: MainCategory = {
             { label: "Not working (for parts)", value: "parts"   },
           ],
         },
+        collection,
       ],
     },
     {
@@ -142,6 +157,7 @@ export const freeGiveaway: MainCategory = {
             { label: "Eggless",     value: "eggless"     },
           ],
         },
+        collection,
       ],
     },
     {
@@ -174,6 +190,7 @@ export const freeGiveaway: MainCategory = {
           ],
         },
         condition,
+        collection,
       ],
     },
     {
@@ -197,6 +214,7 @@ export const freeGiveaway: MainCategory = {
           ],
         },
         condition,
+        collection,
       ],
     },
   ],

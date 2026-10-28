@@ -654,12 +654,12 @@ function buildEducationFormClauses(sub: string, fv: Record<string, string[]>): R
  * filter id → the post path it matches.
  */
 const FREE_FORM_FILTERS: Record<string, Record<string, string>> = {
-  furniture_free: { item_type: "attributes.itemType", condition: "condition" },
-  clothing_free: { gender: "gender", clothing_type: "attributes.clothingType", condition: "condition" },
-  electronics_free: { item_type: "attributes.itemType", working_status: "attributes.workingStatus" },
-  food_free: { food_type: "attributes.foodType", dietary: "attributes.dietary" },
-  kids_items: { item_type: "attributes.itemType", age_group: "attributes.ageGroup", condition: "condition" },
-  general_free: { item_category: "attributes.itemCategory", condition: "condition" },
+  furniture_free: { item_type: "attributes.itemType", condition: "condition", collection: "attributes.collectionMethod" },
+  clothing_free: { gender: "gender", clothing_type: "attributes.clothingType", condition: "condition", collection: "attributes.collectionMethod" },
+  electronics_free: { item_type: "attributes.itemType", working_status: "attributes.workingStatus", collection: "attributes.collectionMethod" },
+  food_free: { food_type: "attributes.foodType", dietary: "attributes.dietary", collection: "attributes.collectionMethod" },
+  kids_items: { item_type: "attributes.itemType", age_group: "attributes.ageGroup", condition: "condition", collection: "attributes.collectionMethod" },
+  general_free: { item_category: "attributes.itemCategory", condition: "condition", collection: "attributes.collectionMethod" },
 };
 
 function buildFreeFormClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
