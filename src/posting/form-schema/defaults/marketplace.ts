@@ -1,5 +1,5 @@
 // Default post-form schemas for the categories promoted out of the old
-// "For Sale" bucket (Musical Instruments, Books, Media & Collectibles, …). Their old
+// "For Sale" bucket (Books, Media & Collectibles, Tickets & Vouchers). Their old
 // forms were borrowed from other categories and most of what
 // they collected was never saved; these give each category its own fields.
 //
@@ -32,7 +32,6 @@ const price = (label = "Price", required = true): FormFieldDef => ({
 });
 const negotiable: FormFieldDef = { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, width: "half" };
 const brand: FormFieldDef = { key: "brand", type: "text", label: "Brand", width: "half" };
-const model: FormFieldDef = { key: "model", type: "text", label: "Model", width: "half" };
 const condition = (extra: [string, string][] = []): FormFieldDef => ({
   key: "condition",
   type: "select",
@@ -69,11 +68,6 @@ const booksMedia: Builder = (sub) => {
     "Collectibles & Memorabilia": [{ key: "era", type: "text", label: "Year / Era", placeholder: "e.g. 1960s", width: "half" }],
   };
   return extra[sub] ? item("Item", [condition([["collectible", "Collectible"]]), ...extra[sub]]) : null;
-};
-
-const musical: Builder = (sub) => {
-  const known = ["Guitars & Bass", "Keyboards & Piano", "Drums & Percussion", "DJ & Audio Gear", "Wind, Brass & Strings", "Accessories"];
-  return known.includes(sub) ? item("Instrument", [brand, model, condition([["vintage", "Vintage"]])]) : null;
 };
 
 const tickets: Builder = (sub) => {
@@ -118,6 +112,5 @@ const tickets: Builder = (sub) => {
 
 export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Books, Media & Collectibles": booksMedia,
-  "Musical Instruments": musical,
   "Tickets & Vouchers": tickets,
 };
