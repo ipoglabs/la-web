@@ -31,48 +31,48 @@ const MEETUP = ["meetup"];
 // Values are the Books, Media & Collectibles forms' (posting/form-schema/defaults/books-media.ts).
 const DETAILS: Record<string, SeedDetails> = {
   // ── Books & Comics ──
-  "media-book-01": { fields: { condition: "used", quantity: 41 }, attributes: { genre: "fiction", authorArtist: "Terry Pratchett", format: "set", language: "english", dealMethod: BOTH } },
-  "media-book-02": { fields: { condition: "lightly-used", quantity: 18 }, attributes: { genre: "academic", authorArtist: "CGP / Oxford Revision Guides", format: "paperback", language: "english", dealMethod: BOTH } },
-  "media-book-03": { fields: { condition: "lightly-used", quantity: 60 }, attributes: { genre: "comics", authorArtist: "Dark Horse", format: "issues", language: "english", dealMethod: BOTH } },
-  "books-in-books-01": { fields: { condition: "lightly-used", quantity: 10 }, attributes: { genre: "fiction", format: "set", language: "english", dealMethod: BOTH } },
-  "books-in-books-02": { fields: { condition: "lightly-used", quantity: 15 }, attributes: { genre: "comics", format: "issues", language: "english", dealMethod: BOTH } },
+  "media-book-01": { fields: { condition: "used" }, attributes: { quantity: 41, genre: "fiction", authorArtist: "Terry Pratchett", format: "set", language: "english", dealMethod: BOTH } },
+  "media-book-02": { fields: { condition: "lightly-used" }, attributes: { quantity: 18, genre: "academic", authorArtist: "CGP / Oxford Revision Guides", format: "paperback", language: "english", dealMethod: BOTH } },
+  "media-book-03": { fields: { condition: "lightly-used" }, attributes: { quantity: 60, genre: "comics", authorArtist: "Dark Horse", format: "issues", language: "english", dealMethod: BOTH } },
+  "books-in-books-01": { fields: { condition: "lightly-used" }, attributes: { quantity: 10, genre: "fiction", format: "set", language: "english", dealMethod: BOTH } },
+  "books-in-books-02": { fields: { condition: "lightly-used" }, attributes: { quantity: 15, genre: "comics", format: "issues", language: "english", dealMethod: BOTH } },
   "books-sg-books-01": {
-    fields: { condition: "lightly-used", quantity: 10 },
-    attributes: { genre: "fiction", format: "set", language: "english", dealMethod: BOTH },
+    fields: { condition: "lightly-used" },
+    attributes: { quantity: 10, genre: "fiction", format: "set", language: "english", dealMethod: BOTH },
     text: [["great starter collection.", "great starter collection. Meet at Bras Basah Complex."]],
   },
   "books-sg-books-02": {
-    fields: { condition: "lightly-used", quantity: 15 },
-    attributes: { genre: "comics", format: "issues", language: "english", dealMethod: BOTH },
+    fields: { condition: "lightly-used" },
+    attributes: { quantity: 15, genre: "comics", format: "issues", language: "english", dealMethod: BOTH },
     text: [["well preserved condition.", "well preserved condition. Mail islandwide."]],
   },
 
   // ── Vinyl Records ──
-  "media-vinyl-01": { fields: { condition: "good-plus", quantity: 120 }, attributes: { genre: "rock", format: "collection", pressing: "original", dealMethod: MEETUP } },
-  "media-vinyl-02": { fields: { condition: "vg-plus", quantity: 1 }, attributes: { genre: "rnb", authorArtist: "Sade", format: "lp", pressing: "original", sleeveGrade: "vg", dealMethod: BOTH } },
-  "media-vinyl-03": { fields: { condition: "vg", quantity: 200 }, attributes: { genre: "rnb", format: "collection", pressing: "original", dealMethod: MEETUP } },
-  "tech-tv-03": { fields: { condition: "vg-plus", quantity: 200 }, attributes: { genre: "rnb", format: "collection", pressing: "mixed", dealMethod: MEETUP } },
-  "books-in-vinyl-01": { fields: { condition: "near-mint", quantity: 1 }, attributes: { genre: "rock", format: "lp", pressing: "original", dealMethod: BOTH } },
+  "media-vinyl-01": { fields: { condition: "good-plus" }, attributes: { quantity: 120, genre: "rock", format: "collection", pressing: "original", dealMethod: MEETUP } },
+  "media-vinyl-02": { fields: { condition: "vg-plus" }, attributes: { quantity: 1, genre: "rnb", authorArtist: "Sade", format: "lp", pressing: "original", sleeveGrade: "vg", dealMethod: BOTH } },
+  "media-vinyl-03": { fields: { condition: "vg" }, attributes: { quantity: 200, genre: "rnb", format: "collection", pressing: "original", dealMethod: MEETUP } },
+  "tech-tv-03": { fields: { condition: "vg-plus" }, attributes: { quantity: 200, genre: "rnb", format: "collection", pressing: "mixed", dealMethod: MEETUP } },
+  "books-in-vinyl-01": { fields: { condition: "near-mint" }, attributes: { quantity: 1, genre: "rock", format: "lp", pressing: "original", dealMethod: BOTH } },
   "books-sg-vinyl-01": {
-    fields: { condition: "near-mint", quantity: 1 },
-    attributes: { genre: "rock", format: "lp", pressing: "original", dealMethod: BOTH },
+    fields: { condition: "near-mint" },
+    attributes: { quantity: 1, genre: "rock", format: "lp", pressing: "original", dealMethod: BOTH },
     text: [["near mint condition, collector's item.", "near mint condition, collector's item. Meet at Esplanade MRT."]],
   },
 
   // ── DVDs & Blu-ray ──
-  "media-dvd-01": { fields: { condition: "lightly-used", quantity: 23 }, attributes: { format: "bluray", genre: "action", dealMethod: BOTH } },
-  "media-dvd-02": { fields: { condition: "like-new", quantity: 11 }, attributes: { format: "bluray", genre: "tv", dealMethod: BOTH } },
-  "media-dvd-03": { fields: { condition: "used", quantity: 150 }, attributes: { format: "dvd", genre: "world", dealMethod: MEETUP } },
-  "books-in-dvd-01": { fields: { condition: "like-new", quantity: 3 }, attributes: { format: "bluray", genre: "action", dealMethod: BOTH } },
-  "books-in-dvd-02": { fields: { condition: "used", quantity: 20 }, attributes: { format: "dvd", genre: "other", dealMethod: BOTH } },
+  "media-dvd-01": { fields: { condition: "lightly-used" }, attributes: { quantity: 23, format: "bluray", genre: "action", dealMethod: BOTH } },
+  "media-dvd-02": { fields: { condition: "like-new" }, attributes: { quantity: 11, format: "bluray", genre: "tv", dealMethod: BOTH } },
+  "media-dvd-03": { fields: { condition: "used" }, attributes: { quantity: 150, format: "dvd", genre: "world", dealMethod: MEETUP } },
+  "books-in-dvd-01": { fields: { condition: "like-new" }, attributes: { quantity: 3, format: "bluray", genre: "action", dealMethod: BOTH } },
+  "books-in-dvd-02": { fields: { condition: "used" }, attributes: { quantity: 20, format: "dvd", genre: "other", dealMethod: BOTH } },
   "books-sg-dvd-01": {
-    fields: { condition: "like-new", quantity: 3 },
-    attributes: { format: "bluray", genre: "action", dealMethod: BOTH },
+    fields: { condition: "like-new" },
+    attributes: { quantity: 3, format: "bluray", genre: "action", dealMethod: BOTH },
     text: [["special features and artwork.", "special features and artwork. Meet at Bugis MRT."]],
   },
   "books-sg-dvd-02": {
-    fields: { condition: "used", quantity: 20 },
-    attributes: { format: "dvd", genre: "other", dealMethod: BOTH },
+    fields: { condition: "used" },
+    attributes: { quantity: 20, format: "dvd", genre: "other", dealMethod: BOTH },
     text: [["all in working condition.", "all in working condition. Mail islandwide."]],
   },
 
@@ -94,19 +94,19 @@ const DETAILS: Record<string, SeedDetails> = {
   },
 
   // ── Collectibles & Memorabilia ──
-  "media-coll-01": { fields: { condition: "lightly-used", quantity: 66 }, attributes: { itemType: "coins", era: "To 2025", dealMethod: BOTH } },
-  "media-coll-02": { fields: { condition: "used", quantity: 8 }, attributes: { itemType: "sports", era: "1966", dealMethod: BOTH } },
-  "media-coll-03": { fields: { condition: "lightly-used", quantity: 1 }, attributes: { itemType: "toys", era: "2007", dealMethod: MEETUP } },
-  "books-in-collect-01": { fields: { condition: "lightly-used", quantity: 25 }, attributes: { itemType: "coins", dealMethod: BOTH } },
-  "books-in-collect-02": { fields: { condition: "like-new", quantity: 1 }, attributes: { itemType: "sports", authenticated: "yes", dealMethod: MEETUP } },
+  "media-coll-01": { fields: { condition: "lightly-used" }, attributes: { quantity: 66, itemType: "coins", era: "To 2025", dealMethod: BOTH } },
+  "media-coll-02": { fields: { condition: "used" }, attributes: { quantity: 8, itemType: "sports", era: "1966", dealMethod: BOTH } },
+  "media-coll-03": { fields: { condition: "lightly-used" }, attributes: { quantity: 1, itemType: "toys", era: "2007", dealMethod: MEETUP } },
+  "books-in-collect-01": { fields: { condition: "lightly-used" }, attributes: { quantity: 25, itemType: "coins", dealMethod: BOTH } },
+  "books-in-collect-02": { fields: { condition: "like-new" }, attributes: { quantity: 1, itemType: "sports", authenticated: "yes", dealMethod: MEETUP } },
   "books-sg-collect-01": {
-    fields: { condition: "lightly-used", quantity: 25 },
-    attributes: { itemType: "coins", dealMethod: BOTH },
+    fields: { condition: "lightly-used" },
+    attributes: { quantity: 25, itemType: "coins", dealMethod: BOTH },
     text: [["presented in a collector's album.", "presented in a collector's album. Meet at Chinatown MRT."]],
   },
   "books-sg-collect-02": {
-    fields: { condition: "like-new", quantity: 1 },
-    attributes: { itemType: "sports", authenticated: "yes", dealMethod: MEETUP },
+    fields: { condition: "like-new" },
+    attributes: { quantity: 1, itemType: "sports", authenticated: "yes", dealMethod: MEETUP },
     text: [["great collector's item.", "great collector's item. Self-collect from Serangoon."]],
   },
 };
