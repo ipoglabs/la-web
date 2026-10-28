@@ -11,6 +11,7 @@ const COUNTRY_CONFIG = {
     method: 'PayNow',
     currency: 'sgd',
     symbol: 'S$',
+    locale: 'en-SG',
     flag: '🇸🇬',
     badge: 'PayNow',
     badgeColor: 'bg-red-600',
@@ -27,6 +28,7 @@ const COUNTRY_CONFIG = {
     method: 'UPI',
     currency: 'inr',
     symbol: '₹',
+    locale: 'en-IN',
     flag: '🇮🇳',
     badge: 'UPI',
     badgeColor: 'bg-orange-600',
@@ -43,6 +45,7 @@ const COUNTRY_CONFIG = {
     method: 'Payment Link',
     currency: 'gbp',
     symbol: '£',
+    locale: 'en-GB',
     flag: '🇬🇧',
     badge: 'Stripe',
     badgeColor: 'bg-indigo-600',
@@ -265,7 +268,7 @@ export default function ScanPayPanel({ amount, donorName, email, onSuccess, onEr
       {/* ── RIGHT: QR panel ─────────────────────────────────────────────────── */}
       <div className="flex flex-col items-center md:w-72">
         <p className="text-base font-semibold text-center mb-3 text-slate-700">
-          Scan to pay {cfg.symbol}{Number(amount).toLocaleString()}
+          Scan to pay {cfg.symbol}{Number(amount).toLocaleString(cfg.locale)}
         </p>
 
         {/* QR box */}

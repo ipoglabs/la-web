@@ -139,13 +139,18 @@ export interface CountryConfig {
   currencySymbol: string;
 
   /**
+   * BCP 47 locale for formatting numbers and prices — e.g. "en-IN", "en-GB".
+   * India groups digits in lakhs and crores (₹6,00,000), the others in thousands.
+   */
+  locale: string;
+
+  /**
    * Country-specific date format override.
    * If omitted, GLOBAL_CONFIG.dateFormat is used.
    */
   dateFormat?: string;
 
   // ── Add future locale fields below ──────────────────────────────────────────
-  // locale?: string;       // e.g. "en-IN", "en-GB", "en-SG"
   // timezone?: string;     // e.g. "Asia/Kolkata", "Europe/London"
   // phonePrefix?: string;  // e.g. "+91", "+44", "+65"
 

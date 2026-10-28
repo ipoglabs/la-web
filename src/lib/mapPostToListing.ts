@@ -1,6 +1,6 @@
 import type { Listing, KeyValueRow } from "@/types/listing";
 import type { IPost } from "@/models/post";
-import { type LeanPost, resolvePostId, resolvePrice, resolveDetailsLabel, mapStatus } from "@/lib/mapPostToFeaturedItem";
+import { type LeanPost, resolvePostId, resolvePrice, resolveDetailsLabel, mapStatus, currencySymbolFor, localeFor } from "@/lib/mapPostToFeaturedItem";
 import { sanitizeDescriptionToHtml } from "@/lib/sanitizeDescription";
 import type { FormFieldDef, PostFormSchemaData } from "@/posting/form-schema/types";
 import { normalizeGoodToKnow } from "@/posting/form-schema/goodToKnow";
@@ -67,7 +67,13 @@ function buildKeyDetails(post: LeanPost): KeyValueRow[] {
 // Headline price fields — already shown as the listing's price label.
 const PRICE_KEYS = new Set(["price", "salePrice", "rentPrice", "rent", "rateNightly", "rateMonthly", "salary", "hourlyRate", "budget"]);
 
-function formatSchemaValue(field: FormFieldDef, value: unknown): string | null {
+/** `post`'s market: how its numbers are grouped and its currency symbol. */
+interface Market {
+  locale: string;
+  symbol: string;
+}
+
+function formatSchemaValue(field: FormFieldDef, value: unknown, market: Market): string | null {
   if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) return null;
   const labels = new Map((field.options ?? []).map((o) => [o.value, o.label]));
   const label = (v: unknown) => labels.get(String(v)) ?? String(v);
@@ -79,7 +85,9 @@ function formatSchemaValue(field: FormFieldDef, value: unknown): string | null {
       const n = Number(value);
       if (!Number.isFinite(n)) return String(value);
       // A year (Year, Min Year, …) reads "2021", not "2,021".
-      const shown = /^year$|Year$/.test(field.key) ? String(n) : n.toLocaleString("en");
+      if (/^year$|Year$/.test(field.key)) return field.unit ? `${n} ${field.unit}` : String(n);
+      const grouped = n.toLocaleString(market.locale);
+      const shown = field.type === "currency" ? `${market.symbol}${grouped}` : grouped;
       return field.unit ? `${shown} ${field.unit}` : shown;
     }
     case "date": {
@@ -100,6 +108,7 @@ function buildSchemaKeyDetails(post: LeanPost, schema: PostFormSchemaData): KeyV
   const attributes = (post.attributes ?? {}) as Record<string, unknown>;
   // Vehicles: Make = "Other" saves the typed make as Other Make — show that as the Make.
   const makeOther = post.make === "Other" && typeof attributes.makeOther === "string" ? attributes.makeOther : null;
+  const market = { locale: localeFor(post), symbol: currencySymbolFor(post) };
   for (const field of schema.sections.flatMap((s) => s.fields)) {
     if (field.key === "name" || field.key === "description" || field.type === "goodToKnow" || PRICE_KEYS.has(field.key)) continue;
     if (field.key === "makeOther" && makeOther) continue;
@@ -108,7 +117,7 @@ function buildSchemaKeyDetails(post: LeanPost, schema: PostFormSchemaData): KeyV
       continue;
     }
     const value = (post as unknown as Record<string, unknown>)[field.key] ?? attributes[field.key];
-    const shown = formatSchemaValue(field, value);
+    const shown = formatSchemaValue(field, value, market);
     if (shown) rows.push({ key: field.label, value: shown });
   }
   return rows;

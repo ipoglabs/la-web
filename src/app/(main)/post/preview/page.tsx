@@ -33,16 +33,15 @@ import SubmitProgressModal, {
 
 /* ---------------- HELPERS ---------------- */
 
-function fmtCurrency(v: unknown, currency: string) {
+/** A price in the market's symbol and digit grouping, as listing cards show it ("₹6,00,000", "S$90,000"). */
+function fmtCurrency(v: unknown, market: Market) {
   if (!v) return "—";
   const n = Number(v);
   if (Number.isNaN(n)) return String(v);
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(n);
+  return `${market.currencySymbol}${Math.round(n).toLocaleString(market.locale)}`;
 }
+
+type Market = { currencySymbol: string; locale: string };
 
 function fmtDate(v: unknown) {
   if (!v) return "—";
@@ -50,7 +49,7 @@ function fmtDate(v: unknown) {
   return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString();
 }
 
-function renderByType(spec: FieldSpec, value: any, currency: string): string {
+function renderByType(spec: FieldSpec, value: any, market: Market): string {
   if (
     value === undefined ||
     value === null ||
@@ -64,7 +63,7 @@ function renderByType(spec: FieldSpec, value: any, currency: string): string {
     return Array.isArray(value) ? value.join(", ") : "—";
   }
 
-  if (spec.type === "currency") return fmtCurrency(value, currency);
+  if (spec.type === "currency") return fmtCurrency(value, market);
   if (spec.type === "date") return fmtDate(value);
 
   if (spec.type === "boolean") {
@@ -246,7 +245,7 @@ export default function PreviewPage() {
 
       groups.categorySpecific.push({
         title: spec.label,
-        value: renderByType(spec, v, countryConfig.currency),
+        value: renderByType(spec, v, countryConfig),
       });
     }
 
@@ -256,7 +255,7 @@ export default function PreviewPage() {
     }
 
     return groups;
-  }, [data, specs, optionLabels, countryConfig.currency]);
+  }, [data, specs, optionLabels, countryConfig]);
 
   /* ---------------- NAVIGATION GUARD ---------------- */
 

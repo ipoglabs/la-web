@@ -22,6 +22,7 @@ export const SG_CONFIG: CountryConfig = {
   radiusUnit:     "km",
   currency:       "SGD",
   currencySymbol: "S$",
+  locale:         "en-SG",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────

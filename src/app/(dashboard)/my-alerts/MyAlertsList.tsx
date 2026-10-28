@@ -25,6 +25,7 @@ import type { MyAlertRow } from "@/app/actions/alerts/getMyAlerts";
 import { deleteAlert } from "@/app/actions/alerts/deleteAlert";
 import { toggleAlertActive } from "@/app/actions/alerts/toggleAlertActive";
 import { MAX_ALERTS_PER_USER } from "@/lib/constants";
+import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 
 const FREQUENCY_LABEL: Record<MyAlertRow["frequency"], string> = {
   instant: "Instant",
@@ -32,11 +33,13 @@ const FREQUENCY_LABEL: Record<MyAlertRow["frequency"], string> = {
   weekly: "Weekly digest",
 };
 
-function priceRangeLabel(min?: number, max?: number): string | null {
+/** An alert's price range in the current market's currency and digit grouping. */
+function priceRangeLabel(min: number | undefined, max: number | undefined, market: { currencySymbol: string; locale: string }): string | null {
+  const fmt = (n: number) => `${market.currencySymbol}${n.toLocaleString(market.locale)}`;
   if (min == null && max == null) return null;
-  if (min != null && max != null) return `₹${min.toLocaleString()} – ₹${max.toLocaleString()}`;
-  if (min != null) return `From ₹${min.toLocaleString()}`;
-  return `Up to ₹${max?.toLocaleString()}`;
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}`;
+  if (min != null) return `From ${fmt(min)}`;
+  return `Up to ${fmt(max!)}`;
 }
 
 function AlertRow({
@@ -50,7 +53,8 @@ function AlertRow({
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const priceLabel = priceRangeLabel(alert.priceMin, alert.priceMax);
+  const { countryConfig } = useCountryConfig();
+  const priceLabel = priceRangeLabel(alert.priceMin, alert.priceMax, countryConfig);
 
   async function handleToggle(next: boolean) {
     setBusy(true);

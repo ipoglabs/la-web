@@ -22,6 +22,7 @@ export const IN_CONFIG: CountryConfig = {
   radiusUnit:     "km",
   currency:       "INR",
   currencySymbol: "₹",
+  locale:         "en-IN",
   // dateFormat not set — inherits GLOBAL_CONFIG.dateFormat (DD/MM/YYYY)
 
   // ── Legal ───────────────────────────────────────────────────────────────────

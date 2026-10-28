@@ -30,9 +30,15 @@ export function mapStatus(status?: IPost["status"], isSuspended?: boolean): List
 // category — no per-category currency conversion, just the post's own
 // market's symbol. Revisit once a proper per-country currency formatter
 // exists.
-function currencySymbolFor(post: LeanPost): string {
+export function currencySymbolFor(post: LeanPost): string {
   const code = post.country as CountryCode | undefined;
   return (code && COUNTRY_CONFIGS[code]?.currencySymbol) || "$";
+}
+
+/** The post's market's number locale: India groups digits in lakhs (₹6,00,000). */
+export function localeFor(post: LeanPost): string {
+  const code = post.country as CountryCode | undefined;
+  return (code && COUNTRY_CONFIGS[code]?.locale) || "en-GB";
 }
 
 /** Price suffix per Rent Period value (posting/form-schema/defaults/property.ts). */
@@ -107,7 +113,8 @@ const OFFER_DEAL_LABEL: Record<string, string> = {
 
 export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
   const symbol = currencySymbolFor(post);
-  const fmt = (n: number) => `${symbol}${n.toLocaleString()}`;
+  const locale = localeFor(post);
+  const fmt = (n: number) => `${symbol}${n.toLocaleString(locale)}`;
   // Pets › Lost & Found: a reward instead of a price (saved in attributes).
   if (post.category === "pets" && post.subcategory === "lost_found") {
     const reward = Number(post.attributes?.reward);

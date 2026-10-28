@@ -19,6 +19,8 @@ export default function CheckoutForm({ amount, currency, onSuccess, onError }: C
 
   const symbols: Record<string, string> = { sgd: 'S$', inr: '₹', gbp: '£', usd: '$' }
   const symbol = symbols[currency.toLowerCase()] ?? currency.toUpperCase()
+  // Rupees group in lakhs (₹1,00,000); the others in thousands.
+  const locale = currency.toLowerCase() === 'inr' ? 'en-IN' : 'en-GB'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,7 +103,7 @@ export default function CheckoutForm({ amount, currency, onSuccess, onError }: C
             Processing...
           </span>
         ) : (
-          `Confirm & Pay ${symbol}${Number(amount).toLocaleString()}`
+          `Confirm & Pay ${symbol}${Number(amount).toLocaleString(locale)}`
         )}
       </button>
 
