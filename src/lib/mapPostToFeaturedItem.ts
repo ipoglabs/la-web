@@ -173,6 +173,10 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
         if (!(fee > 0)) return { priceLabel: "Free" };
     }
   }
+  // Vehicles › Wanted: the most the buyer will pay (Max Budget), as the price filter reads it.
+  if (post.category === "vehicles" && post.subcategory === "wanted") {
+    return post.maxBudget != null ? { priceLabel: `Up to ${fmt(post.maxBudget)}` } : { priceLabel: "Wanted" };
+  }
   if (post.rentPrice != null) {
     // Some forms ask how the rent is quoted (Rent Period, saved in attributes).
     const period = String(post.attributes?.rentPeriod ?? "month");
