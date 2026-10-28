@@ -882,6 +882,41 @@ const BOOKS_FORM_FILTERS: Record<string, Record<string, string>> = {
   collectibles_memorabilia: { item_type: "attributes.itemType", authenticated: "attributes.authenticated", condition: "condition", delivery: "attributes.dealMethod" },
 };
 
+/**
+ * Tickets & Vouchers filters each sub's form saves (posting/form-schema/defaults/tickets-vouchers.ts):
+ * filter id → the post path it matches. When, and dropping past events and
+ * expired vouchers, are handled in buildTicketsClauses.
+ */
+const TICKETS_FORM_FILTERS: Record<string, Record<string, string>> = {
+  event_tickets: { event_type: "attributes.itemType", seating: "attributes.seating", transfer: "attributes.transferMethod" },
+  sport_tickets: { sport: "attributes.itemType", seating: "attributes.seating", transfer: "attributes.transferMethod" },
+  gift_cards: { retailer_type: "attributes.itemType", format: "attributes.format" },
+  experience_days: { activity: "attributes.itemType", for_people: "attributes.forPeople" },
+  travel_vouchers: { voucher_type: "attributes.itemType", destination: "destination" },
+};
+
+/** When: an event within this many days from today. */
+const WHEN_DAYS: Record<string, number> = { week: 7, month: 30, "3months": 92 };
+
+function buildTicketsClauses(sub: string, fv: Record<string, string[]>): Record<string, unknown>[] {
+  const clauses = buildPathFormClauses(TICKETS_FORM_FILTERS[sub], fv);
+  // Dates are saved as YYYY-MM-DD, so they compare as strings.
+  const day = (offset = 0) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);
+  const today = day();
+  const unset = { $in: [null, ""] };
+  if (sub === "event_tickets" || sub === "sport_tickets") {
+    // An event that's over drops out of search (Last Day, else Event Date).
+    clauses.push({ $or: [{ endDate: { $gte: today } }, { endDate: unset, startDate: { $gte: today } }] });
+    const days = WHEN_DAYS[fv.date_scope?.[0] ?? ""];
+    if (days) clauses.push({ startDate: { $lte: day(days) } });
+  } else {
+    // An expired voucher, or a booking whose travel date has passed, drops out.
+    clauses.push({ $or: [{ deadline: unset }, { deadline: { $gte: today } }] });
+    if (sub === "travel_vouchers") clauses.push({ $or: [{ startDate: unset }, { startDate: { $gte: today } }] });
+  }
+  return clauses;
+}
+
 /** Clauses for a sub whose filters each match one post path. */
 function buildPathFormClauses(filters: Record<string, string> | undefined, fv: Record<string, string[]>): Record<string, unknown>[] {
   return Object.entries(filters ?? {}).flatMap(([id, path]) => {
@@ -1200,7 +1235,7 @@ export function buildFilterQuery(
     return clauses.length === 1 ? clauses[0] : { $and: clauses };
   }
 
-  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining", "travel_stays", "baby_kids", "sports_outdoors", "electronics_tech", "musical_instruments", "books_media_collectibles"].includes(category)) {
+  if (["services", "pets", "business", "community", "education", "free_giveaway", "home_furniture", "fashion_clothing", "special_offers", "health_beauty", "food_dining", "travel_stays", "baby_kids", "sports_outdoors", "electronics_tech", "musical_instruments", "books_media_collectibles", "tickets_vouchers"].includes(category)) {
     const clauses =
       category === "pets"
         ? buildPetsFormClauses(sub, filterValues)
@@ -1234,7 +1269,9 @@ export function buildFilterQuery(
                                     ? buildPathFormClauses(MUSICAL_FORM_FILTERS[sub], filterValues)
                                     : category === "books_media_collectibles"
                                       ? buildPathFormClauses(BOOKS_FORM_FILTERS[sub], filterValues)
-                                      : buildServicesFormClauses(sub, filterValues);
+                                      : category === "tickets_vouchers"
+                                        ? buildTicketsClauses(sub, filterValues)
+                                        : buildServicesFormClauses(sub, filterValues);
     if (field && (min || max)) {
       const range: Record<string, number> = {};
       if (min) range.$gte = Number(min);

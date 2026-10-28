@@ -9,7 +9,7 @@
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, pairs } from "./shared";
 
-/** The marketplace's graded condition scale (defaults/marketplace.ts). */
+/** The graded condition scale the marketplace categories share. */
 const CONDITION_SCALE: [string, string][] = [
   ["new", "Brand New"],
   ["like-new", "Like New"],

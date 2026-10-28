@@ -30,7 +30,7 @@ import { musicalInstrumentsSections } from "./musical-instruments";
 import { booksMediaSections } from "./books-media";
 import { healthBeautySections } from "./health-beauty";
 import { specialOffersSections } from "./specialOffers";
-import { MARKETPLACE_BUILDERS } from "./marketplace";
+import { ticketsVouchersSections } from "./tickets-vouchers";
 import { applyLimits, COUNTRIES } from "./shared";
 
 /** Bump when the code defaults change shape, so seeded docs can be told apart. */
@@ -58,9 +58,7 @@ const BUILDERS: Record<string, SectionsBuilder> = {
   "Musical Instruments": musicalInstrumentsSections,
   "Books, Media & Collectibles": booksMediaSections,
   "Special Offers": specialOffersSections,
-  ...Object.fromEntries(
-    Object.entries(MARKETPLACE_BUILDERS).map(([cat, build]) => [cat, (sub: string) => build(sub)] as const),
-  ),
+  "Tickets & Vouchers": ticketsVouchersSections,
 };
 
 export function getDefaultSchema(category: string, subcategory: string, country: string): PostFormSchemaData | null {

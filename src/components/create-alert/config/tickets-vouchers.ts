@@ -1,4 +1,33 @@
-import type { MainCategory } from "../types";
+import type { FilterConfig, FilterOption, MainCategory } from "../types";
+
+// Option values are the Tickets & Vouchers forms' (posting/form-schema/defaults/tickets-vouchers.ts):
+// each sub's kind is `itemType`; When reads the Event Date
+// (lib/postFilterQuery.ts TICKETS_FORM_FILTERS, buildTicketsClauses).
+
+const opts = (entries: [string, string][]): FilterOption[] => entries.map(([value, label]) => ({ label, value }));
+
+const when: FilterConfig = {
+  id: "date_scope",
+  label: "When",
+  type: "toggle",
+  singleSelect: true,
+  options: opts([["any", "Any"], ["week", "Next 7 Days"], ["month", "Next 30 Days"], ["3months", "Next 3 Months"]]),
+};
+
+const seating: FilterConfig = {
+  id: "seating",
+  label: "Seating",
+  type: "toggle",
+  options: opts([["standing", "Standing"], ["seated", "Seated"], ["hospitality", "VIP / Hospitality"]]),
+};
+
+const official: FilterConfig = {
+  id: "transfer",
+  label: "Ticket Type",
+  type: "toggle",
+  singleSelect: true,
+  options: opts([["official", "Official app transfer only"]]),
+};
 
 export const ticketsVouchers: MainCategory = {
   id: "tickets_vouchers",
@@ -17,27 +46,11 @@ export const ticketsVouchers: MainCategory = {
           id: "event_type",
           label: "Event Type",
           type: "toggle",
-          options: [
-            { label: "Music / Concert", value: "music"     },
-            { label: "Theatre",         value: "theatre"   },
-            { label: "Comedy",          value: "comedy"    },
-            { label: "Festival",        value: "festival"  },
-            { label: "Exhibition",      value: "exhibition"},
-            { label: "Other",           value: "other"     },
-          ],
+          options: opts([["music", "Music / Concert"], ["festival", "Festival"], ["theatre", "Theatre & Musicals"], ["comedy", "Comedy"], ["exhibition", "Exhibition"], ["family", "Kids & Family"], ["other", "Other"]]),
         },
-        {
-          id: "date_scope",
-          label: "When",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",        value: "any"     },
-            { label: "This Week",  value: "week"    },
-            { label: "This Month", value: "month"   },
-            { label: "3 Months+",  value: "3months" },
-          ],
-        },
+        when,
+        seating,
+        official,
       ],
     },
     {
@@ -49,28 +62,11 @@ export const ticketsVouchers: MainCategory = {
           id: "sport",
           label: "Sport",
           type: "toggle",
-          options: [
-            { label: "Football",   value: "football"  },
-            { label: "Cricket",    value: "cricket"   },
-            { label: "Tennis",     value: "tennis"    },
-            { label: "F1 / Motorsport", value: "f1"  },
-            { label: "Boxing / MMA",    value: "boxing"},
-            { label: "Rugby",      value: "rugby"     },
-            { label: "Other",      value: "other"     },
-          ],
+          options: opts([["football", "Football"], ["cricket", "Cricket"], ["tennis", "Tennis"], ["f1", "F1 / Motorsport"], ["boxing", "Boxing / MMA"], ["rugby", "Rugby"], ["other", "Other"]]),
         },
-        {
-          id: "date_scope",
-          label: "When",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",        value: "any"     },
-            { label: "This Week",  value: "week"    },
-            { label: "This Month", value: "month"   },
-            { label: "3 Months+",  value: "3months" },
-          ],
-        },
+        when,
+        seating,
+        official,
       ],
     },
     {
@@ -82,15 +78,13 @@ export const ticketsVouchers: MainCategory = {
           id: "retailer_type",
           label: "Retailer",
           type: "toggle",
-          options: [
-            { label: "Fashion",     value: "fashion"     },
-            { label: "Electronics", value: "electronics" },
-            { label: "Food & Drink",value: "food"        },
-            { label: "Beauty",      value: "beauty"      },
-            { label: "Travel",      value: "travel"      },
-            { label: "Gaming",      value: "gaming"      },
-            { label: "General",     value: "general"     },
-          ],
+          options: opts([["fashion", "Fashion"], ["electronics", "Electronics"], ["food", "Food & Drink"], ["beauty", "Beauty"], ["travel", "Travel"], ["gaming", "Gaming"], ["entertainment", "Cinema & Entertainment"], ["general", "General / Shopping"]]),
+        },
+        {
+          id: "format",
+          label: "Format",
+          type: "toggle",
+          options: opts([["digital", "Digital code"], ["physical", "Physical card"]]),
         },
       ],
     },
@@ -103,15 +97,13 @@ export const ticketsVouchers: MainCategory = {
           id: "activity",
           label: "Activity",
           type: "toggle",
-          options: [
-            { label: "Adventure",  value: "adventure" },
-            { label: "Spa & Wellness", value: "spa"   },
-            { label: "Fine Dining",value: "dining"    },
-            { label: "Driving",    value: "driving"   },
-            { label: "Cooking",    value: "cooking"   },
-            { label: "Creative",   value: "creative"  },
-            { label: "Other",      value: "other"     },
-          ],
+          options: opts([["adventure", "Adventure"], ["flying", "Flying & Ballooning"], ["driving", "Driving"], ["spa", "Spa & Wellness"], ["dining", "Fine Dining"], ["cooking", "Cooking"], ["creative", "Creative"], ["other", "Other"]]),
+        },
+        {
+          id: "for_people",
+          label: "For",
+          type: "toggle",
+          options: opts([["1", "1 person"], ["2", "2 people"], ["group", "Family / Group"]]),
         },
       ],
     },
@@ -121,28 +113,16 @@ export const ticketsVouchers: MainCategory = {
       icon: "plane",
       filters: [
         {
-          id: "destination",
-          label: "Destination",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",           value: "any"           },
-            { label: "Domestic",      value: "domestic"      },
-            { label: "Europe",        value: "europe"        },
-            { label: "Worldwide",     value: "worldwide"     },
-          ],
-        },
-        {
           id: "voucher_type",
           label: "Type",
           type: "toggle",
-          options: [
-            { label: "Hotel",    value: "hotel"    },
-            { label: "Flight",   value: "flight"   },
-            { label: "Package",  value: "package"  },
-            { label: "Car Hire", value: "car_hire" },
-            { label: "Other",    value: "other"    },
-          ],
+          options: opts([["hotel", "Hotel"], ["flight", "Flight"], ["rail", "Rail"], ["package", "Package Holiday"], ["car_hire", "Car Hire"], ["other", "Other"]]),
+        },
+        {
+          id: "destination",
+          label: "Where",
+          type: "toggle",
+          options: opts([["domestic", "Domestic"], ["short_haul", "Short-haul / Regional"], ["worldwide", "Worldwide / Any route"]]),
         },
       ],
     },
