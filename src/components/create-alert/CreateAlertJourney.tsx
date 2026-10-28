@@ -23,6 +23,10 @@ import { LaButton, LaTagInput, LaSwitch } from "@/components/la";
 import { cn } from "@/lib/utils";
 import { ALERT_CONFIG } from "./alert-config";
 import { CATEGORIES } from "@/config/categories";
+import RangeFilterRow from "@/components/la-blocks/RangeFilterRow";
+import { useOptionalCountry } from "@/components/country/CountryProvider";
+import { getConfigByIso } from "@/config";
+import { deriveActiveChips, isRangeFilter, resolveFilters, type ListingFilterConfig } from "@/lib/listing-filters";
 import { getNotifyChannelAvailability } from "@/app/actions/alerts/getNotifyChannelAvailability";
 import type { NotifyChannelAvailability } from "@/app/actions/alerts/getNotifyChannelAvailability";
 import type {
@@ -314,6 +318,8 @@ function DynamicFilterRow({ filter, value, onChange }: DynamicFilterRowProps) {
 
 interface StepFiltersProps {
   subCategory: SubCategory;
+  /** The market's listing filters (resolveFilters) — what the listings page offers */
+  filters: ListingFilterConfig[];
   keywords: string[];
   locationValue: LocationValue | null;
   filterValues: Record<string, string[]>;
@@ -328,6 +334,7 @@ interface StepFiltersProps {
 
 function StepFilters({
   subCategory,
+  filters,
   keywords,
   locationValue,
   filterValues,
@@ -378,14 +385,21 @@ function StepFilters({
           </div>
 
           {/* Dynamic attribute filters */}
-          {subCategory.filters.map((filter) => (
-            <DynamicFilterRow
-              key={filter.id}
-              filter={filter}
-              value={filterValues[filter.id] ?? []}
-              onChange={(vals) => onFilterChange(filter.id, vals)}
-            />
-          ))}
+          {filters.map((filter) =>
+            isRangeFilter(filter) ? (
+              <div key={filter.id} className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">{filter.label}</p>
+                <RangeFilterRow filter={filter} values={filterValues} onChange={onFilterChange} />
+              </div>
+            ) : (
+              <DynamicFilterRow
+                key={filter.id}
+                filter={filter}
+                value={filterValues[filter.id] ?? []}
+                onChange={(vals) => onFilterChange(filter.id, vals)}
+              />
+            )
+          )}
 
         </div>
       </div>
@@ -424,6 +438,7 @@ function StepFilters({
 interface StepDoneProps {
   mainCategory: MainCategory;
   subCategory: SubCategory;
+  filters: ListingFilterConfig[];
   keywords: string[];
   locationValue: LocationValue | null;
   filterValues: Record<string, string[]>;
@@ -437,6 +452,7 @@ interface StepDoneProps {
 function StepDone({
   mainCategory,
   subCategory,
+  filters,
   keywords,
   locationValue,
   filterValues,
@@ -475,13 +491,7 @@ function StepDone({
     onNotifyChange(next);
   };
 
-  const filterChips = subCategory.filters.flatMap((f) => {
-    const vals = filterValues[f.id] ?? [];
-    return vals.map((v) => ({
-      key:   `${f.id}__${v}`,
-      label: f.options.find((o) => o.value === v)?.label ?? v,
-    }));
-  });
+  const filterChips = deriveActiveChips(filterValues, filters).map(({ id, label }) => ({ key: id, label }));
 
   return (
     <>
@@ -672,6 +682,17 @@ export default function CreateAlertJourney({
 
   const isPopup = layout === "popup";
 
+  // The same filters, options and price steps as the market's listings page,
+  // so an alert can only save values that page (and the match jobs) understand.
+  const market = getConfigByIso(useOptionalCountry() ?? "");
+  const filters = mainCategory && subCategory
+    ? resolveFilters(mainCategory.id, subCategory.id, {
+        country: market?.code,
+        currencySymbol: market?.config.currencySymbol,
+        values: filterValues,
+      })
+    : [];
+
   const handleMainChange = (cat: MainCategory) => {
     setMainCategory(cat);
     setSubCategory(null);
@@ -766,6 +787,7 @@ export default function CreateAlertJourney({
       {step === 2 && subCategory && (
         <StepFilters
           subCategory={subCategory}
+          filters={filters}
           keywords={keywords}
           locationValue={location}
           filterValues={filterValues}
@@ -784,6 +806,7 @@ export default function CreateAlertJourney({
         <StepDone
           mainCategory={mainCategory}
           subCategory={subCategory}
+          filters={filters}
           keywords={keywords}
           locationValue={location}
           filterValues={filterValues}

@@ -19,7 +19,7 @@ import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import type { JobResult } from "@/lib/jobs/_types";
-import { findAlertMatches, getAlertRecipient } from "@/lib/jobs/_utils";
+import { alertListingsUrl, findAlertMatches, getAlertRecipient } from "@/lib/jobs/_utils";
 
 const MAX_TRACKED_IDS = 500;
 
@@ -60,7 +60,7 @@ export async function runAlertDigestJob(
           data: {
             alertName: alert.name,
             count: matches.length,
-            previewUrl: `/listings?alertId=${alert._id}`,
+            previewUrl: alertListingsUrl(alert),
             frequency,
           },
         });
@@ -74,7 +74,7 @@ export async function runAlertDigestJob(
         const sent = await sendWhatsAppMessage(
           recipient.phone,
           `Your ${frequency} digest — ${matches.length} new ${matchWord} for "${alert.name}"`,
-          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
+          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}${alertListingsUrl(alert)}`,
         );
         if (sent) result.whatsappSent++;
         else result.errors++;

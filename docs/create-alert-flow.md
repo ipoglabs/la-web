@@ -23,12 +23,12 @@ Manage Alerts (`/my-alerts`) before creating another.
 1. **Category + sub-category** — single screen, `ALERT_CONFIG`
    (`create-alert/config/`) joined against the display `CATEGORIES` list.
 2. **Filters** — keywords (`LaTagInput`, max 5), location (`LocationPicker`),
-   and per-category dynamic filters (`FilterConfig[]` from `ALERT_CONFIG`).
-   At least one of keyword/filter/location is required to submit. Filter
-   selections are collected but **not persisted** — the match jobs don't
-   implement matching against them yet (see `createAlert.ts`'s own doc
-   comment); only category/subCategory/keywords/location/notifyVia are
-   saved.
+   and the market's listing filters: `resolveFilters(cat, sub, { country })`
+   from `lib/listing-filters.ts`, the same list the listings page shows
+   (per-market drops and labels, km/miles, price in the market's currency
+   via the shared `la-blocks/RangeFilterRow`). Outside `CountryProvider`
+   (the `/snippets` demo) it falls back to the unscoped list. At least one of
+   keyword/filter/location is required to submit.
 3. **Confirmation + notify channels** — Email/WhatsApp toggles. Each toggle
    is **disabled** (with an inline hint) unless the account has that channel
    verified — fetched via `getNotifyChannelAvailability()`
@@ -52,8 +52,11 @@ On submit:
    before creating anything. `useSubmitAlert.ts` surfaces this as a toast
    with a "Manage alerts" action button routing to `/my-alerts`.
 3. `Alert.create(...)` — `category`/`subCategory` store the canonical id
-   (not the display label); `notifyVia` defaults to `["email"]` if the
-   wizard somehow submits an empty array.
+   (not the display label); `country` is the country cookie, lowercased, as
+   `addPost.ts` saves a post's; `filters` keeps only the filter ids and
+   options that market's `resolveFilters` offers (price bounds must be whole
+   numbers); `notifyVia` defaults to `["email"]` if the wizard somehow
+   submits an empty array.
 4. `logActivity(... "ALERT_CREATED" ...)`.
 5. **Immediate confirmation email** (`ALERT_CREATED` event, see below) — a
    fresh `User.findById(session.userId).select("email")` lookup, not the
@@ -70,6 +73,17 @@ On submit:
   (`alert.userId === session.userId`) server-side on both actions.
 - Deleting drops the count back under 5 and immediately re-enables
   "Create alert" (client state update, no page reload needed).
+
+## Matching (`findAlertMatches()`, `src/lib/jobs/_utils.ts`)
+
+Shared by the instant and digest jobs. An alert matches what its listings
+page shows: id-or-label category/subcategory, the alert's `country` (or posts
+with none, as `api/listings/[category]/route.ts` scopes), and its `filters`
+through the same `buildFilterQuery()` the listings API runs — so a price
+filter reads each sub's real price field (`salePrice`, `rateMonthly`, …).
+Keywords and location are matched on top. The email / WhatsApp link is
+`alertListingsUrl()`: `/<country>/listings?cat=…&sub=…&<filters>`, which opens
+the listings page with the alert's filters applied.
 
 ## Notifications
 
@@ -125,10 +139,8 @@ is approved in the Twilio console.
   not a bug in this flow's code, a platform-wide Resend/DNS setup gap.
   Delivery will start working the moment the domain is verified — no code
   change needed.
-- **Filter values aren't matched** — Step 2's per-category toggle filters
-  (bedrooms, fuel type, etc.) are collected in the UI but dropped before
-  persistence; `findAlertMatches()` only matches on category/subCategory/
-  location/keywords/price.
+- **Alerts made before 2026-10-28** have no `country` or `filters` — they
+  match every market, as before.
 - **Duplicate-alert detection** — flagged as a `TODO [INTEGRATION]` in
   `CreateAlertJourney.tsx`, not implemented. A user can create two
   functionally-identical alerts (within the 5-alert cap).

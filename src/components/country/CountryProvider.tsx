@@ -47,3 +47,8 @@ export function useCountry(): string {
   if (!ctx) throw new Error("useCountry must be used inside CountryProvider");
   return ctx;
 }
+
+/** useCountry for components also rendered outside CountryProvider (e.g. /snippets demos) — null there. */
+export function useOptionalCountry(): string | null {
+  return useContext(CountryContext) ?? null;
+}

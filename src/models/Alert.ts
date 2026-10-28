@@ -12,6 +12,10 @@ export interface IAlert extends Document {
   name: string;
   category: string;
   subCategory?: string;
+  /** Market ("in" | "gb" | "sg") — unset on alerts made before it was saved, which match every market */
+  country?: string;
+  /** Listing filter values, filter id → selected values (lib/listing-filters.ts's URL contract) */
+  filters?: Record<string, string[]>;
   keywords?: string[];
   location?: string;
   priceMin?: number;
@@ -32,6 +36,8 @@ const AlertSchema = new Schema<IAlert>(
     name: { type: String, required: true, trim: true },
     category: { type: String, required: true },
     subCategory: { type: String },
+    country: { type: String },
+    filters: { type: Schema.Types.Mixed },
     keywords: [{ type: String }],
     location: { type: String },
     priceMin: { type: Number, min: 0 },

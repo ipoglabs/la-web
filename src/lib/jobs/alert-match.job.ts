@@ -13,6 +13,8 @@
  * Match logic (see findAlertMatches in _utils.ts):
  *  - category: required, id-or-label match
  *  - subCategory: AND, id-or-label match (if set on alert)
+ *  - country: AND, the alert's market or posts with none (if set)
+ *  - filters: AND, the listings page's own filter query (buildFilterQuery)
  *  - location: AND, case-insensitive contains on location.address (if set)
  *  - priceMin / priceMax: AND range (if set on alert)
  *  - keywords: OR — any keyword matches in name OR description (if set)
@@ -27,7 +29,7 @@ import Alert from "@/models/Alert";
 import { sendEmail } from "@/lib/email";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import type { JobResult } from "@/lib/jobs/_types";
-import { findAlertMatches, getAlertRecipient } from "@/lib/jobs/_utils";
+import { alertListingsUrl, findAlertMatches, getAlertRecipient } from "@/lib/jobs/_utils";
 
 const MAX_TRACKED_IDS = 500;
 
@@ -68,7 +70,7 @@ export async function runAlertMatchJob(): Promise<JobResult> {
           data: {
             alertName: alert.name,
             count: matches.length,
-            previewUrl: `/listings?alertId=${alert._id}`,
+            previewUrl: alertListingsUrl(alert),
           },
         });
 
@@ -82,7 +84,7 @@ export async function runAlertMatchJob(): Promise<JobResult> {
         const sent = await sendWhatsAppMessage(
           recipient.phone,
           `${matches.length} new ${matchWord} for your "${alert.name}" alert`,
-          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}/listings?alertId=${alert._id}`,
+          `${process.env.NEXT_PUBLIC_APP_URL ?? "https://lokalads.com"}${alertListingsUrl(alert)}`,
         );
         if (sent) result.whatsappSent++;
         else result.errors++;

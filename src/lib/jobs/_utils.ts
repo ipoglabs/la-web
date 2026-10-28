@@ -11,6 +11,8 @@ import User from "@/models/user";
 import { publicPostFilter } from "@/lib/postVisibility";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { LEGACY_SUBCATEGORY_ALIASES, exactCaseInsensitive } from "@/lib/postSubcategoryAliases";
+import { buildFilterQuery, carsAlsoSearchEv } from "@/lib/postFilterQuery";
+import { buildFilterURL } from "@/lib/listing-filters";
 import type { IAlert } from "@/models/Alert";
 
 /**
@@ -35,10 +37,16 @@ export interface AlertMatch {
  * caveat as api/listings/[category]/route.ts) — match either. Real posts
  * live in `Post`, never `Listing` (Listing is only ever populated by
  * seed/migration scripts, not real user activity — see docs/db-schemas.md).
+ *
+ * Country and filters are matched exactly as the listings page matches them
+ * (api/listings/[category]/route.ts): a post with no country shows in every
+ * market, and the filters go through the same buildFilterQuery, so an alert
+ * finds what its listings link shows.
  */
 export async function findAlertMatches(
-  alert: Pick<IAlert, "category" | "subCategory" | "location" | "priceMin" | "priceMax" | "keywords" | "lastMatchedListingIds">
+  alert: Pick<IAlert, "category" | "subCategory" | "country" | "filters" | "location" | "priceMin" | "priceMax" | "keywords" | "lastMatchedListingIds">
 ): Promise<AlertMatch[]> {
+  const filters = alert.filters ?? {};
   const categoryLabel = CATEGORY_LABELS[alert.category];
   const query: Record<string, unknown> = {
     ...publicPostFilter(),
@@ -58,6 +66,12 @@ export async function findAlertMatches(
       (v): v is string | RegExp => Boolean(v),
     );
     query.subcategory = values.length > 1 ? { $in: values } : values[0];
+
+    // Cars › Electric also watches electric cars posted under Electric Vehicles.
+    if (carsAlsoSearchEv(alert.category, alert.subCategory, filters)) {
+      const evLabel = SUBCATEGORY_LABELS[alert.category]?.electric_vehicles;
+      query.subcategory = { $in: [...values, "electric_vehicles", ...(evLabel ? [evLabel] : [])] };
+    }
   }
 
   if (alert.location) {
@@ -79,7 +93,23 @@ export async function findAlertMatches(
     ];
   }
 
-  return Post.find(query).select("_id name").lean<AlertMatch[]>();
+  // Combined via $and so the country, filter and keyword $or clauses never collide.
+  const clauses = [
+    query,
+    alert.country ? { $or: [{ country: alert.country }, { country: { $exists: false } }] } : {},
+    buildFilterQuery(alert.category, alert.subCategory ?? "", filters),
+  ].filter((clause) => Object.keys(clause).length > 0);
+
+  return Post.find(clauses.length > 1 ? { $and: clauses } : query).select("_id name").lean<AlertMatch[]>();
+}
+
+/**
+ * The listings page an alert's matches link to — its category, sub and
+ * filters, in its market. An alert with no market links to bare /listings,
+ * which proxy.ts redirects to the viewer's own.
+ */
+export function alertListingsUrl(alert: Pick<IAlert, "category" | "subCategory" | "country" | "filters">): string {
+  return `${alert.country ? `/${alert.country}` : ""}/listings${buildFilterURL(alert.category, alert.subCategory ?? "", alert.filters ?? {})}`;
 }
 
 export interface AlertRecipient {
