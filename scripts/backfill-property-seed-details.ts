@@ -125,7 +125,12 @@ const DETAILS: Record<string, SeedDetails> = {
     text: [["BMRDA-approved plot", "BMRDA-approved 30×40 (1,200 sq ft) plot"]],
   },
   "prop-in-land-02": { fill: { listingFor: "Sale", listedBy: "Owner", plot_area: 2, plotAreaUnit: "acre" }, set: { propertyType: "Agricultural", salePrice: 28 * LAKH } },
-  "prop-land-02": { fill: { listingFor: "Sale", listedBy: "Owner", plot_area: 12, plotAreaUnit: "acre" }, set: { propertyType: "Agricultural" } },
+  "prop-land-01": {
+    fill: { listingFor: "Sale", listedBy: "Owner", plot_area: 4500, plotAreaUnit: "sq ft" },
+    set: { propertyType: "BuildingPlot" },
+    text: [["Serviced residential building plot", "Serviced 4,500 sq ft residential building plot"]],
+  },
+  "prop-land-02": { fill:{ listingFor: "Sale", listedBy: "Owner", plot_area: 12, plotAreaUnit: "acre" }, set: { propertyType: "Agricultural" } },
   "prop-land-03": { fill: { listingFor: "Sale", listedBy: "Agent", plot_area: 0.8, plotAreaUnit: "acre" }, set: { propertyType: "Development" } },
   "prop-sg-land-01": {
     fill: { listingFor: "Sale", listedBy: "Owner", plot_area: 4000, plotAreaUnit: "sq ft" },
