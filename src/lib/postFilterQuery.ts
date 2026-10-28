@@ -1179,6 +1179,7 @@ function buildVehicleQuery(sub: string, fv: Record<string, string[]>): Record<st
   if (engine.length) clauses.push(engine.length === 1 ? { engineCapacity: engine[0] } : { $or: engine.map((r) => ({ engineCapacity: r })) });
 
   if (first("ulez") === "yes") clauses.push({ "attributes.ulezCompliant": "Yes" });
+  if (first("write_off") === "exclude") clauses.push({ "attributes.writeOff": { $nin: ["S", "N"] } });
 
   // COE Expiry is saved as YYYY-MM-DD, so ISO strings compare in date order.
   const coeYears = Number(first("coe_left"));

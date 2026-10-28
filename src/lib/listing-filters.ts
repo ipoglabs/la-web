@@ -365,7 +365,7 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   "property/land": propertyByMarket("Land for Sale / Lease", { land_type: "propertyType" }),
   "property/wanted": propertyByMarket("Wanted", { prop_type: "propertyType" }),
   "vehicles/cars": {
-    in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null },
+    in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null, write_off: null },
     gb: {
       fuel_type: { drop: ["cng"] },
       transmission: { drop: ["amt"] },
@@ -373,7 +373,7 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
       max_mileage: { suffix: " miles" },
       coe_left: null,
     },
-    sg: { fuel_type: { drop: ["lpg"] }, transmission: { drop: ["amt"] }, body_type: { drop: ["muv"] }, max_mileage: { suffix: " km" }, ulez: null },
+    sg: { fuel_type: { drop: ["lpg"] }, transmission: { drop: ["amt"] }, body_type: { drop: ["muv"] }, max_mileage: { suffix: " km" }, ulez: null, write_off: null },
   },
   "vehicles/motorcycle": {
     in: {
@@ -382,14 +382,15 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
       engine_cc: ENGINE_CC_BY_MARKET.in,
       max_mileage: { suffix: " km" },
       coe_left: null,
+      write_off: null,
     },
     gb: { engine_cc: ENGINE_CC_BY_MARKET.gb, max_mileage: { suffix: " miles" }, coe_left: null },
-    sg: { engine_cc: ENGINE_CC_BY_MARKET.sg, max_mileage: { suffix: " km" } },
+    sg: { engine_cc: ENGINE_CC_BY_MARKET.sg, max_mileage: { suffix: " km" }, write_off: null },
   },
   "vehicles/van": {
-    in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, wheelbase: null, roof_height: null, coe_left: null },
+    in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, wheelbase: null, roof_height: null, coe_left: null, write_off: null },
     gb: { fuel_type: { drop: ["cng"] }, transmission: { drop: ["amt"] }, max_mileage: { suffix: " miles" }, coe_left: null },
-    sg: { fuel_type: { drop: ["lpg"] }, transmission: { drop: ["amt"] }, max_mileage: { suffix: " km" }, wheelbase: null, roof_height: null },
+    sg: { fuel_type: { drop: ["lpg"] }, transmission: { drop: ["amt"] }, max_mileage: { suffix: " km" }, wheelbase: null, roof_height: null, write_off: null },
   },
   "vehicles/truck": {
     in: { emission: { drop: ["euro4", "euro5", "euro6"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, coe_left: null },
@@ -397,9 +398,9 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
     sg: { emission: { drop: ["bs4", "bs6"] }, max_mileage: { suffix: " km" }, wheels: null, permit: null },
   },
   "vehicles/electric_vehicles": {
-    in: { charging_port: { drop: ["chademo"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, range_min: { suffix: " km" }, coe_left: null },
+    in: { charging_port: { drop: ["chademo"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, range_min: { suffix: " km" }, coe_left: null, write_off: null },
     gb: { ev_type: { drop: ["three_wheeler"] }, charging_port: { drop: ["bharat"] }, max_mileage: { suffix: " miles" }, range_min: { suffix: " miles" }, coe_left: null },
-    sg: { ev_type: { drop: ["three_wheeler"] }, charging_port: { drop: ["bharat"] }, max_mileage: { suffix: " km" }, range_min: { suffix: " km" } },
+    sg: { ev_type: { drop: ["three_wheeler"] }, charging_port: { drop: ["bharat"] }, max_mileage: { suffix: " km" }, range_min: { suffix: " km" }, write_off: null },
   },
   "vehicles/boats": {
     in: { boat_type: { drop: ["narrowboat"] }, mooring: null },

@@ -74,6 +74,18 @@ const color: FilterConfig = {
   })),
 };
 
+/** UK only (lib/listing-filters.ts): leaves out Cat S / Cat N write-offs. */
+const writeOff: FilterConfig = {
+  id: "write_off",
+  label: "Write-offs",
+  type: "toggle",
+  singleSelect: true,
+  options: [
+    { label: "Any",                value: "any"     },
+    { label: "Exclude write-offs", value: "exclude" },
+  ],
+};
+
 const coeLeft: FilterConfig = {
   id: "coe_left",
   label: "COE Left",
@@ -172,6 +184,7 @@ export const vehicles: MainCategory = {
             { label: "ULEZ compliant", value: "yes" },
           ],
         },
+        writeOff,
         coeLeft,
       ],
     },
@@ -237,6 +250,7 @@ export const vehicles: MainCategory = {
         },
         owners,
         color,
+        writeOff,
         coeLeft,
       ],
     },
@@ -338,6 +352,7 @@ export const vehicles: MainCategory = {
         },
         owners,
         color,
+        writeOff,
         coeLeft,
       ],
     },
@@ -728,6 +743,7 @@ export const vehicles: MainCategory = {
         },
         owners,
         color,
+        writeOff,
         coeLeft,
       ],
     },

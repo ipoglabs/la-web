@@ -52,24 +52,51 @@ const distance = (country: string): FormFieldDef =>
     ? { key: "kms", type: "number", label: "Mileage", unit: "miles", min: 0, width: "half" }
     : { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" };
 
+/** UK insurers' write-off categories; AutoTrader shows them and lets buyers exclude them. */
+const WRITE_OFF = pairs([
+  ["none", "Not a write-off"],
+  ["S", "Cat S (structural damage)"],
+  ["N", "Cat N (non-structural damage)"],
+]);
+/** Indian policies: CarDekho and Cars24 show the cover beside its validity. */
+const INSURANCE_TYPE = pairs([
+  ["comprehensive", "Comprehensive"],
+  ["zero_dep", "Zero Depreciation"],
+  ["third_party", "Third Party"],
+  ["expired", "Expired"],
+]);
+/** Taking the buyer's old vehicle in part payment, in each market's words. */
+const PART_EXCHANGE_LABEL: Record<string, string> = { IN: "Exchange Accepted", GB: "Part Exchange Considered", SG: "Trade-in Considered" };
+
 /**
  * The History section per market. GB keeps the plate (buyers run a history
  * check) and adds MOT Expiry; SG drops the plate for COE Expiry; IN asks
  * the registering state instead of the plate. `extra` goes before Service
  * History (Cars: ULEZ in GB, registration date and depreciation in SG).
+ * Every market ends with Part Exchange; GB asks the write-off category and
+ * IN the insurance cover.
  */
 function historyFields(
   country: string,
   extra: { GB?: FormFieldDef[]; SG?: FormFieldDef[]; motLabel?: string } = {},
 ): FormFieldDef[] {
   const serviceHistoryField: FormFieldDef = { key: "serviceHistory", type: "select", label: "Service History", options: serviceHistory };
+  const partExchange: FormFieldDef = {
+    key: "partExchange",
+    type: "select",
+    label: PART_EXCHANGE_LABEL[country] ?? PART_EXCHANGE_LABEL.IN,
+    options: YES_NO_TEXT,
+    width: "half",
+  };
   if (country === "GB") {
     return [
       { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]) },
       { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
       { key: "motExpiry", type: "date", label: extra.motLabel ?? "MOT Expiry", width: "half" },
+      { key: "writeOff", type: "select", label: "Write-off Category", options: WRITE_OFF, hint: "Shown on the vehicle's insurance history check." },
       ...(extra.GB ?? []),
       serviceHistoryField,
+      partExchange,
     ];
   }
   if (country === "SG") {
@@ -78,13 +105,16 @@ function historyFields(
       { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half" },
       ...(extra.SG ?? []),
       serviceHistoryField,
+      partExchange,
     ];
   }
   return [
     { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]) },
     { key: "registrationState", type: "select", display: "dropdown", label: "Registration State (RTO)", options: opts(IN_REGISTRATION_STATES), width: "half" },
     { key: "insuranceValidTill", type: "date", label: "Insurance Valid Till", width: "half" },
+    { key: "insuranceType", type: "select", label: "Insurance Type", options: INSURANCE_TYPE, width: "half" },
     serviceHistoryField,
+    partExchange,
   ];
 }
 // Saved as a number (8 = "8+").
