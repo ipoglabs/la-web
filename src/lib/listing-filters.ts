@@ -324,6 +324,13 @@ const HEALTH_LANGUAGES = byMarket({ language: fromFormLists(LANGUAGES) });
 const FOOD_CUISINE_DIETARY = byMarket({ cuisine: fromFormLists(CUISINES), dietary: fromFormLists(DIETARY) });
 
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
+  // New or Resale in each market's words; Chain Free is a UK idea, brokerage an Indian one.
+  "property/to_buy": {
+    in: { sale_type: { relabel: { new: "New Booking" } }, chain_free: null },
+    gb: { sale_type: { relabel: { new: "New Build" } } },
+    sg: { sale_type: { relabel: { new: "New Launch" } }, chain_free: null },
+  },
+  "property/to_rent": { gb: { brokerage: null }, sg: { brokerage: null } },
   "vehicles/cars": {
     in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null },
     gb: {

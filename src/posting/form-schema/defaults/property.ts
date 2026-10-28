@@ -39,6 +39,40 @@ const GB_RATINGS: FormFieldDef[] = [
   { key: "councilTaxBand", type: "select", label: "Council Tax Band", options: opts(["A", "B", "C", "D", "E", "F", "G", "H"]) },
   { key: "epcRating", type: "select", label: "EPC Rating", options: opts(["A", "B", "C", "D", "E", "F", "G"]) },
 ];
+/** New from the builder or a resale: the first split buyers make on 99acres,
+ *  MagicBricks, Rightmove (New homes) and PropertyGuru (New launch). */
+const SALE_TYPE: Record<string, { label: string; new: string }> = {
+  IN: { label: "Transaction Type", new: "New Booking" },
+  GB: { label: "New Build or Resale", new: "New Build" },
+  SG: { label: "New Launch or Resale", new: "New Launch" },
+};
+const saleType = (country: string): FormFieldDef => {
+  const t = SALE_TYPE[country] ?? SALE_TYPE.IN;
+  return { key: "saleType", type: "select", label: t.label, options: [{ value: "new", label: t.new }, { value: "resale", label: "Resale" }], width: "half" };
+};
+/** UK buyers filter for sellers with no onward purchase (Rightmove, Zoopla). */
+const CHAIN_FREE: FormFieldDef = {
+  key: "chainFree",
+  type: "select",
+  label: "Chain Free",
+  options: YES_NO,
+  hint: "Yes if you aren't waiting on a purchase of your own.",
+  width: "half",
+};
+/** Indian rental agents charge the tenant a brokerage; NoBroker and MagicBricks show it. */
+const BROKERAGE: FormFieldDef = {
+  key: "brokerage",
+  type: "select",
+  label: "Brokerage",
+  options: [
+    { value: "none", label: "No brokerage" },
+    { value: "15days", label: "15 days' rent" },
+    { value: "1month", label: "1 month's rent" },
+    { value: "other", label: "Other / negotiable" },
+  ],
+  width: "half",
+  showWhen: { field: "listedBy", in: ["Agent"] },
+};
 const RENT_PERIODS: FormFieldOption[] = [
   { value: "month", label: "Per month" },
   { value: "week", label: "Per week" },
@@ -328,6 +362,8 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
           fields: [
             { key: "propertyType", type: "select", label: "Property Type", required: true, options: c.buy.propertyTypes },
             { key: "listedBy", type: "select", label: "Listed By", required: true, options: listedByOptions(country) },
+            saleType(country),
+            ...(country === "GB" ? [CHAIN_FREE] : []),
             { key: "salePrice", type: "currency", label: "Sale Price", required: true, min: 1, width: "half" },
             { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, defaultValue: "No", width: "half" },
             // "Carpet area" is an Indian term; GB and SG listings show one floor area.
@@ -394,7 +430,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
                 ] satisfies FormFieldDef[])),
             // Maintenance charges are an Indian concept; GB and SG renters ask about bills.
             ...(country === "IN"
-              ? ([{ key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "half" }] satisfies FormFieldDef[])
+              ? ([{ key: "maintenance", type: "currency", label: "Maintenance", min: 0, width: "half" }, BROKERAGE] satisfies FormFieldDef[])
               : ([{ key: "billsIncluded", type: "select", label: "Bills Included", options: opts(["Yes", "No", "Some"]) }] satisfies FormFieldDef[])),
             ...bedsBaths({ studio: true }),
             { key: "furnishing", type: "select", label: "Furnishing", options: c.rent.furnishingOptions },

@@ -142,6 +142,15 @@ const WANTED_TYPE: Record<string, () => Record<string, unknown>> = {
   land: () => ({ propertyType: "Plot" }),
 };
 
+// To Buy: New or Resale and Chain Free (UK); To Rent: No brokerage (India),
+// which an owner's own listing always is.
+const SALE_TYPE: Record<string, () => Record<string, unknown>> = {
+  new: () => ({ "attributes.saleType": "new" }),
+  resale: () => ({ "attributes.saleType": "resale" }),
+};
+const CHAIN_FREE = { yes: () => ({ "attributes.chainFree": "Yes" }) };
+const NO_BROKERAGE = { none: () => ({ $or: [{ "attributes.listedBy": "Owner" }, { "attributes.brokerage": "none" }] }) };
+
 const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
   to_rent: {
     text: { prop_type: "propertyType", furnishing: "furnishing" },
@@ -149,6 +158,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
       bedrooms: { field: "beds", table: BEDROOM_TO_BEDS },
       floor_level: { field: "floor", table: FLOOR_LEVEL_TO_FLOOR },
     },
+    choice: { brokerage: NO_BROKERAGE },
     priceField: "rentPrice",
     listedBy: true,
   },
@@ -162,6 +172,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
       bedrooms: { field: "beds", table: BEDROOM_TO_BEDS },
       floor_level: { field: "floor", table: FLOOR_LEVEL_TO_FLOOR },
     },
+    choice: { sale_type: SALE_TYPE, chain_free: CHAIN_FREE },
     priceField: "salePrice",
     listedBy: true,
   },

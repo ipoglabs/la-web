@@ -38,6 +38,14 @@ export const property: MainCategory = {
             { label: "Agent", value: "agent" },
           ],
         },
+        // India only (lib/listing-filters.ts): owners' listings and agents charging none.
+        {
+          id: "brokerage",
+          label: "Brokerage",
+          type: "toggle",
+          singleSelect: true,
+          options: [{ label: "No brokerage", value: "none" }],
+        },
       ],
     },
     {
@@ -60,6 +68,24 @@ export const property: MainCategory = {
         },
         bedrooms,
         floorLevel,
+        {
+          id: "sale_type",
+          label: "New or Resale",
+          type: "toggle",
+          singleSelect: true,
+          options: [
+            { label: "New",    value: "new"    },
+            { label: "Resale", value: "resale" },
+          ],
+        },
+        // UK only (lib/listing-filters.ts).
+        {
+          id: "chain_free",
+          label: "Chain",
+          type: "toggle",
+          singleSelect: true,
+          options: [{ label: "Chain free", value: "yes" }],
+        },
         {
           id: "tenure",
           label: "Tenure",
