@@ -1,5 +1,5 @@
 // Default post-form schemas for the categories promoted out of the old
-// "For Sale" bucket (Electronics & Tech, Fashion & Clothing, …). Their old
+// "For Sale" bucket (Musical Instruments, Books, Media & Collectibles, …). Their old
 // forms were borrowed from other categories and most of what
 // they collected was never saved; these give each category its own fields.
 //
@@ -9,7 +9,7 @@
 // size/colour for fashion, specs for phones and laptops.
 
 import type { FormFieldDef, FormSection } from "../types";
-import { basics, opts, pairs, YES_NO } from "./shared";
+import { basics, pairs, YES_NO } from "./shared";
 
 /** Graded condition scale (Carousell / Gumtree style). "new", "like-new" and
  *  "used" keep the values older posts already store. */
@@ -33,13 +33,6 @@ const price = (label = "Price", required = true): FormFieldDef => ({
 const negotiable: FormFieldDef = { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO, width: "half" };
 const brand: FormFieldDef = { key: "brand", type: "text", label: "Brand", width: "half" };
 const model: FormFieldDef = { key: "model", type: "text", label: "Model", width: "half" };
-const color: FormFieldDef = { key: "color", type: "text", label: "Color", width: "half" };
-const warranty: FormFieldDef = {
-  key: "warranty",
-  type: "select",
-  label: "Warranty",
-  options: pairs([["no", "No Warranty"], ["under-warranty", "Under Warranty"], ["extended", "Extended Warranty"]]),
-};
 const condition = (extra: [string, string][] = []): FormFieldDef => ({
   key: "condition",
   type: "select",
@@ -76,20 +69,6 @@ const booksMedia: Builder = (sub) => {
     "Collectibles & Memorabilia": [{ key: "era", type: "text", label: "Year / Era", placeholder: "e.g. 1960s", width: "half" }],
   };
   return extra[sub] ? item("Item", [condition([["collectible", "Collectible"]]), ...extra[sub]]) : null;
-};
-
-const electronics: Builder = (sub) => {
-  const known = ["Mobile Phones & Tablets", "Laptops & Computers", "TVs & Audio", "Gaming", "Cameras & Photography", "Computer Parts & Components", "Wearables & Smart Devices", "Tech Accessories"];
-  if (!known.includes(sub)) return null;
-  const storage: FormFieldDef = { key: "storage", type: "text", label: "Storage", placeholder: "e.g. 128 GB", width: "half" };
-  const ram: FormFieldDef = { key: "ram", type: "text", label: "RAM", placeholder: "e.g. 8 GB", width: "half" };
-  const specs: Record<string, FormFieldDef[]> = {
-    "Mobile Phones & Tablets": [storage, ram, color],
-    "Laptops & Computers": [{ key: "processor", type: "text", label: "Processor", placeholder: "e.g. Intel i5 / Apple M2", width: "half" }, ram, storage, { key: "screenSize", type: "text", label: "Screen Size", placeholder: "e.g. 14 inch", width: "half" }],
-    "TVs & Audio": [{ key: "screenSize", type: "text", label: "Screen Size", placeholder: "e.g. 55 inch", width: "half" }],
-    Gaming: [{ key: "platform", type: "select", label: "Platform", options: opts(["PlayStation", "Xbox", "Nintendo", "PC", "Other"]) }],
-  };
-  return item("Item", [brand, model, ...(specs[sub] ?? []), condition([["for-parts", "For Parts / Not Working"]]), warranty]);
 };
 
 const musical: Builder = (sub) => {
@@ -139,7 +118,6 @@ const tickets: Builder = (sub) => {
 
 export const MARKETPLACE_BUILDERS: Record<string, Builder> = {
   "Books, Media & Collectibles": booksMedia,
-  "Electronics & Tech": electronics,
   "Musical Instruments": musical,
   "Tickets & Vouchers": tickets,
 };

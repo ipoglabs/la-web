@@ -1,4 +1,28 @@
-import type { MainCategory } from "../types";
+import type { FilterConfig, FilterOption, MainCategory } from "../types";
+
+// Option values are the Electronics & Tech forms' (posting/form-schema/defaults/electronics-tech.ts):
+// each sub's Type is `itemType`; phones, laptops and cameras also save a
+// `brand` from a list (lib/postFilterQuery.ts ELECTRONICS_FORM_FILTERS).
+
+const opts = (entries: [string, string][]): FilterOption[] => entries.map(([value, label]) => ({ label, value }));
+
+const condition: FilterConfig = {
+  id: "condition",
+  label: "Condition",
+  type: "toggle",
+  options: opts([["new", "Brand New"], ["like-new", "Like New"], ["lightly-used", "Lightly Used"], ["used", "Well Used"], ["heavily-used", "Heavily Used"], ["for-parts", "For Parts / Not Working"]]),
+};
+
+const delivery: FilterConfig = {
+  id: "delivery",
+  label: "Delivery",
+  type: "toggle",
+  singleSelect: true,
+  options: opts([["delivery", "Delivery available"]]),
+};
+
+const type = (entries: [string, string][], label = "Type"): FilterConfig => ({ id: "type", label, type: "toggle", options: opts(entries) });
+const brand = (entries: [string, string][]): FilterConfig => ({ id: "brand", label: "Brand", type: "toggle", options: opts([...entries, ["other", "Other"]]) });
 
 export const electronicsTech: MainCategory = {
   id: "electronics_tech",
@@ -13,44 +37,23 @@ export const electronicsTech: MainCategory = {
       label: "Mobile Phones & Tablets",
       icon: "smartphone",
       filters: [
-        {
-          id: "brand",
-          label: "Brand",
-          type: "toggle",
-          options: [
-            { label: "Apple",    value: "apple"   },
-            { label: "Samsung",  value: "samsung" },
-            { label: "Google",   value: "google"  },
-            { label: "OnePlus",  value: "oneplus" },
-            { label: "Xiaomi",   value: "xiaomi"  },
-            { label: "Other",    value: "other"   },
-          ],
-        },
+        type([["phone", "Smartphone"], ["tablet", "Tablet"], ["basic", "Basic / Feature Phone"]]),
+        brand([["apple", "Apple"], ["samsung", "Samsung"], ["google", "Google"], ["oneplus", "OnePlus"], ["xiaomi", "Xiaomi"], ["oppo", "OPPO"], ["vivo", "vivo"], ["realme", "realme"], ["motorola", "Motorola"], ["nokia", "Nokia"]]),
         {
           id: "storage",
           label: "Storage",
           type: "toggle",
-          options: [
-            { label: "64GB",  value: "64"  },
-            { label: "128GB", value: "128" },
-            { label: "256GB", value: "256" },
-            { label: "512GB", value: "512" },
-            { label: "1TB",   value: "1tb" },
-          ],
+          options: opts([["32", "32GB or less"], ["64", "64GB"], ["128", "128GB"], ["256", "256GB"], ["512", "512GB"], ["1tb", "1TB+"]]),
         },
         {
-          id: "condition",
-          label: "Condition",
+          id: "network",
+          label: "Network",
           type: "toggle",
           singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
+          options: opts([["unlocked", "Unlocked"]]),
         },
+        condition,
+        delivery,
       ],
     },
     {
@@ -58,45 +61,10 @@ export const electronicsTech: MainCategory = {
       label: "Laptops & Computers",
       icon: "laptop",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",       value: "any"     },
-            { label: "Laptop",    value: "laptop"  },
-            { label: "Desktop",   value: "desktop" },
-            { label: "All-in-One", value: "aio"   },
-            { label: "Mini PC",   value: "mini_pc" },
-          ],
-        },
-        {
-          id: "brand",
-          label: "Brand",
-          type: "toggle",
-          options: [
-            { label: "Apple",  value: "apple"  },
-            { label: "Dell",   value: "dell"   },
-            { label: "HP",     value: "hp"     },
-            { label: "Lenovo", value: "lenovo" },
-            { label: "Asus",   value: "asus"   },
-            { label: "Other",  value: "other"  },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([["laptop", "Laptop"], ["desktop", "Desktop"], ["aio", "All-in-One"], ["mini_pc", "Mini PC"], ["monitor", "Monitor"], ["other", "Other"]]),
+        brand([["apple", "Apple"], ["dell", "Dell"], ["hp", "HP"], ["lenovo", "Lenovo"], ["asus", "Asus"], ["acer", "Acer"], ["msi", "MSI"], ["microsoft", "Microsoft"], ["samsung", "Samsung"]]),
+        condition,
+        delivery,
       ],
     },
     {
@@ -104,43 +72,15 @@ export const electronicsTech: MainCategory = {
       label: "TVs & Audio",
       icon: "monitor",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "TV",           value: "tv"         },
-            { label: "Soundbar",     value: "soundbar"   },
-            { label: "Speakers",     value: "speakers"   },
-            { label: "Headphones",   value: "headphones" },
-            { label: "Earbuds",      value: "earbuds"    },
-            { label: "Home Cinema",  value: "cinema"     },
-          ],
-        },
+        type([["tv", "TV"], ["projector", "Projector"], ["soundbar", "Soundbar"], ["speakers", "Speakers"], ["hifi", "Hi-Fi & Turntables"], ["headphones", "Headphones"], ["earbuds", "Earbuds"], ["cinema", "Home Cinema"], ["other", "Other"]]),
         {
           id: "screen_size",
           label: "Screen Size",
           type: "toggle",
-          options: [
-            { label: "Under 32\"", value: "under_32" },
-            { label: "32–49\"",    value: "32_49"    },
-            { label: "50–65\"",    value: "50_65"    },
-            { label: "65\"+",      value: "65plus"   },
-          ],
+          options: opts([["under_32", "Under 32\""], ["32_49", "32–49\""], ["50_65", "50–64\""], ["65plus", "65\" and over"]]),
         },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        condition,
+        delivery,
       ],
     },
     {
@@ -152,38 +92,11 @@ export const electronicsTech: MainCategory = {
           id: "platform",
           label: "Platform",
           type: "toggle",
-          options: [
-            { label: "PlayStation", value: "ps"      },
-            { label: "Xbox",        value: "xbox"    },
-            { label: "Nintendo",    value: "nintendo"},
-            { label: "PC",          value: "pc"      },
-            { label: "Mobile",      value: "mobile"  },
-          ],
+          options: opts([["ps", "PlayStation"], ["xbox", "Xbox"], ["nintendo", "Nintendo"], ["pc", "PC"], ["mobile", "Mobile"], ["other", "Other"]]),
         },
-        {
-          id: "item_type",
-          label: "Item Type",
-          type: "toggle",
-          options: [
-            { label: "Console",     value: "console"    },
-            { label: "Game",        value: "game"       },
-            { label: "Controller",  value: "controller" },
-            { label: "Accessory",   value: "accessory"  },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        { ...type([["console", "Console"], ["game", "Game"], ["controller", "Controller"], ["vr", "VR Headset"], ["pc", "Gaming PC"], ["chair", "Gaming Chair & Desk"], ["accessory", "Accessory"], ["other", "Other"]]), id: "item_type" },
+        condition,
+        delivery,
       ],
     },
     {
@@ -191,32 +104,10 @@ export const electronicsTech: MainCategory = {
       label: "Cameras & Photography",
       icon: "camera",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "DSLR",        value: "dslr"       },
-            { label: "Mirrorless",  value: "mirrorless" },
-            { label: "Action Cam",  value: "action"     },
-            { label: "Drone",       value: "drone"      },
-            { label: "Lens",        value: "lens"       },
-            { label: "Accessory",   value: "accessory"  },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([["dslr", "DSLR"], ["mirrorless", "Mirrorless"], ["compact", "Compact"], ["action", "Action Cam"], ["drone", "Drone"], ["lens", "Lens"], ["lighting", "Lighting & Flash"], ["tripod", "Tripod & Support"], ["accessory", "Accessory"], ["other", "Other"]]),
+        brand([["canon", "Canon"], ["sony", "Sony"], ["nikon", "Nikon"], ["fujifilm", "Fujifilm"], ["panasonic", "Panasonic"], ["olympus", "OM System / Olympus"], ["gopro", "GoPro"], ["dji", "DJI"], ["godox", "Godox"]]),
+        condition,
+        delivery,
       ],
     },
     {
@@ -224,33 +115,9 @@ export const electronicsTech: MainCategory = {
       label: "Computer Parts & Components",
       icon: "cpu",
       filters: [
-        {
-          id: "type",
-          label: "Component",
-          type: "toggle",
-          options: [
-            { label: "GPU",         value: "gpu"         },
-            { label: "CPU",         value: "cpu"         },
-            { label: "RAM",         value: "ram"         },
-            { label: "SSD / HDD",   value: "storage"     },
-            { label: "Motherboard", value: "motherboard" },
-            { label: "PSU",         value: "psu"         },
-            { label: "Other",       value: "other"       },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([["gpu", "GPU"], ["cpu", "CPU"], ["ram", "RAM"], ["storage", "SSD / HDD"], ["motherboard", "Motherboard"], ["psu", "PSU"], ["case", "Case"], ["cooling", "Cooling"], ["other", "Other"]], "Component"),
+        condition,
+        delivery,
       ],
     },
     {
@@ -258,31 +125,9 @@ export const electronicsTech: MainCategory = {
       label: "Wearables & Smart Devices",
       icon: "watch",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Smartwatch",      value: "smartwatch"  },
-            { label: "Fitness Tracker", value: "tracker"     },
-            { label: "Smart Speaker",   value: "speaker"     },
-            { label: "Smart Display",   value: "display"     },
-            { label: "Other",           value: "other"       },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-            { label: "Fair",     value: "fair"     },
-          ],
-        },
+        type([["smartwatch", "Smartwatch"], ["tracker", "Fitness Tracker"], ["ring", "Smart Ring"], ["speaker", "Smart Speaker"], ["display", "Smart Display"], ["smart_home", "Smart Home"], ["other", "Other"]]),
+        condition,
+        delivery,
       ],
     },
     {
@@ -290,31 +135,9 @@ export const electronicsTech: MainCategory = {
       label: "Tech Accessories",
       icon: "plug",
       filters: [
-        {
-          id: "type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Cases & Covers", value: "cases"    },
-            { label: "Chargers",       value: "chargers" },
-            { label: "Cables",         value: "cables"   },
-            { label: "Keyboards",      value: "keyboards"},
-            { label: "Mice",           value: "mice"     },
-            { label: "Other",          value: "other"    },
-          ],
-        },
-        {
-          id: "condition",
-          label: "Condition",
-          type: "toggle",
-          singleSelect: true,
-          options: [
-            { label: "Any",      value: "any"      },
-            { label: "New",      value: "new"      },
-            { label: "Like New", value: "like_new" },
-            { label: "Good",     value: "good"     },
-          ],
-        },
+        type([["cases", "Cases & Covers"], ["chargers", "Chargers & Power Banks"], ["cables", "Cables & Adapters"], ["keyboards", "Keyboards"], ["mice", "Mice"], ["drives", "External Drives & Memory"], ["printers", "Printers & Scanners"], ["networking", "Routers & Networking"], ["other", "Other"]]),
+        condition,
+        delivery,
       ],
     },
   ],
