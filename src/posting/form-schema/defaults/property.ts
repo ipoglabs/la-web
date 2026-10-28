@@ -1029,6 +1029,16 @@ export function getDefaultPropertySchema(subcategory: string, country: string): 
   };
 }
 
+/** A field's options in each market (value, label), for the search filters that match it. */
+export function propertyFieldOptions(subcategory: string, key: string): Record<string, [string, string][]> {
+  return Object.fromEntries(
+    PROPERTY_COUNTRIES.map((country) => {
+      const field = buildSections(subcategory, country)?.flatMap((s) => s.fields).find((f) => f.key === key);
+      return [country, (field?.options ?? []).map((o): [string, string] => [o.value, o.label])];
+    }),
+  );
+}
+
 export function getAllDefaultPropertySchemas(): PostFormSchemaData[] {
   return PROPERTY_COUNTRIES.flatMap((country) =>
     PROPERTY_SUBCATEGORIES.map((sub) => getDefaultPropertySchema(sub, country)!),

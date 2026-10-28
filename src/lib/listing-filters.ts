@@ -27,6 +27,7 @@ import type { FilterConfig } from "@/components/create-alert/types";
 import { hasPriceFilter } from "@/lib/postFilterQuery";
 import { CUISINES, DELIVERY_APPS, DIETARY } from "@/posting/form-schema/defaults/food-dining";
 import { LANGUAGES } from "@/posting/form-schema/defaults/health-beauty";
+import { propertyFieldOptions } from "@/posting/form-schema/defaults/property";
 
 // Re-export so callers only import from this file
 export type { FilterConfig };
@@ -270,7 +271,7 @@ function jobsPriceLabel(sub: string, unit: string | undefined): string {
 
 // ── Per-market options ───────────────────────────────────────────────────────
 
-type FilterTweak = { label?: string; drop?: string[]; relabel?: Record<string, string>; suffix?: string };
+type FilterTweak = { label?: string; drop?: string[]; relabel?: Record<string, string>; suffix?: string; order?: string[] };
 type MarketTweaks = Record<string, FilterTweak | null>;
 
 // GB A1 is the learner category (125cc); A2 is set by power (35 kW), which
@@ -313,7 +314,7 @@ const fromFormLists = (lists: Record<string, [string, string][]>) => {
   const all = [...new Set(Object.values(lists).flat().map(([value]) => value))];
   const forCountry = (country: string): FilterTweak => {
     const own = new Map(lists[country]);
-    return { drop: all.filter((v) => !own.has(v)), relabel: Object.fromEntries(own) };
+    return { drop: all.filter((v) => !own.has(v)), relabel: Object.fromEntries(own), order: [...own.keys()] };
   };
   return { in: forCountry("IN"), gb: forCountry("GB"), sg: forCountry("SG") };
 };
@@ -323,14 +324,46 @@ const byMarket = (tweaks: Record<string, ReturnType<typeof fromFormLists>>): Rec
 const HEALTH_LANGUAGES = byMarket({ language: fromFormLists(LANGUAGES) });
 const FOOD_CUISINE_DIETARY = byMarket({ cuisine: fromFormLists(CUISINES), dietary: fromFormLists(DIETARY) });
 
+type Market = "in" | "gb" | "sg";
+/**
+ * Property: each type filter (filter id → the form field it matches) narrowed
+ * to the market's own form options, plus any other per-market tweaks.
+ */
+const propertyByMarket = (sub: string, types: Record<string, string>, extra: Partial<Record<Market, MarketTweaks>> = {}): Record<string, MarketTweaks> => {
+  const lists = Object.entries(types).map(([id, key]) => [id, fromFormLists(propertyFieldOptions(sub, key))] as const);
+  return Object.fromEntries((["in", "gb", "sg"] as const).map((m) => [m, { ...Object.fromEntries(lists.map(([id, t]) => [id, t[m]])), ...extra[m] }]));
+};
+/** Furnishing's in-between option, in each market's words. */
+const PARTIAL_FURNISHING: Record<Market, FilterTweak> = {
+  in: { relabel: { partial: "Semi-Furnished" } },
+  gb: { relabel: { partial: "Part Furnished" } },
+  sg: { relabel: { partial: "Partially Furnished" } },
+};
+
 const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
-  // New or Resale in each market's words; Chain Free is a UK idea, brokerage an Indian one.
-  "property/to_buy": {
+  "property/to_rent": propertyByMarket("To Rent", { prop_type: "propertyType" }, {
+    in: { furnishing: PARTIAL_FURNISHING.in },
+    gb: { furnishing: PARTIAL_FURNISHING.gb, brokerage: null },
+    sg: { furnishing: PARTIAL_FURNISHING.sg, brokerage: null },
+  }),
+  // New or Resale in each market's words; Chain Free is a UK idea.
+  "property/to_buy": propertyByMarket("To Buy", { prop_type: "propertyType" }, {
     in: { sale_type: { relabel: { new: "New Booking" } }, chain_free: null },
     gb: { sale_type: { relabel: { new: "New Build" } } },
     sg: { sale_type: { relabel: { new: "New Launch" } }, chain_free: null },
-  },
-  "property/to_rent": { gb: { brokerage: null }, sg: { brokerage: null } },
+  }),
+  // Rooms are only furnished or unfurnished.
+  "property/room_rental": propertyByMarket("Room Rental", { room_type: "type" }, {
+    in: { furnishing: { drop: ["partial"] } },
+    gb: { furnishing: { drop: ["partial"] } },
+    sg: { furnishing: { drop: ["partial"] } },
+  }),
+  "property/for_students": propertyByMarket("For Students", { room_type: "propertyType" }),
+  "property/commercial": propertyByMarket("Commercial", { commercial_type: "propertyType" }),
+  "property/holiday_rental": propertyByMarket("Holiday Rental", { prop_type: "holidayType" }),
+  "property/new_projects": propertyByMarket("New Projects / Off-Plan", { prop_type: "propertyType" }),
+  "property/land": propertyByMarket("Land for Sale / Lease", { land_type: "propertyType" }),
+  "property/wanted": propertyByMarket("Wanted", { prop_type: "propertyType" }),
   "vehicles/cars": {
     in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null },
     gb: {
@@ -472,6 +505,9 @@ function forMarket(cat: string, sub: string, market: string, filters: FilterConf
         const label = tweak.relabel?.[o.value] ?? o.label;
         return { ...o, label: tweak.suffix && o.value !== "any" ? `${label}${tweak.suffix}` : label };
       });
+    // A market's own list order (its form's), where the tweak gives one.
+    const rank = (v: string) => tweak.order?.indexOf(v) ?? -1;
+    if (tweak.order) options.sort((a, b) => rank(a.value) - rank(b.value));
     return [{ ...f, label: tweak.label ?? f.label, options }];
   });
 }

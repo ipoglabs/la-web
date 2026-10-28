@@ -1,5 +1,18 @@
-import type { MainCategory } from "../types";
+import type { FilterConfig, MainCategory } from "../types";
+import { propertyFieldOptions } from "@/posting/form-schema/defaults/property";
 import { listingType, bedrooms, furnishing, floorLevel } from "./shared";
+
+// Type filters offer what the sub's post form saves (posting/form-schema/
+// defaults/property.ts), every market's options together; lib/listing-filters.ts
+// narrows them to each market's own list in its words, and lib/postFilterQuery.ts
+// matches them exactly.
+const formFilter = (id: string, label: string, subcategory: string, key: string): FilterConfig => {
+  const all = new Map<string, string>();
+  for (const entries of Object.values(propertyFieldOptions(subcategory, key))) {
+    for (const [value, optionLabel] of entries) if (!all.has(value)) all.set(value, optionLabel);
+  }
+  return { id, label, type: "toggle", options: [...all].map(([value, optionLabel]) => ({ label: optionLabel, value })) };
+};
 
 export const property: MainCategory = {
   id: "property",
@@ -14,18 +27,7 @@ export const property: MainCategory = {
       label: "To Rent",
       icon: "key",
       filters: [
-        {
-          id: "prop_type",
-          label: "Property Type",
-          type: "toggle",
-          options: [
-            { label: "Apartment",          value: "apartment" },
-            { label: "House / Villa",      value: "house"     },
-            { label: "Condo",              value: "condo"     },
-            { label: "Townhouse",          value: "townhouse" },
-            { label: "Serviced Apartment", value: "serviced"  },
-          ],
-        },
+        formFilter("prop_type", "Property Type", "To Rent", "propertyType"),
         bedrooms,
         furnishing,
         floorLevel,
@@ -53,19 +55,7 @@ export const property: MainCategory = {
       label: "To Buy",
       icon: "building-2",
       filters: [
-        {
-          id: "prop_type",
-          label: "Property Type",
-          type: "toggle",
-          options: [
-            { label: "Apartment",     value: "apartment" },
-            { label: "House / Villa", value: "house"     },
-            { label: "Condo",         value: "condo"     },
-            { label: "Townhouse",     value: "townhouse" },
-            { label: "Semi-D",        value: "semid"     },
-            { label: "Bungalow",      value: "bungalow"  },
-          ],
-        },
+        formFilter("prop_type", "Property Type", "To Buy", "propertyType"),
         bedrooms,
         floorLevel,
         {
@@ -114,18 +104,7 @@ export const property: MainCategory = {
       label: "Room Rental",
       icon: "door-open",
       filters: [
-        {
-          id: "room_type",
-          label: "Room Type",
-          type: "toggle",
-          options: [
-            { label: "Master Room", value: "master"  },
-            { label: "Single Room", value: "single"  },
-            { label: "Studio",      value: "studio"  },
-            { label: "En-suite",    value: "ensuite" },
-            { label: "Shared",      value: "shared"  },
-          ],
-        },
+        formFilter("room_type", "Room Type", "Room Rental", "type"),
         furnishing,
         {
           id: "gender",
@@ -133,9 +112,10 @@ export const property: MainCategory = {
           type: "toggle",
           singleSelect: true,
           options: [
-            { label: "Any",         value: "any"    },
-            { label: "Male Only",   value: "male"   },
-            { label: "Female Only", value: "female" },
+            { label: "Any",             value: "any"     },
+            { label: "Male",            value: "male"    },
+            { label: "Female",          value: "female"  },
+            { label: "Couples welcome", value: "couples" },
           ],
         },
         {
@@ -155,28 +135,16 @@ export const property: MainCategory = {
       label: "For Students",
       icon: "graduation-cap",
       filters: [
-        {
-          id: "room_type",
-          label: "Room Type",
-          type: "toggle",
-          options: [
-            { label: "Single Room", value: "single"  },
-            { label: "Studio",      value: "studio"  },
-            { label: "Shared Room", value: "shared"  },
-            { label: "En-suite",    value: "ensuite" },
-            { label: "Hostel",      value: "hostel"  },
-          ],
-        },
-        furnishing,
+        formFilter("room_type", "Accommodation Type", "For Students", "propertyType"),
         {
           id: "gender",
-          label: "Preferred Tenant",
+          label: "Boys / Girls",
           type: "toggle",
           singleSelect: true,
           options: [
-            { label: "Any",         value: "any"    },
-            { label: "Male Only",   value: "male"   },
-            { label: "Female Only", value: "female" },
+            { label: "Boys",  value: "boys"  },
+            { label: "Girls", value: "girls" },
+            { label: "Co-ed", value: "coed"  },
           ],
         },
         {
@@ -198,19 +166,7 @@ export const property: MainCategory = {
       icon: "landmark",
       filters: [
         listingType,
-        {
-          id: "commercial_type",
-          label: "Type",
-          type: "toggle",
-          options: [
-            { label: "Office",        value: "office"    },
-            { label: "Shop / Retail", value: "shop"      },
-            { label: "Warehouse",     value: "warehouse" },
-            { label: "Factory",       value: "factory"   },
-            { label: "Showroom",      value: "showroom"  },
-            { label: "Co-working",    value: "coworking" },
-          ],
-        },
+        formFilter("commercial_type", "Type", "Commercial", "propertyType"),
         {
           id: "listed_by",
           label: "Listed by",
@@ -228,18 +184,7 @@ export const property: MainCategory = {
       label: "Holiday Rental",
       icon: "palm-tree",
       filters: [
-        {
-          id: "prop_type",
-          label: "Property Type",
-          type: "toggle",
-          options: [
-            { label: "Apartment",          value: "apartment" },
-            { label: "House / Villa",      value: "house"     },
-            { label: "Cottage",            value: "cottage"   },
-            { label: "Cabin",              value: "cabin"     },
-            { label: "Serviced Apartment", value: "serviced"  },
-          ],
-        },
+        formFilter("prop_type", "Property Type", "Holiday Rental", "holidayType"),
         {
           id: "guests",
           label: "Guests",
@@ -282,18 +227,7 @@ export const property: MainCategory = {
       label: "New Projects / Off-Plan",
       icon: "building",
       filters: [
-        {
-          id: "prop_type",
-          label: "Property Type",
-          type: "toggle",
-          options: [
-            { label: "Apartment", value: "apartment" },
-            { label: "Condo",     value: "condo"     },
-            { label: "Townhouse", value: "townhouse" },
-            { label: "House / Villa", value: "house" },
-            { label: "Commercial", value: "commercial" },
-          ],
-        },
+        formFilter("prop_type", "Property Type", "New Projects / Off-Plan", "propertyType"),
         {
           id: "completion",
           label: "Completion",
@@ -334,18 +268,7 @@ export const property: MainCategory = {
             { label: "For Lease", value: "lease" },
           ],
         },
-        {
-          id: "land_type",
-          label: "Land Type",
-          type: "toggle",
-          options: [
-            { label: "Residential",  value: "residential"  },
-            { label: "Commercial",   value: "commercial"   },
-            { label: "Agricultural", value: "agricultural" },
-            { label: "Industrial",   value: "industrial"   },
-            { label: "Mixed Use",    value: "mixed"        },
-          ],
-        },
+        formFilter("land_type", "Land Type", "Land for Sale / Lease", "propertyType"),
         {
           id: "listed_by",
           label: "Listed by",
@@ -376,19 +299,7 @@ export const property: MainCategory = {
             { label: "Land",        value: "land"       },
           ],
         },
-        {
-          id: "prop_type",
-          label: "Property Type",
-          type: "toggle",
-          options: [
-            { label: "Apartment",     value: "apartment"  },
-            { label: "House / Villa", value: "house"      },
-            { label: "Condo",         value: "condo"      },
-            { label: "Room",          value: "room"       },
-            { label: "Commercial",    value: "commercial" },
-            { label: "Land",          value: "land"       },
-          ],
-        },
+        formFilter("prop_type", "Property Type", "Wanted", "propertyType"),
       ],
     },
   ],

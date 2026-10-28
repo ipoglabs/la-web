@@ -184,6 +184,12 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
   if (post.category === "vehicles" && post.subcategory === "wanted") {
     return post.maxBudget != null ? { priceLabel: `Up to ${fmt(post.maxBudget)}` } : { priceLabel: "Wanted" };
   }
+  // Property › Wanted: the buyer's Max Budget, or a renter's monthly one (saved in attributes).
+  if (post.category === "property" && post.subcategory === "wanted") {
+    const rent = Number(post.attributes?.maxRentBudget);
+    if (rent > 0) return { priceLabel: `Up to ${fmt(rent)}`, priceSuffix: "/ mo" };
+    return post.maxBudget != null ? { priceLabel: `Up to ${fmt(post.maxBudget)}` } : { priceLabel: "Wanted" };
+  }
   if (post.rentPrice != null) {
     // Some forms ask how the rent is quoted (Rent Period, saved in attributes).
     const period = String(post.attributes?.rentPeriod ?? "month");

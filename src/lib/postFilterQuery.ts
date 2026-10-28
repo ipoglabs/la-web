@@ -4,16 +4,9 @@
  * see lib/listing-filters.ts's URL FORMAT contract) into Mongo query
  * clauses against the real Post fields for a given category/subcategory.
  *
- * Field mappings below are grounded in actual Post documents (checked
- * directly against the DB), not just posting/config/property.ts's per-sub
- * FieldSpec list — that list turned out not to match what's really stored:
- * every property subcategory populates the same generic `propertyType`
- * field regardless of sub (not a per-sub field like `holidayType`), and
- * price lives on different fields per sub (rentPrice / salePrice /
- * rateNightly). Text fields are free-text (no constrained option list in
- * the posting wizard), so they're matched case-insensitively by whole word
- * rather than exact equality, to bridge casing/wording differences between
- * what a seller typed and the filter's canonical option value.
+ * Property's type filters offer each sub's form options (posting/form-schema/
+ * defaults/property.ts) and match the saved value exactly; price lives on
+ * different fields per sub (rentPrice / salePrice / rateNightly).
  *
  * Property and Vehicles have full filter mappings; Jobs, Services, Pets,
  * Business, Community and Education map the filters of each reworked sub's form. Other categories only get the
@@ -23,12 +16,6 @@
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// Word-boundary, not plain substring: "furnished" must NOT match inside
-// "Unfurnished" (it would with a bare substring test, inverting the filter).
-function containsInsensitive(value: string): RegExp {
-  return new RegExp(`\\b${escapeRegex(value)}\\b`, "i");
 }
 
 const BEDROOM_TO_BEDS: Record<string, unknown> = {
@@ -59,8 +46,8 @@ const GUESTS_TO_COUNT: Record<string, unknown> = {
 };
 
 interface SubFilterMap {
-  /** filter id -> Post text field, matched case-insensitively by whole word (multi-value = OR via $in) */
-  text?: Record<string, string>;
+  /** filter id -> Post field holding the form's own option value, matched exactly (multi-value = OR via $in) */
+  exact?: Record<string, string>;
   /** filter id -> { Post numeric field, bucket table } */
   bucket?: Record<string, { field: string; table: Record<string, unknown> }>;
   /** filter id -> option value -> Mongo clause; several picked = OR, options with no clause are ignored */
@@ -149,45 +136,68 @@ const SALE_TYPE: Record<string, () => Record<string, unknown>> = {
   resale: () => ({ "attributes.saleType": "resale" }),
 };
 const CHAIN_FREE = { yes: () => ({ "attributes.chainFree": "Yes" }) };
+
+// Furnishing: "partial" is each market's in-between option (IN Semi-furnished,
+// GB Part Furnished, SG Partially Furnished).
+const FURNISHING: Record<string, () => Record<string, unknown>> = {
+  furnished: () => ({ furnishing: "Furnished" }),
+  unfurnished: () => ({ furnishing: "Unfurnished" }),
+  partial: () => ({ furnishing: { $in: ["Semi-furnished", "PartFurnished", "Partial"] } }),
+};
+// Tenure: every leasehold kind (SG 99 / 999-year, UK shared ownership).
+const TENURE: Record<string, () => Record<string, unknown>> = {
+  freehold: () => ({ ownership: "Freehold" }),
+  leasehold: () => ({ ownership: { $in: ["Leasehold", "Leasehold99", "Leasehold999", "SharedOwnership"] } }),
+};
+// Room Rental's Preferred Tenant: a room open to anyone suits everyone.
+const ROOM_TENANT: Record<string, () => Record<string, unknown>> = {
+  male: () => ({ gender_pref: { $in: ["Male", "Any"] } }),
+  female: () => ({ gender_pref: { $in: ["Female", "Any"] } }),
+  couples: () => ({ gender_pref: "Couples" }),
+};
+// For Students: a co-ed place suits boys and girls alike.
+const STUDENT_GENDER: Record<string, () => Record<string, unknown>> = {
+  boys: () => ({ gender_pref: { $in: ["Boys", "CoEd"] } }),
+  girls: () => ({ gender_pref: { $in: ["Girls", "CoEd"] } }),
+  coed: () => ({ gender_pref: "CoEd" }),
+};
 const NO_BROKERAGE = { none: () => ({ $or: [{ "attributes.listedBy": "Owner" }, { "attributes.brokerage": "none" }] }) };
 
 const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
   to_rent: {
-    text: { prop_type: "propertyType", furnishing: "furnishing" },
+    exact: { prop_type: "propertyType" },
     bucket: {
       bedrooms: { field: "beds", table: BEDROOM_TO_BEDS },
       floor_level: { field: "floor", table: FLOOR_LEVEL_TO_FLOOR },
     },
-    choice: { brokerage: NO_BROKERAGE },
+    choice: { furnishing: FURNISHING, brokerage: NO_BROKERAGE },
     priceField: "rentPrice",
     listedBy: true,
   },
   to_buy: {
-    // tenure -> ownership: Post has an `ownership` field (posting/config's
-    // "to buy" FieldSpec) that plausibly holds freehold/leasehold-style
-    // text; no current sample data populates it, but the mapping is
-    // structurally correct once a post does set it.
-    text: { prop_type: "propertyType", tenure: "ownership" },
+    exact: { prop_type: "propertyType" },
     bucket: {
       bedrooms: { field: "beds", table: BEDROOM_TO_BEDS },
       floor_level: { field: "floor", table: FLOOR_LEVEL_TO_FLOOR },
     },
-    choice: { sale_type: SALE_TYPE, chain_free: CHAIN_FREE },
+    choice: { tenure: TENURE, sale_type: SALE_TYPE, chain_free: CHAIN_FREE },
     priceField: "salePrice",
     listedBy: true,
   },
   room_rental: {
-    text: { room_type: "propertyType", furnishing: "furnishing", gender: "gender_pref" },
+    exact: { room_type: "type" },
+    choice: { furnishing: FURNISHING, gender: ROOM_TENANT },
     priceField: "rentPrice",
     listedBy: true,
   },
   for_students: {
-    text: { room_type: "propertyType", furnishing: "furnishing", gender: "gender_pref" },
+    exact: { room_type: "propertyType" },
+    choice: { gender: STUDENT_GENDER },
     priceField: "rentPrice",
     listedBy: true,
   },
   commercial: {
-    text: { commercial_type: "propertyType" },
+    exact: { commercial_type: "propertyType" },
     priceField: "rentPrice",
     listedBy: true,
     // Listing For on the Commercial post form (since 2026-10-14).
@@ -199,7 +209,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     },
   },
   holiday_rental: {
-    text: { prop_type: "propertyType" },
+    exact: { prop_type: "holidayType" },
     bucket: { guests: { field: "guests", table: GUESTS_TO_COUNT } },
     choice: { stay_length: STAY_LENGTH },
     listedBy: true,
@@ -209,10 +219,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     priceField: "rateNightly",
   },
   land: {
-    // land_type's options (residential/commercial/agricultural/industrial/
-    // mixed) match real propertyType values seen on land posts directly
-    // ("RESIDENTIAL", "AGRICULTURAL", ...).
-    text: { land_type: "propertyType" },
+    exact: { land_type: "propertyType" },
     priceField: "rentPrice",
     listedBy: true,
     // Listing For on the Land post form (since 2026-10-14); older land posts were sale-only.
@@ -224,7 +231,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     },
   },
   wanted: {
-    text: { prop_type: "propertyType" },
+    exact: { prop_type: "propertyType" },
     choice: { wanted_type: WANTED_TYPE },
     // No reliable single budget field: minBudget/maxBudget describe the
     // buyer's own acceptable range, which the generic price_min/price_max
@@ -232,10 +239,7 @@ const PROPERTY_SUB_FILTERS: Record<string, SubFilterMap> = {
     // field — left unfiltered rather than guessed at.
   },
   new_projects: {
-    // Mirrors "to_buy": propertyType is the only structured text field
-    // posting/config/property.ts's "new projects / off-plan" FieldSpec
-    // captures that has a matching filter here.
-    text: { prop_type: "propertyType" },
+    exact: { prop_type: "propertyType" },
     choice: { completion: COMPLETION },
     listedBy: true,
     priceField: "salePrice",
@@ -280,9 +284,9 @@ function buildPropertyQuery(sub: string, fv: Record<string, string[]>): Record<s
 
   const clauses: Record<string, unknown>[] = [];
 
-  for (const [filterId, field] of Object.entries(map.text ?? {})) {
-    const values = (fv[filterId] ?? []).filter((v) => v !== "any");
-    if (values.length > 0) clauses.push({ [field]: { $in: values.map(containsInsensitive) } });
+  for (const [filterId, field] of Object.entries(map.exact ?? {})) {
+    const values = (fv[filterId] ?? []).filter((v) => v && v !== "any");
+    if (values.length > 0) clauses.push({ [field]: { $in: values } });
   }
 
   for (const [filterId, { field, table }] of Object.entries(map.bucket ?? {})) {
