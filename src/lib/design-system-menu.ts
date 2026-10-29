@@ -22,6 +22,7 @@ export const DESIGN_SYSTEM_MENU: MenuSection[] = [
       { label: "La Toggle Button", href: "/design-system/core/toggle-group" },
       { label: "La Switch", href: "/design-system/core/switch" },
       { label: "La Tag Input", href: "/design-system/core/la-tag-input" },
+      { label: "La Search Textbar", href: "/design-system/core/search-textbar" },
       { label: "La Badge", href: "/design-system/core/badge" },
       { label: "La Seperator", href: "/design-system/core/seperator" },
       { label: "La Skeleton", href: "/design-system/core/skeleton" },

@@ -28,6 +28,8 @@ export { LaInput }           from "./la-input";
 export type { LaInputProps, LaInputStatus } from "./la-input";
 export { LaTagInput }        from "./la-tag-input";
 export type { LaTagInputProps } from "./la-tag-input";
+export { LaSearchTextbar }   from "./la-search-textbar";
+export type { LaSearchTextbarProps, LaSearchTextbarOption } from "./la-search-textbar";
 
 // Amount
 export { LaAmount, formatAmount } from "./la-amount";
