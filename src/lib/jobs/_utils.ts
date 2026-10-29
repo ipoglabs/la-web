@@ -106,10 +106,13 @@ export async function findAlertMatches(
 /**
  * The listings page an alert's matches link to — its category, sub and
  * filters, in its market. An alert with no market links to bare /listings,
- * which proxy.ts redirects to the viewer's own.
+ * which proxy.ts redirects to the viewer's own. A single keyword rides along
+ * as the search bar's `q` (the same substring match); several keywords are
+ * OR-matched, which `q` can't express, so they're left off.
  */
-export function alertListingsUrl(alert: Pick<IAlert, "category" | "subCategory" | "country" | "filters">): string {
-  return `${alert.country ? `/${alert.country}` : ""}/listings${buildFilterURL(alert.category, alert.subCategory ?? "", alert.filters ?? {})}`;
+export function alertListingsUrl(alert: Pick<IAlert, "category" | "subCategory" | "country" | "filters" | "keywords">): string {
+  const q = alert.keywords?.length === 1 ? alert.keywords[0] : "";
+  return `${alert.country ? `/${alert.country}` : ""}/listings${buildFilterURL(alert.category, alert.subCategory ?? "", alert.filters ?? {}, { q })}`;
 }
 
 export interface AlertRecipient {

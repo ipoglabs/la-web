@@ -360,10 +360,15 @@ const BY_MARKET: Record<string, Record<string, MarketTweaks>> = {
   }),
   "property/for_students": propertyByMarket("For Students", { room_type: "propertyType" }),
   "property/commercial": propertyByMarket("Commercial", { commercial_type: "propertyType" }),
-  "property/holiday_rental": propertyByMarket("Holiday Rental", { prop_type: "holidayType" }),
+  // SG holiday lets are monthly-only (no Minimum Stay), so Stay Length has nothing to narrow there.
+  "property/holiday_rental": propertyByMarket("Holiday Rental", { prop_type: "holidayType" }, { sg: { stay_length: null } }),
   "property/new_projects": propertyByMarket("New Projects / Off-Plan", { prop_type: "propertyType" }),
   "property/land": propertyByMarket("Land for Sale / Lease", { land_type: "propertyType" }),
-  "property/wanted": propertyByMarket("Wanted", { prop_type: "propertyType" }),
+  // Only the India Wanted form has a Plot type.
+  "property/wanted": propertyByMarket("Wanted", { prop_type: "propertyType" }, {
+    gb: { wanted_type: { drop: ["land"] } },
+    sg: { wanted_type: { drop: ["land"] } },
+  }),
   "vehicles/cars": {
     in: { fuel_type: { drop: ["lpg"] }, owners: OWNERS_IN, max_mileage: { suffix: " km" }, ulez: null, coe_left: null, write_off: null },
     gb: {
