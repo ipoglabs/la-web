@@ -1,4 +1,5 @@
 import type { FilterConfig, FilterOption, MainCategory } from "../types";
+import { CAMERA_BRANDS, LAPTOP_COMPUTER_BRANDS, PHONE_TABLET_BRANDS } from "@/config/brands";
 
 // Option values are the Electronics & Tech forms' (posting/form-schema/defaults/electronics-tech.ts):
 // each sub's Type is `itemType`; phones, laptops and cameras also save a
@@ -38,7 +39,7 @@ export const electronicsTech: MainCategory = {
       icon: "smartphone",
       filters: [
         type([["phone", "Smartphone"], ["tablet", "Tablet"], ["basic", "Basic / Feature Phone"]]),
-        brand([["apple", "Apple"], ["samsung", "Samsung"], ["google", "Google"], ["oneplus", "OnePlus"], ["xiaomi", "Xiaomi"], ["oppo", "OPPO"], ["vivo", "vivo"], ["realme", "realme"], ["motorola", "Motorola"], ["nokia", "Nokia"]]),
+        brand(PHONE_TABLET_BRANDS),
         {
           id: "storage",
           label: "Storage",
@@ -62,7 +63,7 @@ export const electronicsTech: MainCategory = {
       icon: "laptop",
       filters: [
         type([["laptop", "Laptop"], ["desktop", "Desktop"], ["aio", "All-in-One"], ["mini_pc", "Mini PC"], ["monitor", "Monitor"], ["other", "Other"]]),
-        brand([["apple", "Apple"], ["dell", "Dell"], ["hp", "HP"], ["lenovo", "Lenovo"], ["asus", "Asus"], ["acer", "Acer"], ["msi", "MSI"], ["microsoft", "Microsoft"], ["samsung", "Samsung"]]),
+        brand(LAPTOP_COMPUTER_BRANDS),
         condition,
         delivery,
       ],
@@ -105,7 +106,7 @@ export const electronicsTech: MainCategory = {
       icon: "camera",
       filters: [
         type([["dslr", "DSLR"], ["mirrorless", "Mirrorless"], ["compact", "Compact"], ["action", "Action Cam"], ["drone", "Drone"], ["lens", "Lens"], ["lighting", "Lighting & Flash"], ["tripod", "Tripod & Support"], ["accessory", "Accessory"], ["other", "Other"]]),
-        brand([["canon", "Canon"], ["sony", "Sony"], ["nikon", "Nikon"], ["fujifilm", "Fujifilm"], ["panasonic", "Panasonic"], ["olympus", "OM System / Olympus"], ["gopro", "GoPro"], ["dji", "DJI"], ["godox", "Godox"]]),
+        brand(CAMERA_BRANDS),
         condition,
         delivery,
       ],

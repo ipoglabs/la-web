@@ -12,6 +12,7 @@
 
 import type { FormFieldDef, FormSection } from "../types";
 import { basics, pairs, YES_NO } from "./shared";
+import { CAMERA_BRANDS, LAPTOP_COMPUTER_BRANDS, PHONE_TABLET_BRANDS } from "@/config/brands";
 
 const select = (key: string, label: string, entries: [string, string][], extra: Partial<FormFieldDef> = {}): FormFieldDef => ({
   key,
@@ -49,7 +50,7 @@ const colour = text("color", "Colour");
 const warranty = select("warranty", "Warranty", [["no", "No Warranty"], ["under-warranty", "Under Warranty"], ["extended", "Extended Warranty"]]);
 
 /** Brand from a list (the Brand filter's options); Other asks the name. */
-const brandList = (entries: [string, string][], required = true): FormFieldDef[] => [
+const brandList = (entries: readonly [string, string][], required = true): FormFieldDef[] => [
   select("brand", "Brand", [...entries, ["other", "Other"]], { required, display: "dropdown" }),
   { ...text("otherBrand", "Brand Name"), ...shownFor("brand", ["other"]) },
 ];
@@ -82,7 +83,7 @@ export function electronicsTechSections(subcategory: string): FormSection[] | nu
     case "Mobile Phones & Tablets":
       return forSale("Device", [
         itemType(PHONE_TYPES),
-        ...brandList([["apple", "Apple"], ["samsung", "Samsung"], ["google", "Google"], ["oneplus", "OnePlus"], ["xiaomi", "Xiaomi"], ["oppo", "OPPO"], ["vivo", "vivo"], ["realme", "realme"], ["motorola", "Motorola"], ["nokia", "Nokia"]]),
+        ...brandList(PHONE_TABLET_BRANDS),
         model,
         select("storage", "Storage", [["32", "32GB or less"], ["64", "64GB"], ["128", "128GB"], ["256", "256GB"], ["512", "512GB"], ["1tb", "1TB+"]], { required: true }),
         text("ram", "RAM", "e.g. 8 GB"),
@@ -96,7 +97,7 @@ export function electronicsTechSections(subcategory: string): FormSection[] | nu
     case "Laptops & Computers":
       return forSale("Computer", [
         itemType(COMPUTER_TYPES),
-        ...brandList([["apple", "Apple"], ["dell", "Dell"], ["hp", "HP"], ["lenovo", "Lenovo"], ["asus", "Asus"], ["acer", "Acer"], ["msi", "MSI"], ["microsoft", "Microsoft"], ["samsung", "Samsung"]]),
+        ...brandList(LAPTOP_COMPUTER_BRANDS),
         model,
         { ...text("processor", "Processor", "e.g. Intel i5 / Apple M2"), ...shownFor("itemType", ["laptop", "desktop", "aio", "mini_pc"]) },
         { ...text("ram", "RAM", "e.g. 16 GB"), ...shownFor("itemType", ["laptop", "desktop", "aio", "mini_pc"]) },
@@ -128,7 +129,7 @@ export function electronicsTechSections(subcategory: string): FormSection[] | nu
     case "Cameras & Photography":
       return forSale("Equipment", [
         itemType(CAMERA_TYPES, { width: "full" }),
-        ...brandList([["canon", "Canon"], ["sony", "Sony"], ["nikon", "Nikon"], ["fujifilm", "Fujifilm"], ["panasonic", "Panasonic"], ["olympus", "OM System / Olympus"], ["gopro", "GoPro"], ["dji", "DJI"], ["godox", "Godox"]], false),
+        ...brandList(CAMERA_BRANDS, false),
         model,
         { ...text("shutterCount", "Shutter Count", "e.g. 3,200"), ...shownFor("itemType", ["dslr", "mirrorless"]) },
         { ...text("lensMount", "Lens Mount", "e.g. Sony E, Canon RF"), ...shownFor("itemType", ["lens"]) },

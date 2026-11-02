@@ -1,4 +1,5 @@
 import type { FilterConfig, FilterOption, MainCategory } from "../types";
+import { GUITAR_BRANDS } from "@/config/brands";
 
 // Option values are the Musical Instruments forms' (posting/form-schema/defaults/musical-instruments.ts):
 // each sub's Type is `itemType`; guitars also save a `brand` from a list
@@ -41,7 +42,7 @@ export const musicalInstruments: MainCategory = {
           id: "brand",
           label: "Brand",
           type: "toggle",
-          options: opts([["fender", "Fender"], ["squier", "Squier"], ["gibson", "Gibson"], ["epiphone", "Epiphone"], ["yamaha", "Yamaha"], ["ibanez", "Ibanez"], ["prs", "PRS"], ["martin", "Martin"], ["taylor", "Taylor"], ["cort", "Cort"], ["gretsch", "Gretsch"], ["other", "Other"]]),
+          options: opts([...GUITAR_BRANDS, ["other", "Other"]]),
         },
         {
           id: "left_handed",
