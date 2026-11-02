@@ -31,7 +31,7 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-semibold text-slate-900 mb-1">Admin</h1>
       <p className="text-sm text-slate-500 mb-6">
         Every post on the marketplace — set its status to approve, reject, hold as pending, or ban it.
-        Reported ads land in Reports for review.
+        Reported ads land in Reports for review; dropdown values sellers typed that aren&apos;t in a form land in Option requests.
       </p>
       <AdminTabs />
     </main>

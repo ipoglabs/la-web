@@ -9,11 +9,13 @@
 // documents for every country, replacing that field in place. Everything
 // else in those documents — including other hand edits — is left untouched.
 // Documents that don't have the field yet are reported and skipped.
+// Dropdown options the admin added from /admin → Option requests are kept.
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
 import PostFormSchema from "../src/models/PostFormSchema";
 import { getDefaultSchema } from "../src/posting/form-schema/defaults";
+import { withAddedOptions } from "../src/posting/form-schema/optionRequests";
 import { COUNTRIES } from "../src/posting/form-schema/defaults/shared";
 import type { FormSection } from "../src/posting/form-schema/types";
 
@@ -45,7 +47,8 @@ async function run() {
       continue;
     }
 
-    const next = sections.map((s) => ({ ...s, fields: s.fields.map((f) => (f.key === key ? field : f)) }));
+    const replaced = sections.map((s) => ({ ...s, fields: s.fields.map((f) => (f.key === key ? field : f)) }));
+    const next = await withAddedOptions(category, subcategory, country, replaced);
     if (!dryRun) await PostFormSchema.updateOne({ _id: doc._id }, { $set: { sections: next } });
     console.log(`${country}: ${dryRun ? "would update" : "updated"} "${key}"`);
   }

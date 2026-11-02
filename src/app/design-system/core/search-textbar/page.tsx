@@ -119,6 +119,28 @@ function Case4() {
   );
 }
 
+/** Case 5 — allowCustom: keep a value that isn't in the list */
+function Case5() {
+  const [make, setMake] = useState("");
+  return (
+    <>
+      <LaSearchTextbar
+        options={CAR_MAKES}
+        value={make}
+        onChange={setMake}
+        minChars={0}
+        maxResults={CAR_MAKES.length}
+        allowCustom
+        customHint="Not in our list — we'll ask our team to add it"
+        maxLength={40}
+        placeholder="Search make"
+        aria-label="Make"
+      />
+      <Log value={make} />
+    </>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function LaSearchTextbarPage() {
@@ -152,6 +174,9 @@ export default function LaSearchTextbarPage() {
             <Section title="4 — minChars 1, maxResults 5" hint="Options appear from the first letter, five at most.">
               <Case4 />
             </Section>
+            <Section title="5 — allowCustom, minChars 0" hint="Focus to see every make; type “Lamborghini” to use a make that isn't listed. Used by every dropdown in the post form.">
+              <Case5 />
+            </Section>
           </div>
         </LaSection>
 
@@ -176,6 +201,9 @@ export default function LaSearchTextbarPage() {
                     ["minChars", "number", "2", "Letters typed before options show."],
                     ["maxResults", "number", "8", "Most options shown at once."],
                     ["emptyText", "string", '"No matches found"', "Shown when nothing matches."],
+                    ["allowCustom", "boolean", "false", "Also accept typed text that isn't an option (onChange gets it with no option)."],
+                    ["customHint", "string", "—", "Line under the Use “…” row."],
+                    ["maxLength", "number", "—", "Most characters that can be typed."],
                     ["status", '"default" | "error" | "success"', '"default"', "Passed to LaInput."],
                   ].map(([prop, type, def, desc]) => (
                     <tr key={prop} className="border-b border-slate-100">
@@ -196,8 +224,9 @@ export default function LaSearchTextbarPage() {
                 {[
                   ["Matching", "Case-insensitive. Labels starting with the letters first, then labels with a later word starting with them."],
                   ["Keyboard", "↑ / ↓ move, Enter picks, Esc closes the list."],
-                  ["Pick only", "The value is always one of the options. Typing over a picked option unpicks it (onChange \"\")."],
-                  ["On blur", "Leaving the box with half-typed text puts the picked option's label back."],
+                  ["Pick only", "Without allowCustom the value is always one of the options. Typing over a picked option unpicks it (onChange \"\")."],
+                  ["allowCustom", "A Use “…” row follows the matches unless the text is exactly an option's label. Leaving the box keeps the typed text (or picks the option it names)."],
+                  ["On blur", "Without allowCustom, leaving the box with half-typed text puts the picked option's label back."],
                   ["Accessibility", "ARIA combobox pattern: role=combobox + listbox, aria-activedescendant follows the highlight."],
                 ].map(([term, desc]) => (
                   <li key={term} className="flex gap-2">

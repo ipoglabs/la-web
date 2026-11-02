@@ -7,13 +7,16 @@
 // Replaces ONE subcategory's whole form in `postformschemas`, for every
 // country, with the code default (src/posting/form-schema/defaults). Use it
 // after reworking a form in code; any hand edits made in the DB to those
-// documents are lost (sync-form-field.ts replaces a single field instead).
+// documents are lost (sync-form-field.ts replaces a single field instead) —
+// except dropdown options the admin added from /admin → Option requests,
+// which are put back.
 // Prints each document's field keys before and after.
 
 import mongoose from "mongoose";
 import dbConnect from "../src/lib/db";
 import PostFormSchema from "../src/models/PostFormSchema";
 import { getDefaultSchema } from "../src/posting/form-schema/defaults";
+import { withAddedOptions } from "../src/posting/form-schema/optionRequests";
 import { COUNTRIES } from "../src/posting/form-schema/defaults/shared";
 import type { FormSection } from "../src/posting/form-schema/types";
 
@@ -30,8 +33,9 @@ async function run() {
   await dbConnect();
 
   for (const country of COUNTRIES) {
-    const schema = getDefaultSchema(category, subcategory, country);
-    if (!schema) throw new Error(`No default form for ${category} › ${subcategory} (${country})`);
+    const defaults = getDefaultSchema(category, subcategory, country);
+    if (!defaults) throw new Error(`No default form for ${category} › ${subcategory} (${country})`);
+    const schema = { ...defaults, sections: await withAddedOptions(category, subcategory, country, defaults.sections) };
 
     const doc = await PostFormSchema.findOne({ category, subcategory, country }).lean();
     console.log(`${country} before: ${doc ? keys(doc.sections as FormSection[]) : "(no document)"}`);

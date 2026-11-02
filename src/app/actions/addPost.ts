@@ -15,6 +15,7 @@ import {
   readSchemaValues,
   validateSubmission,
 } from "@/posting/form-schema/validateSubmission";
+import { recordOptionRequests } from "@/posting/form-schema/optionRequests";
 
 type LocationData = {
   address?: string;
@@ -400,6 +401,9 @@ export async function addPost(
     });
 
     await newPost.save();
+
+    // Dropdown values typed that aren't options go to the admin's queue.
+    if (schema) await recordOptionRequests(schema, { ...postData, ...attributes }, String(newPost._id));
 
     await logActivity(ownerId, "POST_CREATED", { postId: String(newPost._id), title: postData.name });
 

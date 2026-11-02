@@ -37,6 +37,14 @@ export const GOOD_TO_KNOW = {
 /** Allowed characters and length for a "place" tag — shared by the form and the server. */
 export const PLACE_TAG = { pattern: /^[a-zA-Z0-9 .'&-]*$/, maxLength: 40 } as const;
 
+/** A value typed into a dropdown that isn't one of its options (e.g. a car
+ *  make we don't list). Saved on the post as typed and queued for the admin
+ *  to add to the form (models/OptionRequest.ts). Shared by the form and the server. */
+export const CUSTOM_OPTION = { pattern: /^[\p{L}\p{N} .,'&()/+-]+$/u, maxLength: 40 } as const;
+
+/** Whether a select field takes typed values that aren't options — every dropdown does. */
+export const acceptsCustomOption = (field: FormFieldDef) => field.type === "select" && field.display === "dropdown";
+
 export interface FormFieldOption {
   value: string;
   label: string;
@@ -69,8 +77,10 @@ export interface FormFieldDef {
   format?: "adTitle" | "place" | "url";
   /** Tags / multiselect: most entries allowed (shows an "n/max" counter on tags). */
   maxItems?: number;
-  /** Select: "dropdown" shows a native dropdown instead of chips — for long
-   *  lists (car makes, states) that would be a wall of chips. Default chips. */
+  /** Select: "dropdown" shows a type-to-search box (LaSearchTextbar) instead
+   *  of chips — for long lists (car makes, states) that would be a wall of
+   *  chips. It also takes a typed value that isn't an option (see
+   *  CUSTOM_OPTION). Default chips. */
   display?: "chips" | "dropdown";
   /** Grid width on md+ screens; always full width on mobile. */
   width?: "full" | "half" | "third";

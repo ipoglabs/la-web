@@ -7,6 +7,7 @@ import {
   readSchemaValues,
   validateSubmission,
 } from "@/posting/form-schema/validateSubmission";
+import { recordOptionRequests } from "@/posting/form-schema/optionRequests";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
@@ -402,6 +403,12 @@ export async function updatePost(
 
     if (!doc) {
       return { ok: false, error: "Not found or not authorized to edit this post" };
+    }
+
+    // Dropdown values typed that aren't options go to the admin's queue.
+    if (schema) {
+      const saved = doc as unknown as Record<string, unknown>;
+      await recordOptionRequests(schema, { ...saved, ...(saved.attributes as Record<string, unknown> | undefined) }, String(doc._id));
     }
 
     await logActivity(sessionOwnerId, "POST_UPDATED", { postId: String(doc._id), title: doc.name });

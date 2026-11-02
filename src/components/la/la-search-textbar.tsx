@@ -41,6 +41,11 @@
  *   minChars?      number                 Letters typed before options show. Default: 2.
  *   maxResults?    number                 Most options shown at once. Default: 8.
  *   emptyText?     string                 Shown when nothing matches. Default: "No matches found".
+ *   allowCustom?   boolean                Also accept typed text that isn't an option: the list
+ *                                         offers `Use "…"`, and leaving the box keeps the text.
+ *                                         onChange gets the text as the value and no option.
+ *   customHint?    string                 Line under the `Use "…"` row.
+ *   maxLength?     number                 Most characters that can be typed.
  *   status?        "default"|"error"|"success"  Passed to LaInput.
  *   placeholder?, disabled?, id?, name?, aria-label?, aria-describedby?, className?
  */
@@ -60,6 +65,9 @@ export interface LaSearchTextbarProps {
   minChars?: number;
   maxResults?: number;
   emptyText?: string;
+  allowCustom?: boolean;
+  customHint?: string;
+  maxLength?: number;
   status?: LaInputStatus;
   placeholder?: string;
   disabled?: boolean;
@@ -93,6 +101,9 @@ function findMatches(options: LaSearchTextbarOption[], query: string, max: numbe
   return [...first, ...later].slice(0, max);
 }
 
+/** Typed text as a custom value — trimmed, inner spaces collapsed. */
+const cleanText = (text: string) => text.trim().replace(/\s+/g, " ");
+
 const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>(
   (
     {
@@ -102,6 +113,9 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
       minChars = 2,
       maxResults = 8,
       emptyText = "No matches found",
+      allowCustom = false,
+      customHint,
+      maxLength,
       status,
       placeholder,
       disabled,
@@ -115,9 +129,11 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
   ) => {
     const all = React.useMemo(() => options.map(toOption), [options]);
     const selected = all.find((o) => o.value === value);
+    // Label of the current value — a custom value shows as itself.
+    const valueLabel = selected?.label ?? (allowCustom ? value : "");
 
     // What's in the box: the selected option's label until the user types.
-    const [text, setText] = React.useState(selected?.label ?? "");
+    const [text, setText] = React.useState(valueLabel);
     const [open, setOpen] = React.useState(false);
     const [active, setActive] = React.useState(0);
     // Follow `value` set from outside — but not the "" we send ourselves when
@@ -125,8 +141,8 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
     const unpickedByTyping = React.useRef(false);
     React.useEffect(() => {
       if (unpickedByTyping.current) { unpickedByTyping.current = false; return; }
-      setText(selected?.label ?? "");
-    }, [value, selected?.label]);
+      setText(valueLabel);
+    }, [value, valueLabel]);
 
     const autoId = React.useId();
     const listId = `${id ?? autoId}-list`;
@@ -139,10 +155,23 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
     );
     const showList = open && typedEnough && !disabled;
 
+    // Typed text that is exactly an option's label (any case) — picking it
+    // beats saving the same words as a custom value.
+    const custom = cleanText(text);
+    const exact = all.find((o) => o.label.toLowerCase() === custom.toLowerCase());
+    const offerCustom = allowCustom && typedEnough && custom !== "" && !exact;
+    const rowCount = matches.length + (offerCustom ? 1 : 0);
+
     const pick = (option: LaSearchTextbarOption) => {
       setText(option.label);
       setOpen(false);
       onChange?.(option.value, option);
+    };
+
+    const pickCustom = () => {
+      setText(custom);
+      setOpen(false);
+      onChange?.(custom);
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,7 +179,7 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
       setActive(0);
       setOpen(true);
       // Editing away from the picked label unpicks it.
-      if (value && e.target.value !== selected?.label) {
+      if (value && e.target.value !== valueLabel) {
         unpickedByTyping.current = e.target.value !== "";
         onChange?.("");
       }
@@ -158,16 +187,26 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Escape") { setOpen(false); return; }
-      if (!showList || matches.length === 0) return;
-      if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => (i + 1) % matches.length); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => (i - 1 + matches.length) % matches.length); }
-      else if (e.key === "Enter") { e.preventDefault(); pick(matches[active].option); }
+      if (!showList || rowCount === 0) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => (i + 1) % rowCount); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => (i - 1 + rowCount) % rowCount); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        if (active < matches.length) pick(matches[active].option);
+        else pickCustom();
+      }
     };
 
-    // Leaving the box with half-typed text puts the picked label back.
+    // Leaving the box with half-typed text puts the picked label back —
+    // or, with allowCustom, keeps what was typed (an option if it names one).
     const handleBlur = () => {
       setOpen(false);
-      setText(selected?.label ?? text);
+      if (allowCustom && custom && text !== valueLabel) {
+        if (exact) pick(exact);
+        else pickCustom();
+        return;
+      }
+      setText(valueLabel || (allowCustom ? "" : text));
     };
 
     return (
@@ -182,7 +221,7 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
           aria-autocomplete="list"
           aria-expanded={showList}
           aria-controls={listId}
-          aria-activedescendant={showList && matches.length ? optionId(active) : undefined}
+          aria-activedescendant={showList && rowCount ? optionId(active) : undefined}
           aria-label={ariaLabel}
           aria-describedby={ariaDescribedBy}
           prefix={<Search className="size-4" />}
@@ -191,6 +230,7 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
           status={status}
           placeholder={placeholder}
           disabled={disabled}
+          maxLength={maxLength}
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -204,7 +244,7 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
             role="listbox"
             className="absolute z-50 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-slate-300 bg-white py-1 shadow-lg"
           >
-            {matches.length === 0 ? (
+            {rowCount === 0 ? (
               <li className="px-3 py-2 text-sm text-slate-500">{emptyText}</li>
             ) : (
               matches.map(({ option, start }, i) => {
@@ -232,6 +272,25 @@ const LaSearchTextbar = React.forwardRef<HTMLInputElement, LaSearchTextbarProps>
                   </li>
                 );
               })
+            )}
+            {offerCustom && (
+              <li
+                id={optionId(matches.length)}
+                role="option"
+                aria-selected={active === matches.length}
+                onMouseDown={(e) => { e.preventDefault(); pickCustom(); }}
+                onMouseEnter={() => setActive(matches.length)}
+                className={cn(
+                  "flex cursor-pointer flex-col px-3 py-2 text-base text-slate-700",
+                  matches.length > 0 && "border-t border-slate-200",
+                  active === matches.length && "bg-blue-50 text-slate-900"
+                )}
+              >
+                <span>
+                  Use <strong className="font-semibold text-slate-900">“{custom}”</strong>
+                </span>
+                {customHint && <span className="text-sm text-slate-500">{customHint}</span>}
+              </li>
             )}
           </ul>
         )}

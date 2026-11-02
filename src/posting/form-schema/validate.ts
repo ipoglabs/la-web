@@ -1,4 +1,4 @@
-import { PLACE_TAG, isFieldVisible, type FormFieldDef, type PostFormSchemaData } from "./types";
+import { CUSTOM_OPTION, PLACE_TAG, acceptsCustomOption, isFieldVisible, type FormFieldDef, type PostFormSchemaData } from "./types";
 import { goodToKnowError, normalizeGoodToKnow } from "./goodToKnow";
 
 // Mirrors sanitizeAdTitle (posting/validation/sanitizeAdTitle.ts): the form
@@ -66,11 +66,19 @@ function validateField(
   }
 
   // Choice fields only accept values the schema offers — the chips can't
-  // produce anything else, so a mismatch means a tampered/stale submission.
+  // produce anything else, so a mismatch means a tampered/stale submission
+  // (dropdowns excepted, below).
   if ((field.type === "select" || field.type === "multiselect") && field.options?.length) {
     const allowed = new Set(field.options.map((o) => o.value));
     const values = Array.isArray(value) ? value.map(String) : [String(value)];
     if (field.type === "select" && values.length > 1) return `${field.label} accepts only one choice.`;
+    // A dropdown also takes a typed value that isn't an option.
+    if (acceptsCustomOption(field) && !allowed.has(values[0])) {
+      const v = values[0];
+      if (v.length > CUSTOM_OPTION.maxLength) return `${field.label} must be ${fmt(CUSTOM_OPTION.maxLength)} characters or fewer.`;
+      if (!CUSTOM_OPTION.pattern.test(v)) return `${field.label} can only contain letters, numbers, spaces and . , ' & ( ) / + -`;
+      return null;
+    }
     // Also hit by older posts saved before a field became chips (e.g. a typed
     // 20-month lease term), so tell the seller what to do, not just "invalid".
     if (values.some((v) => !allowed.has(v))) return `Please choose ${field.label.toLowerCase()} from the options.`;

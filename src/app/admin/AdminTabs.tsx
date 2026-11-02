@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 import AdminPostsPanel from "./AdminPostsPanel";
 import AdminReportsPanel from "./AdminReportsPanel";
 import AdminUsersPanel from "./AdminUsersPanel";
+import AdminOptionRequestsPanel from "./AdminOptionRequestsPanel";
 
 export default function AdminTabs() {
-  const [tab, setTab] = useState<"posts" | "reports" | "users">("posts");
+  const [tab, setTab] = useState<"posts" | "reports" | "users" | "options">("posts");
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,9 +43,27 @@ export default function AdminTabs() {
         >
           Users
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("options")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+            tab === "options" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          )}
+        >
+          Option requests
+        </button>
       </div>
 
-      {tab === "posts" ? <AdminPostsPanel /> : tab === "reports" ? <AdminReportsPanel /> : <AdminUsersPanel />}
+      {tab === "posts" ? (
+        <AdminPostsPanel />
+      ) : tab === "reports" ? (
+        <AdminReportsPanel />
+      ) : tab === "users" ? (
+        <AdminUsersPanel />
+      ) : (
+        <AdminOptionRequestsPanel />
+      )}
     </div>
   );
 }

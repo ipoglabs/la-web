@@ -6,14 +6,14 @@
 // so upload → preview → submit → edit work unchanged.
 
 import React from "react";
-import { LaInput, LaSelect, LaSkeleton, LaTagInput, LaTextarea } from "@/components/la";
+import { LaInput, LaSearchTextbar, LaSkeleton, LaTagInput, LaTextarea } from "@/components/la";
 import { RichTextEditor } from "@/components/rich-text-editor/RichTextEditor";
 import { GoodToKnowEditor, type GoodToKnowPoint } from "@/components/good-to-know/GoodToKnow";
 import { DateInput } from "@/components/date-input";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
-import { GOOD_TO_KNOW, PLACE_TAG, isFieldVisible, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
+import { CUSTOM_OPTION, GOOD_TO_KNOW, PLACE_TAG, isFieldVisible, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
 import { cn } from "@/lib/utils";
 
 interface DynamicPostFormProps {
@@ -191,26 +191,25 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       break;
 
     // Long option lists (display: "dropdown"); short ones are chips above.
+    // Focus lists every option, typing narrows them; a value that isn't one
+    // is kept and queued for the admin to add (posting/form-schema/optionRequests.ts).
     case "select":
       control = (
-        <LaSelect
+        <LaSearchTextbar
           id={field.key}
           name={field.key}
+          options={field.options ?? []}
           value={value == null ? "" : String(value)}
-          onChange={(e) => set(e.target.value)}
+          onChange={(v) => set(v)}
+          minChars={0}
+          maxResults={field.options?.length}
+          allowCustom
+          customHint="Not in our list — we'll ask our team to add it"
+          maxLength={CUSTOM_OPTION.maxLength}
           status={error ? "error" : "default"}
-          aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-        >
-          <option value="" disabled>
-            {field.placeholder ?? "Select…"}
-          </option>
-          {(field.options ?? []).map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </LaSelect>
+          placeholder={field.placeholder ?? `Search ${field.label.toLowerCase()}`}
+        />
       );
       break;
 
