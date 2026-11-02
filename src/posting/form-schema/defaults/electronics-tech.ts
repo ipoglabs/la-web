@@ -49,10 +49,9 @@ const model = text("model", "Model");
 const colour = text("color", "Colour");
 const warranty = select("warranty", "Warranty", [["no", "No Warranty"], ["under-warranty", "Under Warranty"], ["extended", "Extended Warranty"]]);
 
-/** Brand from a list (the Brand filter's options); Other asks the name. */
+/** Brand from a list (the Brand filter's options), or typed if we don't list it. */
 const brandList = (entries: readonly [string, string][], required = true): FormFieldDef[] => [
-  select("brand", "Brand", [...entries, ["other", "Other"]], { required, display: "dropdown" }),
-  { ...text("otherBrand", "Brand Name"), ...shownFor("brand", ["other"]) },
+  select("brand", "Brand", [...entries], { required, display: "dropdown", allowCustom: true }),
 ];
 
 /** Things for sale: price, negotiable, meet-up or delivery. */

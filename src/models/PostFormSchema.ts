@@ -61,6 +61,7 @@ const FieldSchema = new Schema<FormFieldDef>(
     format: { type: String, enum: ["adTitle", "place", "url"] },
     maxItems: Number,
     display: { type: String, enum: ["chips", "dropdown"] },
+    allowCustom: Boolean,
     width: { type: String, enum: ["full", "half", "third"] },
     immediateOption: String,
     defaultValue: String,

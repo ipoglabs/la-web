@@ -42,7 +42,7 @@ const DETAILS: Record<string, SeedDetails> = {
   },
   "tech-in-mobile-02": {
     fields: { condition: "lightly-used", model: "Tab M10" },
-    attributes: { itemType: "tablet", brand: "other", otherBrand: "Lenovo", storage: "64", network: "unlocked", dealMethod: BOTH },
+    attributes: { itemType: "tablet", brand: "lenovo", storage: "64", network: "unlocked", dealMethod: BOTH },
     text: [["10-inch Tablet — 64GB", "Lenovo Tab M10 — 64GB"], ["10-inch tablet with", "10-inch Lenovo Tab M10 with"]],
   },
   "tech-sg-mobile-01": {
@@ -75,7 +75,7 @@ const DETAILS: Record<string, SeedDetails> = {
   },
   "tech-in-laptop-02": {
     fields: { condition: "lightly-used" },
-    attributes: { itemType: "desktop", brand: "other", otherBrand: "Custom build", processor: "AMD Ryzen 5", ram: "16 GB", dealMethod: MEETUP },
+    attributes: { itemType: "desktop", brand: "Custom build", processor: "AMD Ryzen 5", ram: "16 GB", dealMethod: MEETUP },
   },
   "tech-sg-laptop-01": {
     fields: { condition: "lightly-used", model: "EliteBook 840 G8" },
@@ -88,7 +88,7 @@ const DETAILS: Record<string, SeedDetails> = {
   },
   "tech-sg-laptop-02": {
     fields: { condition: "lightly-used" },
-    attributes: { itemType: "desktop", brand: "other", otherBrand: "Custom build", processor: "AMD Ryzen 5", ram: "16 GB", dealMethod: MEETUP },
+    attributes: { itemType: "desktop", brand: "Custom build", processor: "AMD Ryzen 5", ram: "16 GB", dealMethod: MEETUP },
     text: [["GTX 1660 graphics card.", "GTX 1660 graphics card. Self-collect from Bukit Batok; fits in a Grab car."]],
   },
 

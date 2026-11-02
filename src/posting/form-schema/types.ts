@@ -42,8 +42,9 @@ export const PLACE_TAG = { pattern: /^[a-zA-Z0-9 .'&-]*$/, maxLength: 40 } as co
  *  to add to the form (models/OptionRequest.ts). Shared by the form and the server. */
 export const CUSTOM_OPTION = { pattern: /^[\p{L}\p{N} .,'&()/+-]+$/u, maxLength: 40 } as const;
 
-/** Whether a select field takes typed values that aren't options — every dropdown does. */
-export const acceptsCustomOption = (field: FormFieldDef) => field.type === "select" && field.display === "dropdown";
+/** Whether a select field takes typed values that aren't options — a dropdown with `allowCustom`. */
+export const acceptsCustomOption = (field: FormFieldDef) =>
+  field.type === "select" && field.display === "dropdown" && field.allowCustom === true;
 
 export interface FormFieldOption {
   value: string;
@@ -79,9 +80,12 @@ export interface FormFieldDef {
   maxItems?: number;
   /** Select: "dropdown" shows a type-to-search box (LaSearchTextbar) instead
    *  of chips — for long lists (car makes, states) that would be a wall of
-   *  chips. It also takes a typed value that isn't an option (see
-   *  CUSTOM_OPTION). Default chips. */
+   *  chips. Default chips. */
   display?: "chips" | "dropdown";
+  /** Dropdown: also take a typed value that isn't an option (see
+   *  CUSTOM_OPTION) — for open-ended lists like makes and brands, not for
+   *  fixed ones that search filters match on (job category, deal type). */
+  allowCustom?: boolean;
   /** Grid width on md+ screens; always full width on mobile. */
   width?: "full" | "half" | "third";
   /** Date: also offer a chip that saves this text instead of a date (e.g. "Immediately"). */

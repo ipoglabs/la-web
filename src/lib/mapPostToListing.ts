@@ -106,16 +106,9 @@ function buildSchemaKeyDetails(post: LeanPost, schema: PostFormSchemaData): KeyV
     { key: "Subcategory", value: post.subcategory },
   ];
   const attributes = (post.attributes ?? {}) as Record<string, unknown>;
-  // Vehicles: Make = "Other" saves the typed make as Other Make — show that as the Make.
-  const makeOther = post.make === "Other" && typeof attributes.makeOther === "string" ? attributes.makeOther : null;
   const market = { locale: localeFor(post), symbol: currencySymbolFor(post) };
   for (const field of schema.sections.flatMap((s) => s.fields)) {
     if (field.key === "name" || field.key === "description" || field.type === "goodToKnow" || PRICE_KEYS.has(field.key)) continue;
-    if (field.key === "makeOther" && makeOther) continue;
-    if (field.key === "make" && makeOther) {
-      rows.push({ key: field.label, value: makeOther });
-      continue;
-    }
     const value = (post as unknown as Record<string, unknown>)[field.key] ?? attributes[field.key];
     const shown = formatSchemaValue(field, value, market);
     if (shown) rows.push({ key: field.label, value: shown });

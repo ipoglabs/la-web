@@ -7,8 +7,10 @@ import AdminReportsPanel from "./AdminReportsPanel";
 import AdminUsersPanel from "./AdminUsersPanel";
 import AdminOptionRequestsPanel from "./AdminOptionRequestsPanel";
 
-export default function AdminTabs() {
-  const [tab, setTab] = useState<"posts" | "reports" | "users" | "options">("posts");
+export type AdminTab = "posts" | "reports" | "users" | "options";
+
+export default function AdminTabs({ initialTab = "posts" }: { initialTab?: AdminTab }) {
+  const [tab, setTab] = useState<AdminTab>(initialTab);
 
   return (
     <div className="flex flex-col gap-6">

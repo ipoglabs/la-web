@@ -13,7 +13,8 @@
  * resolve-identity), same as any other account. No password, no
  * client-supplied flag.
  */
-const ADMIN_EMAILS = new Set(["admin@lokalads.com"]);
+export const ADMIN_EMAIL = "admin@lokalads.com";
+const ADMIN_EMAILS = new Set([ADMIN_EMAIL]);
 
 export function isAdminEmail(email: string | null | undefined): boolean {
   return !!email && ADMIN_EMAILS.has(email.trim().toLowerCase());

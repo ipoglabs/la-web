@@ -42,7 +42,7 @@ export const musicalInstruments: MainCategory = {
           id: "brand",
           label: "Brand",
           type: "toggle",
-          options: opts([...GUITAR_BRANDS, ["other", "Other"]]),
+          options: opts(GUITAR_BRANDS),
         },
         {
           id: "left_handed",

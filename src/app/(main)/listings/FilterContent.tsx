@@ -1,12 +1,8 @@
 "use client";
 
-import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import RangeFilterRow from "@/components/la-blocks/RangeFilterRow";
-import {
-  SolidFilterHorizontal24by24,
-  Outline_UnCheckCircle_24by24,
-  Outline_CheckCircle_24by24,
-} from "@/components/icons/la-icons";
+import FilterOptionChips from "@/components/la-blocks/FilterOptionChips";
+import { SolidFilterHorizontal24by24 } from "@/components/icons/la-icons";
 import { cn } from "@/lib/utils";
 import { isRangeFilter, type ListingFilterConfig } from "@/lib/listing-filters";
 
@@ -85,27 +81,11 @@ export default function FilterContent({
           {isRangeFilter(filter) ? (
             <RangeFilterRow filter={filter} values={values} onChange={onChange} />
           ) : (
-            // ── Options filter — toggle buttons ──────────────────────────────
-            <ToggleButtonGroup
-              singleSelect={filter.singleSelect}
+            <FilterOptionChips
+              filter={filter}
               value={values[filter.id] ?? []}
               onChange={(selected) => onChange(filter.id, selected)}
-              className="gap-0"
-            >
-              <div className="flex flex-wrap gap-2">
-                {filter.options.map((opt) => (
-                  <ToggleGroupButton
-                    key={opt.value}
-                    value={opt.value}
-                    icon={Outline_UnCheckCircle_24by24}
-                    iconSelected={Outline_CheckCircle_24by24}
-                    size="default"
-                  >
-                    {opt.label}
-                  </ToggleGroupButton>
-                ))}
-              </div>
-            </ToggleButtonGroup>
+            />
           )}
         </div>
       ))}

@@ -13,7 +13,7 @@ import { DateInput } from "@/components/date-input";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
-import { CUSTOM_OPTION, GOOD_TO_KNOW, PLACE_TAG, isFieldVisible, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
+import { CUSTOM_OPTION, GOOD_TO_KNOW, PLACE_TAG, acceptsCustomOption, isFieldVisible, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
 import { cn } from "@/lib/utils";
 
 interface DynamicPostFormProps {
@@ -191,9 +191,11 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
       break;
 
     // Long option lists (display: "dropdown"); short ones are chips above.
-    // Focus lists every option, typing narrows them; a value that isn't one
-    // is kept and queued for the admin to add (posting/form-schema/optionRequests.ts).
-    case "select":
+    // Focus lists every option, typing narrows them. With allowCustom a value
+    // that isn't one is kept and queued for the admin to add
+    // (posting/form-schema/optionRequests.ts); otherwise it must be picked.
+    case "select": {
+      const allowCustom = acceptsCustomOption(field);
       control = (
         <LaSearchTextbar
           id={field.key}
@@ -203,15 +205,16 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
           onChange={(v) => set(v)}
           minChars={0}
           maxResults={field.options?.length}
-          allowCustom
-          customHint="Not in our list — we'll ask our team to add it"
-          maxLength={CUSTOM_OPTION.maxLength}
+          allowCustom={allowCustom}
+          customHint={allowCustom ? "Not in our list — we'll ask our team to add it" : undefined}
+          maxLength={allowCustom ? CUSTOM_OPTION.maxLength : undefined}
           status={error ? "error" : "default"}
           aria-describedby={describedBy}
           placeholder={field.placeholder ?? `Search ${field.label.toLowerCase()}`}
         />
       );
       break;
+    }
 
     case "textarea":
       control = (

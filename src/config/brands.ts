@@ -2,7 +2,7 @@
 // Brand search filters (components/create-alert/config), so every brand a
 // seller can pick is one a buyer can filter on. Same list in every market —
 // the local names (Lava, Micromax, Doro, Givson, …) just don't get picked
-// elsewhere. `[value, label]`, A–Z by label; "Other" is added by each user.
+// elsewhere. `[value, label]`, A–Z by label.
 //
 // Values are saved on posts — never change one, only add. A brand that isn't
 // here can still be typed in the post form; it lands in /admin → Option

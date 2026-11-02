@@ -11,10 +11,6 @@ import {
   GraduationCap, HeartPulse, UtensilsCrossed, Plane, Baby, Dumbbell, Smartphone, Home, Shirt,
   Music, BookOpen, Ticket, Gift,
 } from "lucide-react";
-import {
-  Outline_UnCheckCircle_24by24,
-  Outline_CheckCircle_24by24,
-} from "@/components/icons/la-icons";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { LocationPicker } from "@/components/location-picker";
 import type { LocationValue } from "@/components/location-picker";
@@ -24,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { ALERT_CONFIG } from "./alert-config";
 import { CATEGORIES } from "@/config/categories";
 import RangeFilterRow from "@/components/la-blocks/RangeFilterRow";
+import FilterOptionChips from "@/components/la-blocks/FilterOptionChips";
 import { useOptionalCountry } from "@/components/country/CountryProvider";
 import { getConfigByIso } from "@/config";
 import { deriveActiveChips, isRangeFilter, resolveFilters, type ListingFilterConfig } from "@/lib/listing-filters";
@@ -290,26 +287,7 @@ function DynamicFilterRow({ filter, value, onChange }: DynamicFilterRowProps) {
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium text-slate-700">{filter.label}</p>
-      <ToggleButtonGroup
-        singleSelect={filter.singleSelect}
-        value={value}
-        onChange={onChange}
-        className="gap-0"
-      >
-        <div className="flex flex-wrap gap-2">
-          {filter.options.map((opt) => (
-            <ToggleGroupButton
-              key={opt.value}
-              value={opt.value}
-              icon={Outline_UnCheckCircle_24by24}
-              iconSelected={Outline_CheckCircle_24by24}
-              size="default"
-            >
-              {opt.label}
-            </ToggleGroupButton>
-          ))}
-        </div>
-      </ToggleButtonGroup>
+      <FilterOptionChips filter={filter} value={value} onChange={onChange} />
     </div>
   );
 }

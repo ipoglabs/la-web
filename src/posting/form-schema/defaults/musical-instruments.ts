@@ -75,8 +75,7 @@ export function musicalInstrumentsSections(subcategory: string): FormSection[] |
     case "Guitars & Bass":
       return forSale("Instrument", [
         itemType(GUITAR_TYPES),
-        select("brand", "Brand", [...GUITAR_BRANDS, ["other", "Other"]], { required: true, display: "dropdown" }),
-        { ...text("otherBrand", "Brand Name"), showWhen: { field: "brand", in: ["other"] } },
+        select("brand", "Brand", GUITAR_BRANDS, { required: true, display: "dropdown", allowCustom: true }),
         model,
         select("strings", "Strings", [["4", "4"], ["5", "5"], ["6", "6"], ["7", "7+"], ["12", "12"]], shownFor(GUITARS)),
         yesNo("leftHanded", "Left-handed", shownFor(GUITARS)),

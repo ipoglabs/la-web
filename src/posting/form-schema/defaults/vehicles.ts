@@ -39,10 +39,9 @@ const VEHICLE_COLORS = opts(["White", "Black", "Silver", "Grey", "Blue", "Red", 
 const listedBy: FormFieldDef = { key: "listedBy", type: "select", label: "Listed By", required: true, options: opts(["Owner", "Dealer"]) };
 const negotiable: FormFieldDef = { key: "negotiable", type: "select", label: "Negotiable", options: YES_NO_TEXT, defaultValue: "No", width: "half" };
 
-/** Make from the market's list (Other asks for it), then Model as text. */
+/** Make from the market's list (or typed, if we don't list it), then Model as text. */
 const makeModelPicked = (makes: string[]): FormFieldDef[] => [
-  { key: "make", type: "select", display: "dropdown", label: "Make", required: true, options: opts([...makes, "Other"]), width: "half" },
-  { key: "makeOther", type: "text", label: "Other Make", required: true, width: "half", showWhen: { field: "make", in: ["Other"] } },
+  { key: "make", type: "select", display: "dropdown", allowCustom: true, label: "Make", required: true, options: opts(makes), width: "half" },
   { key: "model", type: "text", label: "Model", required: true, width: "half" },
 ];
 
@@ -525,12 +524,12 @@ function wantedSections(country: string, c: VehicleFormConfig): FormSection[] {
           key: "make",
           type: "select",
           display: "dropdown",
+          allowCustom: true,
           label: "Preferred Make",
-          options: opts(["Any", ...c.carMakes, "Other"]),
+          options: opts(["Any", ...c.carMakes]),
           width: "half",
           showWhen: { field: "vehicleType", notIn: ["parts"] },
         },
-        { key: "makeOther", type: "text", label: "Other Make", width: "half", showWhen: { field: "make", in: ["Other"] } },
         { key: "model", type: "text", label: "Preferred Model", width: "half", showWhen: { field: "vehicleType", notIn: ["parts"] } },
         // Its own key: saved as "year" it read as the vehicle's actual year in search.
         { key: "minYear", type: "number", label: "Min Year", min: 1900, max: 2100, width: "half", showWhen: { field: "vehicleType", notIn: ["parts"] } },

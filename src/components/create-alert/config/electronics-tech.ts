@@ -23,7 +23,7 @@ const delivery: FilterConfig = {
 };
 
 const type = (entries: [string, string][], label = "Type"): FilterConfig => ({ id: "type", label, type: "toggle", options: opts(entries) });
-const brand = (entries: [string, string][]): FilterConfig => ({ id: "brand", label: "Brand", type: "toggle", options: opts([...entries, ["other", "Other"]]) });
+const brand = (entries: [string, string][]): FilterConfig => ({ id: "brand", label: "Brand", type: "toggle", options: opts(entries) });
 
 export const electronicsTech: MainCategory = {
   id: "electronics_tech",

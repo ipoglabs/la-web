@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { getAuthUser } from "@/lib/session";
-import AdminTabs from "./AdminTabs";
+import AdminTabs, { type AdminTab } from "./AdminTabs";
 
 export const dynamic = "force-dynamic";
+
+const ADMIN_TABS: AdminTab[] = ["posts", "reports", "users", "options"];
 
 /**
  * /admin — the real (non-dev-tools) admin surface: approve/reject/pending/ban
@@ -15,7 +17,7 @@ export const dynamic = "force-dynamic";
  * here renders — no "not logged in" / "no access" shell to reveal that
  * this route exists.
  */
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const session = await getAuthUser();
 
   if (!session) {
@@ -26,6 +28,10 @@ export default async function AdminPage() {
     redirect("/");
   }
 
+  // ?tab=options — the link in the "new option request" email.
+  const requested = (await searchParams).tab;
+  const tab = ADMIN_TABS.find((t) => t === requested);
+
   return (
     <main className="max-w-5xl mx-auto p-6">
       <h1 className="text-2xl font-semibold text-slate-900 mb-1">Admin</h1>
@@ -33,7 +39,7 @@ export default async function AdminPage() {
         Every post on the marketplace — set its status to approve, reject, hold as pending, or ban it.
         Reported ads land in Reports for review; dropdown values sellers typed that aren&apos;t in a form land in Option requests.
       </p>
-      <AdminTabs />
+      <AdminTabs initialTab={tab} />
     </main>
   );
 }

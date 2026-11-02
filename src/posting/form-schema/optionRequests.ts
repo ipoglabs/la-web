@@ -3,6 +3,8 @@
 // and — once the admin adds one — written into the form's options.
 
 import { Types } from "mongoose";
+import { ADMIN_EMAIL } from "@/lib/admin";
+import { sendEmail } from "@/lib/email";
 import OptionRequest from "@/models/OptionRequest";
 import { acceptsCustomOption, isFieldVisible, type FormSection, type PostFormSchemaData } from "./types";
 
@@ -20,13 +22,20 @@ export function customOptionValues(schema: PostFormSchemaData, data: Record<stri
 }
 
 /**
- * Queues each typed dropdown value on `postId` for the admin. Never throws —
- * a failed request mustn't fail the post, which already saved the value.
+ * Queues each typed dropdown value on `postId` for the admin, and emails the
+ * admin about a value nobody has typed before (`notify: false` skips that,
+ * for scripts). Never throws — a failed request mustn't fail the post, which
+ * already saved the value.
  */
-export async function recordOptionRequests(schema: PostFormSchemaData, data: Record<string, unknown>, postId: string) {
+export async function recordOptionRequests(
+  schema: PostFormSchemaData,
+  data: Record<string, unknown>,
+  postId: string,
+  { notify = true } = {},
+) {
   try {
     for (const { field, value } of customOptionValues(schema, data)) {
-      await OptionRequest.updateOne(
+      const res = await OptionRequest.updateOne(
         {
           category: schema.category,
           subcategory: schema.subcategory,
@@ -41,16 +50,35 @@ export async function recordOptionRequests(schema: PostFormSchemaData, data: Rec
         },
         { upsert: true },
       );
+      if (notify && res.upsertedCount) await notifyAdmin(schema, field.label, value);
     }
   } catch (err) {
     console.error("[option-requests] recording failed:", err);
   }
 }
 
+async function notifyAdmin(schema: PostFormSchemaData, fieldLabel: string, value: string) {
+  const result = await sendEmail({
+    type: "ADMIN_MESSAGE",
+    to: ADMIN_EMAIL,
+    data: {
+      firstName: "Admin",
+      subject: `New ${fieldLabel.toLowerCase()} to review: ${value}`,
+      body:
+        `A seller typed “${value}” as the ${fieldLabel} in ${schema.category} › ${schema.subcategory} ` +
+        `(${schema.country.toUpperCase()}) — it isn't in that form's list.\n\n` +
+        `Add it to the form or dismiss it in Admin → Option requests.`,
+      actionUrl: "/admin?tab=options",
+      actionLabel: "Review option requests",
+    },
+  });
+  if (!result.success) console.error("[option-requests] admin email failed:", result.error);
+}
+
 /**
- * `sections` with `value` added to the `fieldKey` dropdown's options —
- * before its "Other" option if it has one. Unchanged when the field is
- * missing or already has the value (any case).
+ * `sections` with `value` added to the `fieldKey` dropdown's options, in A–Z
+ * place (after a leading "Any"). Unchanged when the field is missing or
+ * already has the value (any case).
  */
 export function withOption(sections: FormSection[], fieldKey: string, value: string): FormSection[] {
   const key = value.toLowerCase();
@@ -60,8 +88,9 @@ export function withOption(sections: FormSection[], fieldKey: string, value: str
       if (field.key !== fieldKey || !acceptsCustomOption(field)) return field;
       const options = field.options ?? [];
       if (options.some((o) => o.value.toLowerCase() === key || o.label.toLowerCase() === key)) return field;
-      const other = options.findIndex((o) => o.value.toLowerCase() === "other");
-      const at = other >= 0 ? other : options.length;
+      const start = options[0]?.value === "Any" ? 1 : 0;
+      const after = options.findIndex((o, i) => i >= start && o.label.localeCompare(value, "en", { sensitivity: "base" }) > 0);
+      const at = after >= 0 ? after : options.length;
       return { ...field, options: [...options.slice(0, at), { value, label: value }, ...options.slice(at)] };
     }),
   }));
