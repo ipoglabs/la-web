@@ -214,7 +214,7 @@ export default function AppFooter({ countryCode, countryLabel, variant, popularC
         <div className="flex flex-col items-center gap-1 py-1 text-slate-300 text-center">
           {/* Line 1 — company info */}
           <p className="text-sm">
-            &copy;&nbsp;2025 {companyName} | Co. Reg. No. {companyRegNo}.
+            &copy;&nbsp;{new Date().getFullYear()} {companyName} | Co. Reg. No. {companyRegNo}.
           </p>
           {/* Line 2 — links */}
           <div className="flex flex-row flex-wrap items-center justify-center gap-y-0.5">

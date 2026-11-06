@@ -46,10 +46,13 @@ const makeModelPicked = (makes: string[]): FormFieldDef[] => [
 ];
 
 /** KMs Driven, or Mileage in miles in GB — same `kms` key. */
+/** Mileage and owners mean nothing on a new vehicle, so they show only once it isn't "new". */
+const notNew = { field: "condition", notIn: ["new"] };
+
 const distance = (country: string): FormFieldDef =>
   country === "GB"
-    ? { key: "kms", type: "number", label: "Mileage", unit: "miles", min: 0, width: "half" }
-    : { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half" };
+    ? { key: "kms", type: "number", label: "Mileage", unit: "miles", min: 0, width: "half", showWhen: notNew }
+    : { key: "kms", type: "number", label: "KMs Driven", unit: "km", min: 0, width: "half", showWhen: notNew };
 
 /** UK insurers' write-off categories; AutoTrader shows them and lets buyers exclude them. */
 const WRITE_OFF = pairs([
@@ -89,7 +92,7 @@ function historyFields(
   };
   if (country === "GB") {
     return [
-      { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]) },
+      { key: "ownerType", type: "select", label: "Previous Owners", options: opts(["1", "2", "3", "4+"]), showWhen: notNew },
       { key: "registrationNumber", type: "text", label: "Registration Number", width: "half" },
       { key: "motExpiry", type: "date", label: extra.motLabel ?? "MOT Expiry", width: "half" },
       { key: "writeOff", type: "select", label: "Write-off Category", options: WRITE_OFF, hint: "Shown on the vehicle's insurance history check." },
@@ -100,7 +103,7 @@ function historyFields(
   }
   if (country === "SG") {
     return [
-      { key: "ownerType", type: "select", label: "No. of Owners", options: opts(["1", "2", "3+"]) },
+      { key: "ownerType", type: "select", label: "No. of Owners", options: opts(["1", "2", "3+"]), showWhen: notNew },
       { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half" },
       ...(extra.SG ?? []),
       serviceHistoryField,
@@ -108,7 +111,7 @@ function historyFields(
     ];
   }
   return [
-    { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]) },
+    { key: "ownerType", type: "select", label: "Owner Type", options: opts(["First Owner", "Second Owner", "Third Owner or more"]), showWhen: notNew },
     { key: "registrationState", type: "select", display: "dropdown", label: "Registration State (RTO)", options: opts(IN_REGISTRATION_STATES), width: "half" },
     { key: "insuranceValidTill", type: "date", label: "Insurance Valid Till", width: "half" },
     { key: "insuranceType", type: "select", label: "Insurance Type", options: INSURANCE_TYPE, width: "half" },

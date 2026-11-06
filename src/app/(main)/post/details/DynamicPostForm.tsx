@@ -101,6 +101,9 @@ interface DynamicFieldProps {
 function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFieldProps) {
   const value = usePostFormStore((s) => (s as unknown as Record<string, unknown>)[field.key]);
   const setField = usePostFormStore((s) => s.setField);
+  // Ad titles drop disallowed characters as they're typed — say so, rather
+  // than letting "(", "&" or "/" vanish without a word.
+  const [titleStripped, setTitleStripped] = React.useState(false);
 
   const set = (v: unknown) => {
     (setField as (k: string, v: unknown) => void)(field.key, v);
@@ -109,11 +112,15 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
 
   const errorId = `${field.key}-error`;
   const hintId = `${field.key}-hint`;
-  const describedBy = error ? errorId : field.hint ? hintId : undefined;
+  const describedBy = error ? errorId : field.hint || titleStripped ? hintId : undefined;
 
   const footer = error ? (
     <p id={errorId} role="alert" className="text-sm font-medium text-rose-600">
       {error}
+    </p>
+  ) : titleStripped ? (
+    <p id={hintId} role="status" className="text-sm font-medium text-amber-700">
+      Titles can only use letters, numbers, spaces and . , - (other characters were removed).
     </p>
   ) : field.hint ? (
     <p id={hintId} className="text-sm text-slate-500">
@@ -327,9 +334,12 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
           inputMode={field.format === "url" ? "url" : undefined}
           maxLength={field.type === "text" ? field.maxLength : undefined}
           value={typeof value === "string" ? value : value == null ? "" : String(value)}
-          onChange={(e) =>
-            set(field.format === "adTitle" ? sanitizeAdTitle(e.target.value) : e.target.value)
-          }
+          onChange={(e) => {
+            if (field.format !== "adTitle") return set(e.target.value);
+            const clean = sanitizeAdTitle(e.target.value);
+            setTitleStripped(clean !== e.target.value);
+            set(clean);
+          }}
           placeholder={field.placeholder}
           status={error ? "error" : "default"}
           aria-invalid={error ? true : undefined}

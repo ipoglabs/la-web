@@ -8,12 +8,12 @@ import { toast } from "sonner";
 import LocationPickerMap from "@/components/LocationPickerMap";
 import PostFooter from "../components/PostFooter";
 import { useFromReview } from "../wizard/useFromReview";
-import PostHeader from "../components/PostHeader";
 import PageHeader from "../components/PageHeader";
 import { usePostFormStore } from "../store/postFormStore";
 import { useWizardGuard } from "../wizard/guard";
 import { useAuthStore } from "@/store/authStore";
-import { getTimezoneLocation } from "@/lib/timezoneLocation";
+import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
+import { getMarketDefaultLocation, getTimezoneLocation } from "@/lib/timezoneLocation";
 import { cn } from "@/lib/utils";
 import type { GeoResult } from "@/app/api/geo/route";
 
@@ -30,6 +30,10 @@ export default function SelectLocationPage() {
   const location = usePostFormStore((s) => s.location);
   const setField = usePostFormStore((s) => s.setField);
   const userLocality = useAuthStore((s) => s.user?.locality);
+  // The market this ad is posted in — defaults and suggestions stay inside it,
+  // so an India or UK ad never starts out located in another country.
+  const { countryCode } = useCountryConfig();
+  const market = countryCode.toUpperCase();
 
   const [query, setQuery] = useState(location?.address ?? "");
   const [accuracy, setAccuracy] = useState<LocationAccuracy | null>(null);
@@ -52,6 +56,7 @@ export default function SelectLocationPage() {
       if (!res.ok) return false;
       const data = await res.json();
       if (typeof data.lat !== "number" || typeof data.lng !== "number") return false;
+      if (data.countryCode && data.countryCode !== market) return false;
       setField("location", { lat: data.lat, lng: data.lng, address: data.address });
       setQuery(data.address);
       setAccuracy("approximate");
@@ -59,7 +64,7 @@ export default function SelectLocationPage() {
     } catch {
       return false;
     }
-  }, [setField]);
+  }, [setField, market]);
 
   const reverseGeocode = useCallback(async (lat: number, lng: number): Promise<string> => {
     try {
@@ -73,11 +78,12 @@ export default function SelectLocationPage() {
   }, []);
 
   const applyTimezoneDefault = useCallback(() => {
-    const geo = getTimezoneLocation();
+    const tz = getTimezoneLocation();
+    const geo = tz.countryCode === market ? tz : getMarketDefaultLocation(market);
     setField("location", { lat: geo.lat, lng: geo.lng, address: geo.address });
     setQuery(geo.address);
     setAccuracy("default");
-  }, [setField]);
+  }, [setField, market]);
 
   const fetchIPLocation = useCallback(async (): Promise<boolean> => {
     try {
@@ -85,6 +91,7 @@ export default function SelectLocationPage() {
       if (!res.ok) return false;
       const geo: GeoResult | null = await res.json();
       if (!geo) return false;
+      if (geo.countryCode && geo.countryCode.toUpperCase() !== market) return false;
       setField("location", { lat: geo.lat, lng: geo.lng, address: geo.address });
       setQuery(geo.address);
       setAccuracy("approximate");
@@ -92,7 +99,7 @@ export default function SelectLocationPage() {
     } catch {
       return false;
     }
-  }, [setField]);
+  }, [setField, market]);
 
   /* ---------- auto-detect on mount if no location set ---------- */
 
@@ -196,7 +203,6 @@ export default function SelectLocationPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-gray-50">
-      <PostHeader />
 
       <div className="flex flex-col items-center p-8 pb-0">
         <PageHeader
@@ -213,7 +219,11 @@ export default function SelectLocationPage() {
             <Autocomplete
               onLoad={(ac) => (acRef.current = ac)}
               onPlaceChanged={handlePlaceChanged}
-              options={{ fields: ["geometry", "formatted_address"], types: ["geocode"] }}
+              options={{
+                fields: ["geometry", "formatted_address"],
+                types: ["geocode"],
+                componentRestrictions: { country: countryCode },
+              }}
             >
               <input
                 type="text"

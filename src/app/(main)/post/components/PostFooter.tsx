@@ -21,6 +21,8 @@ interface PostFooterProps {
   onSubmit?: () => void;
 
   isNextDisabled?: boolean;
+  /** Submit can't be used yet (e.g. the form is still loading) — shows "Loading…". */
+  isSubmitDisabled?: boolean;
   submitting?: boolean;
 
   showProgress?: boolean;
@@ -52,6 +54,7 @@ export default function PostFooter(props: PostFooterProps) {
     onSubmit,
 
     isNextDisabled = false,
+    isSubmitDisabled = false,
     submitting = false,
     showProgress = true,
   } = props;
@@ -156,9 +159,15 @@ export default function PostFooter(props: PostFooterProps) {
               type="button"
               onClick={handleRightBtnClick}
               className={darkBtn}
-              disabled={(showNext && isNextDisabled) || submitting}
+              disabled={(showNext && isNextDisabled) || (showSubmit && isSubmitDisabled) || submitting}
             >
-              {submitting ? "Submitting…" : showSubmit ? submitLabel : nextLabel}
+              {submitting
+                ? "Submitting…"
+                : showSubmit && isSubmitDisabled
+                  ? "Loading…"
+                  : showSubmit
+                    ? submitLabel
+                    : nextLabel}
             </button>
           )}
         </div>

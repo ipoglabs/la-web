@@ -174,7 +174,11 @@ export function proxy(request: NextRequest) {
   if (urlCountryCode) {
     const iso = COUNTRY_CONFIGS[urlCountryCode].isoCode;
     sanitisedHeaders.set("x-url-country", iso);
-    const urlRes = NextResponse.next({ request: { headers: sanitisedHeaders } });
+    // A bare market URL ("/gb", "/in/") has no page of its own — it used to
+    // 404. Switch to that market and land on its home page instead.
+    const urlRes = /^\/[a-z]{2}\/?$/i.test(pathname)
+      ? NextResponse.redirect(new URL("/", request.url), { status: 307 })
+      : NextResponse.next({ request: { headers: sanitisedHeaders } });
     urlRes.cookies.set(COUNTRY_COOKIE, iso, {
       path: "/", maxAge: COOKIE_MAX_AGE, sameSite: "lax", httpOnly: false,
     });

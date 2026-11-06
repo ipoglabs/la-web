@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import ReviewFields from "./ReviewFields";
 import { useRouter } from "next/navigation";
 
@@ -133,9 +134,15 @@ function ReviewDetailsSection({
 
       {/* Autofill hint */}
       {hideChange && showAutoFillHint && (
-        <div className="text-xs text-gray-400 mt-2">
-          Auto-filled from your profile
-        </div>
+        <p className="text-sm text-slate-500 mt-2">
+          Auto-filled from your profile.{" "}
+          <Link
+            href="/account-settings"
+            className="font-medium text-blue-700 underline underline-offset-2 hover:text-blue-800"
+          >
+            Change in Account Settings
+          </Link>
+        </p>
       )}
 
       {!isLastItem && <hr className="h-px my-8 bg-gray-300 border-0" />}

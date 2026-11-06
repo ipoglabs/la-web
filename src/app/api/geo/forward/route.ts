@@ -29,6 +29,10 @@ export async function GET(req: NextRequest) {
 
   const { lat, lng } = result.geometry.location;
   const formattedAddress: string = result.formatted_address ?? address;
+  // ISO-2 country of the result, so callers can reject one outside their market.
+  const countryCode: string =
+    (result.address_components as { short_name: string; types: string[] }[] | undefined)
+      ?.find((c) => c.types.includes("country"))?.short_name ?? "";
 
-  return NextResponse.json({ lat, lng, address: formattedAddress });
+  return NextResponse.json({ lat, lng, address: formattedAddress, countryCode });
 }

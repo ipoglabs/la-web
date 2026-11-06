@@ -196,11 +196,14 @@ export default function PreviewPage() {
 
   // DB-form categories show exactly the fields their schema defines, with
   // choice values shown by their option labels.
+  // A DB-form category waits for its schema rather than falling back to the
+  // legacy specs, which showed wrong values ("Beds: 0") and missed fields.
+  const formLoading = useDynamicForm && !schema && schemaLoading;
   const { specs, optionLabels } = useMemo(() => {
     if (schema) return schemaToSpecs(schema, data as unknown as Record<string, unknown>);
-    if (!data.category || !data.subcategory) return { specs: [], optionLabels: {} };
+    if (useDynamicForm || !data.category || !data.subcategory) return { specs: [], optionLabels: {} };
     return { specs: getSpecs(data.category, data.subcategory), optionLabels: {} };
-  }, [schema, data]);
+  }, [schema, data, useDynamicForm]);
 
   const groupedFields = useMemo(() => {
     const groups: Record<string, any[]> = {
@@ -399,17 +402,19 @@ export default function PreviewPage() {
             description="Review everything before submitting."
           />
 
-          {/* Debug */}
-          <div className="flex justify-end mb-2">
-            <button
-              onClick={() => setShowDebug((s) => !s)}
-              className="text-xs bg-black text-white px-3 py-1 rounded"
-            >
-              Debug
-            </button>
-          </div>
+          {/* Debug — development only; it dumps the seller's profile and draft */}
+          {process.env.NODE_ENV !== "production" && (
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setShowDebug((s) => !s)}
+                className="text-sm bg-black text-white px-3 py-1 rounded"
+              >
+                Debug
+              </button>
+            </div>
+          )}
 
-          {showDebug && (
+          {showDebug && process.env.NODE_ENV !== "production" && (
             <pre className="bg-black text-green-400 text-xs p-4 rounded mb-4 overflow-auto">
               {JSON.stringify({ sellerInfo, data, user }, null, 2)}
             </pre>
@@ -451,6 +456,11 @@ export default function PreviewPage() {
 />
 
           {/* ADDITIONAL */}
+          {formLoading && (
+            <p className="text-sm text-slate-500 mb-8" role="status">
+              Loading your ad details…
+            </p>
+          )}
           {groupedFields.categorySpecific.length > 0 && (
            <ReviewDetailsSection
   title="Additional Details"
@@ -505,6 +515,7 @@ export default function PreviewPage() {
             showBack
             showSubmit
             submitting={loading}
+            isSubmitDisabled={formLoading}
             onBack={() => router.push("/post/pick-location")}
             onSubmit={handleSubmit}
           />

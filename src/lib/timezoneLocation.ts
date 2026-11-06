@@ -23,6 +23,17 @@ const DEFAULT: GeoDefault = {
   countryCode: "SG",
 };
 
+/** Where a post in each market starts when nothing better is known. */
+const MARKET_DEFAULTS: Record<GeoDefault["countryCode"], GeoDefault> = {
+  IN: TIMEZONE_MAP["Asia/Kolkata"],
+  SG: TIMEZONE_MAP["Asia/Singapore"],
+  GB: TIMEZONE_MAP["Europe/London"],
+};
+
+export function getMarketDefaultLocation(countryCode: string): GeoDefault {
+  return MARKET_DEFAULTS[countryCode.toUpperCase() as GeoDefault["countryCode"]] ?? DEFAULT;
+}
+
 export function getTimezoneLocation(): GeoDefault {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
