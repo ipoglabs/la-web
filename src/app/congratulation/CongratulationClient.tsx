@@ -3,6 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LaSkeleton } from "@/components/la";
+import { COUNTRY_CONFIGS } from "@/config";
+import type { CountryConfig } from "@/config";
+import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 
 type PostLocation = {
   address?: string;
@@ -17,15 +20,18 @@ type PostData = {
   salePrice?: number;
   rentPrice?: number;
   price?: number;
+  /** Market the post was made in, e.g. "gb". */
+  country?: string;
   images?: string[];
   location?: PostLocation;
 };
 
-function formatPrice(v?: number) {
+/** The price in the post's own market currency (₹, £ or S$). */
+function formatPrice(v: number | undefined, market: CountryConfig) {
   if (!v) return "";
-  return new Intl.NumberFormat("en-IN", {
+  return new Intl.NumberFormat(market.locale, {
     style: "currency",
-    currency: "INR",
+    currency: market.currency,
     maximumFractionDigits: 0,
   }).format(v);
 }
@@ -33,6 +39,7 @@ function formatPrice(v?: number) {
 export default function CongratulationClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { countryConfig } = useCountryConfig();
   const postId = searchParams.get("postId");
 
   const [post, setPost] = useState<PostData | null>(null);
@@ -72,8 +79,9 @@ export default function CongratulationClient() {
       post?.rentPrice ??
       post?.price;
 
-    return formatPrice(raw);
-  }, [post]);
+    const market = (post?.country && COUNTRY_CONFIGS[post.country.toLowerCase() as keyof typeof COUNTRY_CONFIGS]) || countryConfig;
+    return formatPrice(raw, market);
+  }, [post, countryConfig]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-8">
