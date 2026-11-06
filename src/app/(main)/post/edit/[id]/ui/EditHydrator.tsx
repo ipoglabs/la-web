@@ -38,6 +38,8 @@ function toStoreShape(post: AnyPost): Partial<PostFormState> {
       lat: post.location?.lat,
       lng: post.location?.lng,
     },
+    // The post's own contact — syncSellerInfo keeps it while editing.
+    sellerInfoUserId: null,
     sellerInfo: {
       name: post.seller_info?.name || "",
       email: post.seller_info?.email || "",

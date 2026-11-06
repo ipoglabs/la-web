@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { AuthUser } from "@/store/authStore";
 import {
   decodeIdbRef,
   encodeIdbRef,
@@ -22,6 +23,8 @@ export type PostFormState = {
   name: string;
   description: string;
   sellerInfo: SellerInfo;
+  /** Account `sellerInfo` was filled for — so another account's contact never carries over. */
+  sellerInfoUserId?: string | null;
 
   images: (File | string)[];
   imageRefs: string[];
@@ -36,6 +39,7 @@ export type PostFormState = {
   setField: (key: string, value: any) => void;
   setBulk: (data: Partial<PostFormState>) => void;
   reset: () => Promise<void>;
+  syncSellerInfo: (user: AuthUser) => void;
 
   addFiles: (files: FileList | File[]) => Promise<void>;
   removeImage: (index: number) => Promise<void>;
@@ -63,6 +67,7 @@ const defaultState = {
   name: "",
   description: "",
   sellerInfo: { name: "", email: "", phone: "" },
+  sellerInfoUserId: null,
 
   images: [],
   imageRefs: [],
@@ -87,11 +92,42 @@ export const usePostFormStore = create<PostFormState>()(
         setBulk: (data: Partial<PostFormState>) =>
           set((s) => ({ ...s, ...data })),
 
+        /* ---------------- SELLER CONTACT AUTO-FILL ---------------- */
+
+        // Fills blanks in sellerInfo from the signed-in user's profile. The
+        // stored contact is only kept when it was filled for this same
+        // account (or loaded from the post being edited) — contact details
+        // persisted by a previous account on this browser, or saved before
+        // sellerInfoUserId existed, are replaced, never published under
+        // someone else's ad.
+        syncSellerInfo: (user: AuthUser) => {
+          const s = get();
+          const mine =
+            s.sellerInfoUserId === user.id || (!!s.editMode && !s.sellerInfoUserId);
+          const existing = mine ? s.sellerInfo : undefined;
+          const fullName =
+            user.fullName ||
+            [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+          set({
+            sellerInfoUserId: user.id,
+            sellerInfo: {
+              name: existing?.name || fullName || "",
+              email: existing?.email || user.email || "",
+              phone:
+                existing?.phone ||
+                user.primaryNumber ||
+                user.secondaryNumber1 ||
+                "",
+            },
+          });
+        },
+
         /* ---------------- RESET (KEEP SELLER INFO) ---------------- */
 
         reset: async () => {
           const refs = get().imageRefs || [];
           const seller = get().sellerInfo;
+          const sellerUserId = get().sellerInfoUserId ?? null;
 
           for (const ref of refs) {
             const parsed = decodeIdbRef(ref);
@@ -105,6 +141,7 @@ export const usePostFormStore = create<PostFormState>()(
               ...defaultState,
               postId: generateObjectId(), // fresh ID for the next post
               sellerInfo: seller,
+              sellerInfoUserId: sellerUserId,
               ...actions,
             } as PostFormState,
             true

@@ -28,7 +28,6 @@ export default function DetailsPage() {
 
   const category = usePostFormStore((s) => s.category);
   const subcategory = usePostFormStore((s) => s.subcategory);
-  const setField = usePostFormStore((s) => s.setField);
 
   const user = useAuthStore((s) => s.user);
 
@@ -53,28 +52,10 @@ export default function DetailsPage() {
     });
   }, []);
 
- // ✅ AUTO-FILL SELLER (SAFE MERGE — FINAL FIX)
-useEffect(() => {
-  if (!user) return;
-
-  const existing = usePostFormStore.getState().sellerInfo;
-
-  const fullName =
-    user.fullName ||
-    [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-
-  setField("sellerInfo", {
-    name: existing?.name || fullName,
-    email: existing?.email || user.email,
-
-    // 🔥 FIX: DO NOT OVERRIDE EXISTING
-    phone:
-      existing?.phone ||
-      user.primaryNumber ||
-      user.secondaryNumber1 ||
-      "",
-  });
-}, [user, setField]);
+  // Auto-fill seller contact from the signed-in user (never another account's).
+  useEffect(() => {
+    if (user) usePostFormStore.getState().syncSellerInfo(user);
+  }, [user]);
 
   const handleNext = useCallback(() => {
     if (!category || !subcategory) {

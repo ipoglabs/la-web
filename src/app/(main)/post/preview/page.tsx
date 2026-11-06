@@ -88,7 +88,6 @@ export default function PreviewPage() {
   const router = useRouter();
 
   const data = usePostFormStore();
-  const setField = usePostFormStore((s) => s.setField);
   const user = useAuthStore((s) => s.user);
 
   const { countryCode, countryConfig } = useCountryConfig();
@@ -135,25 +134,10 @@ export default function PreviewPage() {
 
   /* ---------------- SELLER AUTO-FILL ---------------- */
 
+  // Only ever this account's contact — see syncSellerInfo.
   useEffect(() => {
-    if (!user) return;
-
-    const existing = usePostFormStore.getState().sellerInfo;
-
-    const fullName =
-      user.fullName ||
-      [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-
-    setField("sellerInfo", {
-      name: existing?.name || fullName,
-      email: existing?.email || user.email,
-      phone:
-        existing?.phone ||
-        user.primaryNumber ||
-        user.secondaryNumber1 ||
-        "",
-    });
-  }, [user, setField]);
+    if (user) usePostFormStore.getState().syncSellerInfo(user);
+  }, [user]);
 
   const sellerInfo = useMemo(
     () => ({
