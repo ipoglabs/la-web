@@ -120,7 +120,7 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
     </p>
   ) : titleStripped ? (
     <p id={hintId} role="status" className="text-sm font-medium text-amber-700">
-      Titles can only use letters, numbers, spaces and . , - (other characters were removed).
+      Titles can only use letters, numbers, spaces and . , - & ' ( ) / + (other characters were removed).
     </p>
   ) : field.hint ? (
     <p id={hintId} className="text-sm text-slate-500">

@@ -3,7 +3,7 @@ import { goodToKnowError, normalizeGoodToKnow } from "./goodToKnow";
 
 // Mirrors sanitizeAdTitle (posting/validation/sanitizeAdTitle.ts): the form
 // strips anything else while typing, so the server rejects it outright.
-const AD_TITLE_DISALLOWED = /[^a-zA-Z0-9 .,-]/;
+const AD_TITLE_DISALLOWED = /[^a-zA-Z0-9 .,&'()/+-]/;
 
 /** Visible text of a value — HTML tags removed, each entity counted as one char. */
 function plainText(value: string): string {
@@ -58,7 +58,7 @@ function validateField(
       return `${field.label} must be ${fmt(field.maxLength)} characters or fewer.`;
     }
     if (field.format === "adTitle" && AD_TITLE_DISALLOWED.test(value)) {
-      return `${field.label} can only contain letters, numbers, spaces and . , -`;
+      return `${field.label} can only contain letters, numbers, spaces and . , - & ' ( ) / +`;
     }
     if (field.format === "url" && !isWebLink(value)) {
       return `${field.label} must be a web link starting with https://`;
