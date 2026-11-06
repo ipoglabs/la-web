@@ -50,12 +50,12 @@ async function main() {
       let n = 0;
       for await (const doc of col.find({})) {
         if (!gz.write(EJSON.stringify(doc, { relaxed: false }) + "\n")) {
-          await new Promise((r) => gz.once("drain", r));
+          await new Promise<void>((r) => gz.once("drain", () => r()));
         }
         n++;
       }
       gz.end();
-      await new Promise((r) => file.on("finish", r));
+      await new Promise<void>((r) => file.on("finish", () => r()));
 
       const live = await col.countDocuments();
       if (live !== n) problems++;
