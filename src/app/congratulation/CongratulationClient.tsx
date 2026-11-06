@@ -26,14 +26,10 @@ type PostData = {
   location?: PostLocation;
 };
 
-/** The price in the post's own market currency (₹, £ or S$). */
+/** The price in the post's market symbol and digit grouping from its country config ("₹6,00,000", "£1,500", "S$1,500"), as listing cards show it. */
 function formatPrice(v: number | undefined, market: CountryConfig) {
   if (!v) return "";
-  return new Intl.NumberFormat(market.locale, {
-    style: "currency",
-    currency: market.currency,
-    maximumFractionDigits: 0,
-  }).format(v);
+  return `${market.currencySymbol}${Math.round(v).toLocaleString(market.locale)}`;
 }
 
 export default function CongratulationClient() {
