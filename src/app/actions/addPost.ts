@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
 import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
+import { isEmailMutedUser } from "@/lib/emailMutedUsers";
 import { getVerificationStatus } from "@/lib/verification";
 import { logActivity } from "@/lib/activityLog";
 import {
@@ -403,11 +404,13 @@ export async function addPost(
     await newPost.save();
 
     // Dropdown values typed that aren't options go to the admin's queue.
-    if (schema) await recordOptionRequests(schema, { ...postData, ...attributes }, String(newPost._id));
+    // Test accounts (EMAIL_MUTED_USER_IDS) never trigger email.
+    const emailMuted = isEmailMutedUser(ownerId);
+    if (schema) await recordOptionRequests(schema, { ...postData, ...attributes }, String(newPost._id), { notify: !emailMuted });
 
     await logActivity(ownerId, "POST_CREATED", { postId: String(newPost._id), title: postData.name });
 
-    if (postData.seller_info?.email) {
+    if (postData.seller_info?.email && !emailMuted) {
       try {
         await sendListingLiveEmail({
           email: postData.seller_info.email,

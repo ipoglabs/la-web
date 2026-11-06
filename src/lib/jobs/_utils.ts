@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import Post from "@/models/post";
 import User from "@/models/user";
 import { publicPostFilter } from "@/lib/postVisibility";
+import { emailMutedUserIds } from "@/lib/emailMutedUsers";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { LEGACY_SUBCATEGORY_ALIASES, exactCaseInsensitive } from "@/lib/postSubcategoryAliases";
 import { buildFilterQuery, carsAlsoSearchEv } from "@/lib/postFilterQuery";
@@ -53,6 +54,11 @@ export async function findAlertMatches(
     category: categoryLabel ? { $in: [alert.category, categoryLabel] } : alert.category,
     _id: { $nin: alert.lastMatchedListingIds },
   };
+  // Posts by test accounts (EMAIL_MUTED_USER_IDS) never reach alert emails.
+  const mutedOwners = emailMutedUserIds();
+  if (mutedOwners.length) {
+    query.ownerId = { $nin: mutedOwners.map((id) => new mongoose.Types.ObjectId(id)) };
+  }
 
   if (alert.subCategory) {
     const subLabel = SUBCATEGORY_LABELS[alert.category]?.[alert.subCategory];

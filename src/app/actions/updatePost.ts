@@ -13,6 +13,7 @@ import Post from "@/models/post";
 import { getSession } from "@/lib/auth";
 import { deleteImageVariants } from "@/lib/media/imageVariants";
 import { sendListingStatusEmail } from "@/lib/listings/sendListingStatusEmail";
+import { isEmailMutedUser } from "@/lib/emailMutedUsers";
 import { logActivity } from "@/lib/activityLog";
 
 /* ---------------------- helpers (unchanged from you) ---------------------- */
@@ -406,14 +407,16 @@ export async function updatePost(
     }
 
     // Dropdown values typed that aren't options go to the admin's queue.
+    // Test accounts (EMAIL_MUTED_USER_IDS) never trigger email.
+    const emailMuted = isEmailMutedUser(doc.ownerId ?? sessionOwnerId);
     if (schema) {
       const saved = doc as unknown as Record<string, unknown>;
-      await recordOptionRequests(schema, { ...saved, ...(saved.attributes as Record<string, unknown> | undefined) }, String(doc._id));
+      await recordOptionRequests(schema, { ...saved, ...(saved.attributes as Record<string, unknown> | undefined) }, String(doc._id), { notify: !emailMuted });
     }
 
     await logActivity(sessionOwnerId, "POST_UPDATED", { postId: String(doc._id), title: doc.name });
 
-    if (doc.seller_info?.email) {
+    if (doc.seller_info?.email && !emailMuted) {
       try {
         await sendListingStatusEmail({
           email: doc.seller_info.email,
