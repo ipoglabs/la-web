@@ -139,7 +139,7 @@ export function businessSections(subcategory: string, country: string): FormSect
             { key: "annualTurnover", type: "currency", label: "Annual Turnover", hint: "0 if not trading yet", min: 0, width: "half" },
             { key: "netProfit", type: "currency", label: "Net Profit", hint: "Per year", min: 0, width: "half" },
             { key: "staffCount", type: "number", label: "Staff", hint: "0 if you run it alone", min: 0, max: 10_000, width: "half" },
-            { key: "yearsEstablished", type: "number", label: "Years Established", min: 0, max: 200, width: "half" },
+            { key: "yearsEstablished", type: "number", label: "Years in Business", unit: "years", min: 0, max: 200, width: "half" },
             {
               key: "premises",
               type: "select",

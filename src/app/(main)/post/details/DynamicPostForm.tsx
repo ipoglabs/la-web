@@ -13,6 +13,7 @@ import { DateInput } from "@/components/date-input";
 import { ToggleButtonGroup, ToggleGroupButton } from "@/components/toggle-group/CompoundToggleGroup";
 import { usePostFormStore } from "../store/postFormStore";
 import { sanitizeAdTitle } from "@/posting/validation/sanitizeAdTitle";
+import { normalizeWebLink } from "@/posting/form-schema/validate";
 import { CUSTOM_OPTION, GOOD_TO_KNOW, PLACE_TAG, acceptsCustomOption, isFieldVisible, type FormFieldDef, type GoodToKnowValue, type PostFormSchemaData } from "@/posting/form-schema/types";
 import { cn } from "@/lib/utils";
 
@@ -340,6 +341,11 @@ function DynamicField({ field, currencySymbol, error, onFieldChange }: DynamicFi
             setTitleStripped(clean !== e.target.value);
             set(clean);
           }}
+          // "myshop.com" → "https://myshop.com", so the seller sees what is saved
+          onBlur={field.format === "url" && typeof value === "string" && value ? () => {
+            const link = normalizeWebLink(value);
+            if (link !== value) set(link);
+          } : undefined}
           placeholder={field.placeholder}
           status={error ? "error" : "default"}
           aria-invalid={error ? true : undefined}

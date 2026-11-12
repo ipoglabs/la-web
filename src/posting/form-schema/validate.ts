@@ -22,9 +22,17 @@ function isEmpty(value: unknown) {
   return false;
 }
 
+/** A link typed without its scheme ("myshop.com", "www.myshop.com/menu")
+ *  gets https:// in front; anything else is returned trimmed, unchanged. */
+export function normalizeWebLink(value: string): string {
+  const v = value.trim();
+  if (!v || /^[a-z][a-z0-9+.-]*:/i.test(v) || /\s/.test(v)) return v;
+  return /^[^/]+\.[a-z]{2,}(?:[/?#:]|$)/i.test(v) ? `https://${v}` : v;
+}
+
 function isWebLink(value: string): boolean {
   try {
-    const url = new URL(value.trim());
+    const url = new URL(normalizeWebLink(value));
     return (url.protocol === "https:" || url.protocol === "http:") && url.hostname.includes(".");
   } catch {
     return false;
@@ -104,7 +112,7 @@ function validateField(
       return `${field.label} can only contain letters, numbers, spaces and . , - & ' ( ) / +`;
     }
     if (field.format === "url" && !isWebLink(value)) {
-      return `${field.label} must be a web link starting with https://`;
+      return `${field.label} must be a web link, e.g. https://example.com`;
     }
   }
 

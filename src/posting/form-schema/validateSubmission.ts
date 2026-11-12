@@ -8,7 +8,7 @@
 import Post from "@/models/post";
 import { isDynamicFormCategory } from "./rollout";
 import { getPostFormSchema } from "./getPostFormSchema";
-import { validateAgainstSchema } from "./validate";
+import { normalizeWebLink, validateAgainstSchema } from "./validate";
 import { normalizeGoodToKnow } from "./goodToKnow";
 import { isFieldVisible, type FormFieldDef, type PostFormSchemaData } from "./types";
 
@@ -88,7 +88,7 @@ function readValue(field: FormFieldDef, raw: FormDataEntryValue | null): unknown
       return s.split(",").map((v) => v.trim()).filter(Boolean);
     }
     default:
-      return s;
+      return field.format === "url" ? normalizeWebLink(s) : s;
   }
 }
 
