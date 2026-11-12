@@ -51,6 +51,13 @@ const travelLicence = (country: string): FormFieldDef => {
   return { key: "travelLicence", type: "text", label, hint, width: "half" };
 };
 
+/** Where each market's travellers need visas — the Countries Covered example. */
+const COUNTRIES_EXAMPLE: Record<string, string> = {
+  IN: "e.g. Schengen, US, UK",
+  GB: "e.g. US ESTA, Canada, India",
+  SG: "e.g. China, India, Australia",
+};
+
 const RENTAL_HINT: Record<string, string> = {
   SG: "Homes in Singapore can't be let for under 3 months; list overseas holiday homes or longer stays.",
   GB: "Scottish short lets: add your short-term let licence number below.",
@@ -157,7 +164,7 @@ export function travelStaysSections(subcategory: string, country: string): FormS
           title: "Service",
           fields: [
             select("serviceType", "Service", [["visa", "Visa Assistance"], ["insurance", "Travel Insurance"], ["transfer", "Airport Transfer"], ["car_hire", "Car Hire"], ["tickets", "Ticket Booking"], ["guide", "Tour Guide"], ["itinerary", "Itinerary Planning"], ["other", "Other"]], { required: true }),
-            text("countries", "Countries Covered", "e.g. Schengen, US, UK"),
+            text("countries", "Countries Covered", COUNTRIES_EXAMPLE[country] ?? COUNTRIES_EXAMPLE.GB),
             select("consultationMode", "Mode", [["inperson", "In-person"], ["online", "Online"], ["both", "Both"]]),
             provider("Agency Name", true),
             travelLicence(country),
