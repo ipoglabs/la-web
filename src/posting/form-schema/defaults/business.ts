@@ -97,6 +97,13 @@ export const BUSINESS_SUBCATEGORIES = [
   "Wanted",
 ];
 
+/** B2B Service "Coverage" example for each market. */
+const COVERAGE_EXAMPLE: Record<string, string> = {
+  IN: "e.g. Pan-India (remote)",
+  GB: "e.g. UK-wide (remote)",
+  SG: "e.g. Islandwide (remote)",
+};
+
 export function businessSections(subcategory: string, country: string): FormSection[] | null {
   switch (subcategory) {
     case "Business For Sale / Lease":
@@ -214,7 +221,7 @@ export function businessSections(subcategory: string, country: string): FormSect
               ["from", "Starting from"],
               ["quote", "Price on request"],
             ]),
-            { key: "coverage", type: "text", label: "Coverage", placeholder: "e.g. UK-wide (remote)", width: "half" },
+            { key: "coverage", type: "text", label: "Coverage", placeholder: COVERAGE_EXAMPLE[country] ?? COVERAGE_EXAMPLE.GB, width: "half" },
             { key: "minimumContract", type: "text", label: "Minimum Contract", placeholder: "e.g. 12 months, 20 parcels a week", width: "half" },
             { key: "accreditations", type: "tags", label: "Accreditations", placeholder: "e.g. ISO 9001 — press Enter", maxItems: 10 },
             yesNo("insured", "Insured"),

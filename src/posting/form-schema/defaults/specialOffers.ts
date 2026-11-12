@@ -93,6 +93,13 @@ export const SPECIAL_OFFERS_SUBCATEGORIES = [
   "Miscellaneous",
 ];
 
+/** Interest-rate example in each market's own wording (AER is a UK term). */
+const INTEREST_RATE_EXAMPLE: Record<string, string> = {
+  IN: "e.g. 7.5% p.a.",
+  GB: "e.g. 5.2% AER",
+  SG: "e.g. 3.1% p.a.",
+};
+
 export function specialOffersSections(subcategory: string, country: string): FormSection[] | null {
   const offer = (title: string, fields: FormFieldDef[]): FormSection[] => [basics, { title, fields }, offerSection];
 
@@ -101,7 +108,7 @@ export function specialOffersSections(subcategory: string, country: string): For
       return offer("Product", [
         itemType("Product", [["credit_card", "Credit Card"], ["loan", "Loan"], ["insurance", "Insurance"], ["savings", "Savings Account"], ["investment", "Investment"], ["current_account", "Current / Business Account"], ["other", "Other"]]),
         provider("Bank / Financial Institution"),
-        text("interestRate", "Interest Rate / Returns", "e.g. 5.2% AER"),
+        text("interestRate", "Interest Rate / Returns", INTEREST_RATE_EXAMPLE[country] ?? INTEREST_RATE_EXAMPLE.GB),
         text("tenure", "Tenure", "e.g. 24 months"),
         { key: "minBudget", type: "currency", label: "Minimum Amount", min: 0, width: "half" },
         { key: "maxBudget", type: "currency", label: "Maximum Amount", min: 0, gteField: "minBudget", width: "half" },
