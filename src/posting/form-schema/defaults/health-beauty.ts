@@ -25,7 +25,14 @@ const text = (key: string, label: string, placeholder?: string): FormFieldDef =>
 const itemType = (entries: [string, string][]): FormFieldDef => select("itemType", "Type", entries, { required: true, width: "full" });
 
 const providerName = text("providerName", "Business / Provider Name");
-const qualification = text("qualification", "Qualifications / Registration", "e.g. HCPC registered");
+/** Registration example in each market's own regulator (HCPC is UK-only). */
+const QUALIFICATION_EXAMPLE: Record<string, string> = {
+  IN: "e.g. NMC / RCI registered",
+  GB: "e.g. HCPC registered",
+  SG: "e.g. SMC / AHPC registered",
+};
+const qualification = (country: string) =>
+  text("qualification", "Qualifications / Registration", QUALIFICATION_EXAMPLE[country] ?? QUALIFICATION_EXAMPLE.GB);
 const availability = text("availability", "Availability", "e.g. Mon–Sat, 9am–6pm");
 const mode = select("consultationMode", "Mode", [["inperson", "In-person"], ["online", "Online"], ["both", "Both"]], { required: true });
 const homeVisits: FormFieldDef = { key: "homeVisits", type: "select", label: "Home Visits", options: YES_NO, width: "half" };
@@ -41,9 +48,9 @@ export const LANGUAGES: Record<string, [string, string][]> = {
 const languages = (country: string): FormFieldDef => ({ key: "languages", type: "multiselect", label: "Languages Spoken", options: pairs(LANGUAGES[country] ?? LANGUAGES.GB) });
 
 /** A service someone offers: what it is, how it's given, its price and what the price covers. */
-const service = (fields: FormFieldDef[], units: [string, string][]): FormSection[] => [
+const service = (country: string, fields: FormFieldDef[], units: [string, string][]): FormSection[] => [
   basics,
-  { title: "Service", fields: [...fields, mode, providerName, qualification, availability] },
+  { title: "Service", fields: [...fields, mode, providerName, qualification(country), availability] },
   {
     title: "Price",
     fields: [
@@ -66,12 +73,14 @@ export function healthBeautySections(subcategory: string, country: string): Form
   switch (subcategory) {
     case "Fitness Classes & Training":
       return service(
+        country,
         [itemType([["gym", "Gym"], ["yoga", "Yoga"], ["pilates", "Pilates"], ["crossfit", "CrossFit"], ["pt", "Personal Trainer"], ["group", "Group Classes"], ["martial_arts", "Martial Arts"], ["dance", "Dance Fitness"], ["other", "Other"]]), suitableFor],
         [["month", "Per month"], ["class", "Per class"], ["session", "Per session"], ["package", "Per package"]],
       );
 
     case "Salons & Spas":
       return service(
+        country,
         [
           { key: "services", type: "multiselect", label: "Services", required: true, options: pairs([["hair", "Hair"], ["nails", "Nails"], ["lashes_brows", "Lashes & Brows"], ["waxing", "Waxing & Threading"], ["makeup", "Makeup"], ["skincare", "Facials & Skincare"], ["massage", "Massage"], ["spa", "Spa Packages"], ["bridal", "Bridal & Mehndi"], ["tattoo", "Tattoo & Piercing"], ["other", "Other"]]) },
           suitableFor,
@@ -82,18 +91,21 @@ export function healthBeautySections(subcategory: string, country: string): Form
 
     case "Medical & Therapy":
       return service(
+        country,
         [itemType([["doctor", "GP / Doctor"], ["dentist", "Dentist"], ["physio", "Physiotherapy"], ["health_check", "Health Checks"], ["eye", "Eye Care"], ["podiatry", "Podiatry / Chiropody"], ["specialist", "Specialist"], ["other", "Other"]]), homeVisits, languages(country)],
         [["visit", "Per visit"], ["session", "Per session"], ["package", "Per package"]],
       );
 
     case "Wellness & Nutrition":
       return service(
+        country,
         [itemType([["meditation", "Meditation & Mindfulness"], ["nutrition", "Nutrition & Diet"], ["massage", "Massage Therapy"], ["ayurveda", "Ayurveda & Traditional"], ["acupuncture", "Acupuncture"], ["reiki", "Reiki & Energy Healing"], ["retreat", "Retreats"], ["other", "Other"]]), suitableFor],
         [["session", "Per session"], ["class", "Per class"], ["package", "Per package"], ["person", "Per person"]],
       );
 
     case "Mental Health & Counselling":
       return service(
+        country,
         [itemType([["counselling", "Counselling"], ["therapy", "Psychotherapy"], ["coaching", "Life Coaching"], ["support_group", "Support Group"], ["other", "Other"]]), languages(country)],
         [["session", "Per session"], ["hour", "Per hour"], ["package", "Per package"]],
       );
