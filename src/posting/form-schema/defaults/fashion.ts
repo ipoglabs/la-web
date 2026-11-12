@@ -50,6 +50,9 @@ const clothingSize = (freeSize = false): FormFieldDef =>
     ["mixed", "Mixed sizes"],
   ]);
 const sizeDetails = (placeholder: string) => text("sizeDetails", "Size Details", placeholder);
+/** An example in each market's own sizing/brands; GB's wording when a market isn't listed. */
+const byMarket = (country: string, examples: Record<"IN" | "GB" | "SG", string>) =>
+  examples[country as "IN" | "GB" | "SG"] ?? examples.GB;
 const lotType = select("lotType", "Single or Bundle", [["single", "Single item"], ["bundle", "Bundle"]]);
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -103,7 +106,7 @@ export function fashionSections(subcategory: string, country: string): FormSecti
       return item([
         itemType([["tops", "Tops & Blouses"], ["dresses", "Dresses"], ["skirts", "Skirts"], ["bottoms", "Jeans & Trousers"], ["knitwear", "Knitwear"], ["jackets", "Jackets & Coats"], ["workwear", "Workwear & Suits"], ["active", "Activewear"], ["other", "Other"]]),
         clothingSize(),
-        sizeDetails("e.g. UK 12, EU 40"),
+        sizeDetails(byMarket(country, { IN: "e.g. M, 38, UK 12", GB: "e.g. UK 12, EU 40", SG: "e.g. M, US 8, EU 40" })),
         lotType,
         condition,
         brand,
@@ -117,7 +120,7 @@ export function fashionSections(subcategory: string, country: string): FormSecti
         forWhom([["women", "Women"], ["men", "Men"], ["kids", "Kids"]]),
         select("occasion", "Occasion", [["wedding", "Wedding"], ["festive", "Festive"], ["party", "Party"], ["everyday", "Everyday"]]),
         clothingSize(true),
-        sizeDetails("e.g. Blouse 36, UK 10–12"),
+        sizeDetails(byMarket(country, { IN: "e.g. Blouse 36, Free size", GB: "e.g. Blouse 36, UK 10–12", SG: "e.g. Blouse 36, M" })),
         condition,
         text("material", "Fabric", "e.g. Banarasi silk"),
         colour,
@@ -129,7 +132,7 @@ export function fashionSections(subcategory: string, country: string): FormSecti
         itemType([["trainers", "Trainers & Sneakers"], ["boots", "Boots"], ["heels", "Heels"], ["flats", "Flats & Loafers"], ["sandals", "Sandals"], ["formal", "Formal"], ["sports", "Sports Shoes"], ["slippers", "Slippers"], ["other", "Other"]]),
         forWhom([["men", "Men"], ["women", "Women"], ["kids", "Kids"], ["unisex", "Unisex"]], true),
         select("shoeSize", "Shoe Size", SHOE_SIZES[country] ?? SHOE_SIZES.IN),
-        sizeDetails("e.g. UK 5.5, EU 38.5"),
+        sizeDetails(byMarket(country, { IN: "e.g. UK 7, EU 41", GB: "e.g. UK 5.5, EU 38.5", SG: "e.g. US 8, EU 41" })),
         condition,
         brand,
         colour,
@@ -184,7 +187,7 @@ export function fashionSections(subcategory: string, country: string): FormSecti
           ["cartier", "Cartier"],
           ["other", "Other designer"],
         ], { required: true }),
-        { ...text("otherBrand", "Designer Name", "e.g. Mulberry"), ...shownFor("brand", ["other"]) },
+        { ...text("otherBrand", "Designer Name", byMarket(country, { IN: "e.g. Sabyasachi", GB: "e.g. Mulberry", SG: "e.g. Coach" })), ...shownFor("brand", ["other"]) },
         select(
           "authenticity",
           "Proof of Authenticity",
