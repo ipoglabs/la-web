@@ -175,7 +175,7 @@ function validateField(
     if (before && day > before) return `${field.label} can't be after ${labelOf(field.lteField!)}.`;
     return null;
   }
-  if (field.gteField || field.lteField) {
+  if (field.gteField || field.lteField || field.ltField) {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
     if (field.gteField) {
@@ -188,6 +188,12 @@ function validateField(
       const other = data[field.lteField];
       if (!isEmpty(other) && n > Number(other)) {
         return `${field.label} can't be more than ${labelOf(field.lteField)}.`;
+      }
+    }
+    if (field.ltField) {
+      const other = data[field.ltField];
+      if (!isEmpty(other) && n >= Number(other)) {
+        return `${field.label} must be less than ${labelOf(field.ltField)}.`;
       }
     }
   }

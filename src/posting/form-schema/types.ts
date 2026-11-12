@@ -69,6 +69,9 @@ export interface FormFieldDef {
   gteField?: string;
   /** Numeric: value must be <= this other field's value (e.g. floor ≤ totalFloors). */
   lteField?: string;
+  /** Numeric: value must be strictly < this other field's value (e.g. a deal
+   *  price below the Was price — an equal price isn't a deal). */
+  ltField?: string;
   /** Text / textarea / richtext: max characters of visible text (HTML tags not counted). */
   maxLength?: number;
   /** Text rules: "adTitle" = letters, digits, spaces and . , - only

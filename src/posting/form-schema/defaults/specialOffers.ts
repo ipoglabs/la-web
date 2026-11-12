@@ -56,7 +56,7 @@ const offerSection: FormSection = {
   fields: [
     select("dealType", "Deal Type", DEAL_TYPES, { required: true, width: "full", display: "dropdown" }),
     { key: "discountPct", type: "number", label: "Discount", unit: "% off", min: 1, max: 100, width: "half", hint: "Leave empty if the deal isn't a percentage off." },
-    { key: "salePrice", type: "currency", label: "Offer Price", min: 0, width: "half", hint: "What the buyer pays, if the offer has a price." },
+    { key: "salePrice", type: "currency", label: "Offer Price", min: 0, width: "half", ltField: "originalPrice", hint: "What the buyer pays, if the offer has a price." },
     { key: "originalPrice", type: "currency", label: "Was", min: 0, width: "half" },
     { key: "minSpend", type: "currency", label: "Minimum Spend", min: 0, width: "half", hint: "Leave empty if there is none." },
     select("redemption", "Redeem At", [["instore", "In-store"], ["online", "Online"], ["both", "Both"]], { required: true }),

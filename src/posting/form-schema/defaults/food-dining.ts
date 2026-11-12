@@ -174,7 +174,7 @@ export function foodDiningSections(subcategory: string, country: string): FormSe
           fields: [
             select("dealType", "Deal Type", DEAL_TYPES, { required: true, width: "full", display: "dropdown" }),
             { key: "discountPct", type: "number", label: "Discount", unit: "% off", min: 1, max: 100, width: "half", hint: "Leave empty if the deal isn't a percentage off." },
-            { key: "salePrice", type: "currency", label: "Deal Price", min: 0, width: "half" },
+            { key: "salePrice", type: "currency", label: "Deal Price", min: 0, width: "half", ltField: "originalPrice" },
             { key: "originalPrice", type: "currency", label: "Was", min: 0, width: "half" },
             mealType([["breakfast", "Breakfast"], ["brunch", "Brunch"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["drinks", "Drinks"]]),
             text("validDays", "Valid Days & Times", "e.g. Mon–Fri, 12–3pm"),
