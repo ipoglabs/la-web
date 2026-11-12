@@ -99,38 +99,6 @@ export const community: MainCategory = {
       ],
     },
     {
-      id: "classes",
-      label: "Classes",
-      icon: "book-open",
-      filters: [
-        {
-          id: "subject",
-          label: "Subject",
-          type: "toggle",
-          options: [
-            { label: "Music",       value: "music"    },
-            { label: "Art",         value: "art"      },
-            { label: "Dance",       value: "dance"    },
-            { label: "Fitness",     value: "fitness"  },
-            { label: "Language",    value: "language" },
-            { label: "Cooking",     value: "cooking"  },
-            { label: "Academic",    value: "academic" },
-            { label: "Other",       value: "other"    },
-          ],
-        },
-        {
-          id: "class_mode",
-          label: "Format",
-          type: "toggle",
-          options: [
-            { label: "In-person", value: "inperson" },
-            { label: "Online",    value: "online", icon: "laptop" },
-            { label: "Hybrid",    value: "hybrid" },
-          ],
-        },
-      ],
-    },
-    {
       id: "volunteering",
       label: "Volunteering & Charity",
       icon: "heart",

@@ -564,13 +564,13 @@ const COMMUNITY_FORM_FILTERS: Record<string, Record<string, CommunityTarget>> = 
     event_format: "mode",
     age_suitability: "attributes.suitableFor",
   },
-  classes: { subject: "subject", class_mode: "mode" },
   volunteering: {
     cause: "attributes.cause",
     commitment: "attributes.commitment",
     skills_needed: { path: "attributes.skillsNeeded", noneValue: "none" },
     vol_format: "mode",
   },
+  // Also takes the old "Classes" sub, merged in 2026-11 (postSubcategoryAliases).
   courses: { subject: "subject", qualification: "qualification", duration: "duration", course_format: "mode" },
   announcement: {
     ann_type: "attributes.annType",

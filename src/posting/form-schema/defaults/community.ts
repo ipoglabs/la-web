@@ -15,7 +15,7 @@ const feePer = (entries: [string, string][]): FormFieldDef => ({ key: "priceUnit
 const yesNo = (key: string, label: string): FormFieldDef => ({ key, type: "select", label, options: YES_NO, width: "half" });
 const HOW_OFTEN = pairs([["once", "One-off"], ["weekly", "Weekly"], ["monthly", "Monthly"], ["several", "Several dates"]]);
 
-/** Subjects, shared by Classes and Classes & Courses and matching their Subject filters. */
+/** Subjects for Classes & Courses, matching its Subject filter. */
 const SUBJECTS = pairs([
   ["music", "Music"],
   ["art", "Art"],
@@ -33,7 +33,6 @@ const BACKGROUND_CHECK_LABEL: Record<string, string> = { IN: "Police Verificatio
 export const COMMUNITY_SUBCATEGORIES = [
   "Lost & Found",
   "Events",
-  "Classes",
   "Volunteering & Charity",
   "Classes & Courses",
   "Announcement",
@@ -118,23 +117,6 @@ export function communitySections(subcategory: string, country: string): FormSec
         },
       ];
 
-    case "Classes":
-      return [
-        basics,
-        {
-          title: "Class",
-          fields: [
-            { key: "subject", type: "select", label: "Subject", required: true, options: SUBJECTS },
-            { key: "level", type: "select", label: "Level", options: pairs([["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"], ["all", "All Levels"]]) },
-            format(),
-            { key: "ageGroup", type: "select", label: "For", options: pairs([["kids", "Kids"], ["teens", "Teens"], ["adults", "Adults"], ["all", "All Ages"]]) },
-            { key: "schedule", type: "text", label: "Schedule", placeholder: "e.g. Tuesdays 6 pm" },
-            fee(),
-            feePer([["class", "Per class"], ["month", "Per month"], ["term", "Per term"], ["course", "Full course"]]),
-          ],
-        },
-      ];
-
     case "Volunteering & Charity":
       return [
         basics,
@@ -187,11 +169,14 @@ export function communitySections(subcategory: string, country: string): FormSec
           title: "Course",
           fields: [
             { key: "subject", type: "select", label: "Subject", required: true, options: SUBJECTS },
+            { key: "level", type: "select", label: "Level", options: pairs([["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"], ["all", "All Levels"]]) },
+            { key: "ageGroup", type: "select", label: "For", options: pairs([["kids", "Kids"], ["teens", "Teens"], ["adults", "Adults"], ["all", "All Ages"]]) },
+            format(),
+            { key: "schedule", type: "text", label: "Schedule", placeholder: "e.g. Tuesdays 6 pm" },
             {
               key: "qualification",
               type: "select",
               label: "Qualification Awarded",
-              required: true,
               options: pairs([["certificate", "Certificate"], ["diploma", "Diploma"], ["workshop", "Workshop (no award)"], ["none", "None"]]),
             },
             {
@@ -205,12 +190,11 @@ export function communitySections(subcategory: string, country: string): FormSec
               key: "duration",
               type: "select",
               label: "Duration",
-              required: true,
               options: pairs([["1w", "Under 1 week"], ["4w", "1–4 weeks"], ["3m", "1–3 months"], ["3mup", "3+ months"]]),
             },
-            format(),
             { key: "startDate", type: "date", label: "Start Date", immediateOption: "Rolling intake", width: "half", dateLimit: "notPast" },
-            fee("Course Fee"),
+            fee(),
+            feePer([["class", "Per class"], ["month", "Per month"], ["term", "Per term"], ["course", "Full course"]]),
           ],
         },
       ];

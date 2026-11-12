@@ -9,7 +9,6 @@ export const community: CategoryItem = {
   subcategories: [
   { id: "lost_found", label: "Lost & Found" },
   { id: "events", label: "Events" },
-  { id: "classes", label: "Classes" },
   { id: "volunteering", label: "Volunteering & Charity" },
   { id: "courses", label: "Classes & Courses" },
   { id: "announcement", label: "Announcement" },

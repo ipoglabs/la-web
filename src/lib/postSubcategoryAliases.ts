@@ -26,6 +26,9 @@ export const LEGACY_SUBCATEGORY_ALIASES: Record<string, Record<string, string>> 
     car: "cars",         // Post journey stores the singular "Car" (data.ts item name)
     bikes: "motorcycle", // pre-taxonomy label for motorcycles/two-wheelers
   },
+  community: {
+    classes: "courses", // "Classes" was merged into "Classes & Courses" (2026-11)
+  },
 };
 
 /** Case-insensitive exact-match regex — real stored casing varies ("Car", "car", ...). */

@@ -397,11 +397,6 @@ export const categoryIN = {
           routePath: '/main3/item2',
         },
         {
-          id: 3,
-          itemName: 'Classes',
-          routePath: '/main3/item3',
-        },
-        {
           id: 4,
           itemName: 'Volunteering & Charity',
           routePath: '/main3/item3',
