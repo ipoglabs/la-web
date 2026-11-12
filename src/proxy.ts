@@ -10,6 +10,7 @@ import {
 } from "@/lib/country-context";
 import { COUNTRY_CONFIGS, getConfigByIso, type CountryCode } from "@/config";
 import { isSimpleLayoutRoute } from "@/lib/layout-routes";
+import { LEGACY_SUBCATEGORY_ALIASES } from "@/lib/postSubcategoryAliases";
 
 /* ─── Country-prefixed URLs (/in/, /gb/, /sg/) ──────────────────────────────
  * [ARCHITECTURE — 2026-07-11] The URL segment is the source of truth for
@@ -165,6 +166,19 @@ export function proxy(request: NextRequest) {
   if (isSimpleLayoutRoute(pathname)) {
     sanitisedHeaders.set("x-simple-layout", "1");
     return NextResponse.next({ request: { headers: sanitisedHeaders } });
+  }
+
+  // ── Merged/renamed subcategory in a listings link — 301 to its new id ──
+  // e.g. ?cat=community&sub=classes → sub=courses (lib/postSubcategoryAliases).
+  if (/^(\/[a-z]{2})?\/listings\/?$/i.test(pathname)) {
+    const cat = request.nextUrl.searchParams.get("cat") ?? "";
+    const sub = (request.nextUrl.searchParams.get("sub") ?? "").toLowerCase();
+    const target = LEGACY_SUBCATEGORY_ALIASES[cat]?.[sub];
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.searchParams.set("sub", target);
+      return NextResponse.redirect(url, { status: 301 });
+    }
   }
 
   // ── Country-prefixed URL (/in/, /gb/, /sg/) — URL wins over cookie ──
