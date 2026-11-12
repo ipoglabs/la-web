@@ -165,7 +165,6 @@ export function specialOffersSections(subcategory: string, country: string): For
         select("occasion", "Occasion", OCCASIONS[country] ?? OCCASIONS.IN, { required: true }),
         select("itemType", "Category", [["shopping", "Shopping"], ["home", "Home & Garden"], ["travel", "Travel"], ["dining", "Dining"], ["entertainment", "Entertainment"], ["gifts", "Gifts"], ["other", "Other"]], { required: true }),
         provider(),
-        { key: "startDate", type: "date", label: "Sale Starts", width: "half" },
       ]);
 
     case "Entertainment":

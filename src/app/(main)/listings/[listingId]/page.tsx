@@ -23,6 +23,7 @@ import FeaturedListings from "@/components/la-blocks/FeaturedListings";
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
 import { COUNTRY_CONFIGS, type CountryCode } from "@/config";
 import { SITE_URL } from "@/lib/constants";
+import { descriptionToPlainText } from "@/lib/sanitizeDescription";
 import type { Listing } from "@/types/listing";
 
 // ─── Shared card surface ──────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ export async function generateMetadata({ params }: ListingDetailPageProps): Prom
   if (!context) return { title: "Listing Not Found" };
 
   const { listing } = context;
-  const description = listing.description.replace(/<[^>]*>/g, "").slice(0, 160);
+  const description = descriptionToPlainText(listing.description).slice(0, 160);
   const image = listing.images[0]?.src;
   const url = `${SITE_URL}/listings/${listing.id}`;
 
@@ -93,7 +94,7 @@ function ListingJsonLd({ listing, market, cat }: { listing: Listing; market: Cou
     "@context": "https://schema.org",
     "@type": "Product",
     name: listing.title,
-    description: listing.description.replace(/<[^>]*>/g, "").slice(0, 500),
+    description: descriptionToPlainText(listing.description).slice(0, 500),
     image: listing.images.map((img) => img.src),
     url: `${SITE_URL}/listings/${listing.id}`,
     ...(Number.isFinite(numericPrice) && numericPrice > 0
@@ -116,7 +117,7 @@ function ListingJsonLd({ listing, market, cat }: { listing: Listing; market: Cou
     <script
       type="application/ld+json"
       // eslint-disable-next-line react/no-danger
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
     />
   );
 }
@@ -137,7 +138,7 @@ function BreadcrumbJsonLd({ listing, cat, catLabel }: { listing: Listing; cat: s
     <script
       type="application/ld+json"
       // eslint-disable-next-line react/no-danger
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
     />
   );
 }
