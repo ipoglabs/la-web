@@ -68,6 +68,13 @@ const SIXTH_FORM_LABEL: Record<string, string> = { IN: "Higher Secondary", GB: "
 
 export const EDUCATION_SUBCATEGORIES = ["Tutors & Coaching", "Courses", "Study Materials", "Schools & Colleges", "Language Classes"];
 
+/** Schools & Colleges "Ages / Levels" example in each market's own school terms. */
+const AGE_RANGE_EXAMPLE: Record<string, string> = {
+  IN: "e.g. Ages 3–18, Nursery to Class 12",
+  GB: "e.g. Ages 5–18, KS2 & KS3",
+  SG: "e.g. Ages 7–12, Primary 1 to 6",
+};
+
 export function educationSections(subcategory: string, country: string): FormSection[] | null {
   switch (subcategory) {
     case "Tutors & Coaching":
@@ -219,7 +226,7 @@ export function educationSections(subcategory: string, country: string): FormSec
             },
             { key: "curriculum", type: "multiselect", label: "Curriculum", options: pairs(SCHOOL_CURRICULA[country] ?? SCHOOL_CURRICULA.IN) },
             { key: "startDate", type: "date", label: "Event Date", required: true, width: "half", dateLimit: "notPast", showWhen: { field: "adType", in: ["openday"] } },
-            { key: "ageRange", type: "text", label: "Ages / Levels", placeholder: "e.g. Ages 5–18, KS2 & KS3", width: "half" },
+            { key: "ageRange", type: "text", label: "Ages / Levels", placeholder: AGE_RANGE_EXAMPLE[country] ?? AGE_RANGE_EXAMPLE.GB, width: "half" },
             {
               key: "accreditation",
               type: "text",
