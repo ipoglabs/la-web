@@ -360,8 +360,13 @@ export async function addPost(
     // — the country gate normally sets one before /post is reachable) is
     // left without a country rather than guessed, and stays visible in every
     // market's read query (see models/post.ts's `country` field comment).
+    //
+    // The post page sends the market whose form the seller filled in
+    // ("market"); that wins over the cookie, which can change mid-post
+    // (another tab, a market switch) and once saved a UK post as India's.
     const cookieStore = await cookies();
-    const rawCountry = cookieStore.get(COUNTRY_COOKIE)?.value ?? "";
+    const market = (pullString(formData.get("market")) ?? "").toUpperCase();
+    const rawCountry = isAllowedCountry(market) ? market : (cookieStore.get(COUNTRY_COOKIE)?.value ?? "");
     const country = isAllowedCountry(rawCountry) ? rawCountry.toLowerCase() : undefined;
 
     // DB-driven form: read exactly the fields the rendered schema defines

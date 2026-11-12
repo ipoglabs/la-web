@@ -348,6 +348,9 @@ export default function PreviewPage() {
       if (store.editMode && store.postId) {
         res = await updatePost(store.postId, fd);
       } else {
+        // The market this form was filled in for, so a cookie that changed
+        // since (another tab) can't move the post to a different country.
+        fd.append("market", countryCode.toUpperCase());
         res = await addPost(fd);
       }
 
