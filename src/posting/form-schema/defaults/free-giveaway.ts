@@ -28,7 +28,7 @@ const select = (key: string, label: string, entries: [string, string][], extra: 
   ...extra,
 });
 const text = (key: string, label: string, placeholder: string): FormFieldDef => ({ key, type: "text", label, placeholder, width: "half" });
-const mustGoBy: FormFieldDef = { key: "deadline", type: "date", label: "Must Go By", hint: "The ad comes down after this date.", width: "half" };
+const mustGoBy: FormFieldDef = { key: "deadline", type: "date", label: "Must Go By", hint: "The ad comes down after this date.", width: "half", dateLimit: "notPast" };
 /** "Collection" is the UK word; India and Singapore say pickup. */
 const pickup = (country: string): FormFieldDef =>
   text("availability", country === "GB" ? "Collection Times" : "Pickup Times", "e.g. Weekday evenings");
@@ -125,7 +125,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         { key: "dietary", type: "multiselect", label: "Dietary", options: pairs(country === "IN" ? DIETARY_IN : DIETARY) },
         text("allergens", "Allergens", "e.g. Contains nuts, dairy, eggs"),
         text("amount", "Amount", "e.g. 12 eggs, 3 portions"),
-        { key: "deadline", type: "date", label: "Best Before", required: true, hint: "For cooked food, the day it must be eaten by.", width: "half" },
+        { key: "deadline", type: "date", label: "Best Before", required: true, hint: "For cooked food, the day it must be eaten by.", width: "half", dateLimit: "notPast" },
         select("keepIn", "Keep In", [["room", "Cupboard (room temp)"], ["fridge", "Fridge"], ["freezer", "Freezer"]], { width: "half" }),
         collectionMethod,
         pickup(country),

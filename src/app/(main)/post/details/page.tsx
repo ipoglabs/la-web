@@ -71,7 +71,8 @@ export default function DetailsPage() {
     }
     const schemaErrors = validateAgainstSchema(
       schema,
-      store as unknown as Record<string, unknown>
+      store as unknown as Record<string, unknown>,
+      { saved: store.editMode ? store.savedValues : undefined }
     );
     setFieldErrors(schemaErrors);
     const firstKey = Object.keys(schemaErrors)[0];

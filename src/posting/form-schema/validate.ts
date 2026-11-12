@@ -33,10 +33,53 @@ function isWebLink(value: string): boolean {
 
 const fmt = (n: number) => n.toLocaleString("en");
 
+export interface ValidateOptions {
+  /** Today as YYYY-MM-DD. Defaults to this machine's local date. */
+  today?: string;
+  /** Leeway in days for dateLimit. The server runs on UTC, so it allows 1
+   *  for sellers whose local date is already ahead or still behind. */
+  slackDays?: number;
+  /** Values already saved on the post being edited. A date the seller didn't
+   *  change isn't held to dateLimit (e.g. an event that has since passed). */
+  saved?: Record<string, unknown>;
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** YYYY-MM-DD of a stored or submitted date; null for anything else (e.g. "Immediately"). */
+function isoDay(value: unknown): string | null {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  if (typeof value !== "string") return null;
+  return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
+}
+
+function addDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+function dateLimitError(field: FormFieldDef, value: unknown, opts: ValidateOptions): string | null {
+  if (!field.dateLimit) return null;
+  const day = isoDay(value);
+  if (!day) return null;
+  if (opts.saved && isoDay(opts.saved[field.key]) === day) return null;
+  const today = opts.today ?? localToday();
+  const slack = opts.slackDays ?? 0;
+  if (field.dateLimit === "notPast" && day < addDays(today, -slack)) return `${field.label} can't be in the past.`;
+  if (field.dateLimit === "notFuture" && day > addDays(today, slack)) return `${field.label} can't be in the future.`;
+  return null;
+}
+
 function validateField(
   field: FormFieldDef,
   data: Record<string, unknown>,
   labelOf: (key: string) => string,
+  opts: ValidateOptions,
 ): string | null {
   if (field.type === "goodToKnow") {
     const gtk = normalizeGoodToKnow(data[field.key]);
@@ -97,8 +140,10 @@ function validateField(
     }
   }
 
-  if (field.type === "date" && value !== field.immediateOption && Number.isNaN(Date.parse(String(value)))) {
-    return `${field.label} must be a valid date.`;
+  if (field.type === "date" && value !== field.immediateOption) {
+    if (Number.isNaN(Date.parse(String(value)))) return `${field.label} must be a valid date.`;
+    const limitError = dateLimitError(field, value, opts);
+    if (limitError) return limitError;
   }
 
   if (field.type === "number" || field.type === "currency") {
@@ -113,6 +158,15 @@ function validateField(
   }
 
   // Cross-field bounds — numbers, and number chips (e.g. Floor ≤ Total Floors).
+  if (field.type === "date" && (field.gteField || field.lteField)) {
+    const day = isoDay(value);
+    if (!day) return null;
+    const after = field.gteField ? isoDay(data[field.gteField]) : null;
+    if (after && day < after) return `${field.label} can't be before ${labelOf(field.gteField!)}.`;
+    const before = field.lteField ? isoDay(data[field.lteField]) : null;
+    if (before && day > before) return `${field.label} can't be after ${labelOf(field.lteField!)}.`;
+    return null;
+  }
   if (field.gteField || field.lteField) {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
@@ -137,6 +191,7 @@ function validateField(
 export function validateAgainstSchema(
   schema: PostFormSchemaData,
   data: Record<string, unknown>,
+  opts: ValidateOptions = {},
 ): Record<string, string> {
   const labels = new Map(schema.sections.flatMap((s) => s.fields.map((f) => [f.key, f.label] as const)));
   const labelOf = (key: string) => labels.get(key) ?? key;
@@ -145,7 +200,7 @@ export function validateAgainstSchema(
   for (const section of schema.sections) {
     for (const field of section.fields) {
       if (!isFieldVisible(field, data)) continue;
-      const msg = validateField(field, data, labelOf);
+      const msg = validateField(field, data, labelOf, opts);
       if (msg) errors[field.key] = msg;
     }
   }

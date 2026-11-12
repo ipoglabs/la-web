@@ -64,7 +64,8 @@ export interface FormFieldDef {
   min?: number;
   /** Numeric upper bound (number / currency) — catches typos like 999 beds. */
   max?: number;
-  /** Numeric: value must be >= this other field's value (e.g. maxBudget ≥ minBudget). */
+  /** Numeric or date: value must be >= this other field's value (e.g.
+   *  maxBudget ≥ minBudget, End Date on or after Start Date). */
   gteField?: string;
   /** Numeric: value must be <= this other field's value (e.g. floor ≤ totalFloors). */
   lteField?: string;
@@ -90,6 +91,10 @@ export interface FormFieldDef {
   width?: "full" | "half" | "third";
   /** Date: also offer a chip that saves this text instead of a date (e.g. "Immediately"). */
   immediateOption?: string;
+  /** Date: "notPast" = today or later (deadlines, event dates, expiries);
+   *  "notFuture" = today or earlier (a lost-pet date, a registration date).
+   *  An unchanged date on an edited post isn't held to it. */
+  dateLimit?: "notPast" | "notFuture";
   /** Value a new post starts with (e.g. Negotiable = "No"). Not applied when editing. */
   defaultValue?: string;
   /** Show the field only while another field's value matches — e.g. Tenure

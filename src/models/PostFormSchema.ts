@@ -64,6 +64,7 @@ const FieldSchema = new Schema<FormFieldDef>(
     allowCustom: Boolean,
     width: { type: String, enum: ["full", "half", "third"] },
     immediateOption: String,
+    dateLimit: { type: String, enum: ["notPast", "notFuture"] },
     defaultValue: String,
     showWhen: { type: ConditionSchema, default: undefined },
   },

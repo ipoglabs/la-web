@@ -125,6 +125,11 @@ export function readSchemaValues(formData: FormData, schema: PostFormSchemaData)
 }
 
 /** Human-readable errors for `data` (the post as it will be saved, attributes flattened in). */
-export function validateSubmission(schema: PostFormSchemaData, data: Record<string, unknown>): string[] {
-  return Object.values(validateAgainstSchema(schema, data));
+export function validateSubmission(
+  schema: PostFormSchemaData,
+  data: Record<string, unknown>,
+  saved?: Record<string, unknown>,
+): string[] {
+  // Server clock is UTC: allow a day either way for sellers' local dates.
+  return Object.values(validateAgainstSchema(schema, data, { slackDays: 1, saved }));
 }

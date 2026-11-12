@@ -26,7 +26,7 @@ const skillTags: FormFieldDef = {
   placeholder: "Type a skill and press Enter",
   maxItems: 10,
 };
-const startDate: FormFieldDef = { key: "startDate", type: "date", label: "Start Date", immediateOption: "Immediately" };
+const startDate: FormFieldDef = { key: "startDate", type: "date", label: "Start Date", immediateOption: "Immediately", dateLimit: "notPast" };
 const applyLink: FormFieldDef = { key: "applyLink", type: "text", label: "Apply Link", placeholder: "https://" };
 
 /** Values match the Jobs search's Field filter (components/create-alert/config/jobs.ts). */
@@ -138,7 +138,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
               : []),
             skillTags,
             { key: "benefits", type: "multiselect", label: "Benefits", options: opts(c.benefits) },
-            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half", dateLimit: "notPast" },
             { ...applyLink, format: "url" },
           ],
         },
@@ -168,7 +168,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
             startDate,
             { key: "studentFriendly", type: "select", label: "Student Friendly", options: YES_NO, width: "half" },
             skillTags,
-            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half", dateLimit: "notPast" },
             { ...applyLink, format: "url" },
           ],
         },
@@ -208,7 +208,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
               options: pairs([["under-1w", "Under 1 week"], ["1-4w", "1–4 weeks"], ["1-3m", "1–3 months"], ["3-6m", "3–6 months"], ["6m-plus", "6+ months"]]),
             },
             startDate,
-            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half", dateLimit: "notPast" },
             skillTags,
             { ...applyLink, format: "url" },
           ],
@@ -268,7 +268,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
               options: YES_NO,
               width: "half",
             },
-            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half", dateLimit: "notPast" },
             skillTags,
             { ...applyLink, format: "url" },
           ],
@@ -293,13 +293,13 @@ export function jobsSections(subcategory: string, country: string): FormSection[
               options: pairs([["1m", "Under 1 month"], ["3m", "1–3 months"], ["6m", "3–6 months"], ["12m", "6–12 months"]]),
             },
             { ...startDate, width: "half" },
-            { key: "endDate", type: "date", label: "End Date", width: "half" },
+            { key: "endDate", type: "date", label: "End Date", width: "half", dateLimit: "notPast", gteField: "startDate" },
             { key: "hoursPerWeek", type: "number", label: "Hours per Week", unit: "hrs", min: 1, max: 60, width: "half" },
             { key: "openings", type: "number", label: "Openings", min: 1, max: 999, width: "half" },
             // Temp pay is quoted per day in India, per hour in the UK and Singapore
             { key: "salary", type: "currency", label: "Pay", min: 1, width: "half" },
             payPeriod(country, ["hour", "day", "week", "month"], country === "IN" ? "day" : "hour"),
-            { key: "deadline", type: "date", label: "Application Deadline", width: "half" },
+            { key: "deadline", type: "date", label: "Application Deadline", width: "half", dateLimit: "notPast" },
             skillTags,
             { ...applyLink, format: "url" },
           ],
@@ -331,7 +331,7 @@ export function jobsSections(subcategory: string, country: string): FormSection[
             },
             { key: "salary", type: "currency", label: "Expected Salary", min: 1, width: "half" },
             payPeriod(country, ["hour", "month", "year"]),
-            { key: "available_from", type: "date", label: "Available From", immediateOption: "Immediately", width: "half" },
+            { key: "available_from", type: "date", label: "Available From", immediateOption: "Immediately", width: "half", dateLimit: "notPast" },
             ...(country === "IN"
               ? [{
                   key: "education",

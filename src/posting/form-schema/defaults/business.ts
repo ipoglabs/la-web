@@ -280,7 +280,7 @@ export function businessSections(subcategory: string, country: string): FormSect
               label: "Work Arrangement",
               options: pairs([["onsite", "On-site"], ["hybrid", "Hybrid"], ["remote", "Remote"]]),
             },
-            { key: "availableFrom", type: "date", label: "Available From", immediateOption: "Available now", width: "half" },
+            { key: "availableFrom", type: "date", label: "Available From", immediateOption: "Available now", width: "half", dateLimit: "notPast" },
             ...(country === "GB"
               ? [
                   {
@@ -445,7 +445,7 @@ export function businessSections(subcategory: string, country: string): FormSect
               label: "Duration",
               options: pairs([["1d", "Under 1 day"], ["3d", "1–3 days"], ["4w", "1–4 weeks"], ["3m", "1–3 months"], ["3mup", "Over 3 months"]]),
             },
-            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Ongoing / self-paced", width: "half" },
+            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Ongoing / self-paced", width: "half", dateLimit: "notPast" },
             { key: "seats", type: "number", label: "Seats", min: 1, max: 500, width: "half" },
             {
               key: "certificate",
@@ -523,8 +523,8 @@ export function businessSections(subcategory: string, country: string): FormSect
               ]),
             },
             { key: "mode", type: "select", label: "Mode", required: true, options: MODES },
-            { key: "startDate", type: "date", label: "Start Date", required: true, width: "half" },
-            { key: "endDate", type: "date", label: "End Date", hint: "For events over several days", width: "half" },
+            { key: "startDate", type: "date", label: "Start Date", required: true, width: "half", dateLimit: "notPast" },
+            { key: "endDate", type: "date", label: "End Date", hint: "For events over several days", width: "half", dateLimit: "notPast", gteField: "startDate" },
             { key: "startTime", type: "text", label: "Start Time", placeholder: "e.g. 6:30 pm", width: "half" },
             { key: "venue", type: "text", label: "Venue", required: true, width: "half", showWhen: { field: "mode", in: ["inperson", "hybrid"] } },
             { key: "capacity", type: "number", label: "Capacity", min: 1, max: 10_000, width: "half" },

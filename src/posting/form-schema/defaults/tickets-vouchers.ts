@@ -31,7 +31,7 @@ const shownFor = (values: string[]) => ({ showWhen: { field: "itemType", in: val
 
 const salePrice = (label = "Asking Price", extra: Partial<FormFieldDef> = {}): FormFieldDef => ({ key: "salePrice", type: "currency", label, required: true, min: 1, width: "half", ...extra });
 const faceValue = (label: string, extra: Partial<FormFieldDef> = {}): FormFieldDef => ({ key: "faceValue", type: "currency", label, min: 0, width: "half", ...extra });
-const validUntil: FormFieldDef = { key: "deadline", type: "date", label: "Valid Until", width: "half", hint: "Leave blank if it never expires." };
+const validUntil: FormFieldDef = { key: "deadline", type: "date", label: "Valid Until", width: "half", hint: "Leave blank if it never expires.", dateLimit: "notPast" };
 
 const EVENT_TYPES: [string, string][] = [["music", "Music / Concert"], ["festival", "Festival"], ["theatre", "Theatre & Musicals"], ["comedy", "Comedy"], ["exhibition", "Exhibition"], ["family", "Kids & Family"], ["other", "Other"]];
 const SPORTS: [string, string][] = [["football", "Football"], ["cricket", "Cricket"], ["tennis", "Tennis"], ["f1", "F1 / Motorsport"], ["boxing", "Boxing / MMA"], ["rugby", "Rugby"], ["other", "Other"]];
@@ -48,8 +48,8 @@ function ticketSections(kind: FormFieldDef, country: string): FormSection[] {
       title: "Tickets",
       fields: [
         kind,
-        { key: "startDate", type: "date", label: "Event Date", required: true, width: "half" },
-        { key: "endDate", type: "date", label: "Last Day", width: "half", hint: "Festivals and multi-day events.", ...shownFor(["festival", "tennis", "cricket", "f1"]) },
+        { key: "startDate", type: "date", label: "Event Date", required: true, width: "half", dateLimit: "notPast" },
+        { key: "endDate", type: "date", label: "Last Day", width: "half", dateLimit: "notPast", gteField: "startDate", hint: "Festivals and multi-day events.", ...shownFor(["festival", "tennis", "cricket", "f1"]) },
         text("venue", "Venue", "e.g. O2 Arena, London", { required: true }),
         { key: "quantity", type: "number", label: "Number of Tickets", required: true, min: 1, width: "half" },
         select("seating", "Seating", [["standing", "Standing"], ["seated", "Seated"], ["hospitality", "VIP / Hospitality"]], { required: true }),
@@ -124,7 +124,7 @@ export function ticketsVouchersSections(subcategory: string, country: string): F
           itemType("Type", TRAVEL_TYPES),
           text("providerName", "Airline / Hotel / Operator", "e.g. British Airways, Eurostar", { required: true }),
           select("destination", "Where", [["domestic", "Domestic"], ["short_haul", "Short-haul / Regional"], ["worldwide", "Worldwide / Any route"]]),
-          { key: "startDate", type: "date", label: "Travel Date", width: "half", hint: "For a booking on a fixed date." },
+          { key: "startDate", type: "date", label: "Travel Date", width: "half", dateLimit: "notPast", hint: "For a booking on a fixed date." },
           validUntil,
           yesNo("nameChange", "Name Change Allowed", { hint: "Whether the booking can be moved to the buyer's name.", ...shownFor(["flight", "rail", "package"]) }),
           select("format", "Voucher", [["e_voucher", "E-voucher / credit"], ["physical", "Physical voucher"], ["booking", "Booking in my name"]]),

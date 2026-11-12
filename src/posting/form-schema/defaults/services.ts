@@ -276,7 +276,7 @@ export function servicesSections(subcategory: string, country: string): FormSect
             howServiceMode(),
             { key: "ageGroup", type: "multiselect", label: "Age Group", options: pairs([["kids", "Kids"], ["teens", "Teens"], ["adults", "Adults"], ["all", "All ages"]]) },
             { key: "duration", type: "text", label: "Duration", placeholder: "e.g. 8 weeks, 2 days", width: "half" },
-            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Ongoing", width: "half" },
+            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Ongoing", width: "half", dateLimit: "notPast" },
             salePrice("Fees"),
             priceUnit([["class", "Per class"], ["month", "Per month"], ["course", "Full course"]]),
             { key: "certificate", type: "select", label: "Certificate", options: YES_NO, width: "half" },
@@ -521,7 +521,7 @@ export function servicesSections(subcategory: string, country: string): FormSect
             // Budget stays `budgetAmount`; the price filter reads it (SUB_PRICE_FIELD in lib/postFilterQuery.ts).
             { key: "budgetAmount", type: "currency", label: "Budget", min: 0, width: "half" },
             { ...priceUnit([["hour", "Per hour"], ["visit", "Per visit"], ["total", "Total"]]), label: "Budget Per" },
-            { key: "neededBy", type: "date", label: "Needed By", immediateOption: "Immediately", width: "half" },
+            { key: "neededBy", type: "date", label: "Needed By", immediateOption: "Immediately", width: "half", dateLimit: "notPast" },
           ],
         },
       ];

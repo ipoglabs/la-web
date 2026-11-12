@@ -104,7 +104,7 @@ function historyFields(
   if (country === "SG") {
     return [
       { key: "ownerType", type: "select", label: "No. of Owners", options: opts(["1", "2", "3+"]), showWhen: notNew },
-      { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half" },
+      { key: "coeExpiry", type: "date", label: "COE Expiry", required: true, width: "half", dateLimit: "notPast" },
       ...(extra.SG ?? []),
       serviceHistoryField,
       partExchange,
@@ -165,7 +165,7 @@ function carsSections(country: string, c: VehicleFormConfig): FormSection[] {
       fields: historyFields(country, {
         GB: [{ key: "ulezCompliant", type: "select", label: "ULEZ Compliant", options: YES_NO_TEXT }],
         SG: [
-          { key: "registrationDate", type: "date", label: "Registration Date", width: "half" },
+          { key: "registrationDate", type: "date", label: "Registration Date", width: "half", dateLimit: "notFuture" },
           { key: "depreciationPerYear", type: "currency", label: "Depreciation per Year", unit: "/ year", min: 0, width: "half" },
         ],
       }),

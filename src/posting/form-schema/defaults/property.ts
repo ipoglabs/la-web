@@ -436,7 +436,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
             { key: "furnishing", type: "select", label: "Furnishing", options: c.rent.furnishingOptions },
             ...FLOOR_FIELDS,
             { key: "parkingSpaces", type: "select", label: "Parking Spaces", options: counts(0, 3, "None") },
-            { key: "available_from", type: "date", label: "Available From", required: true, immediateOption: "Immediately" },
+            { key: "available_from", type: "date", label: "Available From", required: true, immediateOption: "Immediately", dateLimit: "notPast" },
             { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country) },
             ...(country === "GB"
               ? []
@@ -544,7 +544,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
                   { key: "zoning", type: "select", label: "Zoning", options: opts(["Commercial", "Industrial B1", "Industrial B2", "Business Park"]) },
                 ] satisfies FormFieldDef[])
               : []),
-            { key: "available_from", type: "date", label: "Available From", width: "half" },
+            { key: "available_from", type: "date", label: "Available From", width: "half", dateLimit: "notPast" },
             { key: "leaseTerm", type: "select", label: "Lease Term", options: leaseTermOptions(country), showWhen: forRent },
           ],
         },
@@ -605,7 +605,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
                 { value: "CoEd", label: "Co-ed" },
               ],
             },
-            { key: "available_from", type: "date", label: "Available From", required: true, width: "half" },
+            { key: "available_from", type: "date", label: "Available From", required: true, width: "half", dateLimit: "notPast" },
             { key: "contractLength", type: "select", label: "Contract Length", options: CONTRACT_LENGTHS },
             {
               key: "nearbyCollege",
@@ -726,7 +726,7 @@ function buildSections(subcategory: string, country: string): FormSection[] | nu
             { key: "bathroom", type: "select", label: "Bathroom", options: bathroomOptions(country) },
             { key: "furnishing", type: "select", label: "Furnishing", options: opts(["Furnished", "Unfurnished"]) },
             { key: "flatmates", type: "select", label: "Current Flatmates", options: counts(0, 5) },
-            { key: "available_from", type: "date", label: "Available From", required: true, width: "half" },
+            { key: "available_from", type: "date", label: "Available From", required: true, width: "half", dateLimit: "notPast" },
             {
               key: "minStay",
               type: "select",

@@ -33,6 +33,9 @@ export type PostFormState = {
   facilities: string[];
 
   editMode?: boolean;
+  /** Edit mode: the post's values as loaded, so an unchanged past date
+   *  (e.g. an event that has since happened) still passes validation. */
+  savedValues?: Record<string, unknown>;
   postId?: string;
   lastActiveAt: number;
 
@@ -76,6 +79,7 @@ const defaultState = {
   facilities: [],
 
   editMode: false,
+  savedValues: undefined,
   postId: generateObjectId(),
   lastActiveAt: 0,
 };

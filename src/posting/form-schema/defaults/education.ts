@@ -135,7 +135,7 @@ export function educationSections(subcategory: string, country: string): FormSec
               label: "Certificate",
               options: pairs([["accredited", "Accredited"], ["completion", "Certificate of completion"], ["none", "None"]]),
             },
-            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Start any time", width: "half" },
+            { key: "startDate", type: "date", label: "Start Date", immediateOption: "Start any time", width: "half", dateLimit: "notPast" },
             fee(),
             feePer([["course", "Full course"], ["month", "Per month"]]),
             yesNo("instalments", "Pay in Instalments"),
@@ -218,7 +218,7 @@ export function educationSections(subcategory: string, country: string): FormSec
               ]),
             },
             { key: "curriculum", type: "multiselect", label: "Curriculum", options: pairs(SCHOOL_CURRICULA[country] ?? SCHOOL_CURRICULA.IN) },
-            { key: "startDate", type: "date", label: "Event Date", required: true, width: "half", showWhen: { field: "adType", in: ["openday"] } },
+            { key: "startDate", type: "date", label: "Event Date", required: true, width: "half", dateLimit: "notPast", showWhen: { field: "adType", in: ["openday"] } },
             { key: "ageRange", type: "text", label: "Ages / Levels", placeholder: "e.g. Ages 5–18, KS2 & KS3", width: "half" },
             {
               key: "accreditation",

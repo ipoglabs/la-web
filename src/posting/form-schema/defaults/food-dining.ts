@@ -170,7 +170,7 @@ export function foodDiningSections(subcategory: string, country: string): FormSe
             mealType([["breakfast", "Breakfast"], ["brunch", "Brunch"], ["lunch", "Lunch"], ["dinner", "Dinner"], ["drinks", "Drinks"]]),
             text("validDays", "Valid Days & Times", "e.g. Mon–Fri, 12–3pm"),
             { key: "bookingRequired", type: "select", label: "Booking Needed", options: YES_NO, width: "half" },
-            { key: "deadline", type: "date", label: "Valid Until", required: true, width: "half" },
+            { key: "deadline", type: "date", label: "Valid Until", required: true, width: "half", dateLimit: "notPast" },
             { key: "website", type: "text", label: "Website / Booking Link", placeholder: "https://", format: "url" },
           ],
         },

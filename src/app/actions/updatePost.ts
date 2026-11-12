@@ -385,7 +385,9 @@ export async function updatePost(
     if (schema) {
       const after: Record<string, unknown> = { ...(current as unknown as Record<string, unknown>), ...$set };
       for (const key of Object.keys($unset)) delete after[key];
-      const schemaErrors = validateSubmission(schema, { ...after, ...($set.attributes as Record<string, unknown> | undefined) });
+      const stored = current as unknown as Record<string, unknown>;
+      const saved = { ...stored, ...(stored.attributes as Record<string, unknown> | undefined) };
+      const schemaErrors = validateSubmission(schema, { ...after, ...($set.attributes as Record<string, unknown> | undefined) }, saved);
       if (schemaErrors.length) {
         return { ok: false, error: schemaErrors.join(" • ") };
       }

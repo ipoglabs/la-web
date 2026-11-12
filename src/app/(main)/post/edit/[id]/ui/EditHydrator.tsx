@@ -96,6 +96,7 @@ function toStoreShape(post: AnyPost): Partial<PostFormState> {
     }
   }
 
+  core.savedValues = { ...core };
   return core;
 }
 

@@ -107,7 +107,7 @@ export function healthBeautySections(subcategory: string, country: string): Form
             itemType([["skincare", "Skincare"], ["makeup", "Makeup"], ["fragrance", "Fragrance"], ["haircare", "Haircare"], ["hair_tools", "Hair Tools & Devices"], ["bath_body", "Bath & Body"], ["nails", "Nails"], ["mens", "Men's Grooming"], ["other", "Other"]]),
             select("condition", "Condition", PRODUCT_CONDITION, { required: true }),
             text("brand", "Brand"),
-            { key: "expiryDate", type: "date", label: "Expiry Date", width: "half" },
+            { key: "expiryDate", type: "date", label: "Expiry Date", width: "half", dateLimit: "notPast" },
             { key: "receipt", type: "select", label: "Receipt Available", options: YES_NO, width: "half" },
           ],
         },
