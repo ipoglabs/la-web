@@ -48,6 +48,23 @@ export default function SelectLocationPage() {
 
   const acRef = useRef<google.maps.places.Autocomplete | null>(null);
 
+  // The box already holds an address (auto-detected or picked before), so
+  // select it on focus: typing then replaces it instead of appending to it
+  // ("London, UKDidsbury…" found the wrong place). The mouseup that follows
+  // a focusing click would clear the selection in Safari, so skip that one.
+  const focusingClick = useRef(false);
+  const noteFocusingClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    focusingClick.current = document.activeElement !== e.currentTarget;
+  };
+  const selectAllOnFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.currentTarget.value) e.currentTarget.select();
+  };
+  const keepSelectionOnMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (!focusingClick.current) return;
+    focusingClick.current = false;
+    if (e.currentTarget.selectionStart !== e.currentTarget.selectionEnd) e.preventDefault();
+  };
+
   /* ---------- helpers ---------- */
 
   const forwardGeocode = useCallback(async (address: string): Promise<boolean> => {
@@ -231,6 +248,9 @@ export default function SelectLocationPage() {
                 className="w-full bg-white border border-gray-300 px-4 py-3 rounded-xl shadow-md text-base focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-black transition"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onMouseDown={noteFocusingClick}
+                onFocus={selectAllOnFocus}
+                onMouseUp={keepSelectionOnMouseUp}
               />
             </Autocomplete>
           ) : (
