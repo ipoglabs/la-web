@@ -77,6 +77,15 @@ const orderNotice = text("orderNotice", "Order Notice", "e.g. Order by 6pm for n
 const availability = text("availability", "Days & Times", "e.g. Mon–Sat, 12pm–9pm");
 
 /** Who cooks it: name, licence, and (UK) the Food Hygiene Rating. */
+/** Delivery-area examples in each market's own neighbourhoods. */
+const DELIVERY_AREA_EXAMPLE: Record<string, string> = {
+  IN: "e.g. Andheri, Bandra",
+  GB: "e.g. Bethnal Green, Hackney",
+  SG: "e.g. Tampines, Pasir Ris",
+};
+const deliveryArea = (country: string): FormFieldDef =>
+  text("deliveryArea", "Delivery Area", DELIVERY_AREA_EXAMPLE[country] ?? DELIVERY_AREA_EXAMPLE.GB);
+
 const kitchen = (country: string, nameLabel: string, extra: FormFieldDef[] = []): FormSection => {
   const [licence, hint] = LICENCE_LABEL[country] ?? LICENCE_LABEL.GB;
   return {
@@ -141,7 +150,7 @@ export function foodDiningSections(subcategory: string, country: string): FormSe
             cuisines(country),
             dietary(country, true),
             text("deliveryDays", "Delivery Days", "e.g. Mon–Sat"),
-            text("deliveryArea", "Delivery Area", "e.g. Andheri, Bandra"),
+            deliveryArea(country),
             allergens,
           ],
         },
@@ -185,7 +194,7 @@ export function foodDiningSections(subcategory: string, country: string): FormSe
             cuisines(country),
             dietary(country),
             multi("deliveryApps", "Order On", DELIVERY_APPS[country] ?? DELIVERY_APPS.GB, { required: true }),
-            text("deliveryArea", "Delivery Area", "e.g. Bethnal Green, Hackney"),
+            deliveryArea(country),
             allergens,
           ],
         },
