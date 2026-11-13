@@ -30,16 +30,18 @@ const select = (key: string, label: string, entries: [string, string][], extra: 
 const text = (key: string, label: string, placeholder: string): FormFieldDef => ({ key, type: "text", label, placeholder, width: "half" });
 const mustGoBy: FormFieldDef = { key: "deadline", type: "date", label: "Must Go By", hint: "The ad comes down after this date.", width: "half", dateLimit: "notPast" };
 /** "Collection" is the UK word; India and Singapore say pickup. */
-const pickup = (country: string): FormFieldDef =>
-  text("availability", country === "GB" ? "Collection Times" : "Pickup Times", "e.g. Weekday evenings");
-const collectionMethod: FormFieldDef = {
+const handover = (country: string) => (country === "GB" ? "Collection" : "Pickup");
+const pickup = (country: string): FormFieldDef => text("availability", `${handover(country)} Times`, "e.g. Weekday evenings");
+const collectionMethod = (country: string): FormFieldDef => ({
   key: "collectionMethod",
   type: "select",
-  label: "Collection Method",
+  label: `${handover(country)} Method`,
   required: true,
   options: pairs([["arrange", "Arrange a time"], ["left_out", "Left out, help yourself"], ["deliver", "Can drop off nearby"]]),
   width: "half",
-};
+});
+/** Clothing size examples in each market's own sizing. */
+const SIZE_EXAMPLE: Record<string, string> = { IN: "e.g. M/L, 32 waist, Age 2–4", GB: "e.g. M/L, UK 14, Age 2–4", SG: "e.g. M/L, EU 38, Age 2–4" };
 /** UK charities and reuse shops won't take a sofa or mattress without its
  *  permanent fire label (Furniture and Furnishings (Fire Safety) Regulations 1988). */
 const fireLabel: FormFieldDef = {
@@ -68,10 +70,10 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         select("itemType", "Item Type", [["seating", "Seating"], ["bed", "Bed & Mattress"], ["table", "Table & Desk"], ["storage", "Storage"], ["outdoor", "Outdoor & Garden"], ["other", "Other"]], { required: true }),
         condition(),
         text("dimensions", "Dimensions", "e.g. 200 × 90 cm"),
-        text("collectionAccess", "Collection Access", "e.g. 2nd floor, no lift"),
+        text("collectionAccess", `${handover(country)} Access`, "e.g. 2nd floor, no lift"),
         ...(country === "GB" ? [fireLabel] : []),
         mustGoBy,
-        collectionMethod,
+        collectionMethod(country),
         pickup(country),
       ]);
 
@@ -87,11 +89,11 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
           ["traditional", TRADITIONAL_LABEL[country] ?? TRADITIONAL_LABEL.IN],
           ["mixed", "Mixed Bundle"],
         ], { width: "half" }),
-        text("size", "Size", "e.g. M/L, UK 14, Age 2–4"),
+        text("size", "Size", SIZE_EXAMPLE[country] ?? SIZE_EXAMPLE.GB),
         select("lotType", "Single or Bundle", [["single", "Single item"], ["bundle", "Bundle"]], { width: "half" }),
         condition(),
         mustGoBy,
-        collectionMethod,
+        collectionMethod(country),
         pickup(country),
       ]);
 
@@ -112,7 +114,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         text("brand", "Brand", "e.g. Sony, Dell"),
         text("included", "What's Included", "e.g. Remote, charger, cables"),
         mustGoBy,
-        collectionMethod,
+        collectionMethod(country),
         pickup(country),
       ]);
 
@@ -127,7 +129,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         text("amount", "Amount", "e.g. 12 eggs, 3 portions"),
         { key: "deadline", type: "date", label: "Best Before", required: true, hint: "For cooked food, the day it must be eaten by.", width: "half", dateLimit: "notPast" },
         select("keepIn", "Keep In", [["room", "Cupboard (room temp)"], ["fridge", "Fridge"], ["freezer", "Freezer"]], { width: "half" }),
-        collectionMethod,
+        collectionMethod(country),
         pickup(country),
       ]);
 
@@ -144,7 +146,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         { key: "ageGroup", type: "multiselect", label: "Age Group", options: pairs([["0_2", "0–2 yrs"], ["3_5", "3–5 yrs"], ["6_12", "6–12 yrs"], ["12plus", "12+ yrs"]]) },
         condition(),
         mustGoBy,
-        collectionMethod,
+        collectionMethod(country),
         pickup(country),
       ]);
 
@@ -163,7 +165,7 @@ export function freeGiveawaySections(subcategory: string, country: string): Form
         { ...condition(false), width: "half" },
         text("amount", "Amount", "e.g. 25 boxes, 10 bags"),
         mustGoBy,
-        collectionMethod,
+        collectionMethod(country),
         pickup(country),
       ]);
 
