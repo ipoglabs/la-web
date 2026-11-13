@@ -16,6 +16,7 @@ import {
   readSchemaValues,
   validateSubmission,
 } from "@/posting/form-schema/validateSubmission";
+import { singaporeShortLetError } from "@/posting/form-schema/singaporeShortLets";
 import { recordOptionRequests } from "@/posting/form-schema/optionRequests";
 
 type LocationData = {
@@ -395,6 +396,9 @@ export async function addPost(
         return { ok: false, error: schemaErrors.join(" • ") };
       }
     }
+
+    const shortLetError = singaporeShortLetError(category, subcategory, { ...postData, ...attributes }, location.address);
+    if (shortLetError) return { ok: false, error: shortLetError };
 
     const adsId = await generateAdsId();
 

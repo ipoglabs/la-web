@@ -7,6 +7,7 @@ import {
   readSchemaValues,
   validateSubmission,
 } from "@/posting/form-schema/validateSubmission";
+import { singaporeShortLetError } from "@/posting/form-schema/singaporeShortLets";
 import { recordOptionRequests } from "@/posting/form-schema/optionRequests";
 import connectDB from "@/lib/db";
 import Post from "@/models/post";
@@ -391,6 +392,14 @@ export async function updatePost(
       if (schemaErrors.length) {
         return { ok: false, error: schemaErrors.join(" • ") };
       }
+      const afterLocation = after.location as { address?: string } | undefined;
+      const shortLetError = singaporeShortLetError(
+        String(after.category ?? ""),
+        String(after.subcategory ?? ""),
+        { ...after, ...((after.attributes as Record<string, unknown> | undefined) ?? {}), ...($set.attributes as Record<string, unknown> | undefined) },
+        afterLocation?.address,
+      );
+      if (shortLetError) return { ok: false, error: shortLetError };
     }
 
     // Final safety: ensure ownerId is a valid ObjectId

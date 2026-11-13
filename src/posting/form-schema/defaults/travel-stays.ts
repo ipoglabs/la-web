@@ -59,7 +59,7 @@ const COUNTRIES_EXAMPLE: Record<string, string> = {
 };
 
 const RENTAL_HINT: Record<string, string> = {
-  SG: "Homes in Singapore can't be let for under 3 months; list overseas holiday homes or longer stays.",
+  SG: "A home in Singapore can only be let monthly, for 90 nights or more. Holiday homes abroad (e.g. Bintan, Batam) can be let nightly.",
   GB: "Scottish short lets: add your short-term let licence number below.",
 };
 

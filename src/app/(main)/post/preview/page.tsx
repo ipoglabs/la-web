@@ -24,6 +24,7 @@ import type { FieldSpec } from "@/posting/config/types";
 import { isDynamicFormCategory } from "@/posting/form-schema/rollout";
 import { schemaToSpecs } from "@/posting/form-schema/schemaToSpecs";
 import { normalizeGoodToKnow } from "@/posting/form-schema/goodToKnow";
+import { singaporeShortLetError } from "@/posting/form-schema/singaporeShortLets";
 import { usePostFormSchema } from "@/lib/hooks/usePostFormSchema";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import SubmitProgressModal, {
@@ -266,6 +267,15 @@ export default function PreviewPage() {
       const message = `Please fill: ${missing.join(", ")}`;
       setClientError(message);
       toast.error(message);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const record = data as unknown as Record<string, unknown>;
+    const shortLetError = singaporeShortLetError(data.category, data.subcategory, record, data.location?.address);
+    if (shortLetError) {
+      setClientError(shortLetError);
+      toast.error(shortLetError);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
