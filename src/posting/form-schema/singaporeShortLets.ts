@@ -47,3 +47,18 @@ export function singaporeShortLetError(
     (unit === "" || unit === "month");
   return ok ? null : SG_SHORT_LET_MESSAGE;
 }
+
+/**
+ * Countries the post's location search offers. Normally just the market's
+ * own; a Singapore Holiday Rentals ad may also be a holiday home in
+ * Malaysia (Johor Bahru, Desaru) or Indonesia (Batam, Bintan), which can be
+ * let nightly.
+ */
+export function locationSearchCountries(market: string, category: string | undefined, subcategory: string | undefined): string[] {
+  const own = market.toLowerCase();
+  const cat = resolveCategoryId(String(category ?? ""));
+  if (own === "sg" && cat === "travel_stays" && resolveSubcategoryId(cat, String(subcategory ?? "")) === "holiday_rentals") {
+    return ["sg", "my", "id"];
+  }
+  return [own];
+}

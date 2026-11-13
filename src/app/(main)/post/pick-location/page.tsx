@@ -15,6 +15,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useCountryConfig } from "@/lib/hooks/useCountryConfig";
 import { getMarketDefaultLocation, getTimezoneLocation } from "@/lib/timezoneLocation";
 import { cn } from "@/lib/utils";
+import { locationSearchCountries } from "@/posting/form-schema/singaporeShortLets";
 import type { GeoResult } from "@/app/api/geo/route";
 
 type LocationAccuracy = "precise" | "approximate" | "default";
@@ -34,6 +35,14 @@ export default function SelectLocationPage() {
   // so an India or UK ad never starts out located in another country.
   const { countryCode } = useCountryConfig();
   const market = countryCode.toUpperCase();
+  // Search may reach past the market for overseas holiday homes (see
+  // locationSearchCountries); auto-detection still stays inside it.
+  const category = usePostFormStore((s) => s.category);
+  const subcategory = usePostFormStore((s) => s.subcategory);
+  const searchCountries = useMemo(
+    () => locationSearchCountries(countryCode, category, subcategory),
+    [countryCode, category, subcategory],
+  );
 
   const [query, setQuery] = useState(location?.address ?? "");
   const [accuracy, setAccuracy] = useState<LocationAccuracy | null>(null);
@@ -239,7 +248,7 @@ export default function SelectLocationPage() {
               options={{
                 fields: ["geometry", "formatted_address"],
                 types: ["geocode"],
-                componentRestrictions: { country: countryCode },
+                componentRestrictions: { country: searchCountries },
               }}
             >
               <input
