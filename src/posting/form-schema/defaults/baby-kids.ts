@@ -87,7 +87,15 @@ const ages = multi("ages", "Ages", AGE_BANDS, { required: true });
 const providerName = text("providerName", "Provider / Business Name");
 const availability = text("availability", "Days & Times", "e.g. Mon–Fri, 8am–6pm");
 
+/** Examples in each market's own terms (Level 3, FA and Year 2 are UK-only). */
+const EXAMPLES: Record<string, { childcareQual: string; coachQual: string; school: string }> = {
+  IN: { childcareQual: "e.g. Montessori / NTT diploma", coachQual: "e.g. NIS certified, Trinity Grade 8", school: "e.g. Class 5, CBSE" },
+  GB: { childcareQual: "e.g. Level 3 Early Years", coachQual: "e.g. FA Level 1, STA", school: "e.g. Year 2" },
+  SG: { childcareQual: "e.g. Diploma in Early Childhood (ECDA)", coachQual: "e.g. NROC registered, ABRSM Grade 8", school: "e.g. Primary 4, Sec 2" },
+};
+
 export function babyKidsSections(subcategory: string, country: string): FormSection[] | null {
+  const ex = EXAMPLES[country] ?? EXAMPLES.GB;
   switch (subcategory) {
     case "Toys & Games":
       return forSale("Toy", [
@@ -125,7 +133,7 @@ export function babyKidsSections(subcategory: string, country: string): FormSect
         select("ageGroup", "Age", AGE_BANDS),
         condition,
         brand,
-        text("school", "School / Grade", "e.g. Class 5, Year 2"),
+        text("school", "School / Grade", ex.school),
       ]);
 
     case "Childcare & Nurseries": {
@@ -140,7 +148,7 @@ export function babyKidsSections(subcategory: string, country: string): FormSect
           { key: "registration", type: "text", label: regLabel, hint: regHint, width: "half" },
           yesNo("backgroundCheck", check),
           yesNo("firstAid", "Paediatric First Aid"),
-          { key: "qualification", type: "text", label: "Qualifications", placeholder: "e.g. Level 3 Early Years", width: "half" },
+          { key: "qualification", type: "text", label: "Qualifications", placeholder: ex.childcareQual, width: "half" },
         ],
         [["hour", "Per hour"], ["day", "Per day"], ["week", "Per week"], ["month", "Per month"], ["session", "Per session"]],
       );
@@ -155,7 +163,7 @@ export function babyKidsSections(subcategory: string, country: string): FormSect
           yesNo("freeTrial", "Free Trial Class"),
           providerName,
           availability,
-          { key: "qualification", type: "text", label: "Coach / Teacher Qualifications", placeholder: "e.g. FA Level 1, STA", width: "half" },
+          { key: "qualification", type: "text", label: "Coach / Teacher Qualifications", placeholder: ex.coachQual, width: "half" },
           yesNo("backgroundCheck", CHILDCARE_CHECKS[country]?.check ?? CHILDCARE_CHECKS.GB.check),
         ],
         [["class", "Per class"], ["session", "Per session"], ["month", "Per month"], ["term", "Per term"], ["course", "Per course"], ["week", "Per week"]],
