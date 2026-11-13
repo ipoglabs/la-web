@@ -37,11 +37,20 @@ const EVENT_TYPES: [string, string][] = [["music", "Music / Concert"], ["festiva
 const SPORTS: [string, string][] = [["football", "Football"], ["cricket", "Cricket"], ["tennis", "Tennis"], ["f1", "F1 / Motorsport"], ["boxing", "Boxing / MMA"], ["rugby", "Rugby"], ["other", "Other"]];
 const RETAILERS: [string, string][] = [["fashion", "Fashion"], ["electronics", "Electronics"], ["food", "Food & Drink"], ["beauty", "Beauty"], ["travel", "Travel"], ["gaming", "Gaming"], ["entertainment", "Cinema & Entertainment"], ["general", "General / Shopping"]];
 const ACTIVITIES: [string, string][] = [["adventure", "Adventure"], ["flying", "Flying & Ballooning"], ["driving", "Driving"], ["spa", "Spa & Wellness"], ["dining", "Fine Dining"], ["cooking", "Cooking"], ["creative", "Creative"], ["other", "Other"]];
+/** Examples each market's sellers will recognise. */
+const EXAMPLES: Record<string, { venue: string; ticketApps: string; giftBrand: string; experience: string; travel: string }> = {
+  IN: { venue: "e.g. Wankhede Stadium, Mumbai", ticketApps: "BookMyShow, District…", giftBrand: "e.g. Amazon, Myntra", experience: "e.g. Thrillophilia", travel: "e.g. IndiGo, Taj Hotels" },
+  GB: { venue: "e.g. O2 Arena, London", ticketApps: "Ticketmaster, AXS…", giftBrand: "e.g. John Lewis, Amazon", experience: "e.g. Virgin Experience Days", travel: "e.g. British Airways, Eurostar" },
+  SG: { venue: "e.g. Singapore Indoor Stadium", ticketApps: "SISTIC, Ticketmaster…", giftBrand: "e.g. FairPrice, Takashimaya", experience: "e.g. Klook", travel: "e.g. Singapore Airlines, Shangri-La" },
+};
+const examples = (country: string) => EXAMPLES[country] ?? EXAMPLES.GB;
+
 const TRAVEL_TYPES: [string, string][] = [["hotel", "Hotel"], ["flight", "Flight"], ["rail", "Rail"], ["package", "Package Holiday"], ["car_hire", "Car Hire"], ["other", "Other"]];
 
 /** Event and sport tickets: when, where, how many, which seats, how they're handed over. */
 function ticketSections(kind: FormFieldDef, country: string): FormSection[] {
   const uk = country === "GB";
+  const ex = examples(country);
   return [
     basics,
     {
@@ -50,11 +59,11 @@ function ticketSections(kind: FormFieldDef, country: string): FormSection[] {
         kind,
         { key: "startDate", type: "date", label: "Event Date", required: true, width: "half", dateLimit: "notPast" },
         { key: "endDate", type: "date", label: "Last Day", width: "half", dateLimit: "notPast", gteField: "startDate", hint: "Festivals and multi-day events.", ...shownFor(["festival", "tennis", "cricket", "f1"]) },
-        text("venue", "Venue", "e.g. O2 Arena, London", { required: true }),
-        { key: "quantity", type: "number", label: "Number of Tickets", required: true, min: 1, width: "half" },
+        text("venue", "Venue", ex.venue, { required: true }),
+        { key: "quantity", type: "number", label: "Number of Tickets", required: true, min: 1, max: 100, width: "half" },
         select("seating", "Seating", [["standing", "Standing"], ["seated", "Seated"], ["hospitality", "VIP / Hospitality"]], { required: true }),
         text("seatDetails", "Block / Row / Seat", "e.g. Block 112, Row K, Seats 5–6", uk ? { required: true, hint: "UK law requires the block, row and seat (or standing area) of resold tickets." } : {}),
-        select("transferMethod", "Ticket Type", [["official", "Official app transfer (Ticketmaster, AXS…)"], ["eticket", "E-ticket (PDF / mobile)"], ["paper", "Paper ticket"], ["other", "Other"]], { required: true }),
+        select("transferMethod", "Ticket Type", [["official", `Official app transfer (${ex.ticketApps})`], ["eticket", "E-ticket (PDF / mobile)"], ["paper", "Paper ticket"], ["other", "Other"]], { required: true }),
         text("restrictions", "Restrictions", "e.g. ID must match, 18+", { width: "full" }),
       ],
     },
@@ -79,6 +88,7 @@ function voucherSections(title: string, fields: FormFieldDef[], value: FormField
 }
 
 export function ticketsVouchersSections(subcategory: string, country: string): FormSection[] | null {
+  const ex = examples(country);
   switch (subcategory) {
     case "Event Tickets":
       return ticketSections(itemType("Event Type", EVENT_TYPES), country);
@@ -96,7 +106,7 @@ export function ticketsVouchersSections(subcategory: string, country: string): F
       return voucherSections(
         "Gift Card",
         [
-          text("brand", "Store / Brand", "e.g. John Lewis, Amazon", { required: true }),
+          text("brand", "Store / Brand", ex.giftBrand, { required: true }),
           select("itemType", "Retailer Type", RETAILERS, { required: true }),
           select("format", "Format", [["digital", "Digital code"], ["physical", "Physical card"]], { required: true }),
           validUntil,
@@ -109,7 +119,7 @@ export function ticketsVouchersSections(subcategory: string, country: string): F
         "Experience",
         [
           itemType("Activity", ACTIVITIES),
-          text("providerName", "Provider", "e.g. Virgin Experience Days"),
+          text("providerName", "Provider", ex.experience),
           select("forPeople", "For", [["1", "1 person"], ["2", "2 people"], ["group", "Family / Group"]], { required: true }),
           select("format", "Voucher", [["e_voucher", "E-voucher / code"], ["physical", "Physical voucher"], ["booking", "Booking in my name"]]),
           validUntil,
@@ -122,7 +132,7 @@ export function ticketsVouchersSections(subcategory: string, country: string): F
         "Voucher",
         [
           itemType("Type", TRAVEL_TYPES),
-          text("providerName", "Airline / Hotel / Operator", "e.g. British Airways, Eurostar", { required: true }),
+          text("providerName", "Airline / Hotel / Operator", ex.travel, { required: true }),
           select("destination", "Where", [["domestic", "Domestic"], ["short_haul", "Short-haul / Regional"], ["worldwide", "Worldwide / Any route"]]),
           { key: "startDate", type: "date", label: "Travel Date", width: "half", dateLimit: "notPast", hint: "For a booking on a fixed date." },
           validUntil,
