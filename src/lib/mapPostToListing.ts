@@ -116,11 +116,14 @@ function buildSchemaKeyDetails(post: LeanPost, schema: PostFormSchemaData): KeyV
   return rows;
 }
 
-function buildGoodToKnow(post: LeanPost, sellerName: string): KeyValueRow[] {
+function buildGoodToKnow(post: LeanPost, sellerName: string, hasForm: boolean): KeyValueRow[] {
   const rows: KeyValueRow[] = [
     { key: "Listed By", value: sellerName },
     { key: "Ad ID", value: post.adsId || String((post as { _id: unknown })._id) },
   ];
+  // A form-driven post already lists these, labelled ("Yes", "Brand New"),
+  // in its details table — repeating the raw codes ("yes", "new") here is noise.
+  if (hasForm) return rows;
   if (post.negotiable) rows.push({ key: "Negotiable", value: post.negotiable });
   if (post.condition) rows.push({ key: "Condition", value: post.condition });
   if (post.deliveryAvailable) rows.push({ key: "Delivery", value: post.deliveryAvailable });
@@ -173,7 +176,7 @@ export function mapPostToListing(
     status: mapStatus(post.status, post.isSuspended),
     description: sanitizeDescriptionToHtml(post.description ?? ""),
     keyDetails: schema ? buildSchemaKeyDetails(post, schema) : buildKeyDetails(post),
-    goodToKnow: buildGoodToKnow(post, sellerName),
+    goodToKnow: buildGoodToKnow(post, sellerName, !!schema),
     sellerFacts: buildSellerFacts(post),
     coordinates,
     seller: {
