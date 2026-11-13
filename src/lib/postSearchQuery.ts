@@ -16,10 +16,20 @@ function escapeRegex(value: string): string {
 }
 
 export function buildKeywordQuery(q: string | null | undefined): Record<string, unknown> | null {
-  const trimmed = q?.trim();
-  if (!trimmed) return null;
-  const pattern = new RegExp(escapeRegex(trimmed), "i");
-  return { $or: [{ name: pattern }, { description: pattern }] };
+  // Every word must appear somewhere in the title or description, in any
+  // order — matching the whole phrase as one substring missed "Childcare &
+  // Nurseries" for "childcare nurseries" and "Red mountain bike" for "red bike".
+  const words = (q ?? "")
+    .split(/[\s&,/+]+/)
+    .map((w) => w.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  if (!words.length) return null;
+  const clauses = words.map((w) => {
+    const pattern = new RegExp(escapeRegex(w), "i");
+    return { $or: [{ name: pattern }, { description: pattern }] };
+  });
+  return clauses.length === 1 ? clauses[0] : { $and: clauses };
 }
 
 /**
