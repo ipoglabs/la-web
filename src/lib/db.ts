@@ -45,7 +45,14 @@ export default async function dbConnect(): Promise<typeof mongoose> {
     });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    // Don't keep a failed attempt: the next call tries again instead of
+    // this instance failing every DB call until it is recycled.
+    cached.promise = null;
+    throw err;
+  }
   console.log("Connected DB:", cached.conn.connection.db?.databaseName);
   return cached.conn;
 }
