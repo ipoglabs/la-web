@@ -8,36 +8,11 @@ import { publicPostFilter } from "@/lib/postVisibility";
 import { isDynamicFormCategory } from "@/posting/form-schema/rollout";
 import { getPostFormSchema } from "@/posting/form-schema/getPostFormSchema";
 import { getActiveListingCountsByOwner } from "@/lib/postActiveListingsCount";
-import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from "@/lib/category-map";
+import { resolveCategoryId, resolveSubcategoryId } from "@/lib/category-map";
 import type { Listing } from "@/types/listing";
 import type { CountryCode } from "@/config";
 
 const COUNTRY_CODES: CountryCode[] = ["in", "gb", "sg"];
-
-/**
- * Post.category/subcategory are stored as whatever the post wizard
- * submitted — in the data seen so far that's the display LABEL
- * ("Vehicles"), not the canonical id ("vehicles") the rest of the app
- * (breadcrumbs, CATEGORY_LABELS/SUBCATEGORY_LABELS lookups, similar-listings)
- * expects. Resolve whichever form is present back to a canonical id;
- * falls back to a best-effort slug if genuinely unrecognized rather than
- * throwing — a real but unmapped category shouldn't 404 the whole page.
- */
-function resolveCategoryId(raw: string): string {
-  if (raw in CATEGORY_LABELS) return raw;
-  const lower = raw.toLowerCase();
-  const match = Object.entries(CATEGORY_LABELS).find(([, label]) => label.toLowerCase() === lower);
-  return match ? match[0] : raw.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-}
-
-function resolveSubcategoryId(catId: string, raw: string): string {
-  const subs = SUBCATEGORY_LABELS[catId];
-  if (!subs) return raw.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  if (raw in subs) return raw;
-  const lower = raw.toLowerCase();
-  const match = Object.entries(subs).find(([, label]) => label.toLowerCase() === lower);
-  return match ? match[0] : raw.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-}
 
 /**
  * Looks up a real Post by its public id — `adsId` first (the normal case;

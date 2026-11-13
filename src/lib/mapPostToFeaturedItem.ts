@@ -2,6 +2,7 @@ import type { IPost } from "@/models/post";
 import type { FeaturedListingItem } from "@/components/la-blocks/FeaturedListings";
 import type { ListingStatus } from "@/components/la-blocks/la-thumbnail-listing/LaThumbnailListingCard";
 import { COUNTRY_CONFIGS, type CountryCode } from "@/config";
+import { resolveCategoryId, resolveSubcategoryId } from "@/lib/category-map";
 
 export type LeanPost = IPost & { _id: unknown };
 
@@ -111,7 +112,11 @@ const OFFER_DEAL_LABEL: Record<string, string> = {
   instalments: "0% instalments",
 };
 
-export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?: string } {
+export function resolvePrice(raw: LeanPost): { priceLabel: string; priceSuffix?: string } {
+  // Posts store the category/subcategory labels ("Community"); the checks
+  // below use the ids ("community").
+  const category = resolveCategoryId(String(raw.category ?? ""));
+  const post = { ...raw, category, subcategory: resolveSubcategoryId(category, String(raw.subcategory ?? "")) } as LeanPost;
   const symbol = currencySymbolFor(post);
   const locale = localeFor(post);
   const fmt = (n: number) => `${symbol}${n.toLocaleString(locale)}`;
@@ -194,6 +199,10 @@ export function resolvePrice(post: LeanPost): { priceLabel: string; priceSuffix?
     // Some forms ask how the rent is quoted (Rent Period, saved in attributes).
     const period = String(post.attributes?.rentPeriod ?? "month");
     return { priceLabel: fmt(post.rentPrice), priceSuffix: RENT_PERIOD_SUFFIX[period] ?? "/ mo" };
+  }
+  // Event and Sport Tickets: the asking price is per ticket.
+  if (post.category === "tickets_vouchers" && (post.subcategory === "event_tickets" || post.subcategory === "sport_tickets") && post.salePrice != null) {
+    return { priceLabel: fmt(post.salePrice), priceSuffix: "/ ticket" };
   }
   if (post.salePrice != null) {
     // Services ask what the price covers (Price Per, saved in attributes).
