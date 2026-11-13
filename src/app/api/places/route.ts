@@ -49,6 +49,18 @@ export async function GET(req: NextRequest) {
   const url = new URL("https://maps.googleapis.com/maps/api/place/autocomplete/json");
   url.searchParams.set("input", input);
   url.searchParams.set("key", GOOGLE_API_KEY);
+  // Ask Google for the caller's markets only. Autocomplete returns just 5
+  // predictions, so filtering a worldwide list afterwards dropped every one
+  // for common names ("Clifton" → 5 US towns, nothing left for a UK user).
+  const countries = (req.nextUrl.searchParams.get("countries") ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((c) => (c === "uk" ? "gb" : c.trim()))
+    .filter((c) => /^[a-z]{2}$/.test(c))
+    .slice(0, 5); // Google's limit
+  if (countries.length) {
+    url.searchParams.set("components", countries.map((c) => `country:${c}`).join("|"));
+  }
   // No "types" restriction — neighborhood/sublocality-level results (e.g. a
   // specific residential area) are just as valid a location pick as a city,
   // and restricting to "(cities)" was hiding them from suggestions entirely.

@@ -113,8 +113,9 @@ export const STATIC_SUGGESTIONS: SearchSuggestion[] = [
  * Autocomplete and would need a separate Place Details call if a caller needs
  * coordinates immediately on select.
  */
-export async function realGoogleSearch(query: string): Promise<SearchSuggestion[]> {
-  const res = await fetch(`/api/places?input=${encodeURIComponent(query)}`);
+export async function realGoogleSearch(query: string, countryScope?: string[]): Promise<SearchSuggestion[]> {
+  const countries = countryScope?.length ? `&countries=${encodeURIComponent(countryScope.join(","))}` : "";
+  const res = await fetch(`/api/places?input=${encodeURIComponent(query)}${countries}`);
   if (!res.ok) throw new Error("Places API error");
   const data = await res.json();
   if (data.error) throw new Error(data.error);
@@ -149,7 +150,7 @@ export function LocationSearch({
         setLoading(true);
         setFetchError(null);
         try {
-          let suggestions = await realGoogleSearch(q);
+          let suggestions = await realGoogleSearch(q, countryScope);
           if (countryScope?.length) {
             suggestions = suggestions.filter((s) => matchesScope(s.sublabel, countryScope));
           }
