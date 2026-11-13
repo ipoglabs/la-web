@@ -73,14 +73,22 @@ const forSale = (title: string, fields: FormFieldDef[]): FormSection[] => [
   },
 ];
 
-const howMany = { key: "quantity", type: "number", label: "Number of Items", min: 1, width: "half", hint: "For bundles and job lots." } satisfies FormFieldDef;
+const howMany = { key: "quantity", type: "number", label: "Number of Items", min: 1, max: 10000, width: "half", hint: "For bundles and job lots." } satisfies FormFieldDef;
+
+/** Author / artist examples each market's sellers will recognise. */
+const EXAMPLES: Record<string, { author: string; artist: string }> = {
+  IN: { author: "e.g. R.K. Narayan", artist: "e.g. A.R. Rahman" },
+  GB: { author: "e.g. Terry Pratchett", artist: "e.g. Sade" },
+  SG: { author: "e.g. Catherine Lim", artist: "e.g. Dick Lee" },
+};
 
 export function booksMediaSections(subcategory: string, country: string): FormSection[] | null {
+  const ex = EXAMPLES[country] ?? EXAMPLES.GB;
   switch (subcategory) {
     case "Books & Comics":
       return forSale("Book", [
         select("genre", "Type", [["fiction", "Fiction"], ["nonfiction", "Non-Fiction"], ["comics", "Comics & Graphic Novels"], ["manga", "Manga"], ["kids", "Children's"], ["academic", "Textbooks & Study Guides"], ["other", "Other"]], { required: true, width: "full" }),
-        text("authorArtist", "Author", "e.g. Terry Pratchett"),
+        text("authorArtist", "Author", ex.author),
         select("format", "Format", [["paperback", "Paperback"], ["hardback", "Hardback"], ["issues", "Single Issues"], ["set", "Box Set / Collection"]]),
         select("language", "Language", LANGUAGES[country] ?? LANGUAGES.IN),
         howMany,
@@ -90,7 +98,7 @@ export function booksMediaSections(subcategory: string, country: string): FormSe
     case "Vinyl Records":
       return forSale("Record", [
         select("genre", "Genre", [["rock", "Rock"], ["pop", "Pop"], ["rnb", "Soul, R&B & Funk"], ["jazz", "Jazz & Blues"], ["electronic", "Electronic & Dance"], ["hiphop", "Hip-Hop"], ["classical", "Classical"], ["indian", "Bollywood & Indian"], ["other", "Other"]], { required: true }),
-        text("authorArtist", "Artist", "e.g. Sade"),
+        text("authorArtist", "Artist", ex.artist),
         select("format", "Format", [["lp", "LP / Album"], ["single", "7\" Single"], ["twelve", "12\" Single / EP"], ["box", "Box Set"], ["collection", "Collection / Job Lot"]], { required: true }),
         select("pressing", "Pressing", [["original", "Original Pressing"], ["reissue", "Reissue"], ["mixed", "Mixed"]]),
         howMany,

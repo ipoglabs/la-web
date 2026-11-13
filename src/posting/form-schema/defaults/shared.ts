@@ -50,7 +50,8 @@ const FIELD_LIMITS: Record<string, Partial<FormFieldDef>> = {
   engineCapacity: { max: 20_000 },
 };
 
-/** Applies the per-key limits plus a default cap per field type. */
+/** Applies the per-key limits plus a default cap per field type. A limit the
+ *  field sets itself wins (e.g. Books' Number of Items caps at 10,000). */
 export function applyLimits(field: FormFieldDef): FormFieldDef {
   const byType: Partial<FormFieldDef> =
     field.type === "currency"
@@ -60,5 +61,5 @@ export function applyLimits(field: FormFieldDef): FormFieldDef {
         : field.type === "textarea"
           ? { maxLength: 1000 }
           : {};
-  return { ...byType, ...field, ...FIELD_LIMITS[field.key] };
+  return { ...byType, ...FIELD_LIMITS[field.key], ...field };
 }
