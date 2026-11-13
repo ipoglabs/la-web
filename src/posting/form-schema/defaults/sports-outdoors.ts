@@ -66,7 +66,15 @@ const bikeFields: FormFieldDef[] = [
   select("wheelSize", "Wheel Size", [["20", "20\" or smaller"], ["24", "24\""], ["26", "26\""], ["27.5", "27.5\" / 650b"], ["29", "29\" / 700c"]], { showWhen: { field: "itemType", in: ["bike"] } }),
 ];
 
-export function sportsOutdoorsSections(subcategory: string): FormSection[] | null {
+/** Examples in each market's own terms (LTA is UK-only; Singapore shops size shoes in US sizes). */
+const EXAMPLES: Record<string, { teamSize: string; wearSize: string; coachQual: string }> = {
+  IN: { teamSize: "e.g. UK 8, Size 5 ball, SH bat", wearSize: "e.g. UK 8, M, 32", coachQual: "e.g. NIS certified, ACE / K11 PT" },
+  GB: { teamSize: "e.g. UK 10, Size 5 ball, Harrow", wearSize: "e.g. UK 9, M, Size 8", coachQual: "e.g. Level 3 PT, LTA Level 3, NASM" },
+  SG: { teamSize: "e.g. US 9, Size 5 ball", wearSize: "e.g. US 9, M, EU 42", coachQual: "e.g. NROC registered, ACE CPT" },
+};
+
+export function sportsOutdoorsSections(subcategory: string, country = "GB"): FormSection[] | null {
+  const ex = EXAMPLES[country] ?? EXAMPLES.GB;
   switch (subcategory) {
     case "Fitness Equipment":
       return forSale("Equipment", [
@@ -84,7 +92,7 @@ export function sportsOutdoorsSections(subcategory: string): FormSection[] | nul
         itemType([["bat_racket", "Bat / Racket / Club"], ["ball", "Balls"], ["footwear", "Boots & Shoes"], ["protective", "Pads & Protection"], ["kit", "Kit & Clothing"], ["goals_nets", "Goals, Nets & Hoops"], ["bags", "Bags"], ["bundle", "Bundle / Full Kit"], ["other", "Other"]]),
         condition,
         brand,
-        size("e.g. UK 10, Size 5 ball, Harrow"),
+        size(ex.teamSize),
       ]);
 
     case "Outdoor & Adventure":
@@ -113,7 +121,7 @@ export function sportsOutdoorsSections(subcategory: string): FormSection[] | nul
         select("gender", "For", [["men", "Men"], ["women", "Women"], ["kids", "Kids"], ["unisex", "Unisex"]], { required: true }),
         itemType([["shoes", "Running & Training Shoes"], ["boots", "Boots & Cleats"], ["tops", "Tops & T-shirts"], ["bottoms", "Leggings, Shorts & Bottoms"], ["sports_bra", "Sports Bras"], ["outerwear", "Jackets & Hoodies"], ["swimwear", "Swimwear"], ["bundle", "Bundle"], ["other", "Other"]]),
         condition,
-        size("e.g. UK 9, M, Size 8"),
+        size(ex.wearSize),
         brand,
       ]);
 
@@ -127,7 +135,7 @@ export function sportsOutdoorsSections(subcategory: string): FormSection[] | nul
             select("consultationMode", "Mode", [["inperson", "In-person"], ["online", "Online"], ["both", "Both"]], { required: true }),
             multi("levels", "Levels", [["beginner", "Beginner"], ["intermediate", "Intermediate"], ["advanced", "Advanced"]]),
             yesNo("freeTrial", "Free Trial Session"),
-            { key: "qualification", type: "text", label: "Qualifications", placeholder: "e.g. Level 3 PT, LTA Level 3, NASM", width: "half" },
+            { key: "qualification", type: "text", label: "Qualifications", placeholder: ex.coachQual, width: "half" },
             text("providerName", "Coach / Gym Name"),
             text("availability", "Days & Times", "e.g. Weekday mornings"),
           ],
