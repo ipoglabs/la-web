@@ -34,6 +34,8 @@ export interface IPost {
   /** NEW: lifecycle fields */
   status?: "pending" | "active" | "rejected" | "off" | "expired" | "closed" | "deleted";
   rejectionReason?: string;
+  /** Set once the seller has been emailed about the current rejection; cleared by the back office on any status change. */
+  rejectionEmailSentAt?: Date;
   expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -241,6 +243,7 @@ const PostSchema = new Schema<IPost>(
       index: true,
     },
     rejectionReason: { type: String },
+    rejectionEmailSentAt: { type: Date },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },

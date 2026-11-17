@@ -21,8 +21,9 @@ interface SendListingStatusEmailArgs {
 
 /**
  * Wraps the LISTING_STATUS email event (7 lifecycle sub-states).
- * Only "edited" has a real trigger today — see updatePost.ts, fired on every
- * successful edit. The other 6 states (under_review, rejected, expiring_soon,
+ * Triggers today: "edited" (updatePost.ts, every successful edit) and
+ * "rejected" (the back office calls /api/internal/listing-moderated after a
+ * moderator rejects an ad). The other 5 states (under_review, expiring_soon,
  * expired, removed_by_admin, marked_sold) need moderation/expiry-cron/
  * mark-as-sold features that don't exist in this codebase yet; wire those up
  * here once the underlying action exists rather than guessing at one.
