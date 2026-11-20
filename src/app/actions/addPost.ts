@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 import { cookies } from "next/headers";
 import { getSession } from "@/lib/auth";
 import { COUNTRY_COOKIE, isAllowedCountry } from "@/lib/country-context";
-import { sendListingLiveEmail } from "@/lib/listings/sendListingLiveEmail";
+import { sendListingStatusEmail } from "@/lib/listings/sendListingStatusEmail";
 import { isEmailMutedUser } from "@/lib/emailMutedUsers";
 import { getVerificationStatus } from "@/lib/verification";
 import { logActivity } from "@/lib/activityLog";
@@ -421,14 +421,17 @@ export async function addPost(
 
     if (postData.seller_info?.email && !emailMuted) {
       try {
-        await sendListingLiveEmail({
+        // New ads start as "pending" until the back office approves them, so
+        // this is the "under review" notice. The "your listing is live" email
+        // is sent on approval (api/internal/listing-moderated).
+        await sendListingStatusEmail({
           email: postData.seller_info.email,
           listingTitle: postData.name ?? "",
           listingId: adsId,
-          listingUrl: country ? `/${country}/listings/${newPost._id}` : `/listings/${newPost._id}`,
+          status: "under_review",
         });
       } catch (err) {
-        console.error("Listing live email failed:", err);
+        console.error("Listing under-review email failed:", err);
       }
     }
 

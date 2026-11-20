@@ -433,7 +433,9 @@ export async function updatePost(
           email: doc.seller_info.email,
           listingTitle: doc.name ?? "",
           listingId: doc.adsId ?? String(doc._id),
-          status: "edited",
+          // An edit sends the ad back to "pending" for review (see status above);
+          // the "edited" email says the ad stays live, which it doesn't.
+          status: "under_review",
           listingUrl: doc.country ? `/${doc.country}/listings/${doc._id}` : `/listings/${doc._id}`,
         });
       } catch (err) {

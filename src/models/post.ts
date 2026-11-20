@@ -36,6 +36,8 @@ export interface IPost {
   rejectionReason?: string;
   /** Set once the seller has been emailed about the current rejection; cleared by the back office on any status change. */
   rejectionEmailSentAt?: Date;
+  /** Set once the seller has been emailed that the approved ad is live; cleared by the back office on any status change. */
+  liveEmailSentAt?: Date;
   expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -244,6 +246,7 @@ const PostSchema = new Schema<IPost>(
     },
     rejectionReason: { type: String },
     rejectionEmailSentAt: { type: Date },
+    liveEmailSentAt: { type: Date },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
