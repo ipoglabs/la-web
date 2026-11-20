@@ -8,9 +8,9 @@ interface SendListingLiveEmailArgs {
 }
 
 /**
- * Wraps the LISTING_LIVE email event. There's no moderation/approval step
- * yet (see addPost.ts's query comment) — a post is live the moment it's
- * saved, so this is the "went live" trigger for now.
+ * Wraps the LISTING_LIVE email event. Sent when the back office approves an
+ * ad (pending → active), via api/internal/listing-moderated — never on
+ * submit, because new and edited ads wait for review first.
  */
 export async function sendListingLiveEmail({
   email,
