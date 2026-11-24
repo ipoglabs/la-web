@@ -22,10 +22,10 @@ interface SendListingStatusEmailArgs {
 /**
  * Wraps the LISTING_STATUS email event (7 lifecycle sub-states).
  * Triggers today: "under_review" (addPost.ts and updatePost.ts: new and
- * edited ads wait for back-office review) and "rejected" (the back office
- * calls /api/internal/listing-moderated after a moderator rejects an ad).
- * The other 5 states (edited, expiring_soon, expired, removed_by_admin,
- * marked_sold) need live-edit/expiry-cron/
+ * edited ads wait for back-office review), "rejected" and "removed_by_admin"
+ * (the back office calls /api/internal/listing-moderated after a moderator
+ * rejects or an admin suspends an ad).
+ * The other 4 states (edited, expiring_soon, expired, marked_sold) need live-edit/expiry-cron/
  * mark-as-sold features that don't exist in this codebase yet; wire those up
  * here once the underlying action exists rather than guessing at one.
  */

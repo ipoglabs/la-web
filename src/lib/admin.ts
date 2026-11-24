@@ -19,3 +19,7 @@ const ADMIN_EMAILS = new Set([ADMIN_EMAIL]);
 export function isAdminEmail(email: string | null | undefined): boolean {
   return !!email && ADMIN_EMAILS.has(email.trim().toLowerCase());
 }
+
+/** The back office (lokalads-bo), where all moderation happens: ads, reports,
+ *  users and option requests, each decision audit-logged per staff member. */
+export const BACK_OFFICE_URL = (process.env.BACK_OFFICE_URL || "https://lokalads-bo.vercel.app").replace(/\/$/, "");

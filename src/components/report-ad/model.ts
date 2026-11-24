@@ -43,7 +43,8 @@ export interface IAdReport extends Document {
   createdAt:     Date;
   reviewedAt:    Date | null;
   reviewedBy:    string | null;       // admin user ID
-  resolution:    string | null;       // admin notes
+  resolution:    string | null;       // admin notes (internal, never emailed)
+  reporterNotifiedAt?: Date;          // reporter emailed that the report was closed
 }
 
 // ── Schema ───────────────────────────────────────────────────────────────────
@@ -86,6 +87,7 @@ const AdReportSchema = new Schema<IAdReport>(
     reviewedAt: { type: Date,   default: null },
     reviewedBy: { type: String, default: null },
     resolution: { type: String, default: null },
+    reporterNotifiedAt: { type: Date },
   },
   {
     timestamps: { createdAt: "createdAt", updatedAt: false },

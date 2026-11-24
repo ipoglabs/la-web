@@ -3,7 +3,7 @@
 // and — once the admin adds one — written into the form's options.
 
 import { Types } from "mongoose";
-import { ADMIN_EMAIL } from "@/lib/admin";
+import { ADMIN_EMAIL, BACK_OFFICE_URL } from "@/lib/admin";
 import { sendEmail } from "@/lib/email";
 import OptionRequest from "@/models/OptionRequest";
 import { acceptsCustomOption, isFieldVisible, type FormSection, type PostFormSchemaData } from "./types";
@@ -67,8 +67,8 @@ async function notifyAdmin(schema: PostFormSchemaData, fieldLabel: string, value
       body:
         `A seller typed “${value}” as the ${fieldLabel} in ${schema.category} › ${schema.subcategory} ` +
         `(${schema.country.toUpperCase()}) — it isn't in that form's list.\n\n` +
-        `Add it to the form or dismiss it in Admin → Option requests.`,
-      actionUrl: "/admin?tab=options",
+        `Add it to the form or dismiss it in the back office → Options.`,
+      actionUrl: `${BACK_OFFICE_URL}/bo/option-requests`,
       actionLabel: "Review option requests",
     },
   });
