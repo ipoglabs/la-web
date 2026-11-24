@@ -164,10 +164,12 @@ const UserSchema = new mongoose.Schema(
 
     marketingOptIn: { type: Boolean, default: false },
 
-    // moderation — real ad reports live on the separate AdReport collection
-    // (src/components/report-ad/model.ts), wired into app/api/reports/*,
-    // admin/listReportedAds.ts, admin/reviewReport.ts, lib/moderation.ts.
+    // moderation — done in the back office (lokalads-bo). Real ad reports
+    // live on the separate AdReport collection (src/components/report-ad/model.ts).
     isSuspended: { type: Boolean, default: false, index: true },
+    // Which account-status email the user last got ("suspended" / "reinstated"),
+    // so /api/internal/account-status sends each change once.
+    accountStatusEmailFor: { type: String },
 
     // audit history
     audit: {

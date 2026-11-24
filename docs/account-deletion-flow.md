@@ -1,5 +1,12 @@
 # Account Deletion Flow
 
+> **Update 2026-11-24:** `/admin` moderation is retired. Ads, reports, users and option requests
+> are moderated in the back office (lokalads-bo), which writes the same `AD_*` `ActivityLog` rows
+> plus its own per-staff audit log. `lib/moderation.ts`, `actions/admin/{setPostStatus,reviewReport,
+> listReportedAds,listAllPosts,listUsers,hardDeleteUser}.ts` and `PATCH /api/reports/:ticketId` were
+> removed; `/admin` redirects to the back office except `/admin?tab=options` (adding values to forms
+> not yet in the database). References to them below are historical.
+
 Status: implemented and verified against `lokalads-staging` (22/22 assertions
 passed via a one-off e2e script, run and discarded — see "Verification" below).
 

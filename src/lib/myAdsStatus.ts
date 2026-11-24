@@ -7,7 +7,7 @@
  * expired/closed/pending/rejected/deleted/blocked — this adds the one thing
  * mapStatus() can't see on its own: "under-review", which isn't a Post.status
  * value at all, it's inferred from an open (status:"pending") AdReport
- * ticket against the ad (see lib/moderation.ts's reviewReport()).
+ * ticket against the ad (reports are reviewed in the back office, lokalads-bo).
  */
 import AdReport from "@/components/report-ad/model";
 import { mapStatus } from "@/lib/mapPostToFeaturedItem";

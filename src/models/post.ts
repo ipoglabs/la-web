@@ -38,6 +38,12 @@ export interface IPost {
   rejectionEmailSentAt?: Date;
   /** Set once the seller has been emailed that the approved ad is live; cleared by the back office on any status change. */
   liveEmailSentAt?: Date;
+  /** Set once the seller has been emailed "listing removed" for the current back-office suspension; cleared by the back office when it suspends again or lifts it. */
+  suspensionEmailSentAt?: Date;
+  /** Back office: status before an admin suspended the ad (restored on unsuspend). */
+  statusBeforeSuspend?: string;
+  /** Back office: taken offline because the owner's account was suspended. */
+  pausedForOwnerSuspension?: boolean;
   expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -247,6 +253,9 @@ const PostSchema = new Schema<IPost>(
     rejectionReason: { type: String },
     rejectionEmailSentAt: { type: Date },
     liveEmailSentAt: { type: Date },
+    suspensionEmailSentAt: { type: Date },
+    statusBeforeSuspend: { type: String },
+    pausedForOwnerSuspension: { type: Boolean },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
@@ -419,8 +428,8 @@ const PostSchema = new Schema<IPost>(
     attributes: { type: Schema.Types.Mixed },
 
 /* 🔴 Moderation — real ad reports live on the separate AdReport collection
-   (src/components/report-ad/model.ts), wired into app/api/reports/*,
-   admin/listReportedAds.ts, admin/reviewReport.ts, lib/moderation.ts. */
+   (src/components/report-ad/model.ts). Suspending, approving and
+   reviewing reports is done in the back office (lokalads-bo). */
 
     isSuspended: {
       type: Boolean,
