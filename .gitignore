@@ -44,3 +44,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local scratch: Playwright MCP debug logs and one-off "_" scripts
+.playwright-mcp/
+scripts/_*.ts

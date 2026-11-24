@@ -220,7 +220,15 @@ deletedIdentitySnapshot: {
 // passwordless accounts created with only one identifier), enforce that at
 // least one of them is always present — an account with neither would be
 // unreachable/unloginable.
-UserSchema.pre("validate", function (this: any) {
+type ValidatingUser = {
+  email?: string;
+  primaryNumber?: string;
+  dateOfBirth?: unknown;
+  locality?: unknown;
+  isFullyRegistered?: boolean;
+};
+
+UserSchema.pre("validate", function (this: ValidatingUser) {
   if (!this.email && !this.primaryNumber) {
     throw new Error("At least one of email or primaryNumber is required.");
   }
