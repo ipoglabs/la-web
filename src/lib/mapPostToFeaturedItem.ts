@@ -6,11 +6,12 @@ import { resolveCategoryId, resolveSubcategoryId } from "@/lib/category-map";
 
 export type LeanPost = IPost & { _id: unknown };
 
-export function mapStatus(status?: IPost["status"], isSuspended?: boolean): ListingStatus {
+export function mapStatus(status?: IPost["status"], isSuspended?: boolean, frozenByStaff?: boolean): ListingStatus {
   if (isSuspended) return "blocked";
   switch (status) {
     case "off":
-      return "off-market";
+      // Staff froze it (back office) vs. the seller paused it themselves.
+      return frozenByStaff ? "frozen" : "off-market";
     case "pending":
       return "pending";
     case "rejected":
@@ -279,6 +280,6 @@ export function mapPostToFeaturedItem(post: LeanPost): FeaturedListingItem {
     detailsLabel: resolveDetailsLabel(post),
     locationLabel: post.location?.address ?? "",
     postedAt: post.createdAt ?? new Date(),
-    status: mapStatus(post.status, post.isSuspended),
+    status: mapStatus(post.status, post.isSuspended, post.frozenByStaff),
   };
 }

@@ -73,9 +73,13 @@ export async function setListingLifecycle(postId: string, action: LifecycleActio
     case "pause": {
       if (currentStatus !== "active") return { ok: false, error: "This ad can't be paused right now." };
       post.status = "off";
+      post.frozenByStaff = undefined; // the seller's own pause, not a staff freeze
       break;
     }
     case "resume": {
+      if (currentStatus === "frozen") {
+        return { ok: false, error: "Our team froze this ad, so it can't be resumed. Edit it to send it back for review." };
+      }
       if (currentStatus !== "off-market") return { ok: false, error: "This ad can't be resumed right now." };
       if (!(await underQuota())) {
         return { ok: false, error: `You can have up to ${MAX_ACTIVE_ADS} active ads at once. Pause or close another ad first.` };

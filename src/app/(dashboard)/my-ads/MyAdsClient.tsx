@@ -33,6 +33,7 @@ const FILTERS: { value: MyAdStatus | "all"; label: string }[] = [
   { value: "closed", label: "Closed" },
   { value: "pending", label: "Pending" },
   { value: "rejected", label: "Rejected" },
+  { value: "frozen", label: "Frozen" },
   { value: "under-review", label: "Reported" },
   { value: "blocked", label: "Suspended" },
   { value: "all", label: "All" },
@@ -49,7 +50,7 @@ const STATUS_LEGEND: { status: MyAdStatus | "deleted"; label: string; intent: "s
     status: "off-market",
     label: "Paused",
     intent: "warning",
-    description: "Hidden from buyers for now. Resume anytime to make it live again.",
+    description: "You hid it from buyers for now. Resume anytime to make it live again.",
   },
   {
     status: "expired",
@@ -74,6 +75,12 @@ const STATUS_LEGEND: { status: MyAdStatus | "deleted"; label: string; intent: "s
     label: "Rejected",
     intent: "danger",
     description: "Failed moderation before going live. The reason is shown on the ad — post a new ad once it's fixed.",
+  },
+  {
+    status: "frozen",
+    label: "Frozen",
+    intent: "danger",
+    description: "Our team took it off the site after a review, usually because of a report. You can't resume it: edit it to fix the problem and it goes back for review, or delete it.",
   },
   {
     status: "under-review",

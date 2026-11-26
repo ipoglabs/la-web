@@ -82,6 +82,10 @@ export interface KeyValueRow {
  *                  Never went live. Seller receives a rejection reason.
  *                  Visible only in seller dashboard with reason message.
  *
+ *   frozen       → Staff froze the listing after a review (e.g. a valid report).
+ *                  Hidden from public; the seller can't resume it, but can edit
+ *                  it to send it back for review, or delete it.
+ *
  *   blocked      → Admin suspended the listing for a rule violation.
  *                  Reversible — seller can appeal.
  *                  Hidden from public; seller sees an appeal CTA in dashboard.
@@ -112,6 +116,7 @@ export interface KeyValueRow {
  *   closed          ✗        ✓ (badge)   ✓
  *   under-review    ✓*       ✓* (badge)  ✓
  *   rejected        ✗        ✗           ✓ (reason shown)
+ *   frozen          ✗        ✗           ✓ (edit to resubmit)
  *   blocked         ✗        ✗           ✓ (appeal CTA)
  *   deleted         ✗        ✗           ✗
  *
@@ -128,6 +133,7 @@ export type ListingStatus =
   // Admin / moderation
   | "under-review"  // report filed, moderation in progress
   | "rejected"      // failed pre-publish moderation
+  | "frozen"        // staff froze it; seller can't resume
   | "blocked"       // admin suspended (reversible)
   | "deleted";      // soft-deleted, record kept for audit
 

@@ -44,6 +44,8 @@ export interface IPost {
   statusBeforeSuspend?: string;
   /** Back office: taken offline because the owner's account was suspended. */
   pausedForOwnerSuspension?: boolean;
+  /** Back office: staff froze the ad (status "off"). The seller sees "Frozen" and can't resume it; staff approving or rejecting it clears this. */
+  frozenByStaff?: boolean;
   expiresAt?: Date | null;
   lastBumpedAt?: Date;
   deletedAt?: Date;
@@ -256,6 +258,7 @@ const PostSchema = new Schema<IPost>(
     suspensionEmailSentAt: { type: Date },
     statusBeforeSuspend: { type: String },
     pausedForOwnerSuspension: { type: Boolean },
+    frozenByStaff: { type: Boolean },
     expiresAt: { type: Date, index: true },
     lastBumpedAt: { type: Date, index: true },
     deletedAt: { type: Date, index: true },
