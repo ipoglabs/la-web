@@ -70,6 +70,7 @@ const STATUS_CONFIG: Record<MyAdStatus, { label: string; intent: "success" | "wa
   closed: { label: "Closed", intent: "info" },
   pending: { label: "Pending", intent: "neutral" },
   rejected: { label: "Rejected", intent: "danger" },
+  frozen: { label: "Frozen", intent: "danger" },
   "under-review": { label: "Reported", intent: "warning" },
   blocked: { label: "Suspended", intent: "danger" },
 };
@@ -77,6 +78,7 @@ const STATUS_CONFIG: Record<MyAdStatus, { label: string; intent: "success" | "wa
 /** Short "why/what next" note shown next to the status badge, same spot as "Expires in X days" for active ads. */
 const STATUS_NOTE: Partial<Record<MyAdStatus, string>> = {
   "off-market": "Hidden from search",
+  frozen: "Frozen by our team",
   expired: "Renew to make it live",
   closed: "No longer listed",
   pending: "Awaiting approval",
@@ -317,6 +319,13 @@ export function MyAdCard({ ad, onChanged }: MyAdCardProps) {
                 </Link>
               </LaButton>
             </>
+          )}
+          {ad.status === "frozen" && (
+            <LaButton intent="primary-blue" size="default" className="shrink-0 px-3" asChild>
+              <Link href="/post">
+                <Pencil /> Edit
+              </Link>
+            </LaButton>
           )}
           {ad.status === "expired" && (
             <>

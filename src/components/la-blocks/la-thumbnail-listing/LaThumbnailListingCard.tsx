@@ -55,6 +55,7 @@ export type ListingStatus =
   | "closed"
   | "under-review"
   | "rejected"
+  | "frozen"
   | "blocked"
   | "deleted";
 
@@ -66,7 +67,7 @@ export type ListingStatus =
  *   blue   — pending approval
  *   rose   — closed / ended
  *   amber  — needs attention (under review)
- *   red    — moderation action (rejected, blocked)
+ *   red    — moderation action (rejected, frozen, blocked)
  */
 const STATUS_CONFIG: Record<Exclude<ListingStatus, "active">, { label: string; className: string }> = {
   "draft":         { label: "Draft",        className: "bg-slate-400 text-white" },
@@ -76,6 +77,7 @@ const STATUS_CONFIG: Record<Exclude<ListingStatus, "active">, { label: string; c
   "closed":        { label: "Closed",       className: "bg-rose-500 text-white" },
   "under-review":  { label: "Under Review", className: "bg-amber-500 text-white" },
   "rejected":      { label: "Rejected",     className: "bg-red-600 text-white" },
+  "frozen":        { label: "Frozen",       className: "bg-red-600 text-white" },
   "blocked":       { label: "Blocked",      className: "bg-red-700 text-white" },
   "deleted":       { label: "Deleted",      className: "bg-slate-900/80 text-white" },
 };

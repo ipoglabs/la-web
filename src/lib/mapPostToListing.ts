@@ -173,7 +173,7 @@ export function mapPostToListing(
     detailsLabel: resolveDetailsLabel(post),
     locationLabel: post.location?.address ?? "",
     postedAt: new Date(post.createdAt ?? Date.now()).toISOString(),
-    status: mapStatus(post.status, post.isSuspended),
+    status: mapStatus(post.status, post.isSuspended, post.frozenByStaff),
     description: sanitizeDescriptionToHtml(post.description ?? ""),
     keyDetails: schema ? buildSchemaKeyDetails(post, schema) : buildKeyDetails(post),
     goodToKnow: buildGoodToKnow(post, sellerName, !!schema),

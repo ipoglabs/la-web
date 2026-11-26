@@ -4,7 +4,7 @@
  * Resolves a Post's real lifecycle fields (status, isSuspended, open reports)
  * into the seller-facing status shown on /my-ads. Builds on mapStatus()
  * (mapPostToFeaturedItem.ts), which already covers active/off-market/
- * expired/closed/pending/rejected/deleted/blocked — this adds the one thing
+ * frozen/expired/closed/pending/rejected/deleted/blocked — this adds the one thing
  * mapStatus() can't see on its own: "under-review", which isn't a Post.status
  * value at all, it's inferred from an open (status:"pending") AdReport
  * ticket against the ad (reports are reviewed in the back office, lokalads-bo).
@@ -14,7 +14,7 @@ import { mapStatus } from "@/lib/mapPostToFeaturedItem";
 import type { IPost } from "@/models/post";
 import type { ListingStatus } from "@/types/listing";
 
-/** The 8 statuses /my-ads can show a seller — mapStatus()'s full output
+/** The 9 statuses /my-ads can show a seller — mapStatus()'s full output
  *  range, minus "draft"/"deleted" (never shown here; deleted posts are
  *  excluded from the query, drafts don't exist yet — see plan). */
 export type MyAdStatus = Exclude<ListingStatus, "draft" | "deleted">;
@@ -38,10 +38,10 @@ export async function getOpenReportAdIds(adIds: string[]): Promise<Set<string>> 
  * ad keeps its own status regardless of report state.
  */
 export function resolveMyAdStatus(
-  post: Pick<IPost, "status" | "isSuspended">,
+  post: Pick<IPost, "status" | "isSuspended" | "frozenByStaff">,
   hasOpenReport: boolean,
 ): MyAdStatus {
-  const status = mapStatus(post.status, post.isSuspended) as MyAdStatus;
+  const status = mapStatus(post.status, post.isSuspended, post.frozenByStaff) as MyAdStatus;
   if (hasOpenReport && (status === "active" || status === "off-market")) {
     return "under-review";
   }
